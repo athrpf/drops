@@ -92,6 +92,7 @@ Exp {
   PumpFreq    =       10
   Ampl_zDir   =       0.5
   Thickness   =       6.35e-4
+#  InitialLSet =       WavyFilm
 }
 
 # miscellaneous

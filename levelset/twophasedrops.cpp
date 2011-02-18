@@ -22,23 +22,26 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
+//multigrid
 #include "geom/multigrid.h"
 #include "geom/builder.h"
+//time integration
 #include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
+//output
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "out/vtkOut.h"
+//levelset
 #include "levelset/coupling.h"
-#include "levelset/params.h"
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
-#include "levelset/surfacetension.h"
-#include "poisson/transport2phase.h"
-#include "surfactant/ifacetransp.h"
 #include "levelset/twophaseutils.h"
+//surfactants
+#include "surfactant/ifacetransp.h"
+//function map
 #include "misc/bndmap.h"
-
+//solver factory for stokes
 #include "num/stokessolverfactory.h"
 #ifndef _PAR
 #include "num/stokessolver.h"
@@ -47,57 +50,15 @@
 #include "parallel/loadbal.h"
 #include "parallel/parmultigrid.h"
 #endif
+//general: streams
 #include <fstream>
 #include <sstream>
 
-
 DROPS::ParamMesszelleNsCL C;
+
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
 //                        -div u = 0
 //                             u = u0, t=t0
-
-
-/// \name Inflow condition
-//@{
-double InflowLsetCell( const DROPS::Point3DCL& p, double)
-{
-    return DROPS::EllipsoidCL::DistanceFct(p);
-}
-//@}
-
-/// \name Initial data for transport equation
-//@{
-typedef DROPS::BndDataCL<> cBndDataCL;
-typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
-const DROPS::BndCondT c_bc[6]= {
-    DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
-    DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
-};
-const c_bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
-
-double Initialcneg (const DROPS::Point3DCL& , double)
-{
-    return C.trp_IniCNeg;
-}
-
-double Initialcpos (const DROPS::Point3DCL& , double)
-{
-    return C.trp_IniCPos;
-}
-//@}
-
-/// \name Initial data and rhs for surfactant transport
-//@{
-const double a( -13./8.*std::sqrt( 35./M_PI));
-double surf_rhs (const DROPS::Point3DCL& p, double)
-{
-    return a*(3.*p[0]*p[0]*p[1] - p[1]*p[1]*p[1]);
-}
-double surf_sol (const DROPS::Point3DCL& p, double)
-{
-    return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));
-}
-//@}
 
 namespace DROPS // for Strategy
 {
@@ -105,6 +66,10 @@ namespace DROPS // for Strategy
 void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddata, AdapTriangCL& adap)
 // flow control
 {
+    DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
+    //DROPS::ScaMap & scamap = DROPS::ScaMap::getInstance();
+    //DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
+  
     MultiGridCL& MG= Stokes.GetMG();
 
     // initialization of surface tension
@@ -148,6 +113,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
 
     SetInitialLevelsetConditions( lset, MG, C);
+
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
     // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceding CreateNumberings
@@ -169,14 +135,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     DisplayDetailedGeom( MG);
     DisplayUnks(Stokes, lset, MG);
 
-    const double Vol= EllipsoidCL::GetVolume();
-    std::cout << "initial volume: " << lset.GetVolume()/Vol << std::endl;
-    double dphi= lset.AdjustVolume( Vol, 1e-9);
-    std::cout << "initial volume correction is " << dphi << std::endl;
-    lset.Phi.Data+= dphi;
-    std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
+    double Vol = 0;
 
-    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
+    if (C.exp_InitialLSet == "Ellipsoid"){
+      Vol = EllipsoidCL::GetVolume();
+      std::cout << "initial volume: " << lset.GetVolume()/Vol << std::endl;
+      double dphi= lset.AdjustVolume( Vol, 1e-9);
+      std::cout << "initial volume correction is " << dphi << std::endl;
+      lset.Phi.Data+= dphi;
+      std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
+    }else{
+      Vol = lset.GetVolume();
+    }
+    
+    const DROPS::BndCondT c_bc[6]= {
+        DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
+        DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
+    };
+    const DROPS::BndDataCL<>::bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
+    DROPS::BndDataCL<> Bnd_c( 6, c_bc, c_bfun);
     double D[2] = {C.trp_DiffPos, C.trp_DiffNeg};
     TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.trp_Theta, D, C.trp_HNeg/C.trp_HPos, &Stokes.v, lset, C.tm_StepSize, C.trp_Iter, C.trp_Tol);
     TransportRepairCL transprepair(massTransp, MG);
@@ -186,8 +163,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         MLIdxDescCL* cidx= &massTransp.idx;
         massTransp.CreateNumbering( MG.GetLastLevel(), cidx);
         massTransp.ct.SetIdx( cidx);
-        if (C.dmc_InitialCond != -1)
-            massTransp.Init( &Initialcneg, &Initialcpos);
+        if (C.dmc_InitialCond != -1){
+            massTransp.Init( inscamap["Initialcneg"], inscamap["Initialcpos"]);
+        }
         else
         {
             ReadFEFromFile( massTransp.ct, MG, C.dmc_InitialFile+"concentrationTransf");
@@ -205,7 +183,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         surfTransp.idx.CreateNumbering( MG.GetLastLevel(), MG, &lset.Phi, &lset.GetBndData());
         std::cout << "Surfactant transport: NumUnknowns: " << surfTransp.idx.NumUnknowns() << std::endl;
         surfTransp.ic.SetIdx( &surfTransp.idx);
-        surfTransp.Init( &surf_sol);
+        surfTransp.Init( inscamap["surf_sol"]);
     }
 
     // Stokes-Solver
@@ -415,12 +393,14 @@ int main (int argc, char** argv)
 
     std::cout << "Generated MG of " << mg->GetLastLevel() << " levels." << std::endl;
 
-    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
+    if (C.exp_InitialLSet == "Ellipsoid")
+      DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
+
     DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_LoadBalStrategy : -C.ref_LoadBalStrategy), C.ref_Partitioner);
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (C.rst_Inputfile == "none")
-        adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
+        adap.MakeInitialTriang( * DROPS::ScaMap::getInstance()[C.exp_InitialLSet]);
 
     std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 #ifdef _PAR

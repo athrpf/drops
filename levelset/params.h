@@ -341,6 +341,7 @@ class ParamExperimentalDataCL : public virtual ParamBaseCL
     Point3DCL exp_Gravity;                         ///< gravity
     double    exp_InflowFreq,                      ///< inflow frequence
               exp_InflowAmpl;                      ///< inflow amplitude
+    std::string    exp_InitialLSet;                     ///< initial interface
   //@}
   public:
     ParamExperimentalDataCL()                             { RegisterParams(); }
@@ -519,6 +520,7 @@ class ParamFilmCL: public ParamBaseCL
            mat_SmoothZone,                          // Glaettungszone fuer Dichte-/Viskositaetssprung
            exp_PumpAmpl, exp_PumpFreq,              // Frequenz und Amplitude der Anregung
            exp_Ampl_zDir;                           // Amplitude in z-Richtung der initialen Phasengrenze
+    std::string exp_InitialLSet;                         // Levelset Funktion der initialen Phasengrenze
 
     Point3DCL exp_Gravity;                          // Schwerkraft
     double    exp_Thickness;                        // Filmdicke

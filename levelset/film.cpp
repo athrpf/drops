@@ -22,35 +22,39 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
+//multigrid
 #include "geom/multigrid.h"
 #include "geom/builder.h"
+//time integration
 #include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
-#include "num/stokessolverfactory.h"
-#include "num/stokessolver.h"
+//output
 #include "out/output.h"
 #include "out/ensightOut.h"
-#include "levelset/adaptriang.h"
+#include "out/vtkOut.h"
+//levelset
 #include "levelset/coupling.h"
-#include "levelset/params.h"
-#include "levelset/mgobserve.h"
-#include "levelset/surfacetension.h"
+#include "levelset/adaptriang.h"
+#include "levelset/mzelle_hdr.h"
+#include "levelset/twophaseutils.h"
+//surfactants
+#include "surfactant/ifacetransp.h"
+//function map
 #include "misc/bndmap.h"
+//solver factory for stokes
+#include "num/stokessolverfactory.h"
+#ifndef _PAR
+#include "num/stokessolver.h"
+#else
+#include "num/parstokessolver.h"
+#include "parallel/loadbal.h"
+#include "parallel/parmultigrid.h"
+#endif
+//general: streams
 #include <fstream>
-
+#include <sstream>
 
 DROPS::ParamFilmCL C;
-
-double DistanceFct( const DROPS::Point3DCL& p)
-{
-    // wave length = 100 x film width
-    const double wave= std::sin(2*M_PI*p[0]/C.mcl_MeshSize[0]),
-        z= p[2]/C.mcl_MeshSize[2]*2; // z \in [-1,1]
-//    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*wave);
-//    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*(wave + C.exp_Ampl_zDir*std::cos(z*M_PI)));
-    const double z_fac=  (1 + C.exp_Ampl_zDir/2*std::cos(z*M_PI));  // (z=+-1) 1-C.exp_Ampl_zDir <= z_fac <= 1+C.exp_Ampl_zDir (z=0)
-    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*wave) * z_fac;
-}
 
 bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
 { // matching y-z- or x-y-coords, resp.
@@ -111,6 +115,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 
     lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_xz);
     lset.Phi.SetIdx( lidx);
+    DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[C.exp_InitialLSet];
     lset.Init( DistanceFct);
     if ( StokesSolverFactoryHelperCL<ParamFilmCL>().VelMGUsed(C))
         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
@@ -289,7 +294,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 } // end of namespace DROPS
 
 
-void MarkFilm (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
+void MarkFilm (DROPS::MultiGridCL& mg, DROPS::scalar_fun_ptr distanceFct, DROPS::Uint maxLevel= ~0)
 {
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
@@ -298,12 +303,12 @@ void MarkFilm (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
         int num_pos= 0;
         for (int i=0; i<4; ++i)
         {
-            const double d= DistanceFct( It->GetVertex(i)->GetCoord());
+            const double d= distanceFct( It->GetVertex(i)->GetCoord());
             if (d<1e-4)
                 ref= true;
             num_pos+= d>0;
         }
-        if ( DistanceFct( GetBaryCenter(*It))<1e-4 )
+        if ( distanceFct( GetBaryCenter(*It))<1e-4 )
             ref= true;
         if (num_pos!=4 && num_pos!=0)
             ref= true;
@@ -414,8 +419,10 @@ int main (int argc, char** argv)
     DROPS::AdapTriangCL adap( *mgp, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel);
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
-    if (C.mcl_DeserializationFile == "none")
+    if (C.mcl_DeserializationFile == "none"){
+        DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[C.exp_InitialLSet];      
         adap.MakeInitialTriang( DistanceFct);
+    }
 
     std::cout << DROPS::SanityMGOutCL(*mgp) << std::endl;
     mgp->SizeInfo( std::cout);

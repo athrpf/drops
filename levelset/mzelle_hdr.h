@@ -333,8 +333,9 @@ void SetInitialLevelsetConditions( LevelsetP2CL& lset, MultiGridCL& MG, const Pa
       {
         ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset", C.rst_Binary);
       } break;
-      case 0: case 1:// zero initial condition // stationary flow
-          lset.Init( EllipsoidCL::DistanceFct);
+      case 0: case 1:
+          //lset.Init( EllipsoidCL::DistanceFct);
+          lset.Init( DROPS::ScaMap::getInstance()[C.exp_InitialLSet]);          
         break;
       case  2: //flow without droplet
           lset.Init( &One);

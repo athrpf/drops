@@ -25,70 +25,133 @@
 #include "misc/bndmap.h"
 #include "levelset/params.h"
 
+extern DROPS::ParamMesszelleNsCL C;
+
 //========================================================================
 //          Functions for twophasedrops-executable
 //========================================================================
+namespace tpd_inflow{
+    /// \name inflow condition
+    DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
+    {
+        DROPS::SVectorCL<3> ret(0.);
+        const double x = p[0]*(2* C.exp_RadInlet -p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
+                     z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
 
-/// \name inflow condition
-DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
-{
-    extern DROPS::ParamMesszelleNsCL C;
-    DROPS::SVectorCL<3> ret(0.);
-    const double x = p[0]*(2* C.exp_RadInlet -p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
-                 z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
+        ret[1]= x * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
 
-    ret[1]= x * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
-
-    return ret;
-}
+        return ret;
+    }
 
 
-///microchannel (eindhoven)
-DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
-{
-    extern DROPS::ParamMesszelleNsCL C;
-    DROPS::SVectorCL<3> ret(0.);
-    const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
-                 z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
+    ///microchannel (eindhoven)
+    DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
+    {
+        DROPS::SVectorCL<3> ret(0.);
+        const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
+                     z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
 
-    ret[0]= y * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
+        ret[0]= y * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
 
-    return ret;
-}
+        return ret;
+    }
 
-///mzelle_ns_adap.cpp + mzelle_instat.cpp
-DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
-{
-    extern DROPS::ParamMesszelleNsCL C;
-    DROPS::SVectorCL<3> ret(0.);
-    const double s2= C.exp_RadInlet*C.exp_RadInlet,
-                 r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
-    ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
+    ///mzelle_ns_adap.cpp + mzelle_instat.cpp
+    DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
+    {
+        DROPS::SVectorCL<3> ret(0.);
+        const double s2= C.exp_RadInlet*C.exp_RadInlet,
+                     r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
+        ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
 
-    return ret;
+        return ret;
+    }
+
+
+    //========================================================================
+    //                       Functions for brick_transp.cpp
+    //========================================================================
+
+    DROPS::SVectorCL<3> InflowBrickTransp (const DROPS::Point3DCL& p, double)
+    {
+        DROPS::SVectorCL<3> ret(0.);
+        const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
+                     z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
+        ret[1]= x * z * C.exp_InflowVel;
+        return ret;
+    }
+
+    //========================================================================
+    //            Registration of functions in the func-container
+    //========================================================================
+    static DROPS::RegisterVectorFunction regvelbrick("InflowBrick", InflowBrick);
+    static DROPS::RegisterVectorFunction regvelcell("InflowCell", InflowCell);
+    static DROPS::RegisterVectorFunction regvelchannel("InflowChannel", InflowChannel);
+    static DROPS::RegisterVectorFunction regvelbricktransp("InflowBrickTransp", InflowBrickTransp);
 }
 
 //========================================================================
-//                       Functions for brick_transp.cpp
+//                       Functions for LevelSet Distance
 //========================================================================
+namespace levelsetdistance{
 
-DROPS::SVectorCL<3> InflowBrickTransp (const DROPS::Point3DCL& p, double)
-{
-    extern DROPS::ParamMesszelleNsCL C;
-    DROPS::SVectorCL<3> ret(0.);
-    const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
-                 z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
-    ret[1]= x * z * C.exp_InflowVel;
-    return ret;
+    ///mzelle_ns_adap.cpp + mzelle_instat.cpp
+    double CubeDistance( const DROPS::Point3DCL& p)
+    {
+        double maxd = - C.exp_RadDrop[0] - C.exp_RadDrop[1]- C.exp_RadDrop[2];
+        for (int i=0;i<3;i++){
+          double x = std::abs(p[i] - C.exp_PosDrop[i]) - C.exp_RadDrop[i];
+          if (x>maxd) maxd=x;
+        }
+        return maxd;
+    }
+
+    template<int i>
+    double planedistance( const DROPS::Point3DCL& p)
+    {
+        double x=p[i]-C.exp_PosDrop[i]; 
+        return x;
+    }
+
+    static DROPS::RegisterScalarFunction regsca_pdistx("planedistancex", planedistance<0>);
+    static DROPS::RegisterScalarFunction regsca_pdisty("planedistancey", planedistance<1>);
+    static DROPS::RegisterScalarFunction regsca_pdistz("planedistancez", planedistance<2>);
+    static DROPS::RegisterScalarFunction regscacube("CubeDistance", CubeDistance);
 }
 
 //========================================================================
-//            Registration of functions in the func-container
+//                       Functions for transport
 //========================================================================
+namespace transpfunctions{
+    double tInitialcneg (const DROPS::Point3DCL& , double)
+    {
+        return C.trp_IniCNeg;
+    }
 
-static DROPS::RegisterVectorFunction regvelbrick("InflowBrick", InflowBrick);
-static DROPS::RegisterVectorFunction regvelcell("InflowCell", InflowCell);
-static DROPS::RegisterVectorFunction regvelchannel("InflowChannel", InflowChannel);
-static DROPS::RegisterVectorFunction regvelbricktransp("InflowBrickTransp", InflowBrickTransp);
+    double tInitialcpos (const DROPS::Point3DCL& , double)
+    {
+        return C.trp_IniCPos;
+    }
+    static DROPS::RegisterScalarFunction regscainineg("Initialcpos", tInitialcneg);
+    static DROPS::RegisterScalarFunction regscainipos("Initialcpos", tInitialcpos);
+}
 
-
+//========================================================================
+//                       Functions for surfactants
+//========================================================================
+namespace surffunctions{
+    /// \name Initial data and rhs for surfactant transport
+    //@{
+    const double a( -13./8.*std::sqrt( 35./M_PI));
+    double surf_rhs (const DROPS::Point3DCL& p, double)
+    {
+        return a*(3.*p[0]*p[0]*p[1] - p[1]*p[1]*p[1]);
+    }
+    double surf_sol (const DROPS::Point3DCL& p, double)
+    {
+        return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));  
+    }
+    //@}
+    static DROPS::RegisterScalarFunction regscasurfrhs("surf_rhs", surf_rhs);
+    static DROPS::RegisterScalarFunction regscasurfsol("surf_sol", surf_sol);  
+}
