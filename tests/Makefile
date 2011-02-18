@@ -227,7 +227,8 @@ reparam: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 principallattice: \
-    ../tests/principallattice.o ../misc/utils.o ../geom/principallattice.o
+    ../tests/principallattice.o ../misc/utils.o ../geom/principallattice.o ../num/discretize.o ../geom/topo.o \
+    ../num/fe.o ../num/interfacePatch.o ../misc/problem.o ../num/unknowns.o ../geom/simplex.o ../geom/multigrid.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ../tests/directsolver.o:
