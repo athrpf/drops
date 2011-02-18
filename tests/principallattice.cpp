@@ -32,7 +32,7 @@
 namespace DROPS {
 
 ///\brief Represents the reference tetra, which is cut by a linear level set function ls. The values of the latter are prescribed on the vertices.
-class CombinatorialCutCL {
+class SignPatternTraitCL {
   private:
     Ubyte num_root_vert_;  ///< number of vertices, where the level set function is zero.
     Ubyte num_root_;       ///< number of roots of the level set function; invariant: num_root_vert <= num_root
@@ -43,8 +43,8 @@ class CombinatorialCutCL {
     bool is_3d () const { return num_root_vert_ == 4; }
 
   public:
-    CombinatorialCutCL () : num_root_vert_( 4), num_root_( 4) {} ///< Uninitialized default state
-    CombinatorialCutCL (const double ls[4]) { assign( ls); } ///< Assign a sign pattern on the vertices; throws if ls is identically 0.
+    SignPatternTraitCL () : num_root_vert_( 4), num_root_( 4) {} ///< Uninitialized default state
+    SignPatternTraitCL (const double ls[4]) { assign( ls); } ///< Assign a sign pattern on the vertices; throws if ls is identically 0.
     void assign (const double ls[4]); ///< Assign a sign pattern on the vertices; throws if ls is identically 0.
 
     bool empty () const { return num_root_ == 0; } ///< True, iff there is no intersection.
@@ -62,7 +62,7 @@ class CombinatorialCutCL {
     Ubyte operator() (int i) const { return cut_simplex_rep_[i]; }
     ///@}
 
-    friend std::ostream& operator<< (std::ostream&, const CombinatorialCutCL&); ///< Debug-output to a stream (dumps all members)
+    friend std::ostream& operator<< (std::ostream&, const SignPatternTraitCL&); ///< Debug-output to a stream (dumps all members)
 };
 
 ///\brief Helper to instance_idx below
@@ -81,7 +81,7 @@ inline Ubyte instance_idx (const double ls[4])
 ///\brief The triangles of the intersection of the reference-tetra with a linear levelset-function.
 ///
 /// The class memoizes used sign-patterns if the triangulations are accessed via the instance( ls)-function. Individual instances may still be constructed (useful for debugging).
-class CombinatorialTriangleCL {
+class RefTetraSurfacePatchCL {
   public:
     typedef SArrayCL<Ubyte, 3> TriangleT; ///< the vertices of a triangle of the cut: the tetra's vertices are denoted by 0..3, the edge-cuts by edge-num + 4, which is in 4..9.
     typedef const TriangleT* const_triangle_iterator;
@@ -92,17 +92,17 @@ class CombinatorialTriangleCL {
     Ubyte size_;                 ///< number of triangles
     Ubyte is_boundary_triangle_; ///< true if the triangle is one of the tetra's faces.
 
-    Ubyte num_triangles (const CombinatorialCutCL& cut) const { return cut.is_2d() ? cut.num_cut_simplexes() - 2 : 0; }
+    Ubyte num_triangles (const SignPatternTraitCL& cut) const { return cut.is_2d() ? cut.num_cut_simplexes() - 2 : 0; }
     TriangleT MakeTriangle (Ubyte v0, Ubyte v1, Ubyte v2) const { return MakeSArray( v0, v1, v2); }
 
   public:
-    CombinatorialTriangleCL () : size_( -1), is_boundary_triangle_( 0) {} ///< Uninitialized default state
-    CombinatorialTriangleCL (const CombinatorialCutCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
-    bool assign (const CombinatorialCutCL& cut); ///< Assign a sign pattern on the vertices; returns the value of empty()
+    RefTetraSurfacePatchCL () : size_( -1), is_boundary_triangle_( 0) {} ///< Uninitialized default state
+    RefTetraSurfacePatchCL (const SignPatternTraitCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
+    bool assign (const SignPatternTraitCL& cut); ///< Assign a sign pattern on the vertices; returns the value of empty()
 
     bool  is_initialized () const { return size_ <= 2; } ///< True after assign(...)
 
-    static inline const CombinatorialTriangleCL&
+    static inline const RefTetraSurfacePatchCL&
     instance (const double ls[4]); ///< Recommended access to the triangles for a given sign-pattern; memoizes the result
 
     bool is_boundary_triangle () const { return is_boundary_triangle_ == 1; } ///< true, iff the triangle is one of the tetra's faces.
@@ -117,7 +117,7 @@ class CombinatorialTriangleCL {
     ///@}
 };
 
-enum TetraSignEnum { AllTetraC, NegTetraC, PosTetraC }; ///< Designates the subset of tetras one is interested in CombinatorialTetraCutCL and CutTetraCL
+enum TetraSignEnum { AllTetraC, NegTetraC, PosTetraC }; ///< Designates the subset of tetras one is interested in RefTetraPartitionCL and TetraPartitionCL
 
 ///\brief The tetras partition the positive and negative part of the reference-tetra with respect to a linear levelset-function ls.
 ///
@@ -126,7 +126,7 @@ enum TetraSignEnum { AllTetraC, NegTetraC, PosTetraC }; ///< Designates the subs
 /// Layout of the tetra-sequence: tetras_ has at most 6 members, of which at most 3 are positive and 3 are negative.
 /// [tetras_ ... <= ... begin_ ... <= ... tetras_ + 3 ... <= ... end_ ... <= ...tetras_ + 6]
 /// [begin_..tetras_+3) are the negative tetras, [tetras_ +3..end_) are the positive tetras.
-class CombinatorialTetraCutCL
+class RefTetraPartitionCL
 {
   public:
     typedef SArrayCL<Ubyte, 4> TetraT; ///< representation of a tetra of the partition via its vertices: (0..3): original vertices; (4..9): original edges + 4
@@ -146,20 +146,23 @@ class CombinatorialTetraCutCL
     inline void AddPrism (Ubyte e0, Ubyte e1, Ubyte f0, Ubyte f1, Ubyte g0, Ubyte g1, int sign);
 
     ///\brief If the intersection is quadrilateral, this returns the first uncut edge.
-    Ubyte first_uncut_edge (const CombinatorialCutCL& cut) const { return cut[0] == 1 ? 0 : (cut[1] == 2 ? 1 : 2); }
-    Ubyte some_non_zero_vertex (const CombinatorialCutCL& cut) const;
+    Ubyte first_uncut_edge (const SignPatternTraitCL& cut) const { return cut[0] == 1 ? 0 : (cut[1] == 2 ? 1 : 2); }
+    Ubyte some_non_zero_vertex (const SignPatternTraitCL& cut) const;
 
   public:
-    CombinatorialTetraCutCL () : begin_( tetras_ + 3), end_( tetras_) {} ///< Uninitialized default state
-    CombinatorialTetraCutCL (const CombinatorialCutCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
-    bool assign (const CombinatorialCutCL& cut); ///< Assign a sign pattern on the vertices; returns the value of is_uncut()
+    RefTetraPartitionCL () : begin_( tetras_ + 3), end_( tetras_) {} ///< Uninitialized default state
+    RefTetraPartitionCL (const SignPatternTraitCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
+    bool assign (const SignPatternTraitCL& cut); ///< Assign a sign pattern on the vertices; returns the value of is_uncut()
     bool is_initialized () const { return begin_ < end_; } ///< True after assign(...)
 
-    static inline const CombinatorialTetraCutCL&
+    static inline const RefTetraPartitionCL&
     instance (const double ls[4]); ///< Recommended access to the triangles for a given sign-pattern; memoizes the result
 
     bool is_uncut () const { return end_ == begin_ + 1; } ///< True, iff the partition has exactly one tetra
     int sign (const_tetra_iterator t) const { return t < tetras_ + 3 ? -1 : 1; } ///< Sign of the tetra, to which t points
+
+    Ubyte tetra_size (TetraSignEnum s= AllTetraC) const ///< number of tetras with given sign
+         { return tetra_end( s) - tetra_begin( s); }
 
      /// Random-access to the tetras: all tetras, or negative and positive tetras separately, see TetraSignEnum
     ///@{
@@ -169,10 +172,10 @@ class CombinatorialTetraCutCL
         { return s == NegTetraC ? tetras_ + 3 : end_; }
     ///@}
 
-    friend std::ostream& operator<< (std::ostream&, const CombinatorialTetraCutCL&); ///< Debug-output to a stream (dumps all members)
+    friend std::ostream& operator<< (std::ostream&, const RefTetraPartitionCL&); ///< Debug-output to a stream (dumps all members)
 };
 
-void CombinatorialCutCL::assign (const double ls[4])
+void SignPatternTraitCL::assign (const double ls[4])
 {
     num_root_vert_= num_root_= 0;
 
@@ -196,7 +199,7 @@ void CombinatorialCutCL::assign (const double ls[4])
         throw DROPSErrCL( "InterfacePatchCL::assign: found 3-dim. zero level set, grid is too coarse!");
 }
 
-std::ostream& operator<< (std::ostream& out, const CombinatorialCutCL& c)
+std::ostream& operator<< (std::ostream& out, const SignPatternTraitCL& c)
 {
     out << static_cast<int>( c.num_root_vert_) << ' ' << static_cast<int>( c.num_root_) << '\n';
     for (int i= 0; i < 4; ++i)
@@ -211,26 +214,26 @@ std::ostream& operator<< (std::ostream& out, const CombinatorialCutCL& c)
 }
 
 inline bool
-CombinatorialTriangleCL::assign (const CombinatorialCutCL& cut)
+RefTetraSurfacePatchCL::assign (const SignPatternTraitCL& cut)
 {
     for (size_= 0; size_ < num_triangles( cut); ++size_)
         triangle_[size_]= MakeTriangle( cut(size_), cut(size_ + 1), cut(size_ + 2));
     return empty();
 }
 
-inline const CombinatorialTriangleCL&
-CombinatorialTriangleCL::instance (const double ls[4])
+inline const RefTetraSurfacePatchCL&
+RefTetraSurfacePatchCL::instance (const double ls[4])
 {
-    static CombinatorialTriangleCL instances_[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
+    static RefTetraSurfacePatchCL instances_[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
 
-    CombinatorialTriangleCL& instance= instances_[instance_idx ( ls)];
+    RefTetraSurfacePatchCL& instance= instances_[instance_idx ( ls)];
     if ( !instance.is_initialized())
-        instance.assign( CombinatorialCutCL( ls));
+        instance.assign( SignPatternTraitCL( ls));
     return instance;
 }
 
 inline void
-CombinatorialTetraCutCL::AddPrism (Ubyte e0, Ubyte e1, Ubyte f0, Ubyte f1, Ubyte g0, Ubyte g1, int sign)
+RefTetraPartitionCL::AddPrism (Ubyte e0, Ubyte e1, Ubyte f0, Ubyte f1, Ubyte g0, Ubyte g1, int sign)
 {
     AddTetra( e0, e1, f1, g1, sign);
     AddTetra( e0, f0, f1, g1, sign);
@@ -238,7 +241,7 @@ CombinatorialTetraCutCL::AddPrism (Ubyte e0, Ubyte e1, Ubyte f0, Ubyte f1, Ubyte
 }
 
 inline Ubyte
-CombinatorialTetraCutCL::some_non_zero_vertex (const CombinatorialCutCL& cut) const
+RefTetraPartitionCL::some_non_zero_vertex (const SignPatternTraitCL& cut) const
 {
     Ubyte v;
     for (v= 0; cut[v] == v && v < cut.num_zero_vertexes(); ++v)
@@ -246,7 +249,7 @@ CombinatorialTetraCutCL::some_non_zero_vertex (const CombinatorialCutCL& cut) co
     return v;
 }
 
-std::ostream& operator<< (std::ostream& out, const CombinatorialTetraCutCL& c)
+std::ostream& operator<< (std::ostream& out, const RefTetraPartitionCL& c)
 {
     out << c.end_ - c.begin_ << ' ' << c.tetras_ - c.begin_ << '\n';
     for (Uint i= 0; i < c.end_ - c.begin_; ++i) {
@@ -257,7 +260,7 @@ std::ostream& operator<< (std::ostream& out, const CombinatorialTetraCutCL& c)
     return out;
 }
 
-bool CombinatorialTetraCutCL::assign (const CombinatorialCutCL& cut)
+bool RefTetraPartitionCL::assign (const SignPatternTraitCL& cut)
 {
     end_= begin_= tetras_ + 3;
 
@@ -309,21 +312,23 @@ bool CombinatorialTetraCutCL::assign (const CombinatorialCutCL& cut)
     return is_uncut();
 }
 
-inline const CombinatorialTetraCutCL&
-CombinatorialTetraCutCL::instance (const double ls[4])
+inline const RefTetraPartitionCL&
+RefTetraPartitionCL::instance (const double ls[4])
 {
-    static CombinatorialTetraCutCL instances_[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
+    static RefTetraPartitionCL instances_[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
 
-    CombinatorialTetraCutCL& instance= instances_[instance_idx (ls)];
+    RefTetraPartitionCL& instance= instances_[instance_idx (ls)];
     if ( !instance.is_initialized())
-        instance.assign( CombinatorialCutCL( ls));
+        instance.assign( SignPatternTraitCL( ls));
     return instance;
 }
+
+
 
 ///\brief Partition the principal lattice of a tetra t (n intervals on each edge) according to the sign of a levelset function ls.
 ///
 /// The sub-tetras, which are cut by the interface are triangulated to match the interface. The values of the level set function on the vertices of the principal lattice must be prescribed. The sequence of all tetrahedra contains the negative tetrahedra as initial subsequence.
-class CutTetraCL
+class TetraPartitionCL
 {
   public:
     typedef SArrayCL<Uint, 4> TetraT; ///< representation of a tetra of the partition via its vertices: index in the vertex_-array
@@ -339,10 +344,13 @@ class CutTetraCL
     VertexContT vertexes_; ///< All vertices of the partition. 
 
   public:
-    CutTetraCL () : pos_begin_( 0) {} ///< Empty default-cut
+    TetraPartitionCL () : pos_begin_( 0) {} ///< Empty default-cut
 
     ///\brief Computes the partition of the principal lattice with num_intervals on each edge of the reference-tetra given the level set values in ls.
     void partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls);
+
+    size_t tetra_size (TetraSignEnum s= AllTetraC) const ///< number of tetras with given sign
+         { return tetra_end( s) - tetra_begin( s); }
 
     /// Random-access to the tetras: all tetras, or negative and positive tetras separately, see TetraSignEnum.
     ///@{
@@ -357,12 +365,12 @@ class CutTetraCL
     const_vertex_iterator vertex_end   () const { return vertexes_.end(); }
     ///@}
 
-    friend std::ostream& operator<< (std::ostream&, const CutTetraCL&); ///< Debug-output to a stream (dumps all members)
-    friend void write_paraview_vtu (std::ostream&, const CutTetraCL&);  ///< Debug-output to a stream: VTU-format for paraview.
+    friend std::ostream& operator<< (std::ostream&, const TetraPartitionCL&); ///< Debug-output to a stream (dumps all members)
+    friend void write_paraview_vtu (std::ostream&, const TetraPartitionCL&, TetraSignEnum= AllTetraC);  ///< Debug-output to a stream: VTU-format for paraview.
 };
 
 ///\brief Partition the principal lattice of a tetra t (n intervals on each edge) according to the sign of a levelset function ls. This class computes the triangles of the resultin piecewise trianglular interface.
-class CutSurfaceCL
+class SurfacePatchCL
 {
     typedef SArrayCL<Uint, 3> TriangleT; ///< representation of a triangle of the interface via its vertices: index in the vertex_-array
     typedef std::vector<TriangleT> TriangleContT;
@@ -396,17 +404,17 @@ class CutSurfaceCL
     const_vertex_iterator vertex_end   () const { return vertexes_.end(); }
     ///@}
 
-    friend void write_paraview_vtu (std::ostream&, const CutSurfaceCL&); ///< Debug-output to a stream: VTU-format for paraview.
+    friend void write_paraview_vtu (std::ostream&, const SurfacePatchCL&); ///< Debug-output to a stream: VTU-format for paraview.
 };
 
 // GridFunDomainT: const TetraCL* tetra () const (may return 0); iterator (ueber BaryCoordCL) vertex_begin(), vertex_end()
 // TetraSubTriangCL + tetra_begin(), tetra_end()
 // PartitionedTetraSubTriangCL + tetra_begin() und tetra_end() haben ein default enum-arg : {AllTetra, PosTetra, NegTetra}
-// TetraCutSurfaceCL: GridFunDomainT + triangle_begin(), triangle_end()
+// TetraSurfacePatchCL: GridFunDomainT + triangle_begin(), triangle_end()
 // template <class GridFunT, class GridFunDomainT, class ResultContT> Evaluate (ResultContT& r, GridFunT& f, const GridFunDomainT& dom) { EvaluatorCL<GridFunT, GridFunDomainT>::evaluate( r, f, dom); }
 
 ///\todo The roots on the edges are inserted multiple times into vertexes_: use an associative map to cache them.
-void CutTetraCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
+void TetraPartitionCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
 
@@ -424,8 +432,8 @@ void CutTetraCL::partition_principal_lattice (Uint num_intervals, const GridFunc
     for (PrincipalLatticeCL::const_tetra_iterator lattice_tet= lat.tetra_begin(), lattice_end= lat.tetra_end(); lattice_tet != lattice_end; ++lattice_tet) {
         for (Uint i= 0; i < 4; ++i)
             lset[i]= ls[(*lattice_tet)[i]]; 
-        const CombinatorialTetraCutCL& cut= CombinatorialTetraCutCL::instance( lset);
-        for (CombinatorialTetraCutCL::const_tetra_iterator it= cut.tetra_begin(), end= cut.tetra_end(); it != end; ++it) {
+        const RefTetraPartitionCL& cut= RefTetraPartitionCL::instance( lset);
+        for (RefTetraPartitionCL::const_tetra_iterator it= cut.tetra_begin(), end= cut.tetra_end(); it != end; ++it) {
             for (Uint j= 0; j < 4; ++j) {
                 loc_vert_num= (*it)[j];
                 if (loc_vert_num < 4)
@@ -446,7 +454,7 @@ void CutTetraCL::partition_principal_lattice (Uint num_intervals, const GridFunc
 }
 
 ///\todo The roots on the edges are inserted multiple times into vertexes_: use an associative map to cache them.
-void CutSurfaceCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
+void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
     PrincipalLatticeCL::const_vertex_iterator lattice_verts= lat.vertex_begin();
@@ -460,9 +468,9 @@ void CutSurfaceCL::partition_principal_lattice (Uint num_intervals, const GridFu
     for (PrincipalLatticeCL::const_tetra_iterator lattice_tet= lat.tetra_begin(), lattice_end= lat.tetra_end(); lattice_tet != lattice_end; ++lattice_tet) {
         for (Uint i= 0; i < 4; ++i)
             lset[i]= ls[(*lattice_tet)[i]]; 
-        const CombinatorialTriangleCL& cut= CombinatorialTriangleCL::instance( lset);
+        const RefTetraSurfacePatchCL& cut= RefTetraSurfacePatchCL::instance( lset);
         if (cut.empty()) continue;
-        for (CombinatorialTriangleCL::const_triangle_iterator it= cut.triangle_begin(), end= cut.triangle_end(); it != end; ++it) {
+        for (RefTetraSurfacePatchCL::const_triangle_iterator it= cut.triangle_begin(), end= cut.triangle_end(); it != end; ++it) {
             for (Uint j= 0; j < 3; ++j) {
                 tri[j]= vertexes_.size();
                 loc_vert_num= (*it)[j];
@@ -483,26 +491,26 @@ void CutSurfaceCL::partition_principal_lattice (Uint num_intervals, const GridFu
     }
 }
 
-std::ostream& operator<< (std::ostream& out, const CutTetraCL& t)
+std::ostream& operator<< (std::ostream& out, const TetraPartitionCL& t)
 {
     out << t.tetras_.size() << ' ' << t.pos_begin_ << '\n';
-    std::copy( t.tetras_.begin(), t.tetras_.end(), std::ostream_iterator<CutTetraCL::TetraT>( out));
+    std::copy( t.tetras_.begin(), t.tetras_.end(), std::ostream_iterator<TetraPartitionCL::TetraT>( out));
     out << '\n';
     std::copy( t.vertexes_.begin(), t.vertexes_.end(), std::ostream_iterator<BaryCoordCL>( out)) ;
     return out;
 }
 
 
-void write_paraview_vtu (std::ostream& file_, const CutTetraCL& t)
+void write_paraview_vtu (std::ostream& file_, const TetraPartitionCL& t, TetraSignEnum s)
 {
     file_ << "<?xml version=\"1.0\"?>"  << '\n'
           << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">"   << '\n'
           << "<UnstructuredGrid>"   << '\n';
 
-    file_<< "<Piece NumberOfPoints=\""<< t.vertexes_.size() <<"\" NumberOfCells=\""<< t.tetras_.size() << "\">";
+    file_<< "<Piece NumberOfPoints=\""<< t.vertexes_.size() <<"\" NumberOfCells=\""<< t.tetra_size( s) << "\">";
     file_<< "\n\t<Points>"
          << "\n\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"" << "ascii\">\n\t\t";
-    for(CutTetraCL::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
+    for(TetraPartitionCL::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
         file_ << it[0][1] << ' ' << it[0][2] << ' ' << it[0][3] << ' ';
     }
     file_<< "\n\t\t</DataArray> \n"
@@ -511,16 +519,16 @@ void write_paraview_vtu (std::ostream& file_, const CutTetraCL& t)
     file_   << "\t<Cells>\n"
             << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\""
             <<"ascii\">\n\t\t";
-    std::copy( t.tetras_.begin(), t.tetras_.end(), std::ostream_iterator<CutTetraCL::TetraT>( file_));
+    std::copy( t.tetra_begin( s), t.tetra_end( s), std::ostream_iterator<TetraPartitionCL::TetraT>( file_));
     file_ << "\n\t\t</DataArray>\n";
     file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
-    for(Uint i= 1; i <= t.tetras_.size(); ++i) {
+    for(Uint i= 1; i <= t.tetra_size( s); ++i) {
         file_ << i*4 << " ";
     }
     file_ << "\n\t\t</DataArray>";
     file_ << "\n\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n\t\t";
     const int tetraType= 10;
-    for(Uint i= 1; i <= t.tetras_.size(); ++i) {
+    for(Uint i= 1; i <= t.tetra_size( s); ++i) {
             file_ << tetraType<<" ";
     }
     file_<<"\n\t\t</DataArray>"
@@ -531,7 +539,7 @@ void write_paraview_vtu (std::ostream& file_, const CutTetraCL& t)
           <<"\n</VTKFile>";
 }
 
-void write_paraview_vtu (std::ostream& file_, const CutSurfaceCL& t)
+void write_paraview_vtu (std::ostream& file_, const SurfacePatchCL& t)
 {
     file_ << "<?xml version=\"1.0\"?>"  << '\n'
           << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">"   << '\n'
@@ -540,7 +548,7 @@ void write_paraview_vtu (std::ostream& file_, const CutSurfaceCL& t)
     file_<< "<Piece NumberOfPoints=\""<< t.vertexes_.size() <<"\" NumberOfCells=\""<< t.triangles_.size() << "\">";
     file_<< "\n\t<Points>"
          << "\n\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"" << "ascii\">\n\t\t";
-    for(CutSurfaceCL::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
+    for(SurfacePatchCL::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
         file_ << it[0][1] << ' ' << it[0][2] << ' ' << it[0][3] << ' ';
     }
     file_<< "\n\t\t</DataArray> \n"
@@ -549,7 +557,7 @@ void write_paraview_vtu (std::ostream& file_, const CutSurfaceCL& t)
     file_   << "\t<Cells>\n"
             << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\""
             <<"ascii\">\n\t\t";
-    std::copy( t.triangles_.begin(), t.triangles_.end(), std::ostream_iterator<CutSurfaceCL::TriangleT>( file_));
+    std::copy( t.triangles_.begin(), t.triangles_.end(), std::ostream_iterator<SurfacePatchCL::TriangleT>( file_));
     file_ << "\n\t\t</DataArray>\n";
     file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
     for(Uint i= 1; i <= t.triangles_.size(); ++i) {
@@ -576,7 +584,7 @@ void test_tetra_cut ()
 {
     DROPS::GridFunctionCL<> ls( 4);
     ls[0]= -1.; ls[1]= 0.; ls[2]= 0.; ls[3]= 0.;
-    DROPS::CutTetraCL tet;
+    DROPS::TetraPartitionCL tet;
     // tet.partition_principal_lattice ( 1, ls);
     // std::cerr << tet;
     int c= 0;
@@ -587,8 +595,8 @@ void test_tetra_cut ()
               if (i == 0 && j == 0 && k == 0 && l == 0) continue;
               ls[0]= i; ls[1]= j; ls[2]= k; ls[3]= l;
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
-              DROPS::CombinatorialTetraCutCL cut( static_cast<double*>(&ls[0]));
-              DROPS::CombinatorialCutCL comb_cut( static_cast<double*>(&ls[0]));
+              DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
+              DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
               tet.partition_principal_lattice ( 1, ls);
 //              if (c == 5) {
 //                  std::cerr << comb_cut << std::endl;
@@ -606,7 +614,7 @@ void test_cut_surface ()
 {
     DROPS::GridFunctionCL<> ls( 4);
     ls[0]= -1.; ls[1]= 0.; ls[2]= 0.; ls[3]= 0.;
-    DROPS::CutSurfaceCL tet;
+    DROPS::SurfacePatchCL tet;
     // tet.partition_principal_lattice ( 1, ls);
     // std::cerr << tet;
     int c= 0;
@@ -617,8 +625,8 @@ void test_cut_surface ()
               if (i == 0 && j == 0 && k == 0 && l == 0) continue;
               ls[0]= i; ls[1]= j; ls[2]= k; ls[3]= l;
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
-              DROPS::CombinatorialTetraCutCL cut( static_cast<double*>(&ls[0]));
-              DROPS::CombinatorialCutCL comb_cut( static_cast<double*>(&ls[0]));
+              DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
+              DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
               tet.partition_principal_lattice ( 1, ls);
               std::ostringstream name;
               name << "hallo_surf" << c << ".vtu";
@@ -642,12 +650,46 @@ void test_principal_lattice ()
     }
 }
 
+inline double sphere (const DROPS::Point3DCL& p)
+{
+    return p.norm() - 0.5;
+}
+
+void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& lat, double (*f)(const DROPS::Point3DCL& p))
+{
+    for (DROPS::PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it) {
+        dest[it - lat.vertex_begin()]= f( DROPS::MakePoint3D( it[0][1], it[0][2], it[0][3]));
+    }
+}
+
+void test_sphere_cut ()
+{
+    const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( 10);
+    DROPS::GridFunctionCL<> ls( lat.num_vertexes());
+    evaluate( ls, lat, &sphere);
+    DROPS::TetraPartitionCL tet;
+    tet.partition_principal_lattice( 10, ls);
+    std::ostringstream name;
+    name << "sphere.vtu";
+    std::ofstream file( name.str().c_str());
+    DROPS::write_paraview_vtu( file, tet, DROPS::NegTetraC);
+    file.close();
+
+    DROPS::SurfacePatchCL surf;
+    surf.partition_principal_lattice( 10, ls);
+    name.str( "");
+    name << "sphere_surf.vtu";
+    file.open( name.str().c_str());
+    DROPS::write_paraview_vtu( file, surf);
+}
+
 int main()
 {
     try {
-        test_tetra_cut();
-        test_cut_surface();
-        test_principal_lattice();
+        // test_tetra_cut();
+        // test_cut_surface();
+        // test_principal_lattice();
+        test_sphere_cut ();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;
