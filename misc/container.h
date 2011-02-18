@@ -499,6 +499,42 @@ MakePoint2D(double a, double b)
     return ret;
 }
 
+template<class T>
+SArrayCL<T, 2>
+MakeSArray(T a, T b)
+{
+    SArrayCL<T, 2> ret( Uninitialized);
+    ret[0]= a; ret[1]= b;
+    return ret;
+}
+
+template<class T>
+SArrayCL<T, 3>
+MakeSArray(T a, T b, T c)
+{
+    SArrayCL<T, 3> ret( Uninitialized);
+    ret[0]= a; ret[1]= b; ret[2]= c;
+    return ret;
+}
+
+template<class T>
+SArrayCL<T, 4>
+MakeSArray(T a, T b, T c, T d)
+{
+    SArrayCL<T, 4> ret( Uninitialized);
+    ret[0]= a; ret[1]= b; ret[2]= c; ret[3]= d;
+    return ret;
+}
+
+template <class T, Uint _Size>
+std::ostream& operator<<(std::ostream& os, const SArrayCL<T,_Size>& a)
+{
+//    os << v.size() << "    ";
+    for (Uint i=0; i<a.size(); ++i)
+        os << a[i] << ' ';
+    return os;
+}
+
 template <Uint _Rows, Uint _Cols>
 class SMatrixCL : public SVectorCL<_Rows*_Cols>
 {
