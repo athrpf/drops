@@ -50,37 +50,35 @@ struct LinearCombinationCL
   { return a0*c[0] + a1*c[1] + a2*c[2] + a3*c[3] + a4*c[4] + a5*c[5] + a6*c[6] + a7*c[7] + a8*c[8] + a9*c[9]; }
 };
 
-template <Uint N>
-template<class Cont>
+template<class Cont, Uint N>
 struct LinearCombinationCL<Cont, SVectorCL<N> >
 {
     static inline SVectorCL<N> do_it(const Cont& c, double a0, double a1, double a2, double a3) {
         SVectorCL<N> ret( Uninitialized);
-        for (int i= 0; i < N; ++i)
+        for (Uint i= 0; i < N; ++i)
             ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i];
         return ret;
     }
     static inline SVectorCL<N> do_it(const Cont& c, double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8, double a9) {
         SVectorCL<N> ret( Uninitialized);
-        for (int i= 0; i < N; ++i)
+        for (Uint i= 0; i < N; ++i)
             ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i] + a4*c[4][i] + a5*c[5][i] + a6*c[6][i] + a7*c[7][i] + a8*c[8][i] + a9*c[9][i];
         return ret;
     }
 };
 
-template <Uint M, Uint N>
-template<class Cont>
+template<class Cont, Uint M, Uint N>
 struct LinearCombinationCL<Cont, SMatrixCL<M,N> >
 {
     static inline SMatrixCL<M,N> do_it(const Cont& c, double a0, double a1, double a2, double a3) {
         SMatrixCL<M,N> ret( Uninitialized);
-        for (int i= 0; i < M*N; ++i)
+        for (Uint i= 0; i < M*N; ++i)
             ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i];
         return ret;
     }
     static inline SMatrixCL<M,N> do_it(const Cont& c, double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8, double a9) {
         SMatrixCL<M,N> ret( Uninitialized);
-        for (int i= 0; i < M*N; ++i)
+        for (Uint i= 0; i < M*N; ++i)
             ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i] + a4*c[4][i] + a5*c[5][i] + a6*c[6][i] + a7*c[7][i] + a8*c[8][i] + a9*c[9][i];
         return ret;
     }
