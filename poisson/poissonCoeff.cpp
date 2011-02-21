@@ -1,6 +1,6 @@
 /// \file poissonCoeff.cpp
 /// \brief boundary and source functions for the poisson-type problems
-/// \author LNM RWTH Aachen: Christoph Lehrenfeld
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande
 
 /*
  * This file is part of DROPS.
@@ -31,19 +31,19 @@
 
 double Heat(const DROPS::Point3DCL&, double)
 {
-	extern DROPS::ParamPoissonProblemCL C;
-	return C.exp_Heat/C.exp_Lambda*1e-3;
+    extern DROPS::ParamPoissonProblemCL C;
+    return C.exp_Heat/C.exp_Lambda*1e-3;
 }
 
 /// boundary description of a neumann problem
 // uses constant function f = (-1)^seg *4.0
 template<int sel>
-double NeuConst( const DROPS::Point3DCL& , double ){return std::pow(-1,sel)*4.0; }
+double NeuConst( const DROPS::Point3DCL& , double ){return std::pow(-1.,sel)*4.0; }
 
 /// boundary description of a neumann problem
 // uses exp-function f =  e^(t)* e^(px + py + pz)
 template<int sel>
-double NeuExp( const DROPS::Point3DCL& p, double t){return std::pow(-1,sel)*std::exp(t)*std::exp(p[0]+p[1]+p[2]); }
+double NeuExp( const DROPS::Point3DCL& p, double t){return std::pow(-1.,sel)*std::exp(t)*std::exp(p[0]+p[1]+p[2]); }
 
 /// boundary description of a neumann problem
 // uses polynomial function
@@ -53,7 +53,7 @@ double NeuPoly( const DROPS::Point3DCL& p, double ){return -64.0*p[0]*p[1]*(1.0-
 DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 {
     extern DROPS::ParamPoissonProblemCL C;
-    
+
     static bool first = true;
     static double dx, dy;
     //dirty hack
@@ -66,7 +66,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
         brick_info >> dx >> dy;
         first = false;
     }
-    
+
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
         u= C.exp_Rho*9.81*dy*dy/2/C.exp_Mu*1e-3;
@@ -137,7 +137,6 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
  *   - given solution (adapted r.h.s) \n*
  ****************************************/
  namespace PoissonExample2{
-   
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
@@ -178,7 +177,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
  *   - source = 1                     \n*
  ****************************************/
  namespace PoissonExample3{
-   
+
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
@@ -188,7 +187,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
         DROPS::Point3DCL v(0.);
         v[0] = 1.0;
         return v; 
-    } 
+    }
     /// \brief Right-hand side
     double Source(const DROPS::Point3DCL&, double){
         return 1.0; 
