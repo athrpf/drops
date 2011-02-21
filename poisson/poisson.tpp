@@ -975,7 +975,8 @@ inline double QuadP2( const TetraCL& sit, Uint face, const BndDataCL<> BndData_,
         LocalP2CL<>p2[10];
         for (int k=0; k<10; ++k)
             p2[k][k]=1.;
-        BaryCoordCL BaryC_face[3]=BaryCoordCL(0.0);
+        BaryCoordCL BaryC_face[3];
+        // std::memset( BaryC_face, 0, 3*sizeof( BaryCoordCL));
         const VertexCL* v[3];
         for (Uint n= 0; n < 3; ++n) 
         v[n]= sit.GetVertex( VertOfFace( face, n));
@@ -984,9 +985,7 @@ inline double QuadP2( const TetraCL& sit, Uint face, const BndDataCL<> BndData_,
             for(int j=0;j<4;j++)
               if(sit.GetVertex(j)==v[i])
                  BaryC_face[i][j]=1.0;
-                 
-        }     
-                                   
+        }
         Quad5_2DCL<> bnd, P2[10];
         P2[m].assign(p2[m], BaryC_face);
             bnd.assign(sit, BaryC_face, BndData_.GetBndFun(sit.GetBndIdx(face)));
