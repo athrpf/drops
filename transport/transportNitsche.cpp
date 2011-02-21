@@ -1,6 +1,6 @@
 /// \file transportNitsche.cpp
 /// \brief Classes that constitute a 2-phase-transport-problem with Nitsche-XFEM discretization.
-/// \author Trung Hieu Nguyen (small fixes: Martin Horsky, Christoph Lehrenfeld), IGPM
+/// \author Trung Hieu Nguyen (small fixes: Martin Horsky, Christoph Lehrenfeld, Joerg Grande) IGPM
 
 /*
  * This file is part of DROPS.
@@ -47,7 +47,7 @@ void TransportP1XCL::Init (instat_scalar_fun_ptr cn, instat_scalar_fun_ptr cp, d
     const IdxDescCL& idx2 = oldidx.GetFinest();
     const ExtIdxDescCL& Xidx= idx1.GetXidx();
     const ExtIdxDescCL& oldXidx= idx2.GetXidx();
-    
+
     DROPS_FOR_TRIANG_VERTEX( MG_, lvl, it) {    
         if (it->Unknowns.Exist( ctidx)){
            bool nPart = lset_.Data[it->Unknowns( lset_.RowIdx->GetIdx())] <= 0.;
@@ -56,12 +56,12 @@ void TransportP1XCL::Init (instat_scalar_fun_ptr cn, instat_scalar_fun_ptr cp, d
             else
                 ct.Data[it->Unknowns( ctidx)]= cp( it->GetCoord(), t);
             if (Xidx[it->Unknowns(ctidx)]==NoIdx) continue; //no xfem-enrichment function on this vertex
-            
+
             // xfem coefficients are set s.t. discontinuity is realized across
             // the interface
             ct.Data[Xidx[it->Unknowns( ctidx)]]=cp( it->GetCoord(), t)- H_*cn( it->GetCoord(), t);
         }
-    }    
+    }
     // loop is called a second time, as  oldctidx and ctidx may differ
     DROPS_FOR_TRIANG_VERTEX( MG_, lvl, it) {
         if (it->Unknowns.Exist( oldctidx)){
@@ -76,10 +76,10 @@ void TransportP1XCL::Init (instat_scalar_fun_ptr cn, instat_scalar_fun_ptr cp, d
             oldct.Data[oldXidx[it->Unknowns( oldctidx)]]=cp( it->GetCoord(), t)- H_*cn( it->GetCoord(), t);
         }
     }
-    
+
     //TransformWithScaling(ct, c, 1.0/GetHenry(true), 1.0/GetHenry(false));
     // \todo: as soon as c_in and c_out are members of masstransp they should be initialized as well (?)
-    
+
 }
 
 /// Transform from a concentration (P1X) to another scaled 
@@ -107,14 +107,14 @@ void TransportP1XCL::TransformWithScaling (const VecDescCL& concin, VecDescCL& c
               fac = scalingp;
               ofac = scalingn;
             }
-              
+
             concout.Data[it->Unknowns( ctidx)]= fac * concin.Data[it->Unknowns( ctidx)];
             if (Xidx[it->Unknowns(ctidx)]==NoIdx) 
               continue; //no xfem-enrichment function on this vertex
             else
               concout.Data[Xidx[it->Unknowns( ctidx)]] = ofac * concin.Data[Xidx[it->Unknowns( ctidx)]];
         }
-    }    
+    }
 }
 
 
@@ -193,7 +193,7 @@ void TransportP1XCL::SetNewIdx()
     cplA.SetIdx( &idx);
     cplC.SetIdx( &idx);
     b.SetIdx( &idx);
- 
+
     M.Data.clear();
     M.SetIdx( &idx, &idx);
     A.Data.clear();
@@ -286,31 +286,31 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP1CL n;
     bool sign[4];
-    
+
     P1FEGridfunctions p1feq;
     TransformedP1FiniteElement transfp1fel(p1feq);
-    
+
     GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
 	
     ConvDiffElementMatrices elmats;
     ConvDiffElementVectors elvecs;
 
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
-        
+
         transfp1fel.SetTetra(*sit);
-        
+
         n.assign( *sit, RowIdx, Bndt_);
         InterfaceTetraCL cut;
         cut.Init( *sit, lset_,0.);
         bool nocut=!cut.Intersects();
-        
+
         LocalConvDiffCoefficients local_cdcoef(global_cdcoef,*sit,time);
-        
+
         elmats.ResetAll();
         elvecs.ResetAll();
 
         SetupLocalRhs( elvecs.f, local_cdcoef.GetSourceAsQuad5(), transfp1fel); 
-        
+
         if (nocut) // tetra is not intersected by the interface
         {
             bool pPart= (cut.GetSign( 0) == 1);
@@ -322,8 +322,8 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
             SetupLocalOneInterfaceSystem(transfp1fel, cut, elmats, local_cdcoef);
             SetupLocalTwoPhaseRhs(transfp1fel, cut, elvecs, local_cdcoef);
             elmats.SetUnsignedAsSumOfSigned(); 
-        } 
-        
+        }
+
         // assemble couplings between standard basis functions
         for(int i= 0; i < 4; ++i)
             if (n.WithUnknowns( i)){
@@ -370,7 +370,7 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
                 if((xidx_i!=NoIdx) && (b!=0))
                     b->Data[xidx_i] +=sign[i] ?  - elvecs.f_n[i] :elvecs.f_p[i];
             }
-        
+
     }
 
     A.Build();
@@ -402,7 +402,7 @@ void TransportP1XCL::SetupInstatRhs( VecDescCL & b,  const double time) const
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP1CL n;
     bool sign[4];
-    
+
     P1FEGridfunctions p1feq;
     TransformedP1FiniteElement transfp1fel(p1feq);
 	
@@ -433,7 +433,7 @@ void TransportP1XCL::SetupInstatRhs( VecDescCL & b,  const double time) const
                 if (xidx_i!=NoIdx)
                     b.Data[xidx_i] +=sign[i] ?  - elvecs.f_n[i] :elvecs.f_p[i];
             }
-    }  
+    }
 }
 
 void TransportP1XCL::GetSolutionOnPart( VecDescCL& ct_part, bool pPart, bool Is_ct)
@@ -513,7 +513,7 @@ void TransportP1XCL::SetupNitscheSystem( MatrixCL& matA, IdxDescCL& RowIdx/*, bo
 //         LocalP2CL<Point3DCL> lp2_grad_lset(lp1_grad_lset);  
         patch.ComputeSubTets();
         Uint NumTets=patch.GetNumTetra(); /// # of subtetras
-        
+
         for (Uint k=0; k< NumTets; ++k){
             bool pPart= (k>=patch.GetNumNegTetra());
             const SArrayCL<BaryCoordCL,4>& TT =  patch.GetTetra(k);
@@ -565,15 +565,15 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
     LocalNumbP1CL n;
     bool sign[4], oldsign[4], nocut, nocut1;
     // The 16 products of the P1-shape-functions
-    
+
     P1FEGridfunctions p1feq;
     TransformedP1FiniteElement transfp1fel(p1feq);
-//    
+//
 //    GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
 //	
 //    ConvDiffElementMatrices elmats;
 //    ConvDiffElementVectors elvecs;    
-    
+
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) { 
         transfp1fel.SetTetra(*sit);
         n.assign( *sit, RowIdx, Bndt_);
@@ -582,7 +582,7 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
         oldcut.Init( *sit, oldlset_,0.);
         nocut=!cut.Intersects();
         nocut1=!oldcut.Intersects();
-        
+
         double M_P1_P1[4][4],                  ///< (FEM, FEM)
                M_P1_XOLD_n[4][4], M_P1_XOLD_p[4][4],   ///< (test FEM, old XFEM)
                M_XNEW_P1_n[4][4], M_XNEW_P1_p[4][4],   ///< (test new XFEM, FEM) with only new interface
@@ -595,7 +595,7 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
         std::memset( M_XNEW_P1_n,0, 4*4*sizeof(double));
         std::memset( M_P1_XOLD_p,0, 4*4*sizeof(double));
         std::memset( M_XNEW_P1_p,0, 4*4*sizeof(double));
-        
+
         // compute matrices
         // the old interface doesn't cut the tetra 
         if ( nocut1) {
@@ -679,14 +679,14 @@ double TransportP1XCL::Interface_L2error() const
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP1CL ln;
     double err_sq=0.;
-   
+
     DROPS_FOR_TRIANG_TETRA( MG_, /*default level*/lvl, it)
     {
         InterfaceTriangleCL triangle;
         triangle.Init( *it, lset_,0.);
         if (!triangle.Intersects()) continue;
         ln.assign( *it, RowIdx, Bndt_); 
-            
+
         for (int ch= 0; ch < 8; ++ch) {
             triangle.ComputeForChild( ch);
             for (int t= 0; t < triangle.GetNumTriangles(); ++t) {
@@ -702,8 +702,8 @@ double TransportP1XCL::Interface_L2error() const
                         jump_on_Gamma+= p1[i]*ct.Data[xidx_i];
                     } 
                 err_sq+=  Quad5_2DCL<>(jump_on_Gamma*jump_on_Gamma).quad(det);             
-            } 
-        }        
+            }
+        }
     }
     return std::sqrt(err_sq); 
 }
@@ -711,7 +711,7 @@ double TransportP1XCL::Interface_L2error() const
 //*****************************************************************************
 //                               TransportXRepairCL
 //*****************************************************************************
-inline void
+void
 TransportXRepairCL::post_refine ()
 {
     VecDescCL loc_ct;
@@ -743,13 +743,13 @@ TransportXRepairCL::post_refine ()
     oldct.Data= loc_oldct.Data;
 }
 
-inline void
+void
   TransportXRepairCL::pre_refine_sequence ()
 {
     oldp1xrepair_= std::auto_ptr<P1XRepairCL>( new P1XRepairCL( c_.GetMG(), c_.oldct));
 }
 
-inline void
+void
   TransportXRepairCL::post_refine_sequence ()
 {
      c_.CreateNumbering(c_.GetMG().GetLastLevel(), &c_.idx, &c_.oldidx, (c_.GetLevelset()), (c_.GetOldLevelset()));
@@ -758,18 +758,18 @@ inline void
      c_.ct.SetIdx( &c_.idx);
 }
 
-inline const IdxDescCL* TransportXRepairCL::GetIdxDesc() const {
+const IdxDescCL* TransportXRepairCL::GetIdxDesc() const {
   throw DROPSErrCL( "TransportXRepairCL::GetIdxDesc: Sorry, not yet implemented.");
   return 0;
 }
 
 
-inline const IdxDescCL* VelTranspRepairCL::GetIdxDesc() const {
+const IdxDescCL* VelTranspRepairCL::GetIdxDesc() const {
   throw DROPSErrCL( "VelTranspRepairCL::GetIdxDesc: Sorry, not yet implemented.");
   return 0;
 }
 
-inline void
+void
   VelTranspRepairCL::post_refine ()
 {
     VelVecDescCL loc_v;
@@ -852,7 +852,7 @@ inline void
         //          ++counter3;
           }
          }
-  */  
+  */
 #ifdef _PAR
     GetPMG().HandleNewIdx(&v.vel_idx, &loc_v);
 #endif
