@@ -34,7 +34,7 @@
  // include parallel computing!
 #ifdef _PAR
 #include "parallel/parallel.h"          // proc handling, reduce operations, ...
-#include "parallel/partime.h"           // parallel time-messurement
+#include "parallel/partime.h"           // parallel time-measurement
 #include "parallel/parmultigrid.h"      // handle multigrid over different procs
 #include "parallel/loadbal.h"           // distribute multigrid
 #include "num/parsolver.h"              // various parallel solvers
