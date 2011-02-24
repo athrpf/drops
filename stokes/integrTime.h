@@ -101,7 +101,7 @@ class InstatStokesThetaSchemeCL : public TimeDiscStokesCL< StokesT, SolverT>
 //**************************************************************************
 {
   private:
-	typedef TimeDiscStokesCL< StokesT, SolverT> base_;
+    typedef TimeDiscStokesCL< StokesT, SolverT> base_;
     using base_:: _Stokes;
     using base_:: _solver;
 
@@ -159,6 +159,10 @@ class StokesFracStepSchemeCL : public BaseMethod<StokesT, SolverT>
         dt3_= dt;
     }
 
+    void SetTimeStep( double dt, double) { // overwrites baseclass-version
+        dt3_= dt;
+    }
+
     void DoSubStep( VectorCL& v, VectorCL& p) {
         std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << step_ << '\n';
         base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
@@ -191,7 +195,7 @@ class SchurPreBaseCL: public PreBaseCL
   protected:
     double kA_,   ///< scaling factor for pressure stiffness matrix or equivalent
            kM_;   ///< scaling factor for pressure mass matrix
-           
+
   public:
     SchurPreBaseCL( double kA, double kM, std::ostream* output=0) : PreBaseCL( output), kA_( kA), kM_( kM) {}
     virtual ~SchurPreBaseCL() {}
@@ -485,7 +489,6 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 #else
         solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
 #endif
-//        IF_MASTER
 //            std::cout << "ISBBTPreCL p: iterations: " << solver_.GetIter()
 //                       << "\tresidual: " <<  solver_.GetResid();
         if (solver_.GetIter() == solver_.GetMaxIter()){
@@ -498,7 +501,6 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     if (kM_ != 0.0) {
         Vec p2_( c.size());
         solver2_.Solve( *M_, p2_, c);
-//        IF_MASTER
 //            std::cout << "\tISBBTPreCL p2: iterations: " << solver2_.GetIter()
 //                       << "\tresidual: " <<  solver2_.GetResid()
 //                       << '\n';
@@ -765,7 +767,6 @@ void ISNonlinearPreCL<ASolverT, MSolverT>::Apply(const Mat&, Vec& p, const Vec& 
     p= 0.0;
     if (kA_ != 0.0) {
         Asolver_.Solve( A_, p, c);
-//     IF_MASTER
 //       std::cout << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
 //                 << "\tresidual: " <<  solver_.GetResid()<<std::endl;
         p*= kA_;
@@ -773,7 +774,6 @@ void ISNonlinearPreCL<ASolverT, MSolverT>::Apply(const Mat&, Vec& p, const Vec& 
     if ( kM_ != 0.0) {
         Vec p2_( c.size());
         Msolver_.Solve( M_, p2_, c);
-//         IF_MASTER
 //           std::cout << "\t p2: iterations: " << solver_.GetIter()
 //                     << "\tresidual: " <<  solver_.GetResid()
 //                     << '\n';

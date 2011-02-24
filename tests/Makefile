@@ -166,7 +166,7 @@ quad5: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 downwind: \
-    ../tests/downwind.o ../misc/utils.o
+    ../tests/downwind.o ../misc/utils.o ../geom/multigrid.o ../geom/simplex.o ../geom/topo.o ../num/unknowns.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 quad5_2D: \
