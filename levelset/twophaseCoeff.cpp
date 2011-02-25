@@ -282,11 +282,8 @@ namespace filmperiodic{
         const int B = (A+1)%3;
         const int D = (B+1)%3;
         const DROPS::Point3DCL d= fabs(p-q), L= fabs(dx);
-        bool res = (d[B] + d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12);
         
-        DROPS::Point3DCL diff = p - q;
-        if (res) std::cout << " diff = " << diff << std::endl;
-        return res;
+        return (d[B] + d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12);
     }
     
     //========================================================================
