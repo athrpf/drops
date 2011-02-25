@@ -50,10 +50,12 @@ void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomT
  * @param bnd_type function pointer which is used to construct the boundary description
  * @param bnd_type specify boundary types, e.g. 0!0!0!2!0!0, Dir0BC= 0, DirBC= 2
  * @param bnd_funcs specify boundary functions
+ * @param periodic_match prescribes periodic connections
+ * @param per_funcs is a string that is generated which sets b.c. to NoBC where boundary is non-periodic or to the corresponding periodic b.c. number
  */
 template< class BoundaryT>
 void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
-        const std::string& bnd_type, const std::string& bnd_funcs, match_fun periodic_match = 0);
+        const std::string& bnd_type, const std::string& bnd_funcs, match_fun periodic_match = 0, std::string* per_funcs = 0);
 
 } // end of namespace drops
 

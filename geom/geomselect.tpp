@@ -42,7 +42,7 @@ void readBoundary ( std::vector<T>& bndcond, const std::string& bnd_type)
 
 template< class BoundaryT>
 void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
-        const std::string& bnd_type_string, const std::string& bnd_funcs_string, match_fun periodic_match)
+        const std::string& bnd_type_string, const std::string& bnd_funcs_string, match_fun periodic_match, std::string* per_funcs)
 {
     const BoundaryCL& bnd= mgp->GetBnd();
     const BndIdxT num_bnd= bnd.GetNumBndSeg();
@@ -68,12 +68,14 @@ void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
         switch (bnd_types[i])
         {
             case DROPS::Per1BC:
-                perbndt[i] = BoundaryCL::Per1Bnd; break;
+                perbndt[i] = BoundaryCL::Per1Bnd; if (per_funcs) *per_funcs += "13"; break;
             case DROPS::Per2BC:
-                perbndt[i] = BoundaryCL::Per2Bnd; break;
+                perbndt[i] = BoundaryCL::Per2Bnd; if (per_funcs) *per_funcs += "11"; break;
             default:
-                perbndt[i] = BoundaryCL::OtherBnd; break;
+                perbndt[i] = BoundaryCL::OtherBnd; if (per_funcs) *per_funcs += "98"; break;
         }
+        if (i+1!=num_bnd && per_funcs)
+          *per_funcs += "!";
     }
 
     bnddata = new BoundaryT( num_bnd, bnd_types, bnd_fun);

@@ -69,7 +69,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
     //DROPS::ScaMap & scamap = DROPS::ScaMap::getInstance();
     //DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
+    DROPS::MatchMap & matchmap = DROPS::MatchMap::getInstance();
+
   
+    bool is_periodic = C.exp_UsePerMatching > 0;
+    match_fun periodic_match = is_periodic ? matchmap[C.exp_PerMatching] : 0;
+    
     MultiGridCL& MG= Stokes.GetMG();
 
     // initialization of surface tension
@@ -88,6 +93,36 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
 
     LevelsetP2CL lset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff);
+    
+    if (is_periodic) //CL: Anyone a better idea? perDirection from ParameterFile?
+    {
+        DROPS::Point3DCL dx;
+        //hack:
+        std::string mesh( C.dmc_MeshFile), delim("x@");
+        size_t idx_;
+        while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+            mesh[idx_]= ' ';
+        std::istringstream brick_info( mesh);
+        brick_info >> dx[0] >> dx[1] >> dx[2] ;
+        int n = 0;
+        if (C.exp_PerMatching == "periodicx" || C.exp_PerMatching == "periodicy" || C.exp_PerMatching == "periodicz")
+            n = 1;
+        if (C.exp_PerMatching == "periodicxy" || C.exp_PerMatching == "periodicxz" || C.exp_PerMatching == "periodicyz")
+            n = 2;
+        LevelsetP2CL::perDirSetT pdir(n);
+        if (C.exp_PerMatching == "periodicx") pdir[0][0] = dx[0];
+        if (C.exp_PerMatching == "periodicy") pdir[0][1] = dx[1];
+        if (C.exp_PerMatching == "periodicz") pdir[0][2] = dx[2];
+        if (C.exp_PerMatching == "periodicxy") {pdir[0][0] = dx[0]; pdir[1][1] = dx[1];}
+        if (C.exp_PerMatching == "periodicxz") {pdir[0][0] = dx[0]; pdir[1][2] = dx[2];}
+        if (C.exp_PerMatching == "periodicyz") {pdir[0][1] = dx[1]; pdir[1][2] = dx[2];}
+        if (C.exp_PerMatching != "periodicx" && C.exp_PerMatching != "periodicy" && C.exp_PerMatching != "periodicz" && 
+          C.exp_PerMatching != "periodicxy" && C.exp_PerMatching != "periodicxz" && C.exp_PerMatching != "periodicyz"){
+            std::cout << "WARNING: could not set periodic directions! Reparametrization can not work correctly now!" << std::endl;
+            std::cout << "Press any key to continue" << std::endl; getchar();
+        }
+        lset.SetPeriodicDirections(&pdir);
+    }
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -100,7 +135,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     MLIdxDescCL* vidx= &Stokes.vel_idx;
     MLIdxDescCL* pidx= &Stokes.pr_idx;
 
-    lset.CreateNumbering( MG.GetLastLevel(), lidx);
+    lset.CreateNumbering( MG.GetLastLevel(), lidx, periodic_match);
     lset.Phi.SetIdx( lidx);
     if (C.sft_VarTension)
         lset.SetSurfaceForce( SF_ImprovedLBVar);
@@ -113,9 +148,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
 
     SetInitialLevelsetConditions( lset, MG, C);
-
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_match);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_match, &lset);
     // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceding CreateNumberings
 //     Stokes.SetNumVelLvl ( 2);
 //     Stokes.SetNumPrLvl  ( 2);
@@ -138,14 +172,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     double Vol = 0;
 
     if (C.exp_InitialLSet == "Ellipsoid"){
-      Vol = EllipsoidCL::GetVolume();
-      std::cout << "initial volume: " << lset.GetVolume()/Vol << std::endl;
-      double dphi= lset.AdjustVolume( Vol, 1e-9);
-      std::cout << "initial volume correction is " << dphi << std::endl;
-      lset.Phi.Data+= dphi;
-      std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
+        Vol = EllipsoidCL::GetVolume();
+        std::cout << "initial volume: " << lset.GetVolume()/Vol << std::endl;
+        double dphi= lset.AdjustVolume( Vol, 1e-9);
+        std::cout << "initial volume correction is " << dphi << std::endl;
+        lset.Phi.Data+= dphi;
+        std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
     }else{
-      Vol = lset.GetVolume();
+        Vol = lset.GetVolume();
     }
     
     const DROPS::BndCondT c_bc[6]= {
@@ -211,7 +245,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
            (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
 
-    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
+    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol, is_periodic);
 
     // Time discretisation + coupling
     TimeDisc2PhaseCL* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
@@ -375,23 +409,34 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
+    DROPS::MatchMap & matchmap = DROPS::MatchMap::getInstance();
+    bool is_periodic = C.exp_UsePerMatching > 0;
+    DROPS::match_fun periodic_match = is_periodic ? matchmap[C.exp_PerMatching] : 0;
+
     DROPS::MultiGridCL* mg= 0;
-    DROPS::StokesBndDataCL* bnddata= 0;
+    typedef DROPS::BndDataCL<DROPS::Point3DCL> VelBndDataCL;
+    typedef DROPS::BndDataCL<double>    PrBndDataCL; 
+    VelBndDataCL *velbnddata = 0;
+    PrBndDataCL *prbnddata = 0;
     DROPS::LsetBndDataCL* lsetbnddata= 0;
 
     DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, C.rst_Inputfile, C.exp_RadInlet);
-    DROPS::BuildBoundaryData( mg, bnddata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
-
-    // todo: reasonable implementation needed
-    std::string lsetbndtype = "98" /*NoBC*/, lsetbndfun = "Zero";
-    for( size_t i= 1; i<mg->GetBnd().GetNumBndSeg(); ++i) {
-        lsetbndtype += "!98";
-        lsetbndfun  += "!Zero";
-    }
-
-    DROPS::BuildBoundaryData( mg, lsetbnddata, lsetbndtype, lsetbndfun);
-
     std::cout << "Generated MG of " << mg->GetLastLevel() << " levels." << std::endl;
+    
+    std::string perbndtypestr;
+    std::string zerobndfun;
+    for( size_t i= 1; i<=mg->GetBnd().GetNumBndSeg(); ++i) {
+        zerobndfun += "Zero";
+        if (i!=mg->GetBnd().GetNumBndSeg())
+          zerobndfun += "!";
+    }
+    DROPS::BuildBoundaryData( mg, velbnddata, C.dmc_BoundaryType, C.dmc_BoundaryFncs, periodic_match, &perbndtypestr);
+    std::cout << "Generated boundary conditions for velocity, ";
+    DROPS::BuildBoundaryData( mg, prbnddata, perbndtypestr, zerobndfun, periodic_match);
+    std::cout << "pressure, ";
+    DROPS::BuildBoundaryData( mg, lsetbnddata, perbndtypestr, zerobndfun, periodic_match);
+    std::cout << "and levelset." << std::endl;
+    DROPS::StokesBndDataCL bnddata(*velbnddata,*prbnddata);
 
     if (C.exp_InitialLSet == "Ellipsoid")
       DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
@@ -408,13 +453,14 @@ int main (int argc, char** argv)
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
-    DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
+    DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
     Strategy( prob, *lsetbnddata, adap);    // do all the stuff
 
     delete mg;
+    delete velbnddata;
+    delete prbnddata;
     delete lsetbnddata;
-    delete bnddata;
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
