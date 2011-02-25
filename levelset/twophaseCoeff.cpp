@@ -106,6 +106,38 @@ namespace levelsetdistance{
         return maxd;
     }
 
+
+    ///mzelle_ns_adap.cpp + mzelle_instat.cpp
+    template<int i>    
+    double PeriodicEllipsoidDistance( const DROPS::Point3DCL& p)
+    {
+      
+        static bool first = true;
+        static DROPS::Point3DCL dx;
+        //dirty hack
+        if (first){
+            std::string mesh( C.dmc_MeshFile), delim("x@");
+            size_t idx_;
+            while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+                mesh[idx_]= ' ';
+            std::istringstream brick_info( mesh);
+            brick_info >> dx[0] >> dx[1] >> dx[2] ;
+            first = false;
+        }      
+              
+        DROPS::Point3DCL dp;
+        dp[i] = dx[i];
+        DROPS::Point3DCL d= p - C.exp_PosDrop;
+        DROPS::Point3DCL d1= p + dp - C.exp_PosDrop;
+        DROPS::Point3DCL d2= p - dp - C.exp_PosDrop;
+        const double avgRad= cbrt(C.exp_RadDrop[0]*C.exp_RadDrop[1]*C.exp_RadDrop[2]);
+        d/= C.exp_RadDrop;
+        d1/= C.exp_RadDrop;
+        d2/= C.exp_RadDrop;
+        double dd = std::min(std::min(d.norm(),d1.norm()),d2.norm());
+        return std::abs( avgRad)*dd - avgRad;        
+    }
+
     template<int i>
     double planedistance( const DROPS::Point3DCL& p)
     {
@@ -117,6 +149,9 @@ namespace levelsetdistance{
     static DROPS::RegisterScalarFunction regsca_pdisty("planedistancey", planedistance<1>);
     static DROPS::RegisterScalarFunction regsca_pdistz("planedistancez", planedistance<2>);
     static DROPS::RegisterScalarFunction regscacube("CubeDistance", CubeDistance);
+    static DROPS::RegisterScalarFunction regscaperellx("perEllipsoidx", PeriodicEllipsoidDistance<0>);
+    static DROPS::RegisterScalarFunction regscaperelly("perEllipsoidy", PeriodicEllipsoidDistance<1>);
+    static DROPS::RegisterScalarFunction regscaperellz("perEllipsoidz", PeriodicEllipsoidDistance<2>);
 }
 
 //========================================================================

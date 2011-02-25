@@ -68,7 +68,7 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
   public:
     typedef P2EvalCL<double, const LsetBndDataCL, VecDescCL>       DiscSolCL;
     typedef P2EvalCL<double, const LsetBndDataCL, const VecDescCL> const_DiscSolCL;
-
+    typedef std::vector<Point3DCL> perDirSetT;
     IdxDescCL             idx;
     VecDescCL             Phi;        ///< level set function
 
@@ -87,15 +87,19 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     SurfaceTensionCL&   sf_;      ///< data for surface tension
     void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
+    perDirSetT* perDirections;    ///< periodic directions
 
   public:
     MatrixCL            E, H;
 
     LevelsetP2CL( MultiGridCL& mg, const LsetBndDataCL& bnd, SurfaceTensionCL& sf, double SD= 0, double curvDiff= -1)
     : base_( mg, LevelsetCoeffCL(), bnd), idx( P2_FE), curvDiff_( curvDiff), SD_( SD),
-        SF_(SF_ImprovedLB), sf_(sf)
+        SF_(SF_ImprovedLB), sf_(sf), perDirections(NULL)
     {}
 
+    ~LevelsetP2CL(){
+      if (perDirections) delete perDirections;
+    }
     /// \name Numbering
     ///@{
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0);
@@ -138,6 +142,14 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &BndData_, &MG_); }
     ///@}
+    
+    ///Set PeriodicDirections
+    void SetPeriodicDirections( perDirSetT* pperDirections)
+    {
+        if (perDirections != NULL) delete perDirections;
+        if (pperDirections != NULL) perDirections = new perDirSetT(pperDirections->size());
+        *perDirections = *pperDirections;
+    }
 };
 
 
