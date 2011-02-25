@@ -97,6 +97,8 @@ template<class StokesProblemT>
 void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, bool is_periodic)
 // flow control
 {
+  
+    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[C.exp_PerMatching];
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL* lidx= &lset.idx;
@@ -113,7 +115,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
     EnsightIdxRepairCL ensrepair( MG, ens_idx);
     adap.push_back( &ensrepair);
 
-    lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_xz);
+    lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_match);
     lset.Phi.SetIdx( lidx);
     DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[C.exp_InitialLSet];
     lset.Init( DistanceFct);
@@ -121,8 +123,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
     if ( StokesSolverFactoryHelperCL<ParamFilmCL>().PrMGUsed(C))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_xz);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_xz, &lset);
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_match);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_match, &lset);
     ens_idx.CreateNumbering( MG.GetLastLevel(), MG);
 
     Stokes.b.SetIdx( vidx);
@@ -349,6 +351,8 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
+    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[C.exp_PerMatching];
+    
     typedef DROPS::TwoPhaseFlowCoeffCL            CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL MyStokesCL;
 
@@ -404,7 +408,7 @@ int main (int argc, char** argv)
     MyStokesCL prob( *mgp, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, C.stk_XFEMStab);
 
     const DROPS::BoundaryCL& bnd= mgp->GetBnd();
-    bnd.SetPeriodicBnd( bndType, periodic_xz);
+    bnd.SetPeriodicBnd( bndType, periodic_match);
 
     sigma= prob.GetCoeff().SurfTens;
     DROPS::SurfaceTensionCL sf( sigmaf, 0);
