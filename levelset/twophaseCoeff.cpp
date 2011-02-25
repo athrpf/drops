@@ -28,7 +28,7 @@
 extern DROPS::ParamMesszelleNsCL C;
 
 //========================================================================
-//          Functions for twophasedrops-executable
+//          Functions for twophasedrops-executable (inflow)
 //========================================================================
 namespace tpd_inflow{
     /// \name inflow condition
@@ -89,6 +89,47 @@ namespace tpd_inflow{
     static DROPS::RegisterVectorFunction regvelchannel("InflowChannel", InflowChannel);
     static DROPS::RegisterVectorFunction regvelbricktransp("InflowBrickTransp", InflowBrickTransp);
 }
+
+
+//========================================================================
+//          Functions for twophasedrops-executable (Volume Force)
+//========================================================================
+namespace tpd_volforce{
+    /// \name inflow condition
+    template<int D>
+    DROPS::SVectorCL<3> PeriodicDropletPressure( const DROPS::Point3DCL& , double )
+    {
+        DROPS::SVectorCL<3> ret(0.);
+        ret[D] = -C.exp_Gravity[D];
+        
+        static bool first = true;
+        static DROPS::Point3DCL dx;
+        //dirty hack
+        if (first){
+            std::string mesh( C.dmc_MeshFile), delim("x@");
+            size_t idx_;
+            while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+                mesh[idx_]= ' ';
+            std::istringstream brick_info( mesh);
+            brick_info >> dx[0] >> dx[1] >> dx[2] ;
+            first = false;
+        }      
+        
+        static double voldrop = 4./3.*M_PI* C.exp_RadDrop[0]*C.exp_RadDrop[1]*C.exp_RadDrop[2] ;
+        static double brickvol = dx[0]* dx[1]* dx[2];
+        static double volforce = C.mat_DensFluid * brickvol - (C.mat_DensFluid - C.mat_DensDrop) * voldrop;
+        ret[D] *= volforce/brickvol;
+        return ret;
+    }
+
+    //========================================================================
+    //            Registration of functions in the func-container
+    //========================================================================
+    static DROPS::RegisterVectorFunction regvelppx("PeriodicDropletPressurex", PeriodicDropletPressure<0>);
+    static DROPS::RegisterVectorFunction regvelppy("PeriodicDropletPressurey", PeriodicDropletPressure<1>);
+    static DROPS::RegisterVectorFunction regvelppz("PeriodicDropletPressurez", PeriodicDropletPressure<2>);
+}
+
 
 //========================================================================
 //                       Functions for LevelSet Distance

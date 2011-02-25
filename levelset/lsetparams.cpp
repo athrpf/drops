@@ -199,6 +199,7 @@ void ParamExperimentalDataCL::RegisterParams()
     rp_.RegString( exp_InitialLSet,"InitialLSet", "Ellipsoid");
     rp_.RegInt( exp_UsePerMatching, "PeriodicBnds", 0);
     rp_.RegString( exp_PerMatching,"PeriodicMatching","periodicx");
+    rp_.RegString( exp_VolForce,"VolumeForce","ZeroVel");
     rp_.EndGroup();
 }
 
@@ -333,6 +334,7 @@ void ParamFilmCL::RegisterParams()
     rp_.RegString( exp_InitialLSet,"InitialLSet","WavyFilm");
     rp_.RegInt( exp_UsePerMatching,"PeriodicBnds", 1);
     rp_.RegString( exp_PerMatching,"PeriodicMatching","periodicxz");
+    rp_.RegString( exp_VolForce,"VolumeForce","ZeroVel");
     rp_.EndGroup();
 
     // miscellaneous

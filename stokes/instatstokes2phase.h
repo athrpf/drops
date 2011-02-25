@@ -32,6 +32,7 @@
 #include "levelset/mgobserve.h"
 #include "levelset/params.h"
 #include "num/MGsolver.h"
+#include "misc/bndmap.h"
 
 namespace DROPS
 {
@@ -90,6 +91,7 @@ class TwoPhaseFlowCoeffCL
   public:
     static Point3DCL f(const Point3DCL&, double)
         { Point3DCL ret(0.0); return ret; }
+    DROPS::instat_vector_fun_ptr volforce;
     const SmoothedJumpCL rho, mu;
     const double SurfTens;
     const Point3DCL g;
@@ -100,7 +102,9 @@ class TwoPhaseFlowCoeffCL
         mu(  dimless ? JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop)
                      : JumpCL( C.mat_ViscDrop, C.mat_ViscFluid), H_sm, C.mat_SmoothZone),
         SurfTens( dimless ? C.sft_SurfTension/C.mat_DensDrop : C.sft_SurfTension),
-        g( C.exp_Gravity)    {}
+        g( C.exp_Gravity)    {
+          volforce = InVecMap::getInstance()[C.exp_VolForce];
+        }
         
     TwoPhaseFlowCoeffCL( const ParamFilmCL& C, bool dimless = false)
       : rho( dimless ? JumpCL( 1., C.mat_DensGas/C.mat_DensFluid)
@@ -108,7 +112,9 @@ class TwoPhaseFlowCoeffCL
         mu(  dimless ? JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid)
                      : JumpCL( C.mat_ViscFluid, C.mat_ViscGas), H_sm, C.mat_SmoothZone),
         SurfTens( dimless ? C.mat_SurfTension/C.mat_DensFluid : C.mat_SurfTension),
-        g( C.exp_Gravity)    {}
+        g( C.exp_Gravity)    {
+          volforce = InVecMap::getInstance()[C.exp_VolForce];
+        }
 
     TwoPhaseFlowCoeffCL( double rho1, double rho2, double mu1, double mu2, double surftension, Point3DCL gravity, bool dimless = false)
       : rho( dimless ? JumpCL( 1., rho2/rho1)
@@ -116,7 +122,9 @@ class TwoPhaseFlowCoeffCL
         mu(  dimless ? JumpCL( 1., mu2/mu1)
                      : JumpCL( mu1, mu2), H_sm, 0),
         SurfTens( dimless ? surftension/rho1 : surftension),
-        g( gravity)    {}
+        g( gravity)    {
+          volforce = InVecMap::getInstance()["ZeroVel"];
+        }
 };
 
 /// problem class for instationary two-pase Stokes flow

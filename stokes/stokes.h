@@ -48,7 +48,7 @@ class StokesBndDataCL
         : Pr( numbndseg, bc_pr), Vel( numbndseg, bc_vel, fun) {}
     StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndDataCL::bnd_val_fun* fun)
         : Pr( numbndseg), Vel(numbndseg, isneumann, fun) {} // deprecated
-
+    StokesBndDataCL(const VelBndDataCL & aVel, const PrBndDataCL & aPr):Pr(aPr),Vel(aVel){}
     const PrBndDataCL  Pr;
     const VelBndDataCL Vel;
     typedef VelBndDataCL::bnd_val_fun bnd_val_fun;

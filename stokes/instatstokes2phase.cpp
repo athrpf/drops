@@ -1441,7 +1441,7 @@ void System1Accumulator_P2CL::local_setup (const TetraCL& tet)
     GetTrafoTr( T, det, tet);
     absdet= std::fabs( det);
 
-    rhs.assign( tet, Coeff.f, t);
+    rhs.assign( tet, Coeff.volforce, t);
     n.assign( tet, RowIdx, BndData.Vel);
 
     tetra.Init( tet, lset.Phi, lset.GetBndData());
@@ -1574,7 +1574,7 @@ void SetupSystem1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, Coeff_.f, t);
+        rhs.assign( *sit, Coeff_.volforce, t);
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
@@ -1718,7 +1718,7 @@ void SetupSystem1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_
                         intRhs[i]= Point3DCL();
                         for (Uint k=0; k<patch.GetNumTetra(); k++) {
                             nodes= Quad5CL<>::TransformNodes(patch.GetTetra(k));
-                            Quad5CL<Point3DCL> rhs5( *sit, Coeff_.f, t, nodes);
+                            Quad5CL<Point3DCL> rhs5( *sit, Coeff_.volforce, t, nodes);
 
                             if (k<patch.GetNumNegTetra())
                                 intRhs[i] += Quad5CL<Point3DCL>(qi_n[k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
@@ -1847,7 +1847,7 @@ void SetupRhs1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, co
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, Coeff_.f, t);
+        rhs.assign( *sit, Coeff_.volforce, t);
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
@@ -1937,8 +1937,8 @@ void SetupRhs1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, c
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, Coeff_.f, t);
-
+        rhs.assign( *sit, Coeff_.volforce, t);
+        
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, RowIdx, BndData_.Vel);
@@ -2008,7 +2008,7 @@ void SetupRhs1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, c
                     Point3DCL intRhs;
                     for (Uint k=0; k<patch.GetNumTetra(); k++) {
                         nodes= Quad5CL<Point3DCL>::TransformNodes(patch.GetTetra(k));
-                        Quad5CL<Point3DCL> rhs5( *sit, Coeff_.f, t, nodes);
+                        Quad5CL<Point3DCL> rhs5( *sit, Coeff_.volforce, t, nodes);
                         if (k<patch.GetNumNegTetra())
                             intRhs += Quad5CL<Point3DCL>(qx_n[i][k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
                         else

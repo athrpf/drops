@@ -344,6 +344,7 @@ class ParamExperimentalDataCL : public virtual ParamBaseCL
     std::string exp_InitialLSet;                   ///< initial interface
     int       exp_UsePerMatching;                  ///< use periodic boundaries?
     std::string exp_PerMatching;                   ///< Periodic Matching Function
+    std::string exp_VolForce;                      ///< Volume Force Function
     
     
   //@}
@@ -527,6 +528,7 @@ class ParamFilmCL: public ParamBaseCL
     std::string exp_InitialLSet;                    // Levelset Funktion der initialen Phasengrenze
     int    exp_UsePerMatching;                      // Periodische Raender?
     std::string exp_PerMatching;                    // Periodic Matching Function
+    std::string exp_VolForce;                       // Volume Force Function
     
 
     Point3DCL exp_Gravity;                          // Schwerkraft
