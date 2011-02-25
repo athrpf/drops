@@ -341,7 +341,11 @@ class ParamExperimentalDataCL : public virtual ParamBaseCL
     Point3DCL exp_Gravity;                         ///< gravity
     double    exp_InflowFreq,                      ///< inflow frequence
               exp_InflowAmpl;                      ///< inflow amplitude
-    std::string    exp_InitialLSet;                     ///< initial interface
+    std::string exp_InitialLSet;                   ///< initial interface
+    int       exp_UsePerMatching;                  ///< use periodic boundaries?
+    std::string exp_PerMatching;                   ///< Periodic Matching Function
+    
+    
   //@}
   public:
     ParamExperimentalDataCL()                             { RegisterParams(); }
@@ -520,7 +524,10 @@ class ParamFilmCL: public ParamBaseCL
            mat_SmoothZone,                          // Glaettungszone fuer Dichte-/Viskositaetssprung
            exp_PumpAmpl, exp_PumpFreq,              // Frequenz und Amplitude der Anregung
            exp_Ampl_zDir;                           // Amplitude in z-Richtung der initialen Phasengrenze
-    std::string exp_InitialLSet;                         // Levelset Funktion der initialen Phasengrenze
+    std::string exp_InitialLSet;                    // Levelset Funktion der initialen Phasengrenze
+    int    exp_UsePerMatching;                      // Periodische Raender?
+    std::string exp_PerMatching;                    // Periodic Matching Function
+    
 
     Point3DCL exp_Gravity;                          // Schwerkraft
     double    exp_Thickness;                        // Filmdicke

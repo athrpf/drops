@@ -155,3 +155,71 @@ namespace surffunctions{
     static DROPS::RegisterScalarFunction regscasurfrhs("surf_rhs", surf_rhs);
     static DROPS::RegisterScalarFunction regscasurfsol("surf_sol", surf_sol);  
 }
+
+//TODO: unification with filmCoeff stoff
+//========================================================================
+//                        Functions for matching function
+//========================================================================
+namespace filmperiodic{
+    template<int A, int B>
+    bool periodic_2sides( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
+    { 
+
+        static bool first = true;
+        static DROPS::Point3DCL dx;
+        //dirty hack
+        if (first){
+            std::string mesh( C.dmc_MeshFile), delim("x@");
+            size_t idx_;
+            while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+                mesh[idx_]= ' ';
+            std::istringstream brick_info( mesh);
+            brick_info >> dx[0] >> dx[1] >> dx[2] ;
+            first = false;
+        }      
+        
+        const DROPS::Point3DCL d= fabs(p-q),
+                               L= fabs(dx);
+        
+        const int D = 3 - A - B;
+        return (d[B] + d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12)  // dB=dD=0 and dA=LA
+          ||   (d[A] + d[D] < 1e-12 && std::abs( d[B] - L[B]) < 1e-12)  // dA=dD=0 and dB=LB
+          ||   (d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12 && std::abs( d[B] - L[B]) < 1e-12);  // dD=0 and dA=LA and dB=LB
+    }
+
+    template<int A>
+    bool periodic_1side( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
+    { 
+
+        static bool first = true;
+        static DROPS::Point3DCL dx;
+        //dirty hack
+        if (first){
+            std::string mesh( C.dmc_MeshFile), delim("x@");
+            size_t idx_;
+            while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+                mesh[idx_]= ' ';
+            std::istringstream brick_info( mesh);
+            brick_info >> dx[0] >> dx[1] >> dx[2] ;
+            first = false;
+        }      
+        const int B = (A+1)%3;
+        const int D = (B+1)%3;
+        const DROPS::Point3DCL d= fabs(p-q), L= fabs(dx);
+        bool res = (d[B] + d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12);
+        
+        DROPS::Point3DCL diff = p - q;
+        if (res) std::cout << " diff = " << diff << std::endl;
+        return res;
+    }
+    
+    //========================================================================
+    //        Registration of the function(s) in the func-container
+    //========================================================================
+    static DROPS::RegisterMatchingFunction regmatch2_xy("periodicxy", periodic_2sides<0,1>);
+    static DROPS::RegisterMatchingFunction regmatch2_xz("periodicxz", periodic_2sides<0,2>);
+    static DROPS::RegisterMatchingFunction regmatch2_yz("periodicyz", periodic_2sides<1,2>);
+    static DROPS::RegisterMatchingFunction regmatch1_x("periodicx", periodic_1side<0>);
+    static DROPS::RegisterMatchingFunction regmatch1_y("periodicy", periodic_1side<1>);
+    static DROPS::RegisterMatchingFunction regmatch1_z("periodicz", periodic_1side<2>);
+}

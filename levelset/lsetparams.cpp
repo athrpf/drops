@@ -197,6 +197,8 @@ void ParamExperimentalDataCL::RegisterParams()
     rp_.RegDouble( exp_InflowFreq, "InflowFreq");
     rp_.RegDouble( exp_InflowAmpl, "InflowAmpl");
     rp_.RegString( exp_InitialLSet,"InitialLSet", "Ellipsoid");
+    rp_.RegInt( exp_UsePerMatching, "PeriodicBnds", 0);
+    rp_.RegString( exp_PerMatching,"PeriodicMatching","periodicx");
     rp_.EndGroup();
 }
 
@@ -329,6 +331,8 @@ void ParamFilmCL::RegisterParams()
     rp_.RegDouble( exp_PumpAmpl,   "PumpAmpl");
     rp_.RegDouble( exp_Ampl_zDir,  "Ampl_zDir");
     rp_.RegString( exp_InitialLSet,"InitialLSet","WavyFilm");
+    rp_.RegInt( exp_UsePerMatching,"PeriodicBnds", 1);
+    rp_.RegString( exp_PerMatching,"PeriodicMatching","periodicxz");
     rp_.EndGroup();
 
     // miscellaneous
