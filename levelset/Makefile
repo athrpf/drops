@@ -41,7 +41,8 @@ lsshear: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
     ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o ../navstokes/instatnavstokes2phase.o \
-    ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o
+    ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o \
+    ../misc/bndmap.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfTens: \
