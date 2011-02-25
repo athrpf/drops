@@ -42,7 +42,7 @@ void readBoundary ( std::vector<T>& bndcond, const std::string& bnd_type)
 
 template< class BoundaryT>
 void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
-        const std::string& bnd_type_string, const std::string& bnd_funcs_string)
+        const std::string& bnd_type_string, const std::string& bnd_funcs_string, match_fun periodic_match)
 {
     const BoundaryCL& bnd= mgp->GetBnd();
     const BndIdxT num_bnd= bnd.GetNumBndSeg();
@@ -59,12 +59,27 @@ void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
     readBoundary( bnd_idx, bnd_type_string);
     readBoundary( bnd_names, bnd_funcs_string);
 
+    typedef std::vector<BoundaryCL::BndType>   BndTypeCont;    
+    BndTypeCont perbndt(num_bnd);  
+
     for( size_t i=0; i<num_bnd; ++i){
         bnd_types[i] = DROPS::BndCondT( bnd_idx[i]);
         bnd_fun[i] = SingletonMapCL<BndValFunT>::getInstance()[bnd_names[i]];
+        switch (bnd_types[i])
+        {
+            case DROPS::Per1BC:
+                perbndt[i] = BoundaryCL::Per1Bnd; break;
+            case DROPS::Per2BC:
+                perbndt[i] = BoundaryCL::Per2Bnd; break;
+            default:
+                perbndt[i] = BoundaryCL::OtherBnd; break;
+        }
     }
 
     bnddata = new BoundaryT( num_bnd, bnd_types, bnd_fun);
+    if (periodic_match)
+      bnd.SetPeriodicBnd( perbndt, periodic_match);
+    
     delete[] bnd_types;
     delete[] bnd_fun;
 }

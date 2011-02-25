@@ -53,7 +53,7 @@ void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomT
  */
 template< class BoundaryT>
 void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
-        const std::string& bnd_type, const std::string& bnd_funcs);
+        const std::string& bnd_type, const std::string& bnd_funcs, match_fun periodic_match = 0);
 
 } // end of namespace drops
 
