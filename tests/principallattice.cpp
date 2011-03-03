@@ -25,9 +25,11 @@
 #include "geom/principallattice.h"
 #include "misc/container.h"
 #include "num/discretize.h"
+#include "geom/multigrid.h"
 
 #include <iostream>
 #include <sstream>
+#include <tr1/unordered_map>
 
 namespace DROPS {
 
@@ -96,7 +98,7 @@ class RefTetraSurfacePatchCL {
     TriangleT MakeTriangle (Ubyte v0, Ubyte v1, Ubyte v2) const { return MakeSArray( v0, v1, v2); }
 
   public:
-    RefTetraSurfacePatchCL () : size_( -1), is_boundary_triangle_( 0) {} ///< Uninitialized default state
+    RefTetraSurfacePatchCL () : size_( static_cast<Ubyte>( -1)), is_boundary_triangle_( 0) {} ///< Uninitialized default state
     RefTetraSurfacePatchCL (const SignPatternTraitCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
     bool assign (const SignPatternTraitCL& cut); ///< Assign a sign pattern on the vertices; returns the value of empty()
 
@@ -323,60 +325,301 @@ RefTetraPartitionCL::instance (const double ls[4])
     return instance;
 }
 
+/// forward declaration of the default template-policies of TetraPartitionCL @{
+class SortedVertexPolicyCL;
+class MergeCutPolicyCL;
+///@}
 
+/// forward declaration of TetraPartitionCL
+template <class= SortedVertexPolicyCL, class= MergeCutPolicyCL> class TetraPartitionCL;
+
+/// declaration of debug output (neccessary due to friend declaration in TetraPartitionCL)
+template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+  std::ostream&
+  operator<< (std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&);
+
+/// declaration of .vtu output (neccessary due to friend declaration in TetraPartitionCL)
+template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+  void
+  write_paraview_vtu (std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&, TetraSignEnum= AllTetraC);
+
+/// \brief Common types used by TetraPartitionCL, SurfacePatchCL and their helpters
+namespace LatticePartitionTypesNS {
+
+typedef SArrayCL<Uint, 4>          TetraT; ///< representation of a tetra of the partition via its vertices: index in the vertex_-array
+typedef std::vector<TetraT>        TetraContT;
+typedef TetraContT::const_iterator const_tetra_iterator;
+
+typedef SArrayCL<Uint, 3>             TriangleT; ///< representation of a triangle of the interface via its vertices: index in the vertex_-array
+typedef std::vector<TriangleT>        TriangleContT;
+typedef TriangleContT::const_iterator const_triangle_iterator;
+
+typedef std::vector<BaryCoordCL>    VertexContT;
+typedef VertexContT::const_iterator const_vertex_iterator;
+} // end of namespace LatticePartitionDetailNS
 
 ///\brief Partition the principal lattice of a tetra t (n intervals on each edge) according to the sign of a levelset function ls.
 ///
 /// The sub-tetras, which are cut by the interface are triangulated to match the interface. The values of the level set function on the vertices of the principal lattice must be prescribed. The sequence of all tetrahedra contains the negative tetrahedra as initial subsequence.
+///
+/// For the vertexes, there are two properties, which can be selected by the policy template-parameters:
+/// VertexPartitionPolicyT: Determines, how the vertices are ordered with respect to the sign of the levelset function. This is important for the generation of composite quadrature rules.
+///     Unordered:   First the vertexes from the principal lattice, then all proper cut-vertexes.
+///     Sorted:      First the negative vertexes, then the zero vertexes, then the positive vertexes. The vertexes of the negative and of the positive tetras potentially overlap in the zero vertexes.
+///     Partitioned: Like sorted, and all zero vertexes are duplicated, such that the vertexes of the negative tetras and of the positive tetras are disjoint.
+/// Unordered is fastest and appropriate for quadrature rules that use no vertexes of the triangulation. Quadrature rules that use vertexes need Sorted, if a continuous integrand is prescribed (and integrated on the negative or positive or both domains), and Partitioned, if the integrand is discontinuous.
+///
+/// VertexCutMergingPolicyT: Determines, how often cut vertexes are stored.
+///     Duplicate: A cut-vertex is added for each tetra, on which it is discovered; fast, but leads to more vertices, which in turn leads to more dof for quadrature rules that use the vertexes of the partition.
+///     Merge: The edge cuts are memoized for each edge and added only once -- default as it leads to the minimal amount of cut vertexes.
+template <class VertexPartitionPolicyT,
+          class VertexCutMergingPolicyT>
 class TetraPartitionCL
 {
   public:
-    typedef SArrayCL<Uint, 4> TetraT; ///< representation of a tetra of the partition via its vertices: index in the vertex_-array
-    typedef std::vector<TetraT> TetraContT;
-    typedef TetraContT::const_iterator const_tetra_iterator;
-    typedef std::vector<BaryCoordCL> VertexContT;
-    typedef VertexContT::const_iterator const_vertex_iterator;
+    typedef LatticePartitionTypesNS::TetraT               TetraT;
+    typedef LatticePartitionTypesNS::TetraContT           TetraContT;
+    typedef LatticePartitionTypesNS::const_tetra_iterator const_tetra_iterator;
+
+    typedef LatticePartitionTypesNS::VertexContT           VertexContT;
+    typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
 
   private:
     TetraContT tetras_; ///< All tetras of the partition.
-    size_t pos_begin_;  ///< begin of the subsequence of positive tetras
+    size_t pos_tetra_begin_;  ///< begin of the subsequence of positive tetras
 
     VertexContT vertexes_; ///< All vertices of the partition. 
+    size_t pos_vertex_begin_;  ///< begin of the subsequence of vertexes of positive tetras
+    size_t neg_vertex_end_;    ///< end of the subsequence of of vertexes of negative tetras
 
   public:
-    TetraPartitionCL () : pos_begin_( 0) {} ///< Empty default-cut
+    TetraPartitionCL () : pos_tetra_begin_( 0), pos_vertex_begin_( 0), neg_vertex_end_( 0) {} ///< Empty default-cut
 
     ///\brief Computes the partition of the principal lattice with num_intervals on each edge of the reference-tetra given the level set values in ls.
     void partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls);
 
-    size_t tetra_size (TetraSignEnum s= AllTetraC) const ///< number of tetras with given sign
+    size_t tetra_size  (TetraSignEnum s= AllTetraC) const ///< number of tetras with given sign
          { return tetra_end( s) - tetra_begin( s); }
+    size_t vertex_size (TetraSignEnum s= AllTetraC) const ///< number of vertexes used by the tetras of the corresponding sign; depending on VertexCutMergingPolicyT, interface vertexes occur multiple times.
+         { return vertex_end( s) - vertex_begin( s); }
 
     /// Random-access to the tetras: all tetras, or negative and positive tetras separately, see TetraSignEnum.
     ///@{
     const_tetra_iterator tetra_begin (TetraSignEnum s= AllTetraC) const
-        { return tetras_.begin() + ( s == PosTetraC ? pos_begin_ : 0); }
+        { return tetras_.begin() + (s == PosTetraC ? pos_tetra_begin_ : 0); }
     const_tetra_iterator tetra_end   (TetraSignEnum s= AllTetraC) const
-        { return s == NegTetraC ? tetras_.begin() + pos_begin_ : tetras_.end(); }
+        { return s == NegTetraC ? tetras_.begin() + pos_tetra_begin_ : tetras_.end(); }
     ///@}
     /// Random-access to the vertices.
     ///@{
-    const_vertex_iterator vertex_begin () const { return vertexes_.begin(); }
-    const_vertex_iterator vertex_end   () const { return vertexes_.end(); }
+    const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const
+        { return vertexes_.begin() + (s == PosTetraC ? pos_vertex_begin_ : 0); }
+    const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
+        { return s == NegTetraC ? vertexes_.begin() + neg_vertex_end_ : vertexes_.end(); }
     ///@}
 
-    friend std::ostream& operator<< (std::ostream&, const TetraPartitionCL&); ///< Debug-output to a stream (dumps all members)
-    friend void write_paraview_vtu (std::ostream&, const TetraPartitionCL&, TetraSignEnum= AllTetraC);  ///< Debug-output to a stream: VTU-format for paraview.
+    friend std::ostream& operator<< <> (std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&); ///< Debug-output to a stream (dumps all members)
+    friend void write_paraview_vtu <>(std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&, TetraSignEnum);  ///< Debug-output to a stream: VTU-format for paraview.
 };
+
+class DuplicateCutPolicyCL
+{
+  private:
+    typedef LatticePartitionTypesNS::VertexContT VertexContT;
+
+    const PrincipalLatticeCL::const_vertex_iterator partition_vertexes_;
+    VertexContT& vertexes_;
+
+  public:
+    DuplicateCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator partition_vertexes, VertexContT& vertexes) : partition_vertexes_( partition_vertexes), vertexes_( vertexes) {}
+
+    Uint operator() (Uint v0, Uint v1, double ls0, double ls1) {
+        const double edge_bary1_cut= ls0/(ls0 - ls1); // the root of the level set function on the edge
+        vertexes_.push_back( ConvexComb( edge_bary1_cut, partition_vertexes_[v0], partition_vertexes_[v1]));
+        return vertexes_.size() - 1;
+    }
+};
+
+class MergeCutPolicyCL
+{
+  private:
+    typedef LatticePartitionTypesNS::VertexContT VertexContT;
+
+    struct UintPairHasherCL
+    {
+        size_t operator() (const std::pair<Uint, Uint>& p) const
+            { return p.first << (4*sizeof(Uint)) ^ p.second; } // for less than 2^(sizeof(Uint)/2) vertices this is a bijection
+    };
+
+    typedef std::pair<Uint, Uint> EdgeT;
+    typedef std::tr1::unordered_map<EdgeT, Uint, UintPairHasherCL> EdgeToCutMapT;
+
+    const PrincipalLatticeCL::const_vertex_iterator partition_vertexes_;
+    VertexContT& vertexes_;
+    EdgeToCutMapT edge_to_cut_;
+
+  public:
+    MergeCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator partition_vertexes, VertexContT& vertexes) : partition_vertexes_( partition_vertexes), vertexes_( vertexes) {}
+
+    Uint operator() (Uint v0, Uint v1, double ls0, double ls1) {
+        const EdgeT e= v0 < v1 ? std::make_pair( v0, v1) : std::make_pair( v1, v0);
+        EdgeToCutMapT::const_iterator e_it= edge_to_cut_.find( e);
+        if (e_it != edge_to_cut_.end())
+            return e_it->second;
+        else {
+            const double edge_bary1_cut= ls0/(ls0 - ls1); // the root of the level set function on the edge
+            vertexes_.push_back( ConvexComb( edge_bary1_cut, partition_vertexes_[v0], partition_vertexes_[v1]));
+            return edge_to_cut_[e]= vertexes_.size() - 1;
+        }
+    }
+};
+
+class UnorderedVertexPolicyCL
+{
+  private:
+    typedef LatticePartitionTypesNS::TetraContT  TetraContT;
+    typedef LatticePartitionTypesNS::VertexContT VertexContT;
+
+    VertexContT& partition_vertexes_;
+
+  public:
+    UnorderedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat) : partition_vertexes_( vertexes) {
+        partition_vertexes_.resize( 0);
+        partition_vertexes_.reserve( lat.num_vertexes());
+        std::copy( lat.vertex_begin(), lat.vertex_end(), std::back_inserter( partition_vertexes_));
+    }
+
+    VertexContT& cut_vertex_container () { return partition_vertexes_; }
+    Uint cut_index_offset () { return 0; }
+
+    void sort_vertexes (const GridFunctionCL<>&, TetraContT::iterator, TetraContT::iterator, size_t) {}
+};
+
+class SortedVertexPolicyCL
+{
+  private:
+    typedef LatticePartitionTypesNS::TetraContT  TetraContT;
+    typedef LatticePartitionTypesNS::VertexContT VertexContT;
+
+    VertexContT& vertexes_;
+    VertexContT  cut_vertexes_;
+    const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin_;
+    const Uint lattice_num_vertexes_;
+
+  public:
+    SortedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat)
+        : vertexes_( vertexes),  lattice_vertex_begin_( lat.vertex_begin()), lattice_num_vertexes_( lat.num_vertexes()) {}
+
+    VertexContT& cut_vertex_container () { return cut_vertexes_; }
+    Uint cut_index_offset () { return lattice_num_vertexes_; }
+
+    void sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin);
+};
+
+void SortedVertexPolicyCL::sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t)
+{
+    // Count signs
+    Uint num_sign[3]= { 0, 0, 0 }; // num_sign[i] == number of verts with sign i-1
+    for (Uint i= 0; i < lattice_num_vertexes_; ++i)
+        ++num_sign[sign_plus_one( ls[i])];
+    const Uint num_zero_vertexes= num_sign[1] + cut_vertexes_.size();
+
+    vertexes_.resize( num_sign[0] + num_sign[2] + num_zero_vertexes);
+    pos_vertex_begin_= num_sign[0];
+    neg_vertex_end_=   num_sign[0] + num_zero_vertexes;
+
+    std::vector<Uint> new_pos( num_sign[0] + num_sign[2] + num_zero_vertexes); // maps old vertex-index to the new one
+    size_t cursor[3]; // Insertion cursors for the sorted-by-sign vertex numbers
+    cursor[0]= 0;
+    cursor[1]= num_sign[0];
+    cursor[2]= num_sign[0] + num_zero_vertexes;
+    for (Uint i= 0; i < lattice_num_vertexes_; ++i) {
+        size_t& cur= cursor[sign_plus_one( ls[i])];
+        new_pos[i]= cur;
+        vertexes_[cur]= lattice_vertex_begin_[i];
+        ++cur;
+    }
+    size_t& cur= cursor[1];
+    for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
+        new_pos[i + lattice_num_vertexes_]= cur;
+        vertexes_[cur]= cut_vertexes_[i];
+    }
+    // Reorder the indices in the tetras
+    for (TetraContT::iterator it= tetra_begin; it != tetra_end; ++it)
+        for (Uint i= 0; i < 4; ++i)
+            (*it)[i]= new_pos[(*it)[i]];
+}
+
+class PartitionedVertexPolicyCL
+{
+  private:
+    typedef LatticePartitionTypesNS::TetraContT  TetraContT;
+    typedef LatticePartitionTypesNS::VertexContT VertexContT;
+
+    VertexContT& partition_vertexes_;
+    VertexContT  cut_vertexes_;
+    const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin_;
+    const Uint lattice_num_vertexes_;
+
+  public:
+    PartitionedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat)
+        : partition_vertexes_( vertexes),  lattice_vertex_begin_( lat.vertex_begin()), lattice_num_vertexes_( lat.num_vertexes()) {}
+
+    VertexContT& cut_vertex_container () { return cut_vertexes_; }
+    Uint cut_index_offset () { return lattice_num_vertexes_; }
+
+    void sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin);
+};
+
+void PartitionedVertexPolicyCL::sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin)
+{
+    // Count signs
+    Uint num_sign[3]= { 0, 0, 0 }; // num_sign[i] == number of verts with sign i-1
+    for (Uint i= 0; i < lattice_num_vertexes_; ++i)
+        ++num_sign[sign_plus_one( ls[i])];
+    const Uint num_zero_vertexes= num_sign[1] + cut_vertexes_.size();
+
+    partition_vertexes_.resize( num_sign[0] + num_sign[2] + 2*num_zero_vertexes);
+    neg_vertex_end_= pos_vertex_begin_= num_sign[0] + num_zero_vertexes;
+
+    std::vector<Uint> new_pos( num_sign[0] + num_sign[2] + num_zero_vertexes); // maps old vertex-index to the new one
+    size_t cursor[3]; // Insertion cursors for the sorted-by-sign vertex numbers
+    cursor[0]= 0;
+    cursor[1]= num_sign[0];
+    cursor[2]= num_sign[0] + 2*num_zero_vertexes;
+    for (Uint i= 0; i < lattice_num_vertexes_; ++i) {
+        const Uint sign_po= sign_plus_one( ls[i]);
+        size_t& cur= cursor[sign_po];
+        new_pos[i]= cur;
+        partition_vertexes_[cur]= lattice_vertex_begin_[i];
+        if (sign_po == 1)
+            partition_vertexes_[cur + num_zero_vertexes]= lattice_vertex_begin_[i];
+        ++cur;
+    }
+    size_t& cur= cursor[1];
+    for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
+        new_pos[i + lattice_num_vertexes_]= cur;
+        partition_vertexes_[cur + num_zero_vertexes]= partition_vertexes_[cur]= cut_vertexes_[i];
+    }
+    // Reorder the indices in the tetras
+    for (TetraContT::iterator it= tetra_begin; it != tetra_end; ++it) {
+        const bool t_is_pos= it >= tetra_begin + pos_tetra_begin;
+        for (Uint i= 0; i < 4; ++i) {
+            const bool duplicate= t_is_pos && ( (*it)[i] >= lattice_num_vertexes_ || ls[(*it)[i]] == 0.);
+            (*it)[i]= new_pos[(*it)[i]] + (duplicate ? num_zero_vertexes : 0);
+        }
+    }
+}
 
 ///\brief Partition the principal lattice of a tetra t (n intervals on each edge) according to the sign of a levelset function ls. This class computes the triangles of the resultin piecewise trianglular interface.
 class SurfacePatchCL
 {
-    typedef SArrayCL<Uint, 3> TriangleT; ///< representation of a triangle of the interface via its vertices: index in the vertex_-array
-    typedef std::vector<TriangleT> TriangleContT;
-    typedef TriangleContT::const_iterator const_triangle_iterator;
-    typedef std::vector<BaryCoordCL> VertexContT;
-    typedef VertexContT::const_iterator const_vertex_iterator;
+    typedef LatticePartitionTypesNS::TriangleT               TriangleT;
+    typedef LatticePartitionTypesNS::TriangleContT           TriangleContT;
+    typedef LatticePartitionTypesNS::const_triangle_iterator const_triangle_iterator;
+
+    typedef LatticePartitionTypesNS::VertexContT           VertexContT;
+    typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
 
   private:
     TriangleContT triangles_; ///< All triangles of the interface.
@@ -413,17 +656,19 @@ class SurfacePatchCL
 // TetraSurfacePatchCL: GridFunDomainT + triangle_begin(), triangle_end()
 // template <class GridFunT, class GridFunDomainT, class ResultContT> Evaluate (ResultContT& r, GridFunT& f, const GridFunDomainT& dom) { EvaluatorCL<GridFunT, GridFunDomainT>::evaluate( r, f, dom); }
 
-///\todo The roots on the edges are inserted multiple times into vertexes_: use an associative map to cache them.
-void TetraPartitionCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
+
+
+template <class VertexPartitionPolicyT,
+          class VertexCutMergingPolicyT>
+void TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-
     tetras_.resize( 0);
-    pos_begin_= 0;
+    pos_tetra_begin_= 0;
     vertexes_.resize( 0);
 
-    vertexes_.reserve( lat.num_vertexes());
-    std::copy( lat.vertex_begin(), lat.vertex_end(), std::back_inserter( vertexes_));
+    VertexPartitionPolicyT vertex_policy( vertexes_, lat);
+    VertexCutMergingPolicyT edgecut( lat.vertex_begin(), vertex_policy.cut_vertex_container());
 
     TetraContT loc_tetras; // temporary container for the positive tetras.
     double lset[4];
@@ -441,19 +686,17 @@ void TetraPartitionCL::partition_principal_lattice (Uint num_intervals, const Gr
                 else { // Cut vertex
                     const Ubyte v0= VertOfEdge( loc_vert_num - 4, 0),
                                 v1= VertOfEdge( loc_vert_num - 4, 1);
-                    const double edge_bary1_cut= lset[v0]/(lset[v0] - lset[v1]); // the root of the level set function on the edge
-                    tet[j]= vertexes_.size();
-                    vertexes_.push_back( ConvexComb( edge_bary1_cut, vertexes_[(*lattice_tet)[v0]], vertexes_[(*lattice_tet)[v1]]));
+                    tet[j]= vertex_policy.cut_index_offset() + edgecut( (*lattice_tet)[v0], (*lattice_tet)[v1], lset[v0], lset[v1]);
                 }
             }
             (cut.sign( it) == -1 ? tetras_ : loc_tetras).push_back( tet);
         }
     }
-    pos_begin_= tetras_.size();
+    pos_tetra_begin_= tetras_.size();
     std::copy( loc_tetras. begin(), loc_tetras.end(), std::back_inserter( tetras_));
+    vertex_policy.sort_vertexes( ls, tetras_.begin(), tetras_.end(), pos_tetra_begin_);
 }
 
-///\todo The roots on the edges are inserted multiple times into vertexes_: use an associative map to cache them.
 void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
@@ -461,6 +704,8 @@ void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const Grid
 
     triangles_.resize( 0);
     is_boundary_triangle_.resize( 0);
+    MergeCutPolicyCL edgecut( lat.vertex_begin(), vertexes_);
+    std::vector<Uint> copied_vertexes( lat.num_vertexes(), static_cast<Uint>( -1));
 
     double lset[4];
     Uint loc_vert_num;
@@ -472,17 +717,19 @@ void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const Grid
         if (cut.empty()) continue;
         for (RefTetraSurfacePatchCL::const_triangle_iterator it= cut.triangle_begin(), end= cut.triangle_end(); it != end; ++it) {
             for (Uint j= 0; j < 3; ++j) {
-                tri[j]= vertexes_.size();
                 loc_vert_num= (*it)[j];
                 if (loc_vert_num < 4) {
                     const Uint lattice_vert_num= (*lattice_tet)[loc_vert_num];
-                    vertexes_.push_back( lattice_verts[lattice_vert_num]);
+                    if (copied_vertexes[lattice_vert_num] == static_cast<Uint>( -1)) {
+                        vertexes_.push_back( lattice_verts[lattice_vert_num]);
+                        copied_vertexes[lattice_vert_num]= vertexes_.size() - 1;
+                    }
+                    tri[j]= copied_vertexes[lattice_vert_num];
                 }
                 else { // Cut vertex
                     const Ubyte v0= VertOfEdge( loc_vert_num - 4, 0),
                                 v1= VertOfEdge( loc_vert_num - 4, 1);
-                    const double edge_bary1_cut= lset[v0]/(lset[v0] - lset[v1]);
-                    vertexes_.push_back( ConvexComb( edge_bary1_cut, lattice_verts[(*lattice_tet)[v0]], lattice_verts[(*lattice_tet)[v1]]));
+                    tri[j]= edgecut( (*lattice_tet)[v0], (*lattice_tet)[v1], lset[v0], lset[v1]);
                 }
             }
             triangles_.push_back( tri);
@@ -491,17 +738,20 @@ void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const Grid
     }
 }
 
-std::ostream& operator<< (std::ostream& out, const TetraPartitionCL& t)
+template <class VertexPartitionPolicyT,
+          class VertexCutMergingPolicyT>
+std::ostream& operator<< (std::ostream& out, const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& t)
 {
-    out << t.tetras_.size() << ' ' << t.pos_begin_ << '\n';
-    std::copy( t.tetras_.begin(), t.tetras_.end(), std::ostream_iterator<TetraPartitionCL::TetraT>( out));
+    out << t.tetras_.size() << ' ' << t.pos_tetra_begin_ << ' ' << t.pos_vertex_begin_ << ' ' << t.neg_vertex_end_ << '\n';
+    std::copy( t.tetras_.begin(), t.tetras_.end(), std::ostream_iterator<LatticePartitionTypesNS::TetraT>( out));
     out << '\n';
     std::copy( t.vertexes_.begin(), t.vertexes_.end(), std::ostream_iterator<BaryCoordCL>( out)) ;
     return out;
 }
 
-
-void write_paraview_vtu (std::ostream& file_, const TetraPartitionCL& t, TetraSignEnum s)
+template <class VertexPartitionPolicyT,
+          class VertexCutMergingPolicyT>
+void write_paraview_vtu (std::ostream& file_, const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& t, TetraSignEnum s)
 {
     file_ << "<?xml version=\"1.0\"?>"  << '\n'
           << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">"   << '\n'
@@ -510,7 +760,7 @@ void write_paraview_vtu (std::ostream& file_, const TetraPartitionCL& t, TetraSi
     file_<< "<Piece NumberOfPoints=\""<< t.vertexes_.size() <<"\" NumberOfCells=\""<< t.tetra_size( s) << "\">";
     file_<< "\n\t<Points>"
          << "\n\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"" << "ascii\">\n\t\t";
-    for(TetraPartitionCL::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
+    for(LatticePartitionTypesNS::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
         file_ << it[0][1] << ' ' << it[0][2] << ' ' << it[0][3] << ' ';
     }
     file_<< "\n\t\t</DataArray> \n"
@@ -519,7 +769,7 @@ void write_paraview_vtu (std::ostream& file_, const TetraPartitionCL& t, TetraSi
     file_   << "\t<Cells>\n"
             << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\""
             <<"ascii\">\n\t\t";
-    std::copy( t.tetra_begin( s), t.tetra_end( s), std::ostream_iterator<TetraPartitionCL::TetraT>( file_));
+    std::copy( t.tetra_begin( s), t.tetra_end( s), std::ostream_iterator<LatticePartitionTypesNS::TetraT>( file_));
     file_ << "\n\t\t</DataArray>\n";
     file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
     for(Uint i= 1; i <= t.tetra_size( s); ++i) {
@@ -557,7 +807,7 @@ void write_paraview_vtu (std::ostream& file_, const SurfacePatchCL& t)
     file_   << "\t<Cells>\n"
             << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\""
             <<"ascii\">\n\t\t";
-    std::copy( t.triangles_.begin(), t.triangles_.end(), std::ostream_iterator<SurfacePatchCL::TriangleT>( file_));
+    std::copy( t.triangles_.begin(), t.triangles_.end(), std::ostream_iterator<LatticePartitionTypesNS::TriangleT>( file_));
     file_ << "\n\t\t</DataArray>\n";
     file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
     for(Uint i= 1; i <= t.triangles_.size(); ++i) {
@@ -577,6 +827,188 @@ void write_paraview_vtu (std::ostream& file_, const SurfacePatchCL& t)
           <<"\n</VTKFile>";
 }
 
+class CompositeQuad5DomainCL
+{
+  public:
+    typedef std::vector<BaryCoordCL> VertexContT;
+    typedef VertexContT::const_iterator const_vertex_iterator;
+
+    typedef GridFunctionCL<> WeightContT;
+
+  private:
+    VertexContT vertexes_;
+    size_t pos_begin_;  ///< begin of the subsequence of vertices in positive tetras
+
+    WeightContT weights_;
+
+  public:
+    CompositeQuad5DomainCL () : pos_begin_( 0), weights_( 0) {}
+    template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+    CompositeQuad5DomainCL (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition)
+        : pos_begin_( 0), weights_( 0) { assign( partition); }
+    template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+    void assign (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition);
+
+    size_t size (TetraSignEnum s= AllTetraC) const
+        { return vertex_end( s) - vertex_begin( s); }
+
+    const WeightContT& weights () const { return weights_; }
+
+    const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const
+        { return vertexes_.begin() + ( s == PosTetraC ? pos_begin_ : 0); }
+    const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
+        { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
+
+    template <class GridFunT>
+    typename ValueHelperCL<GridFunT>::value_type quad (const GridFunT& f, double absdet, TetraSignEnum s= AllTetraC);
+    template <class GridFunT>
+    void quad (const GridFunT& f, double absdet, typename ValueHelperCL<GridFunT>::value_type& pos_int, typename ValueHelperCL<GridFunT>::value_type& neg_int);
+};
+
+template <class GridFunT>
+typename ValueHelperCL<GridFunT>::value_type CompositeQuad5DomainCL::quad (const GridFunT& f, double absdet, TetraSignEnum s)
+{
+    const WeightContT& theweights= weights();
+          Uint begin= s == PosTetraC ? size( NegTetraC) : 0;
+    const Uint end=   s == NegTetraC ? size( NegTetraC) : size( AllTetraC);
+
+    typedef typename ValueHelperCL<GridFunT>::value_type value_type;
+    value_type sum= value_type();
+    for (; begin < end; ++begin)
+       sum+= theweights[begin]*f[begin];
+    return sum*absdet;
+}
+
+template <class GridFunT>
+void CompositeQuad5DomainCL::quad (const GridFunT& f, double absdet, typename ValueHelperCL<GridFunT>::value_type& neg_int, typename ValueHelperCL<GridFunT>::value_type& pos_int)
+{
+    const WeightContT& theweights= weights();
+    pos_int= neg_int= typename ValueHelperCL<GridFunT>::value_type();
+    const Uint pos_begin= size( NegTetraC);
+
+    for (Uint i= 0; i < pos_begin; ++i)
+       neg_int+= theweights[i]*f[i];
+    neg_int*= absdet;
+
+    const Uint end= size( AllTetraC);
+    for (Uint i= pos_begin; i < end; ++i)
+       pos_int+= theweights[i]*f[i];
+    pos_int*= absdet;
+}
+
+
+template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+void CompositeQuad5DomainCL::assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+{
+    typedef TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT> TetraPartitionT;
+    const Uint num_nodes= Quad5DataCL::NumNodesC;
+
+    vertexes_.resize( 0);
+    vertexes_.reserve( num_nodes*p.tetra_size());
+    pos_begin_= num_nodes*p.tetra_size( NegTetraC);
+    weights_.resize( num_nodes*p.tetra_size());
+
+    const typename TetraPartitionT::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    const std::valarray<double> tetra_weights( Quad5DataCL::Weight, num_nodes);
+    Uint w_begin= 0;
+    QRDecompCL<4,4> qr;
+    SMatrixCL<4,4>& T= qr.GetMatrix();
+    for (typename TetraPartitionT::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it, w_begin+= num_nodes) {
+        for (int i= 0; i < 4; ++i)
+            T.col( i, partition_vertexes[it[0][i]]);
+        for (Uint i= 0; i < num_nodes; ++i)
+            vertexes_.push_back( T*Quad5DataCL::Node[i]);
+        qr.prepare_solve();
+        weights_[std::slice( w_begin, num_nodes, 1)]= std::fabs( qr.Determinant_R())*tetra_weights;
+    }
+}
+
+
+
+/*class CompositeQuad2DomainCL
+{
+  public:
+    typedef std::vector<BaryCoordCL> VertexContT;
+    typedef VertexContT::const_iterator const_vertex_iterator;
+
+  private:
+    VertexContT vertexes_;
+    size_t pos_begin_;  ///< begin of the subsequence of positive tetras
+
+    GridFunctionCL<> weights_;
+
+  public:
+    CompositeQuad2DomainCL () : pos_begin_( 0), weights_( 0) {}
+    void assign (const TetraPartitionCL& partition);
+
+    size_t size (TetraSignEnum s= AllTetraC) const
+        { return vertex_end( s) - vertex_begin( s); }
+
+    const GridFunctionCL<>& weights () const { return weights_; }
+
+    const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const
+        { return vertexes_.begin() + ( s == PosTetraC ? pos_begin_ : 0); }
+    const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
+        { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
+
+    template <class ValueT>
+    ValueT quad (const GridFunT<ValueT& f, double absdet, TetraSignEnum s= AllTetraC);
+    template <class ValueT>
+    void   quad (const GridFunT<ValueT& f, double absdet, ValueT& pos_int, ValueT& neg_int);
+};
+
+template <class GridFunT, class ValueT>
+ValueT CompositeQuad2DomainCL::quad (const GridFunT<ValueT>& f, double absdet, TetraSignEnum s)
+{
+    const Uint begin= s == PosTetraC ? size( NegTetraC) : 0;
+    const Uint end=   s == NegTetraC ? size( NegTetraC) : size( AllTetraC);
+    const WeightContT& weights= weights();
+
+    ValueT sum= ValueT();
+    for (; begin < end; ++begin)
+       sum+=  weights[begin]*f[begin]
+    return sum*absdet;
+}
+
+template <class GridFunT, class ValueT>
+void CompositeQuad2DomainCL::quad (const GridFunT<ValueT>& f, double absdet, ValueT& pos_int, ValueT& neg_int)
+{
+    const WeightContT& weights= weights();
+    pos_int= neg_int= ValueT();
+    const Uint pos_begin= size( NegTetraC);
+
+    for (Uint i= 0; i < pos_begin; ++i)
+       neg_int+=  weights[i]*f[i];
+    neg_int*= absdet;
+
+    const Uint end= size( AllTetraC);
+    for (Uint i= pos_begin; i < end; ++i)
+       pos_int+=  weights[i]*f[i];
+    pos_int*= abs_det;
+}
+
+void CompositeQuad2DomainCL::assign (const TetraPartitionCL& p)
+{
+    const Uint num_nodes= Quad2DataCL::NumNodesC;
+
+    vertexes_.resize( 0);
+    vertexes_.reserve( p.vertex_size() + p.tetra_size());
+    weights_.resize(   p.verrex_size() + p.tetra_size());
+
+    const TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    const std::valarray<double> tetra_weights( Quad5DataCL::Weight, num_nodes);
+    Uint w_begin= 0;
+    QRDecompCL<4,4> qr;
+    SMatrixCL<4,4>& T= qr.GetMatrix();
+    for (TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it, w_begin+= num_nodes) {
+        for (int i= 0; i < 4; ++i)
+            T.col( i)= partition_vertexes[it[0][i]];
+        for (Uint i= 0; i < num_nodes; ++i)
+            vertexes_.push_back( T*Quad5DataCL::Node[i]);
+        qr.prepare_solve();
+        weights_[std::slice( w_begin, num_nodes, 1)]= std::fabs( qr.Determinant_R())*tetra_weights;
+    }
+}*/
 } // end of namespace DROPS
 
 
@@ -584,7 +1016,7 @@ void test_tetra_cut ()
 {
     DROPS::GridFunctionCL<> ls( 4);
     ls[0]= -1.; ls[1]= 0.; ls[2]= 0.; ls[3]= 0.;
-    DROPS::TetraPartitionCL tet;
+    DROPS::TetraPartitionCL<> tet;
     // tet.partition_principal_lattice ( 1, ls);
     // std::cerr << tet;
     int c= 0;
@@ -662,12 +1094,22 @@ void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& l
     }
 }
 
+void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& lat, double (*f)(const DROPS::Point3DCL& p), const DROPS::TetraCL& t)
+{
+    for (DROPS::PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it) {
+        dest[it - lat.vertex_begin()]= f(  it[0][0]*t.GetVertex( 0)->GetCoord()
+                                         + it[0][1]*t.GetVertex( 1)->GetCoord()
+                                         + it[0][2]*t.GetVertex( 2)->GetCoord()
+                                         + it[0][3]*t.GetVertex( 3)->GetCoord());
+    }
+}
+
 void test_sphere_cut ()
 {
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( 10);
     DROPS::GridFunctionCL<> ls( lat.num_vertexes());
     evaluate( ls, lat, &sphere);
-    DROPS::TetraPartitionCL tet;
+    DROPS::TetraPartitionCL<> tet;
     tet.partition_principal_lattice( 10, ls);
     std::ostringstream name;
     name << "sphere.vtu";
@@ -683,13 +1125,54 @@ void test_sphere_cut ()
     DROPS::write_paraview_vtu( file, surf);
 }
 
+
+void test_sphere_integral ()
+{
+    std::cout << "Enter the number of subdivisions of the cube: ";
+    DROPS::Uint num_sub;
+    std::cin >> num_sub;
+    std::cout << "Enter the number of subdivisions of the principal lattice: ";
+    DROPS::Uint num_sub_lattice;
+    std::cin >> num_sub_lattice;
+    DROPS::BrickBuilderCL brick(DROPS::Point3DCL( -1.),
+                                2.*DROPS::std_basis<3>(1),
+                                2.*DROPS::std_basis<3>(2),
+                                2.*DROPS::std_basis<3>(3),
+                                num_sub, num_sub, num_sub);
+    DROPS::MultiGridCL mg( brick);
+    const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( num_sub_lattice);
+    DROPS::GridFunctionCL<> ls( lat.num_vertexes());
+    DROPS::TetraPartitionCL<> tet;
+    // DROPS::SurfacePatchCL patch;
+    double vol_neg= 0., vol_pos= 0.;
+    // double surf= 0.;
+    DROPS::CompositeQuad5DomainCL q5dom( tet);
+    DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
+        evaluate( ls, lat, &sphere, *it);
+        tet.partition_principal_lattice( num_sub_lattice, ls);
+        // patch.partition_principal_lattice( num_sub_lattice, ls);
+        q5dom.assign( tet);
+        DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
+        double tmp_neg, tmp_pos;
+        q5dom.quad( integrand, it->GetVolume()*6., tmp_neg, tmp_pos);
+        vol_neg+= tmp_neg; vol_pos+= tmp_pos;
+        // q5_2d.assign( patch);
+        // DROPS::GridFunctionCL<> surf_integrand( 1., q5_2d.size());
+        // surf+= q5_2d.quad( surf_integrand);
+
+    }
+    std::cout << "Volume of the negative part: " << vol_neg << ", volume of the positive part: " << vol_pos << std::endl;
+}
+
+
 int main()
 {
     try {
-        // test_tetra_cut();
+        test_tetra_cut();
         // test_cut_surface();
         // test_principal_lattice();
-        test_sphere_cut ();
+        // test_sphere_cut();
+        // test_sphere_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;

@@ -531,6 +531,7 @@ class Quad5DataCL
 
     static BaryCoordCL           Node[NumNodesC]; ///< quadrature nodes
     static const double          Wght[4];         ///< quadrature weights
+    static const double          Weight[NumNodesC];///< quadrature weight for each node
     static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
 
     /// \param M contains the barycentric coordinates of a tetrahedron;
