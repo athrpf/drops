@@ -763,7 +763,7 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
 
     const MultiGridCL& _MG= old_sol.GetMG();
     const Uint old_level= old_sol.GetLevel();
-    const Uint level= sol.GetLevel();
+    //const Uint level= sol.GetLevel();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     Uint counter1= 0, counter2= 0;
 
