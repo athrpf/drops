@@ -35,7 +35,7 @@ namespace DROPS
     }
 
     template<class T>
-    T SingletonMapCL<T>::operator[](std::string s){
+    T& SingletonMapCL<T>::operator[](std::string s){
         if (this->find(s) == this->end()){
             std::ostringstream os;
             os << "function with the name \"" << s << "\" not found in container!";
