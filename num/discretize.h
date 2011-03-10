@@ -351,6 +351,27 @@ void ExtendP1onChild( const LocalP2CL<T>& isoP2, int child, LocalP2CL<T>& P1onPa
 // ===================================
 //        Quadrature formulas
 // ===================================
+/// \brief Contains the nodes and weights of a positive quadrature rule on the reference tetrahedron. It uses 5 nodes an is exact up to degree 2.
+///
+/// The data is initialized exactly once on program-startup by the global object in num/discretize.cpp.
+class Quad2DataCL
+{
+  public:
+    Quad2DataCL ();
+
+    enum { NumNodesC= 5 };
+
+    static BaryCoordCL  Node[NumNodesC]; ///< quadrature nodes
+    static const double Wght[2];         ///< quadrature weights
+    static const double Weight[NumNodesC];///< quadrature weight for each node
+
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
+};
+
 template<class T=double>
 class Quad2CL: public GridFunctionCL<T>
 {
@@ -359,13 +380,8 @@ class Quad2CL: public GridFunctionCL<T>
     typedef typename base_type::value_type value_type;
     typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
-    enum { NumNodesC= 5 };
-
     static const double Node[5][4]; // Stuetzstellen (NumNodesC*4 doubles)
     static const double Wght[5];    // Gewichte      (NumNodesC   doubles)
-
-    static inline BaryCoordCL // Das kopiert leider.
-    GetNode( Uint i) { return Node[i]; }
 
     /// \param M contains the barycentric coordinates of a tetrahedron;
     /// \param p array to be used for the quadrature points for this tetrahedron.
@@ -377,8 +393,8 @@ class Quad2CL: public GridFunctionCL<T>
     typedef Quad2CL<T> self_;
 
   public:
-    Quad2CL(): base_type( value_type(), NumNodesC) {}
-    Quad2CL(const value_type& t): base_type( t, NumNodesC) {}
+    Quad2CL(): base_type( value_type(), Quad2DataCL::NumNodesC) {}
+    Quad2CL(const value_type& t): base_type( t, Quad2DataCL::NumNodesC) {}
 
     Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad2CL(const LocalP2CL<value_type>&);
@@ -406,7 +422,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     T quad (double absdet) const
     {
         value_type sum= this->sum()/120.;
-        return (sum + 0.125*(*this)[NumNodesC-1])*absdet;
+        return (sum + 0.125*(*this)[Quad2DataCL::NumNodesC-1])*absdet;
     }
 
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus

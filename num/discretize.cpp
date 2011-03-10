@@ -28,6 +28,60 @@
 
 namespace DROPS
 {
+
+static inline BaryCoordCL*
+TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p, Uint NumNodes, const BaryCoordCL* Node)
+{
+    if (!p) p= new BaryCoordCL[NumNodes];
+    for (Uint i=0; i < NumNodes; ++i)
+        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+        for (Uint k= 0; k < 4; ++k)
+            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
+                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
+    return p;
+}
+
+BaryCoordCL Quad2DataCL::Node[NumNodesC];
+
+const double Quad2DataCL::Wght[2]= {
+    1./120., /* Node[0] bis Node[3]*/
+    2./15., /* 2./15., Node[4]*/
+};
+
+const double Quad2DataCL::Weight[NumNodesC]= {
+    1./120.,
+    1./120.,
+    1./120.,
+    1./120.,
+
+    2./15.
+};
+
+Quad2DataCL::Quad2DataCL()
+{
+    Node[0]= MakeBaryCoord( 1., 0., 0., 0.);
+    Node[1]= MakeBaryCoord( 0., 1., 0., 0.);
+    Node[2]= MakeBaryCoord( 0., 0., 1., 0.);
+    Node[3]= MakeBaryCoord( 0., 0., 0., 1.);
+    Node[4]= BaryCoordCL( 0.25);
+}
+
+///\brief special implementation to copy the first 4 nodes.
+BaryCoordCL*
+Quad2DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
+{
+    if (!p) p= new BaryCoordCL[NumNodesC];
+    //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+    std::memcpy( p, M.begin(), 4*sizeof( BaryCoordCL));
+    for (Uint k= 0; k < 4; ++k)
+            p[4][k]= 0.25*( M[0][k] + M[1][k] + M[2][k] + M[3][k]);
+    return p;
+}
+
+namespace {
+    Quad2DataCL theQuad2DataInitializer_; // The constructor sets up the static arrays
+} // end of anonymous namespace
+
 //**************************************************************************
 // Class: Quad3DataCL                                                      *
 //**************************************************************************
@@ -56,13 +110,7 @@ Quad3DataCL::Quad3DataCL()
 
 BaryCoordCL* Quad3DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
 {
-    if (!p) p= new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i < NumNodesC; ++i)
-        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k= 0; k < 4; ++k)
-            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return p;
+    return DROPS::TransformNodes( M, p, NumNodesC, Node);
 }
 
 namespace {
@@ -135,13 +183,7 @@ Quad5DataCL::Quad5DataCL()
 BaryCoordCL*
 Quad5DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
 {
-    if (!p) p= new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i < NumNodesC; ++i)
-        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k= 0; k < 4; ++k)
-            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return p;
+    return DROPS::TransformNodes( M, p, NumNodesC, Node);
 }
 
 namespace {
