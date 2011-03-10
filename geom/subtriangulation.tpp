@@ -22,13 +22,17 @@
  * Copyright 2011 LNM/SC RWTH Aachen, Germany
 */
 
+#include "geom/topo.h"
+
+#include <iterator>
+
 namespace DROPS
 {
 
 template <class VertexPartitionPolicyT,
           class VertexCutMergingPolicyT>
   void
-  TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
+  TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>::partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
     tetras_.resize( 0);
@@ -62,7 +66,7 @@ template <class VertexPartitionPolicyT,
     }
     pos_tetra_begin_= tetras_.size();
     std::copy( loc_tetras. begin(), loc_tetras.end(), std::back_inserter( tetras_));
-    vertex_policy.sort_vertexes( ls, tetras_.begin(), tetras_.end(), pos_tetra_begin_);
+    vertex_policy.sort_vertexes( ls, tetras_.begin(), tetras_.end(), pos_tetra_begin_, pos_vertex_begin_, neg_vertex_end_);
 }
 
 template <class VertexPartitionPolicyT,

@@ -232,7 +232,8 @@ reparam: \
 principallattice: \
     ../tests/principallattice.o ../misc/utils.o ../geom/principallattice.o ../num/discretize.o ../geom/topo.o \
     ../num/fe.o ../num/interfacePatch.o ../misc/problem.o ../num/unknowns.o ../geom/simplex.o \
-    ../geom/multigrid.o ../geom/builder.o ../geom/boundary.o ../num/unknowns.o
+    ../geom/multigrid.o ../geom/builder.o ../geom/boundary.o ../num/unknowns.o ../geom/reftetracut.o \
+    ../geom/subtriangulation.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ../tests/directsolver.o:

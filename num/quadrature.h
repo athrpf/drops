@@ -20,7 +20,7 @@
  *
  *
  * Copyright 2011 LNM/SC RWTH Aachen, Germany
-*/
+ */
 
 #ifndef DROPS_QUADRATURE_H
 #define DROPS_QUADRATURE_H
@@ -28,42 +28,89 @@
 #include "misc/container.h"
 #include "geom/subtriangulation.h"
 
-#include <valarray>"
+#include <valarray>
 
 namespace DROPS {
+
+/// Integration of full-sized integrands, which have size( AllTetraC) components.
+///@{
+/// \brief Integrate on the negative, the positive or all tetras.
+template <class GridFunT, class DomainT>
+  typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const DomainT& dom, TetraSignEnum s=AllTetraC);
+
+/// \brief Integrate on the negative and the positive tetras.
+template <class GridFunT, class DomainT>
+  inline void
+  quad (const GridFunT& f, double absdet, const DomainT& dom,
+    typename ValueHelperCL<GridFunT>::value_type& neg_int,
+    typename ValueHelperCL<GridFunT>::value_type& pos_int);
+///@}
+
+/// Integration of small integrands, which have size( NegTetraC) or size( PosTetraC) components
+///@{
+/// \brief Integrate an integrand, that is defined only on the negative tetras. It does not work for full-sized integrands. Use quad for the latter.
+template <class GridFunT, class DomainT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad_neg_integrand (const GridFunT& f, double absdet, const DomainT& dom);
+
+/// \brief Integrate an integrand, that is defined only on the positive tetras. It does not work for standard integrands. Use quad for the latter.
+template <class GridFunT, class DomainT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad_pos_integrand (const GridFunT& f, double absdet, const DomainT& dom);
+///@}
+
+namespace CompositeQuadratureTypesNS {
+
+    typedef std::valarray<double> WeightContT;
+    typedef const double* const_weight_iterator;
+
+} // end of namespace DROPS::CompositeQudratureTypesNS
 
 class CompositeQuad2DomainCL
 {
   public:
-    typedef std::vector<BaryCoordCL> VertexContT;
-    typedef VertexContT::const_iterator const_vertex_iterator;
+    typedef LatticePartitionTypesNS::VertexContT VertexContT;
+    typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
 
-    typedef std::valarrayL<double> WeightContT;
+    typedef CompositeQuadratureTypesNS::WeightContT WeightContT;
+    typedef CompositeQuadratureTypesNS::const_weight_iterator const_weight_iterator;
 
   private:
     VertexContT vertexes_;
-    size_t pos_begin_;  ///< begin of the subsequence of positive tetras
+    size_t pos_begin_; ///< begin of the subsequence of vertexes of positive tetras
+    size_t neg_end_;   ///< end of the subsequence of vertexes of negative tetras
 
-    WeightContT weights_;
+    WeightContT neg_weights_;
+    WeightContT pos_weights_;
+    WeightContT all_weights_;
 
   public:
-    CompositeQuad2DomainCL () : pos_begin_( 0), weights_( 0) {}
-    void assign (const TetraPartitionCL& partition);
+    CompositeQuad2DomainCL () : pos_begin_( 0), neg_end_( 0), neg_weights_( 0), pos_weights_( 0), all_weights_( 0){}
+    template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+    CompositeQuad2DomainCL (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition)
+        { assign( partition); }
+    template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+    void assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& partition);
+
+    Uint dof_begin (TetraSignEnum s= AllTetraC) const
+        { return s == PosTetraC ? pos_begin_ : 0; }
+    Uint dof_end   (TetraSignEnum s= AllTetraC) const
+        { return s == NegTetraC ? neg_end_ : vertexes_.size(); }
 
     size_t size (TetraSignEnum s= AllTetraC) const
-        { return vertex_end( s) - vertex_begin( s); }
+        { return dof_end( s) - dof_begin( s); }
 
-    const WeightContT& weights () const { return weights_; }
+    const_weight_iterator weight_begin (TetraSignEnum s= AllTetraC) const {
+        return (s == NegTetraC ? Addr( neg_weights_)
+                               : (s == PosTetraC ? Addr( pos_weights_)
+                                                 : Addr( all_weights_)));
+    }
 
     const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const
         { return vertexes_.begin() + ( s == PosTetraC ? pos_begin_ : 0); }
     const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
-        { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
-
-    template <class GridFunT>
-    typename ValueHelperCL<GridFunT>::value_type quad (const GridFunT<ValueT& f, double absdet, TetraSignEnum s= AllTetraC);
-    template <class GridFunT>
-    void quad (const GridFunT& f, double absdet, typename ValueHelperCL<GridFunT>::value_type& pos_int, typename ValueHelperCL<GridFunT>::value_type& neg_int);
+        { return s == NegTetraC ? vertexes_.begin() + neg_end_ : vertexes_.end(); }
 };
 
 
@@ -73,7 +120,8 @@ class CompositeQuad5DomainCL
     typedef LatticePartitionTypesNS::VertexContT           VertexContT;
     typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
 
-    typedef std::valarrayL<double> WeightContT;
+    typedef CompositeQuadratureTypesNS::WeightContT           WeightContT;
+    typedef CompositeQuadratureTypesNS::const_weight_iterator const_weight_iterator;
 
   private:
     VertexContT vertexes_;
@@ -85,24 +133,25 @@ class CompositeQuad5DomainCL
     CompositeQuad5DomainCL () : pos_begin_( 0), weights_( 0) {}
     template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
     CompositeQuad5DomainCL (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition)
-        : pos_begin_( 0), weights_( 0) { assign( partition); }
+        { assign( partition); }
     template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
     void assign (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition);
 
-    size_t size (TetraSignEnum s= AllTetraC) const
-        { return vertex_end( s) - vertex_begin( s); }
+    Uint dof_begin (TetraSignEnum s= AllTetraC) const
+        { return s == PosTetraC ? pos_begin_ : 0; }
+    Uint dof_end   (TetraSignEnum s= AllTetraC) const
+        { return s == NegTetraC ? pos_begin_ : vertexes_.size(); }
 
-    const WeightContT& weights () const { return weights_; }
+    size_t size (TetraSignEnum s= AllTetraC) const
+        { return dof_end( s) - dof_begin( s); }
+
+    const_weight_iterator weight_begin (TetraSignEnum s= AllTetraC) const
+        { return Addr( weights_) + (s == PosTetraC ? pos_begin_ : 0); }
 
     const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const
         { return vertexes_.begin() + ( s == PosTetraC ? pos_begin_ : 0); }
     const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
         { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
-
-    template <class GridFunT>
-    typename ValueHelperCL<GridFunT>::value_type quad (const GridFunT& f, double absdet, TetraSignEnum s= AllTetraC);
-    template <class GridFunT>
-    void quad (const GridFunT& f, double absdet, typename ValueHelperCL<GridFunT>::value_type& pos_int, typename ValueHelperCL<GridFunT>::value_type& neg_int);
 };
 
 } // end of namespace DROPS

@@ -23,7 +23,8 @@
 */
 
 #include "geom/principallattice.h"
-#include "geom/principallattice.h"
+#include "geom/subtriangulation.h"
+#include "num/quadrature.h"
 #include "misc/container.h"
 #include "num/discretize.h"
 #include "geom/multigrid.h"
@@ -177,7 +178,7 @@ void test_sphere_integral ()
     // DROPS::SurfacePatchCL patch;
     double vol_neg= 0., vol_pos= 0.;
     // double surf= 0.;
-    DROPS::CompositeQuad5DomainCL q5dom( tet);
+    DROPS::CompositeQuad2DomainCL q5dom( tet);
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate( ls, lat, &sphere, *it);
         tet.partition_principal_lattice( num_sub_lattice, ls);
@@ -185,7 +186,7 @@ void test_sphere_integral ()
         q5dom.assign( tet);
         DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
         double tmp_neg, tmp_pos;
-        q5dom.quad( integrand, it->GetVolume()*6., tmp_neg, tmp_pos);
+        quad( integrand, it->GetVolume()*6., q5dom, tmp_neg, tmp_pos);
         vol_neg+= tmp_neg; vol_pos+= tmp_pos;
         // q5_2d.assign( patch);
         // DROPS::GridFunctionCL<> surf_integrand( 1., q5_2d.size());
@@ -199,11 +200,11 @@ void test_sphere_integral ()
 int main()
 {
     try {
-        test_tetra_cut();
+        // test_tetra_cut();
         // test_cut_surface();
         // test_principal_lattice();
         // test_sphere_cut();
-        // test_sphere_integral();
+        test_sphere_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;

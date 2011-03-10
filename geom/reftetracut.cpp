@@ -23,8 +23,10 @@
 */
 
 #include "geom/reftetracut.h"
+#include "geom/topo.h"
 
 #include <iostream>
+#include <cstring>
 
 namespace DROPS {
 
@@ -102,7 +104,7 @@ Ubyte
 RefTetraPartitionCL::some_non_zero_vertex (const SignPatternTraitCL& cut) const
 {
     Ubyte v;
-    for (v= 0; cut[v] == v && v < cut.num_zero_vertexes(); ++v)
+    for (v= 0; v < cut.num_zero_vertexes() && cut[v] == v; ++v)
         /*empty body*/;
     return v;
 }
@@ -171,3 +173,5 @@ operator<< (std::ostream& out, const RefTetraPartitionCL& c)
     }
     return out;
 }
+
+} // end of namespace DROPS

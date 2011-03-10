@@ -22,38 +22,120 @@
  * Copyright 2011 LNM/SC RWTH Aachen, Germany
  */
 
+#include "num/discretize.h"
+
 namespace DROPS {
 
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-void CompositeQuad2DomainCL::assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+template <class GridFunT, class DomainT>
+  typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const DomainT& dom, TetraSignEnum s=AllTetraC)
 {
-    typedef TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT> TetraPartitionT;
-    const Uint num_nodes= Quad2DataCL::NumNodesC;
+          Uint begin= dom.dof_begin( s);
+    const Uint end=   dom.dof_end(   s);
+    typename DomainT::const_weight_iterator w_iter= dom.weight_begin( s);
 
-    vertexes_.resize( 0);
-    vertexes_.reserve( p.vertex_size() + p.tetra_size());
-    std::copy( p.vertex_begin( NegTetraC), p.vertex_end( NegTetraC), std::back_inserter( vertexes_));
+    typedef typename ValueHelperCL<GridFunT>::value_type value_type;
+    value_type sum= value_type();
+    while (begin != end)
+       sum+= (*w_iter++)*f[begin++];
+    return sum*absdet;
+}
 
-    weights_.resize(   p.vertex_size() + p.tetra_size());
+template <class GridFunT, class DomainT>
+  inline void
+  quad (const GridFunT& f, double absdet, const DomainT& dom,
+    typename ValueHelperCL<GridFunT>::value_type& neg_int,
+    typename ValueHelperCL<GridFunT>::value_type& pos_int)
+{
+    neg_int= quad( f, absdet, dom, NegTetraC);
+    pos_int= quad( f, absdet, dom, PosTetraC);
+}
 
-    const TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
-    const WeightContT tetra_weights( Quad5DataCL::Weight, num_nodes);
-    Uint w_begin= 0;
-    QRDecompCL<4,4> qr;
-    SMatrixCL<4,4>& T= qr.GetMatrix();
-    for (TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it, w_begin+= num_nodes) {
-        for (int i= 0; i < 4; ++i)
-            T.col( i)= partition_vertexes[(*it)[i]];
-        for (Uint i= 0; i < num_nodes; ++i)
-            vertexes_.push_back( T*Quad2DataCL::Node[i]);
-        qr.prepare_solve();
-        weights_[std::slice( w_begin, num_nodes, 1)]= std::fabs( qr.Determinant_R())*tetra_weights;
-    }
+///\brief Helper to quad_{neg,pos}_integrand
+/// Integrate a integrand, that is defined only on either the negative or the positive tetras. It does not work for standard integrands.
+template <class GridFunT, class DomainT>
+  typename ValueHelperCL<GridFunT>::value_type
+  quad_single_domain_integrand (const GridFunT& f, double absdet, const DomainT& dom, TetraSignEnum s)
+{
+    typename DomainT::const_weight_iterator w_iter= dom.weight_begin( s);
+          Uint begin= 0;
+    const Uint end= dom.dof_end( s) - dom.dof_begin( s);
+
+    typedef typename ValueHelperCL<GridFunT>::value_type value_type;
+    value_type sum= value_type();
+    while (begin != end)
+       sum+= (*w_iter++)*f[begin++];
+    return sum*absdet;
+}
+
+template <class GridFunT, class DomainT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad_neg_integrand (const GridFunT& f, double absdet, const DomainT& dom)
+{
+    return quad_single_domain_integrand( f, absdet, dom, NegTetraC);
+}
+
+template <class GridFunT, class DomainT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad_pos_integrand (const GridFunT& f, double absdet, const DomainT& dom)
+{
+    return quad_single_domain_integrand( f, absdet, dom, PosTetraC);
 }
 
 
 template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-void CompositeQuad5DomainCL::assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+  void
+  CompositeQuad2DomainCL::assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+{
+    typedef TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT> TetraPartitionT;
+
+    neg_end_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
+    pos_begin_= p.vertex_begin( PosTetraC) - p.vertex_begin() + p.tetra_size( NegTetraC);
+
+    neg_weights_.resize( p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC));
+    pos_weights_.resize( p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC));
+
+    VertexContT neg_tetra_bary;
+    neg_tetra_bary.reserve( p.tetra_size( NegTetraC));
+    VertexContT pos_tetra_bary;
+    pos_tetra_bary.reserve( p.tetra_size( PosTetraC));
+
+    const typename TetraPartitionT::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    QRDecompCL<4,4> qr;
+    SMatrixCL<4,4>& T= qr.GetMatrix();
+    for (typename TetraPartitionT::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it) {
+        for (Uint i= 0; i < NumVertsC; ++i)
+            T.col( i, partition_vertexes[(*it)[i]]);
+        const bool is_neg= p.sign( it) == -1;
+        (is_neg ? neg_tetra_bary : pos_tetra_bary).push_back( T*Quad2DataCL::Node[4]);
+        qr.prepare_solve();
+        const double absdet= std::fabs( qr.Determinant_R());
+        WeightContT& w= is_neg ? neg_weights_ : pos_weights_;
+        const Uint vertex_weight_begin= is_neg ? p.tetra_size( NegTetraC) : 0;
+        const Uint vertex_beg= is_neg ? 0 : p.vertex_begin( PosTetraC) - p.vertex_begin();
+        for (int i= 0; i < 4; ++i)
+            w[(*it)[i] - vertex_beg + vertex_weight_begin]+= absdet*Quad2DataCL::Wght[0];
+        const Uint tetra_weight_begin= is_neg ? 0 : p.vertex_size( PosTetraC);
+        const typename TetraPartitionT::const_tetra_iterator tetra_beg=
+            p.tetra_begin( is_neg ? NegTetraC : PosTetraC);
+        w[it - tetra_beg + tetra_weight_begin]+= absdet*Quad2DataCL::Wght[1];
+    }
+
+    vertexes_.resize( 0);
+    vertexes_.reserve( p.vertex_size() + p.tetra_size());
+    std::copy( neg_tetra_bary.begin(), neg_tetra_bary.end(), std::back_inserter( vertexes_));
+    std::copy( p.vertex_begin(), p.vertex_end(), std::back_inserter( vertexes_));
+    std::copy( pos_tetra_bary.begin(), pos_tetra_bary.end(), std::back_inserter( vertexes_));
+
+    all_weights_.resize( p.vertex_size() + p.tetra_size());
+    all_weights_[std::slice( dof_begin( NegTetraC), neg_weights_.size(), 1)] = neg_weights_;
+    all_weights_[std::slice( dof_begin( PosTetraC), pos_weights_.size(), 1)]+= pos_weights_;
+}
+
+
+template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+  void
+  CompositeQuad5DomainCL::assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
 {
     typedef TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT> TetraPartitionT;
     const Uint num_nodes= Quad5DataCL::NumNodesC;
@@ -76,70 +158,6 @@ void CompositeQuad5DomainCL::assign (const TetraPartitionCL<VertexPartitionPolic
         qr.prepare_solve();
         weights_[std::slice( w_begin, num_nodes, 1)]= std::fabs( qr.Determinant_R())*tetra_weights;
     }
-}
-
-
-template <class GridFunT>
-typename ValueHelperCL<GridFunT>::value_type CompositeQuad5DomainCL::quad (const GridFunT& f, double absdet, TetraSignEnum s)
-{
-    const WeightContT& theweights= weights();
-          Uint begin= s == PosTetraC ? size( NegTetraC) : 0;
-    const Uint end=   s == NegTetraC ? size( NegTetraC) : size( AllTetraC);
-
-    typedef typename ValueHelperCL<GridFunT>::value_type value_type;
-    value_type sum= value_type();
-    for (; begin < end; ++begin)
-       sum+= theweights[begin]*f[begin];
-    return sum*absdet;
-}
-
-template <class GridFunT>
-void CompositeQuad5DomainCL::quad (const GridFunT& f, double absdet, typename ValueHelperCL<GridFunT>::value_type& neg_int, typename ValueHelperCL<GridFunT>::value_type& pos_int)
-{
-    const WeightContT& theweights= weights();
-    pos_int= neg_int= typename ValueHelperCL<GridFunT>::value_type();
-    const Uint pos_begin= size( NegTetraC);
-
-    for (Uint i= 0; i < pos_begin; ++i)
-       neg_int+= theweights[i]*f[i];
-    neg_int*= absdet;
-
-    const Uint end= size( AllTetraC);
-    for (Uint i= pos_begin; i < end; ++i)
-       pos_int+= theweights[i]*f[i];
-    pos_int*= absdet;
-}
-
-
-template <class GridFunT>
-typename ValueHelperCL<GridFunT>::value_type CompositeQuad2DomainCL::quad (const GridFunT<ValueT>& f, double absdet, TetraSignEnum s)
-{
-    const Uint begin= s == PosTetraC ? size( NegTetraC) : 0;
-    const Uint end=   s == NegTetraC ? size( NegTetraC) : size( AllTetraC);
-    const WeightContT& weights= weights();
-
-    ValueT sum= ValueT();
-    for (; begin < end; ++begin)
-       sum+=  weights[begin]*f[begin]
-    return sum*absdet;
-}
-
-template <class GridFunT>
-void CompositeQuad2DomainCL::quad (const GridFunT<ValueT>& f, double absdet, typename ValueHelperCL<GridFunT>::value_type& neg_int, typename ValueHelperCL<GridFunT>::value_type& pos_int)
-{
-    typedef typename ValueHelperCL<GridFunT>::value_type value_type;
-    const WeightContT& weights= weights();
-    pos_int= neg_int= value_type();
-    const Uint pos_begin= size( NegTetraC);
-
-    for (Uint i= 0; i < pos_begin; ++i)
-       neg_int+=  weights[i]*f[i];
-    neg_int*= absdet;
-
-    const Uint end= size( AllTetraC);
-    for (Uint i= pos_begin; i < end; ++i)
-       pos_int+=  weights[i]*f[i];
-    pos_int*= abs_det;
 }
 
 } // end of namespace DROPS

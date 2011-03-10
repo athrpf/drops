@@ -132,7 +132,7 @@ inline const RefTetraSurfacePatchCL&
 RefTetraSurfacePatchCL::instance (const byte ls[4])
 {
     static RefTetraSurfacePatchCL instance_array[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
-    static RefTetraSurfacePatchCL* const instances= instance_arrray + 40;
+    static RefTetraSurfacePatchCL* const instances= instance_array + 40;
 
     RefTetraSurfacePatchCL& instance= instances[instance_idx ( ls)];
     if ( !instance.is_initialized())
@@ -144,7 +144,7 @@ inline const RefTetraSurfacePatchCL&
 RefTetraSurfacePatchCL::instance (const double ls[4])
 {
     byte ls_byte[4];
-    for (int i= 0; i < 4 ++i)
+    for (int i= 0; i < 4; ++i)
         ls_byte[i]= sign( ls[i]);
     return instance( ls_byte);
 }
@@ -218,7 +218,7 @@ inline const RefTetraPartitionCL&
 RefTetraPartitionCL::instance (const byte ls[4])
 {
     static RefTetraPartitionCL instance_array[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
-    static RefTetraPartitionCL* const instances= instance_arrray + 40;
+    static RefTetraPartitionCL* const instances= instance_array + 40;
 
     RefTetraPartitionCL& instance= instances[instance_idx ( ls)];
     if ( !instance.is_initialized())
@@ -230,8 +230,8 @@ inline const RefTetraPartitionCL&
 RefTetraPartitionCL::instance (const double ls[4])
 {
     byte ls_byte[4];
-    for (int i= 0; i < 4 ++i)
-        ls_byte[i]= sign( ls[i]);
+    for (int i= 0; i < 4; ++i)
+        ls_byte[i]= DROPS::sign( ls[i]);
     return instance( ls_byte);
 }
 

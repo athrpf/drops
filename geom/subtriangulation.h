@@ -27,9 +27,11 @@
 
 #include "misc/container.h"
 #include "geom/principallattice.h"
+#include "geom/reftetracut.h"
 
 #include <vector>
-#include <unordered_map>
+#include <valarray>
+#include <tr1/unordered_map>
 
 
 namespace DROPS {
@@ -74,7 +76,7 @@ class UnorderedVertexPolicyCL
     Uint cut_index_offset () { return 0; }
 
     /// \brief Sort the vertexes and update the vertex numbers in the tetras: a no-op for this policy
-    void sort_vertexes (const GridFunctionCL<>&, TetraContT::iterator, TetraContT::iterator, size_t) {}
+    void sort_vertexes (const std::valarray<double>&, TetraContT::iterator, TetraContT::iterator, size_t, size_t&, size_t&) {}
 };
 
 /// \brief Vertices are ordered with respect to the sign of the levelset function as follows: First the negative vertexes, then the zero vertexes, then the positive vertexes. The vertexes of the negative and of the positive tetras potentially overlap in the zero vertexes.
@@ -100,7 +102,7 @@ class SortedVertexPolicyCL
     Uint cut_index_offset () { return lattice_num_vertexes_; }
 
     /// \brief Sort the vertexes and update the vertex numbers in the tetras.
-    void sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin);
+    void sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin, size_t& pos_vertex_begin, size_t& neg_vertex_end);
 };
 
 /// \brief Vertices are ordered with respect to the sign of the levelset function as follows: First the negative vertexes, then the zero vertexes, then the positive vertexes. Opposite to SortedVertexPolicyC, all zero vertexes are duplicated, such that the vertexes of the negative tetras and of the positive tetras are disjoint.
@@ -126,8 +128,8 @@ class PartitionedVertexPolicyCL
     Uint cut_index_offset () { return lattice_num_vertexes_; }
 
     /// \brief Sort the vertexes and update the vertex numbers in the tetras: Special care must be taken for the duplicated vertexes
-    void sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin,
-        TetraContT::iterator tetra_end, size_t pos_tetra_begin);
+    void sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin,
+        TetraContT::iterator tetra_end, size_t pos_tetra_begin, size_t& pos_vertex_begin, size_t& neg_vertex_end);
 };
 
 ///\brief A cut-vertex is added to the list of vertexes for each tetra, on which it is discovered; fast, but leads to more vertices, which in turn leads to more dof for quadrature rules that use the vertexes of the partition.
@@ -240,12 +242,14 @@ class TetraPartitionCL
     TetraPartitionCL () : pos_tetra_begin_( 0), pos_vertex_begin_( 0), neg_vertex_end_( 0) {} ///< Empty default-cut
 
     ///\brief Computes the partition of the principal lattice with num_intervals on each edge of the reference-tetra given the level set values in ls.
-    void partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls);
+    void partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls);
 
     size_t tetra_size  (TetraSignEnum s= AllTetraC) const ///< number of tetras with given sign
          { return tetra_end( s) - tetra_begin( s); }
     size_t vertex_size (TetraSignEnum s= AllTetraC) const ///< number of vertexes used by the tetras of the corresponding sign; depending on VertexCutMergingPolicyT, interface vertexes occur multiple times.
          { return vertex_end( s) - vertex_begin( s); }
+
+    int sign (const_tetra_iterator t) const { return t < tetra_end( NegTetraC) ? -1 : 1; } ///< Sign of the tetra, to which t points
 
     /// Random-access to the tetras: all tetras, or negative and positive tetras separately, see TetraSignEnum.
     ///@{
@@ -287,7 +291,7 @@ class SurfacePatchCL
     /// Empty default-interface
 
     ///\brief Computes the piecewise triangular interface for the principal lattice with num_intervals on each edge of the reference-tetra given the level set values in ls.
-    void partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls);
+    void partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls);
 
     /// True, iff the triangle is a face of one of the tetras of the principal lattice.
     ///@{
@@ -303,8 +307,11 @@ class SurfacePatchCL
     const_vertex_iterator vertex_end   () const { return vertexes_.end(); }
     ///@}
 
-    friend void write_paraview_vtu (std::ostream&, const SurfacePatchCL&); ///< Debug-output to a stream: VTU-format for paraview.
+    friend void write_paraview_vtu (std::ostream&, const SurfacePatchCL&);
 };
+
+///\brief Debug-output to a stream: VTU-format for paraview.
+void write_paraview_vtu (std::ostream&, const SurfacePatchCL&);
 
 } // end of namespace DROPS
 

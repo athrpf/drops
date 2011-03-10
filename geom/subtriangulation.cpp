@@ -27,30 +27,32 @@
 namespace DROPS
 {
 
-void SortedVertexPolicyCL::sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t)
+void SortedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t, size_t& pos_vertex_begin, size_t& neg_vertex_end)
 {
     // Count signs
-    Uint num_sign[3]= { 0, 0, 0 }; // num_sign[i] == number of verts with sign i-1
+    Uint num_sign_arr[3]= { 0, 0, 0 };
+    Uint* const num_sign= num_sign_arr + 1; // num_sign[i] == number of verts with sign i
     for (Uint i= 0; i < lattice_num_vertexes_; ++i)
-        ++num_sign[sign_plus_one( ls[i])];
-    const Uint num_zero_vertexes= num_sign[1] + cut_vertexes_.size();
+        ++num_sign[DROPS::sign( ls[i])];
+    const Uint num_zero_vertexes= num_sign[0] + cut_vertexes_.size();
 
-    vertexes_.resize( num_sign[0] + num_sign[2] + num_zero_vertexes);
-    pos_vertex_begin_= num_sign[0];
-    neg_vertex_end_=   num_sign[0] + num_zero_vertexes;
+    vertexes_.resize( num_sign[-1] + num_sign[1] + num_zero_vertexes);
+    pos_vertex_begin= num_sign[-1];
+    neg_vertex_end=   num_sign[-1] + num_zero_vertexes;
 
-    std::vector<Uint> new_pos( num_sign[0] + num_sign[2] + num_zero_vertexes); // maps old vertex-index to the new one
-    size_t cursor[3]; // Insertion cursors for the sorted-by-sign vertex numbers
-    cursor[0]= 0;
-    cursor[1]= num_sign[0];
-    cursor[2]= num_sign[0] + num_zero_vertexes;
+    std::vector<Uint> new_pos( num_sign[-1] + num_sign[1] + num_zero_vertexes); // maps old vertex-index to the new one
+    size_t cursor_arr[3];
+    size_t* const cursor= cursor_arr + 1; // Insertion cursors for the sorted-by-sign vertex numbers
+    cursor[-1]= 0;
+    cursor[0]= num_sign[-1];
+    cursor[1]= num_sign[-1] + num_zero_vertexes;
     for (Uint i= 0; i < lattice_num_vertexes_; ++i) {
-        size_t& cur= cursor[sign_plus_one( ls[i])];
+        size_t& cur= cursor[DROPS::sign( ls[i])];
         new_pos[i]= cur;
         vertexes_[cur]= lattice_vertex_begin_[i];
         ++cur;
     }
-    size_t& cur= cursor[1];
+    size_t& cur= cursor[0];
     for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
         new_pos[i + lattice_num_vertexes_]= cur;
         vertexes_[cur]= cut_vertexes_[i];
@@ -61,32 +63,34 @@ void SortedVertexPolicyCL::sort_vertexes (const GridFunctionCL<>& ls, TetraContT
             (*it)[i]= new_pos[(*it)[i]];
 }
 
-void PartitionedVertexPolicyCL::sort_vertexes (const GridFunctionCL<>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin)
+void PartitionedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin, size_t& pos_vertex_begin, size_t& neg_vertex_end)
 {
     // Count signs
-    Uint num_sign[3]= { 0, 0, 0 }; // num_sign[i] == number of verts with sign i-1
+    Uint num_sign_arr[3]= { 0, 0, 0 };
+    Uint* const num_sign= num_sign_arr + 1; // num_sign[i] == number of verts with sign i
     for (Uint i= 0; i < lattice_num_vertexes_; ++i)
-        ++num_sign[sign_plus_one( ls[i])];
-    const Uint num_zero_vertexes= num_sign[1] + cut_vertexes_.size();
+        ++num_sign[DROPS::sign( ls[i])];
+    const Uint num_zero_vertexes= num_sign[0] + cut_vertexes_.size();
 
-    partition_vertexes_.resize( num_sign[0] + num_sign[2] + 2*num_zero_vertexes);
-    neg_vertex_end_= pos_vertex_begin_= num_sign[0] + num_zero_vertexes;
+    partition_vertexes_.resize( num_sign[-1] + num_sign[1] + 2*num_zero_vertexes);
+    neg_vertex_end= pos_vertex_begin= num_sign[-1] + num_zero_vertexes;
 
-    std::vector<Uint> new_pos( num_sign[0] + num_sign[2] + num_zero_vertexes); // maps old vertex-index to the new one
-    size_t cursor[3]; // Insertion cursors for the sorted-by-sign vertex numbers
-    cursor[0]= 0;
-    cursor[1]= num_sign[0];
-    cursor[2]= num_sign[0] + 2*num_zero_vertexes;
+    std::vector<Uint> new_pos( num_sign[-1] + num_sign[1] + num_zero_vertexes); // maps old vertex-index to the new one
+    size_t cursor_arr[3];
+    size_t* const cursor= cursor_arr + 1; // Insertion cursors for the sorted-by-sign vertex numbers
+    cursor[-1]= 0;
+    cursor[0]= num_sign[-1];
+    cursor[1]= num_sign[-1] + 2*num_zero_vertexes;
     for (Uint i= 0; i < lattice_num_vertexes_; ++i) {
-        const Uint sign_po= sign_plus_one( ls[i]);
-        size_t& cur= cursor[sign_po];
+        const Uint thesign= DROPS::sign( ls[i]);
+        size_t& cur= cursor[thesign];
         new_pos[i]= cur;
         partition_vertexes_[cur]= lattice_vertex_begin_[i];
-        if (sign_po == 1)
+        if (thesign == 1)
             partition_vertexes_[cur + num_zero_vertexes]= lattice_vertex_begin_[i];
         ++cur;
     }
-    size_t& cur= cursor[1];
+    size_t& cur= cursor[0];
     for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
         new_pos[i + lattice_num_vertexes_]= cur;
         partition_vertexes_[cur + num_zero_vertexes]= partition_vertexes_[cur]= cut_vertexes_[i];
@@ -102,7 +106,7 @@ void PartitionedVertexPolicyCL::sort_vertexes (const GridFunctionCL<>& ls, Tetra
 }
 
 
-void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const GridFunctionCL<>& ls)
+void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
     PrincipalLatticeCL::const_vertex_iterator lattice_verts= lat.vertex_begin();
@@ -180,6 +184,5 @@ void write_paraview_vtu (std::ostream& file_, const SurfacePatchCL& t)
           <<"\n</UnstructuredGrid>"
           <<"\n</VTKFile>";
 }
-
 
 } // end of namespace DROPS
