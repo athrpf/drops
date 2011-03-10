@@ -108,11 +108,11 @@ template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
             T.col( i, partition_vertexes[(*it)[i]]);
         const bool is_neg= p.sign( it) == -1;
         (is_neg ? neg_tetra_bary : pos_tetra_bary).push_back( T*Quad2DataCL::Node[4]);
-        qr.prepare_solve();
-        const double absdet= std::fabs( qr.Determinant_R());
         WeightContT& w= is_neg ? neg_weights_ : pos_weights_;
         const Uint vertex_weight_begin= is_neg ? p.tetra_size( NegTetraC) : 0;
         const Uint vertex_beg= is_neg ? 0 : p.vertex_begin( PosTetraC) - p.vertex_begin();
+        qr.prepare_solve();
+        const double absdet= std::fabs( qr.Determinant_R());
         for (int i= 0; i < 4; ++i)
             w[(*it)[i] - vertex_beg + vertex_weight_begin]+= absdet*Quad2DataCL::Wght[0];
         const Uint tetra_weight_begin= is_neg ? 0 : p.vertex_size( PosTetraC);

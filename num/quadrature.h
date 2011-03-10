@@ -62,8 +62,8 @@ template <class GridFunT, class DomainT>
 
 namespace CompositeQuadratureTypesNS {
 
-    typedef std::valarray<double> WeightContT;
-    typedef const double* const_weight_iterator;
+typedef std::valarray<double> WeightContT;
+typedef const double* const_weight_iterator;
 
 } // end of namespace DROPS::CompositeQudratureTypesNS
 
@@ -153,6 +153,48 @@ class CompositeQuad5DomainCL
     const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
         { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
 };
+
+
+// class ExtrapolatedQuad5DomainCL
+// {
+//   public:
+//     typedef LatticePartitionTypesNS::VertexContT           VertexContT;
+//     typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
+// 
+//     typedef CompositeQuadratureTypesNS::WeightContT           WeightContT;
+//     typedef CompositeQuadratureTypesNS::const_weight_iterator const_weight_iterator;
+// 
+//   private:
+//     VertexContT vertexes_;
+//     size_t pos_begin_;  ///< begin of the subsequence of vertices in positive tetras
+// 
+//     WeightContT weights_;
+// 
+//   public:
+//     ExtrapolatedQuad5DomainCL () : pos_begin_( 0), weights_( 0) {}
+//     template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+//     ExtrapolatedQuad5DomainCL (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition)
+//         { assign( partition); }
+//     template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+//     void assign (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition);
+// 
+//     Uint dof_begin (TetraSignEnum s= AllTetraC) const
+//         { return s == PosTetraC ? pos_begin_ : 0; }
+//     Uint dof_end   (TetraSignEnum s= AllTetraC) const
+//         { return s == NegTetraC ? pos_begin_ : vertexes_.size(); }
+// 
+//     size_t size (TetraSignEnum s= AllTetraC) const
+//         { return dof_end( s) - dof_begin( s); }
+// 
+//     const_weight_iterator weight_begin (TetraSignEnum s= AllTetraC) const
+//         { return Addr( weights_) + (s == PosTetraC ? pos_begin_ : 0); }
+// 
+//     const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const
+//         { return vertexes_.begin() + ( s == PosTetraC ? pos_begin_ : 0); }
+//     const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
+//         { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
+// };
+
 
 } // end of namespace DROPS
 
