@@ -3,10 +3,6 @@
 #    simulation of poisson problem
 #=============================================================
 
-#poisson solver
-
-
-
 # Options for the iterative Solver
 ########################################
 Poisson {

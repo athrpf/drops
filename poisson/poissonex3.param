@@ -96,20 +96,20 @@ DomainCond {
                                                    # Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, 
                                                    # NatBC= 23, NoBC= 98, UndefinedBC_= 99 
                                                    # -> Here: all boundaries are natural boundaries except for the 
-												   # first part which is of dirichlet type.
+                                                   # first part which is of dirichlet type.
   BoundaryFncs  =       One!Zero!Zero!Zero!Zero!Zero
                                                    # For each boundary domain take a string which describes 
                                                    # a function of a function container (s. PoissonCoeff-sect.)
                                                    # -> Here: all boundaries have zero natural boundaries
-												   # except for the first part which has dirichlet value 1.
+                                                   # except for the first part which has dirichlet value 1.
 }
 ####################################################
 
 # Time Discretization
 #################################################
 Time {
-    StepSize      = 2                           # time step size
-    NumSteps      = 10                          # number of timesteps. -> Here: >0, i.e. instationary setup
+    StepSize      = 1                           # time step size
+    NumSteps      = 0                           # number of timesteps. -> Here: =0, i.e. stationary setup
     Scheme        = 1                           # time disc. method: 1= theta scheme, 2=fractional step
     Theta         = 1                           # For theta scheme: parameter theta
     Convection    = 1                           # Do we have convection? -> Here: yes
