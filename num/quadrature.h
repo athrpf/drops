@@ -67,6 +67,45 @@ typedef const double* const_weight_iterator;
 
 } // end of namespace DROPS::CompositeQudratureTypesNS
 
+/// \brief Prototype of a quadrature-domain
+///
+/// Reimplementation of the quadrature rule of Quad5CL
+/// A quadrature rule is defined (and implemented) as a collection of quadrature points and a corresponding collection of weights.
+// class QuadDomainCL
+// {
+//   public:
+//     typedef LatticePartitionTypesNS::VertexContT VertexContT; ///\brief Container for barycentric coordinates of quadrature points.
+//     typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
+// 
+//     typedef CompositeQuadratureTypesNS::WeightContT WeightContT; ///< Container for the quadrature weights
+//     typedef CompositeQuadratureTypesNS::const_weight_iterator const_weight_iterator;
+// 
+//   public:
+//     QuadDomainCL ();
+//     template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+//     QuadDomainCL (const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& partition)
+//         { assign( partition); }
+//     template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+//     void assign (const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& partition);
+// 
+//     /// \brief sequence of the indices of the quadrature points for the given domain
+//     ///@{
+//     Uint dof_begin (TetraSignEnum s= AllTetraC) const;
+//     Uint dof_end   (TetraSignEnum s= AllTetraC) const;
+//     ///@}
+// 
+//     size_t size (TetraSignEnum s= AllTetraC) const; ///< Number of quadrature points in the given domain
+// 
+//     /// \brief Begin of the sequence of weights for integration on the given domain
+//     const_weight_iterator weight_begin (TetraSignEnum s= AllTetraC) const; 
+// 
+//     /// \brief sequence of quadrature points in the given domain.
+//     ///@{
+//     const_vertex_iterator vertex_begin (TetraSignEnum s= AllTetraC) const;
+//     const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const;
+//     ///@}
+// };
+
 class CompositeQuad2DomainCL
 {
   public:
@@ -194,6 +233,22 @@ class CompositeQuad5DomainCL
 //     const_vertex_iterator vertex_end   (TetraSignEnum s= AllTetraC) const
 //         { return s == NegTetraC ? vertexes_.begin() + pos_begin_ : vertexes_.end(); }
 // };
+
+///\brief Write the sign of the levelset function ls in the quadrature points [vert_begin, vert_end) to the sequence beginning at begin.
+/// \return end-iterator of the sequence of written signs
+// template<class sign_iterator>
+//   sign_iterator
+//   copy_levelset_sign (const LocalP2CL<>& ls,
+//     LatticePartitionTypesNS::const_vertex_iterator vert_begin,
+//     LatticePartitionTypesNS::const_vertex_iterator vert_end,
+//     sign_iterator begin)
+// {
+//     while (vert_begin != vert_end) {
+//         *begin++= sign( ls( *vert_begin++));
+//     }
+//     return begin;
+// }
+
 
 
 } // end of namespace DROPS

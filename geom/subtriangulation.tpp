@@ -29,6 +29,16 @@
 namespace DROPS
 {
 
+void
+copy_levelset_sign ( const std::valarray<double>& src, std::valarray<byte>& dst)
+{
+    dst.resize( src.size());
+    for (size_t i= 0; i < src.size(); ++i)
+        dst[i]= sign( src[i]);
+}
+
+
+
 template <class VertexPartitionPolicyT,
           class VertexCutMergingPolicyT>
   void
@@ -39,16 +49,19 @@ template <class VertexPartitionPolicyT,
     pos_tetra_begin_= 0;
     vertexes_.resize( 0);
 
+    std::valarray<byte> ls_sign;
+    copy_levelset_sign( ls, ls_sign);
+
     VertexPartitionPolicyT vertex_policy( vertexes_, lat);
     VertexCutMergingPolicyT edgecut( lat.vertex_begin(), vertex_policy.cut_vertex_container());
 
     TetraContT loc_tetras; // temporary container for the positive tetras.
-    double lset[4];
+    byte lset[4];
     Uint loc_vert_num;
     TetraT tet;
     for (PrincipalLatticeCL::const_tetra_iterator lattice_tet= lat.tetra_begin(), lattice_end= lat.tetra_end(); lattice_tet != lattice_end; ++lattice_tet) {
         for (Uint i= 0; i < 4; ++i)
-            lset[i]= ls[(*lattice_tet)[i]]; 
+            lset[i]= ls_sign[(*lattice_tet)[i]]; 
         const RefTetraPartitionCL& cut= RefTetraPartitionCL::instance( lset);
         for (RefTetraPartitionCL::const_tetra_iterator it= cut.tetra_begin(), end= cut.tetra_end(); it != end; ++it) {
             for (Uint j= 0; j < 4; ++j) {

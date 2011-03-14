@@ -50,7 +50,7 @@ typedef TriangleContT::const_iterator const_triangle_iterator;
 typedef std::vector<BaryCoordCL>    VertexContT;
 typedef VertexContT::const_iterator const_vertex_iterator;
 
-} // end of namespace LatticePartitionTypesNS
+} // end of namespace DROPS::LatticePartitionTypesNS
 
 
 /// \brief Vertices are ordered with respect to the sign of the levelset function as follows: First the vertexes from the principal lattice, then all proper cut-vertexes.

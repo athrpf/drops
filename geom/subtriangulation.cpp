@@ -113,15 +113,19 @@ void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const std:
 
     triangles_.resize( 0);
     is_boundary_triangle_.resize( 0);
+
+    std::valarray<byte> ls_sign;
+    copy_levelset_sign( ls, ls_sign);
+
     MergeCutPolicyCL edgecut( lat.vertex_begin(), vertexes_);
     std::vector<Uint> copied_vertexes( lat.num_vertexes(), static_cast<Uint>( -1));
 
-    double lset[4];
+    byte lset[4];
     Uint loc_vert_num;
     TriangleT tri;
     for (PrincipalLatticeCL::const_tetra_iterator lattice_tet= lat.tetra_begin(), lattice_end= lat.tetra_end(); lattice_tet != lattice_end; ++lattice_tet) {
         for (Uint i= 0; i < 4; ++i)
-            lset[i]= ls[(*lattice_tet)[i]]; 
+            lset[i]= ls_sign[(*lattice_tet)[i]]; 
         const RefTetraSurfacePatchCL& cut= RefTetraSurfacePatchCL::instance( lset);
         if (cut.empty()) continue;
         for (RefTetraSurfacePatchCL::const_triangle_iterator it= cut.triangle_begin(), end= cut.triangle_end(); it != end; ++it) {

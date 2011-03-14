@@ -202,9 +202,9 @@ int main()
     try {
         // test_tetra_cut();
         // test_cut_surface();
-        // test_principal_lattice();
+        test_principal_lattice();
         // test_sphere_cut();
-        test_sphere_integral();
+        // test_sphere_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;
