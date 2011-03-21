@@ -29,15 +29,15 @@
 namespace DROPS
 {
 
-void
+///\brief Write the sign of the levelset function src to the sequence dst.
+/// \return end-iterator of the sequence of written signs
+inline void
 copy_levelset_sign ( const std::valarray<double>& src, std::valarray<byte>& dst)
 {
     dst.resize( src.size());
     for (size_t i= 0; i < src.size(); ++i)
         dst[i]= sign( src[i]);
 }
-
-
 
 template <class VertexPartitionPolicyT,
           class VertexCutMergingPolicyT>

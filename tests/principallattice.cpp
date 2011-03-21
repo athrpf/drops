@@ -119,6 +119,11 @@ inline double sphere (const DROPS::Point3DCL& p)
     return p.norm() - 0.5;
 }
 
+inline double sphere_instat (const DROPS::Point3DCL& p, double)
+{
+    return sphere( p);
+}
+
 void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& lat, double (*f)(const DROPS::Point3DCL& p))
 {
     for (DROPS::PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it) {
@@ -179,6 +184,7 @@ void test_sphere_integral ()
     double vol_neg= 0., vol_pos= 0.;
     // double surf= 0.;
     DROPS::CompositeQuad2DomainCL q5dom( tet);
+
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate( ls, lat, &sphere, *it);
         tet.partition_principal_lattice( num_sub_lattice, ls);
@@ -196,15 +202,44 @@ void test_sphere_integral ()
     std::cout << "Volume of the negative part: " << vol_neg << ", volume of the positive part: " << vol_pos << std::endl;
 }
 
+void test_extrapolated_sphere_integral ()
+{
+    std::cout << "Enter the number of subdivisions of the cube: ";
+    DROPS::Uint num_sub;
+    std::cin >> num_sub;
+    std::cout << "Enter the number of extrapolation levels: ";
+    DROPS::Uint num_level;
+    std::cin >> num_level;
+    DROPS::BrickBuilderCL brick(DROPS::Point3DCL( -1.),
+                                2.*DROPS::std_basis<3>(1),
+                                2.*DROPS::std_basis<3>(2),
+                                2.*DROPS::std_basis<3>(3),
+                                num_sub, num_sub, num_sub);
+    DROPS::MultiGridCL mg( brick);
+    double vol_neg= 0., vol_pos= 0.;
+    DROPS::ExtrapolatedQuad5DomainCL q5dom;
+
+    DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
+        DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
+        q5dom.assign( num_level, ls_loc, DROPS::RombergSubdivisionCL());
+        DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
+        double tmp_neg, tmp_pos;
+        quad( integrand, it->GetVolume()*6., q5dom, tmp_neg, tmp_pos);
+        vol_neg+= tmp_neg; vol_pos+= tmp_pos;
+    }
+    std::cout << "Volume of the negative part: " << vol_neg << ", volume of the positive part: " << vol_pos << std::endl;
+}
+
 
 int main()
 {
     try {
         // test_tetra_cut();
         // test_cut_surface();
-        test_principal_lattice();
+        // test_principal_lattice();
         // test_sphere_cut();
         // test_sphere_integral();
+        test_extrapolated_sphere_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;

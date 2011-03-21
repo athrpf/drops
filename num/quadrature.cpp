@@ -26,4 +26,12 @@
 
 namespace DROPS {
 
+void
+aitken_neville_zero (const CompositeQuadratureTypesNS::WeightContT& x, std::vector<CompositeQuadratureTypesNS::WeightContT>& w, Uint j_begin, Uint j_end)
+{
+    for (Uint j= j_begin; j < j_end; ++j)
+        for (Uint i= w.size() - 1 ; i >= j; --i)
+            w[i]= (x[i]*w[i - 1] - x[i - j]*w[i])/(x[i] - x[i - j]);
+}
+
 } // end of namespace DROPS
