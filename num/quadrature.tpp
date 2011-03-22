@@ -160,31 +160,36 @@ template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
     }
 }
 
-inline void
+void
 copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec, const std::vector<Uint>& w_pos_begin,
-    const std::valarray<double >& w_factor, CompositeQuadratureTypesNS::WeightContT& weights)
-{
-    Uint s= 0, s_neg= 0;
-    for (Uint i= 0; i < w_vec.size(); ++i) {
-        s+= w_vec[i].size();
-        s_neg+= w_pos_begin[i];
-    }
-    weights.resize( s);
+    const std::valarray<double >& w_factor, CompositeQuadratureTypesNS::WeightContT& weights);
 
-    Uint neg_it= 0, pos_it= s_neg;
-    for (Uint i= 0; i < w_vec.size(); ++i) {
-        weights[std::slice( neg_it, w_pos_begin[i], 1)]= w_factor[i]*w_vec[i][std::slice( 0, w_pos_begin[i], 1)];
-        weights[std::slice( pos_it, w_vec[i].size() - w_pos_begin[i], 1)]
-            = w_factor[i]*w_vec[i][std::slice( w_pos_begin[i], w_vec[i].size() - w_pos_begin[i], 1)];
-        neg_it+= w_pos_begin[i];
-        pos_it+= w_vec[i].size() - w_pos_begin[i];
+/// \brief Compute the coefficients of the polynomial interpolating (x_i, w_i) in the Newton-basis.
+/// The computation is performed in-place.
+void
+compute_divided_differences (const CompositeQuadratureTypesNS::WeightContT& x, std::vector<CompositeQuadratureTypesNS::WeightContT>& w);
+
+/// \brief Evaluate the first derivative of a polynomial and the polynomial itself given in the Newton-basis.
+/// This is nested multiplication combined with the product rule.
+template <class T>
+  void
+  evaluate_newton_polynomial_and_derivative (const std::valarray<double>& x,
+    const std::vector<T>& c, double p, T& val, T& der)
+{
+    val= c[x.size() - 1];
+    der= 0;
+
+    for (Uint i= x.size() - 2; i < x.size(); --i) {
+        der= val + (p - x[i])*der;
+        val= c[i] + (p - x[i])*val;
     }
 }
 
-/// \brief compute the column j_end - 1 of the Aitken-Neville-scheme to evaluate the (vector-valued) polynomial defined by x and w at 0.
-/// The computation is performed in-place. It is assumed, that column j_begin - 1 is the initial content of w.
 void
-aitken_neville_zero (const CompositeQuadratureTypesNS::WeightContT& x, std::vector<CompositeQuadratureTypesNS::WeightContT>& w, Uint j_begin, Uint j_end);
+eliminate_linear_term (const CompositeQuadratureTypesNS::WeightContT& x,
+    CompositeQuadratureTypesNS::WeightContT& val0,
+    const CompositeQuadratureTypesNS::WeightContT& der0);
+
 
 template <class LocalFET, class SubdivisionT>
   void
@@ -230,15 +235,17 @@ template <class LocalFET, class SubdivisionT>
         copy_weights( w_vec, w_pos_begin, w_factor[0], weights_);
         return;
     }
-    aitken_neville_zero( WeightContT(h*h), w_factor, 1, 2);
-    aitken_neville_zero( h, w_factor, 2, num_level);
-/*for (Uint i= 0; i < w_factor.size(); ++i) {
-  for (Uint j= 0; j < w_factor.size(); ++j)
-    std::cerr << w_factor[i][j] << ' ';
-  std::cerr << "        ";
-}*/
+
+    compute_divided_differences( h, w_factor);
+    std::valarray<double> val( num_level), der( num_level);
+    evaluate_newton_polynomial_and_derivative( h, w_factor, 0., val, der);
+    eliminate_linear_term( h, val, der);
+
+for (Uint i= 0; i < val.size(); ++i) {
+    std::cerr << val[i] << ' ';
+}
 std::cerr << std::endl;
-    copy_weights( w_vec, w_pos_begin, w_factor[num_level - 1], weights_);
+    copy_weights( w_vec, w_pos_begin, val, weights_);
 }
 
 

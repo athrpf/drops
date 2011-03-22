@@ -27,11 +27,50 @@
 namespace DROPS {
 
 void
-aitken_neville_zero (const CompositeQuadratureTypesNS::WeightContT& x, std::vector<CompositeQuadratureTypesNS::WeightContT>& w, Uint j_begin, Uint j_end)
+copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec, const std::vector<Uint>& w_pos_begin,
+    const std::valarray<double >& w_factor, CompositeQuadratureTypesNS::WeightContT& weights)
 {
-    for (Uint j= j_begin; j < j_end; ++j)
-        for (Uint i= w.size() - 1 ; i >= j; --i)
-            w[i]= (x[i]*w[i - 1] - x[i - j]*w[i])/(x[i] - x[i - j]);
+    Uint s= 0, s_neg= 0;
+    for (Uint i= 0; i < w_vec.size(); ++i) {
+        s+= w_vec[i].size();
+        s_neg+= w_pos_begin[i];
+    }
+    weights.resize( s);
+
+    Uint neg_it= 0, pos_it= s_neg;
+    for (Uint i= 0; i < w_vec.size(); ++i) {
+        weights[std::slice( neg_it, w_pos_begin[i], 1)]= w_factor[i]*w_vec[i][std::slice( 0, w_pos_begin[i], 1)];
+        weights[std::slice( pos_it, w_vec[i].size() - w_pos_begin[i], 1)]
+            = w_factor[i]*w_vec[i][std::slice( w_pos_begin[i], w_vec[i].size() - w_pos_begin[i], 1)];
+        neg_it+= w_pos_begin[i];
+        pos_it+= w_vec[i].size() - w_pos_begin[i];
+    }
+}
+
+void
+compute_divided_differences (const CompositeQuadratureTypesNS::WeightContT& x, std::vector<CompositeQuadratureTypesNS::WeightContT>& w)
+{
+    for (Uint j= 1; j < x.size(); ++j)
+        for (Uint i= x.size() - 1 ; i >= j; --i)
+            w[i]= (w[i] - w[i - 1])/(x[i] - x[i - j]);
+}
+
+void
+eliminate_linear_term (const CompositeQuadratureTypesNS::WeightContT& x,
+    CompositeQuadratureTypesNS::WeightContT& val0,
+    const CompositeQuadratureTypesNS::WeightContT& der0)
+{
+    // Evaluate the next Newton-basis-polynomial and its derivative at 0.
+    double omega_n= 1.;
+    double der_omega_n= 0;
+
+    for (Uint i= x.size() - 1; i < x.size(); --i) {
+        der_omega_n= omega_n - x[i]*der_omega_n;
+        omega_n*= -x[i];
+    }
+    // Eliminate the linear term from the interpolation-polynomial
+    val0-= (omega_n/der_omega_n)*der0;
+
 }
 
 } // end of namespace DROPS

@@ -222,6 +222,7 @@ void test_extrapolated_sphere_integral ()
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
         q5dom.assign( num_level, ls_loc, DROPS::RombergSubdivisionCL());
+//         q5dom.assign( num_level, ls_loc, DROPS::HarmonicSubdivisionCL());
         DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
         double tmp_neg, tmp_pos;
         quad( integrand, it->GetVolume()*6., q5dom, tmp_neg, tmp_pos);
