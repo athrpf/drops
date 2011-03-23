@@ -183,16 +183,16 @@ void test_sphere_integral ()
     // DROPS::SurfacePatchCL patch;
     double vol_neg= 0., vol_pos= 0.;
     // double surf= 0.;
-    DROPS::CompositeQuad2DomainCL q5dom( tet);
+    DROPS::QuadDomainCL qdom;
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate( ls, lat, &sphere, *it);
         tet.partition_principal_lattice( num_sub_lattice, ls);
         // patch.partition_principal_lattice( num_sub_lattice, ls);
-        q5dom.assign( tet);
-        DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
+        DROPS::make_CompositeQuad5Domain( qdom, tet);
+        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
         double tmp_neg, tmp_pos;
-        quad( integrand, it->GetVolume()*6., q5dom, tmp_neg, tmp_pos);
+        quad( integrand, it->GetVolume()*6., qdom, tmp_neg, tmp_pos);
         vol_neg+= tmp_neg; vol_pos+= tmp_pos;
         // q5_2d.assign( patch);
         // DROPS::GridFunctionCL<> surf_integrand( 1., q5_2d.size());
@@ -217,12 +217,12 @@ void test_extrapolated_sphere_integral ()
                                 num_sub, num_sub, num_sub);
     DROPS::MultiGridCL mg( brick);
     double vol_neg= 0., vol_pos= 0.;
-    DROPS::ExtrapolatedQuad5DomainCL q5dom;
+    DROPS::QuadDomainCL q5dom;
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
-        q5dom.assign( num_level, ls_loc, DROPS::RombergSubdivisionCL());
-//         q5dom.assign( num_level, ls_loc, DROPS::HarmonicSubdivisionCL());
+        make_ExtrapolatedQuad5Domain( q5dom, num_level, ls_loc, DROPS::RombergSubdivisionCL());
+//         make_ExtrapolatedQuad5Domain( q5dom, num_level, ls_loc, DROPS::HarmonicSubdivisionCL());
         DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
         double tmp_neg, tmp_pos;
         quad( integrand, it->GetVolume()*6., q5dom, tmp_neg, tmp_pos);

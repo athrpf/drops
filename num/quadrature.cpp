@@ -48,7 +48,7 @@ copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
 }
 
 void
-compute_divided_differences (const CompositeQuadratureTypesNS::WeightContT& x, std::vector<CompositeQuadratureTypesNS::WeightContT>& w)
+compute_divided_differences (const std::valarray<double>& x, std::vector<std::valarray<double> >& w)
 {
     for (Uint j= 1; j < x.size(); ++j)
         for (Uint i= x.size() - 1 ; i >= j; --i)
@@ -56,9 +56,20 @@ compute_divided_differences (const CompositeQuadratureTypesNS::WeightContT& x, s
 }
 
 void
-eliminate_linear_term (const CompositeQuadratureTypesNS::WeightContT& x,
-    CompositeQuadratureTypesNS::WeightContT& val0,
-    const CompositeQuadratureTypesNS::WeightContT& der0)
+evaluate_newton_polynomial_and_derivative (const VecT& x, const std::vector<VecT>& c, double p, VecT& f, VecT& der)
+{
+    f= c[x.size() - 1];
+    der= 0;
+
+    for (Uint i= x.size() - 2; i < x.size(); --i) {
+        der= f + (p - x[i])*der;
+        f= c[i] + (p - x[i])*f;
+    }
+}
+
+void
+eliminate_linear_term (const std::valarray<double>& x,
+    std::valarray<double>& val0, const std::valarray<double>& der0)
 {
     // Evaluate the next Newton-basis-polynomial and its derivative at 0.
     double omega_n= 1.;

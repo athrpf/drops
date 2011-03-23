@@ -90,7 +90,15 @@ BaryCoordCL Quad3DataCL::Node[NumNodesC];
 
 const double Quad3DataCL::Wght[2]= {
     -2./15., /* -(n+1)^2/[4(n+2)] /6       Node[0]*/
+    3./40.  /* (n+3)^2/[4(n+1)(n+2)] /6 , Node[1] bis Node[4]*/
+};
+
+const double Quad3DataCL::Weight[5]= {
+    -2./15., /* -(n+1)^2/[4(n+2)] /6       Node[0]*/
     3./40.,  /* (n+3)^2/[4(n+1)(n+2)] /6 , Node[1] bis Node[4]*/
+    3./40.,
+    3./40.,
+    3./40.
 };
 
 std::valarray<double> Quad3DataCL::P2_Val[10]; // P2_Val[i] contains FE_P2CL::H_i( Node).
