@@ -60,6 +60,7 @@ template <class GridFunT, class DomainT>
   quad_pos_integrand (const GridFunT& f, double absdet, const DomainT& dom);
 ///@}
 
+
 namespace CompositeQuadratureTypesNS {
 
 typedef std::valarray<double> WeightContT;
@@ -67,23 +68,57 @@ typedef const double* const_weight_iterator;
 
 } // end of namespace DROPS::CompositeQudratureTypesNS
 
-// Create a base class QuadDomainCL with dof_begin/dof_end, size, weight_begin, vertex_begin/vertex_end. Derive Quad2/Quad5DomainCL, CompositeQuad2/Quad5DomainCL, ExtrapolatedQuad2/Quad5DomainCL 
+/// forward declarations for the factory-methods
+///@{
+class QuadDomainCL;
+class ExtrapolationToZeroCL;
+///@}
 
-class QuadDomainCL; // forward declaration for the factory-methods
 
+/// \brief Create a composite quadrature rule.
+/// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.
+/// The template-parameter QuadDataT must be given explicitly.
+/// Helpers for common QuadDataCL are given below.
 template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
   const QuadDomainCL&
   make_CompositeQuadDomain (QuadDomainCL& q,
     const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p);
 
+///\brief Initialize q as a composite Quad3DataCL-quadrature-rule.
+template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+  inline const QuadDomainCL&
+  make_CompositeQuad3Domain (QuadDomainCL& q,
+    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
+
+///\brief Initialize q as a composite Quad5DataCL-quadrature-rule.
+template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+  inline const QuadDomainCL&
+  make_CompositeQuad5Domain (QuadDomainCL& q,
+    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
+
+/// \brief Create a composite quadrature rule of degree 2 with sharing of dof.
+/// The vertices (which are all quadrature points) are shared by all adjacent tetras. Thei qudrature points are: [negative barycenters..., ...negative vertexes..., ...zero vertexes..., positive vertexes..., positive barycenters). The sequence of weights for the whole tetra is an appropriately interleaved sum of the sequences of weights for the negative and positive dof. It starts at all_weights_begin_.
 template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
   const QuadDomainCL&
   make_CompositeQuad2Domain (QuadDomainCL& qdom,
     const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
 
-template <class LocalFET>
+/// \brief Create an extrapolated quadrature rule.
+/// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.
+/// The extrapolation method is determined by extra.
+/// ls can be anything that has the interface of e.g. LocalP2CL for evaluation on a tetra.
+/// The template-parameter QuadDataT must be given explicitly.
+template <class QuadDataT, class LocalFET>
   const QuadDomainCL&
   make_ExtrapolatedQuadDomain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra);
+
+///\brief Initialize q as an extrapolated Quad5DataCL-quadrature-rule.
+/// The extrapolation method is determined by extra.
+/// ls can be anything that has the interface of e.g. LocalP2CL for evaluation on a tetra.
+template <class LocalFET>
+  inline const QuadDomainCL&
+  make_ExtrapolatedQuad5Domain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra);
+
 
 /// \brief General quadrature-domain
 /// A quadrature rule is defined (and implemented) as a collection of quadrature points and a corresponding collection of weights.
@@ -98,7 +133,7 @@ class QuadDomainCL
     typedef CompositeQuadratureTypesNS::WeightContT           WeightContT;
     typedef CompositeQuadratureTypesNS::const_weight_iterator const_weight_iterator;
 
-    /// Friend declaration for the factory methods; if their number becomes to big, a more elaborate factory-design is required.
+    /// Friend declaration for the factory methods; if their number becomes to big, a more elaborate factory-design is in order.
     ///@{
     template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
       friend const QuadDomainCL&
@@ -155,38 +190,30 @@ class QuadDomainCL
     ///@}
 };
 
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  inline const QuadDomainCL&
-  make_CompositeQuad3Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
-
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  inline const QuadDomainCL&
-  make_CompositeQuad5Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
-
-template <class LocalFET>
-  inline const QuadDomainCL&
-  make_ExtrapolatedQuad5Domain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra);
 
 /// Determine, how many subdivisions of the tetra-edges are required for extrapolation on level i.
 ///@{
+
+///\brief The step size is halved for each additional level
 struct RombergSubdivisionCL {
-    Uint operator() (Uint i) { return 1 << i; }
+    Uint operator() (Uint i) const { return 1 << i; }
 };
 
+///\brief The step size is 1/(i+1) on level i.
 struct HarmonicSubdivisionCL {
-    Uint operator() (Uint i) { return i + 1; }
+    Uint operator() (Uint i) const { return i + 1; }
 };
 ///@}
 
+///\brief Computes the extrapolation weights for an extrapolated quadrature rule on num_level() levels.
+/// The step sizes are taken from the subdivisionT-argument to the constructor.
 class ExtrapolationToZeroCL
 {
   private:
     typedef std::valarray<double> VecT;
 
-    Uint num_level_; ///< number of extrapolation-levels
-    VecT f0_; ///< Vector of weighting factors for the level-wise quadrature weights due to extrapolation and elimination of the linear error term.
+    std::vector<Uint> num_intervals_; ///< The number of intervals used to subdivide the edges of the tetra on each level.
+    VecT f0_; ///< Vector of weighting factors for the level-wise quadrature weights due to extrapolation to zero of the error and due to elimination of the linear error term.
 
     /// \brief Compute the coefficients of the polynomial interpolating (x_i, w_i) in the Newton-basis.
     /// The computation is performed in-place.
@@ -199,10 +226,15 @@ class ExtrapolationToZeroCL
     void eliminate_linear_term (const VecT& x, VecT& val0, const VecT& der0);
 
   public:
-    template <class SubdivisionT>
-    ExtrapolationToZeroCL (Uint num_level, const SubdivisionT& s);
+    template <class SubdivisionT> ///< Compute the extrapolation weights.
+      ExtrapolationToZeroCL (Uint num_level, const SubdivisionT& s);
+
+    ///\brief returns the vector of extrapolation weights. These must be multiplied with the weights of the composite quadrature rule on the corresponding level.
     const std::valarray<double>& weights () const { return f0_; }
-    const Uint num_level () const { return num_level_; }
+    ///\brief return the number of extrapolation-levels.
+    Uint num_level () const { return f0_.size(); }
+    ///\brief return the number of subdivisions of the tetra's edges on level i
+    Uint num_intervals (Uint i) const { return num_intervals_[i]; }
 };
 
 ///\brief Write the sign of the levelset function ls in the quadrature points [vert_begin, vert_end) to the sequence beginning at begin.

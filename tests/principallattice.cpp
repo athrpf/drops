@@ -217,15 +217,16 @@ void test_extrapolated_sphere_integral ()
                                 num_sub, num_sub, num_sub);
     DROPS::MultiGridCL mg( brick);
     double vol_neg= 0., vol_pos= 0.;
-    DROPS::QuadDomainCL q5dom;
+    DROPS::QuadDomainCL qdom;
+    // DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::RombergSubdivisionCL());
+    DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::HarmonicSubdivisionCL());
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
-        make_ExtrapolatedQuad5Domain( q5dom, num_level, ls_loc, DROPS::RombergSubdivisionCL());
-//         make_ExtrapolatedQuad5Domain( q5dom, num_level, ls_loc, DROPS::HarmonicSubdivisionCL());
-        DROPS::GridFunctionCL<> integrand( 1., q5dom.size());
+        make_ExtrapolatedQuad5Domain( qdom, ls_loc, extra);
+        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
         double tmp_neg, tmp_pos;
-        quad( integrand, it->GetVolume()*6., q5dom, tmp_neg, tmp_pos);
+        quad( integrand, it->GetVolume()*6., qdom, tmp_neg, tmp_pos);
         vol_neg+= tmp_neg; vol_pos+= tmp_pos;
     }
     std::cout << "Volume of the negative part: " << vol_neg << ", volume of the positive part: " << vol_pos << std::endl;

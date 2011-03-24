@@ -130,7 +130,6 @@ template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
     return make_CompositeQuadDomain<Quad3DataCL>( q, p);
 }
 
-
 template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
   const QuadDomainCL&
   make_CompositeQuad2Domain (QuadDomainCL& q,
@@ -143,7 +142,7 @@ template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
 
     q.weights_.resize( p.tetra_size( NegTetraC)  + p.vertex_size( NegTetraC) // weights for NegTetraC
                       +p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC)  // weights for PosTetraC
-                      +p.vertex_size() + p.tetra_size());                   // weights for AllTetraC
+                      +p.vertex_size() + p.tetra_size());                    // weights for AllTetraC
     q.pos_weights_begin_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
     q.all_weights_begin_= q.pos_weights_begin_ + p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC);
 
@@ -189,7 +188,7 @@ template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
 
 template <class SubdivisionT>
   ExtrapolationToZeroCL::ExtrapolationToZeroCL (Uint num_level, const SubdivisionT& s)
-    : num_level_( num_level), f0_( num_level)
+    : num_intervals_( num_level), f0_( num_level)
 {
     if (num_level == 0)
         throw DROPSErrCL( "ExtrapolationToZeroCL: At least one level is needed.");
@@ -197,14 +196,19 @@ template <class SubdivisionT>
     std::vector<VecT> f( num_level);
     VecT x( num_level);
     for (Uint i= 0; i < num_level; ++i) {
-        x[i]= 1./s( i);
+        num_intervals_[i]= s( i);
+        x[i]= 1./num_intervals_[i];
         f[i].resize( num_level);
         f[i][i]= 1.;
     }
     compute_divided_differences( x, f);
     VecT der0( num_level);
-    evaluate_newton_polynomial_and_derivative( x, f, 0., f0, der0);
-    eliminate_linear_term( x, f0, der0);
+    evaluate_newton_polynomial_and_derivative( x, f, 0., f0_, der0);
+    eliminate_linear_term( x, f0_, der0);
+
+    for (Uint i= 0; i < num_level; ++i)
+        std::cerr << weights()[i] << ' ';
+    std::cerr << std::endl;
 }
 
 /// \brief Multiply the weight for each level with the extrapolation factor and copy it to weights.
@@ -214,23 +218,23 @@ copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
 
 template <class QuadDataT, class LocalFET>
   const QuadDomainCL&
-  make_ExtrapolatedQuadDomain (QuadDomainCL& q, Uint num_level, const LocalFET& ls, const ExtrapolationToZeroCL& extra)
+  make_ExtrapolatedQuadDomain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra)
 {
     q.vertexes_.resize( 0);
 
     typedef TetraPartitionCL<SortedVertexPolicyCL, MergeCutPolicyCL> TetraPartitionT;
     typename QuadDomainCL::VertexContT pos_vertexes; // temporary container for the positive vertexes
     std::vector<QuadDomainCL::WeightContT> w_vec; // the weights for each level
-    w_vec.reserve( num_level);
+    w_vec.reserve( extra.num_level());
     std::vector<Uint> w_pos_begin; // begin of the positive weights on each level
-    w_pos_begin.reserve( num_level);
+    w_pos_begin.reserve( extra.num_level());
 
     TetraPartitionT partition;
     QuadDomainCL qdom;
     std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
     // Accumulate quadrature-points and weights for each level
-    for (Uint i= 0; i < num_level; ++i) {
-        const Uint num_intervals= sub( i);
+    for (Uint i= 0; i < extra.num_level(); ++i) {
+        const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
         ls_val.resize( lat.num_vertexes());
         for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
@@ -250,19 +254,15 @@ template <class QuadDataT, class LocalFET>
     // Compute the extrapolated weights
     q.pos_weights_begin_= q.pos_begin_;
     q.all_weights_begin_= 0;
-for (Uint i= 0; i < extra.weights().size(); ++i) {
-    std::cerr << extra.weights()[i] << ' ';
-}
-std::cerr << std::endl;
     copy_weights( w_vec, w_pos_begin, extra.weights(), q.weights_);
     return q;
 }
 
-template <class LocalFET, class SubdivisionT>
+template <class LocalFET>
   const QuadDomainCL&
-  make_ExtrapolatedQuad5Domain (QuadDomainCL& q, Uint num_level, const LocalFET& ls, SubdivisionT sub)
+  make_ExtrapolatedQuad5Domain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra)
 {
-    return make_ExtrapolatedQuadDomain<Quad5DataCL>( q, num_level, ls, sub);
+    return make_ExtrapolatedQuadDomain<Quad5DataCL>( q, ls, extra);
 }
 
 } // end of namespace DROPS
