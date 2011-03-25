@@ -53,30 +53,20 @@ typedef VertexContT::const_iterator const_vertex_iterator;
 } // end of namespace DROPS::LatticePartitionTypesNS
 
 
-/// \brief Vertices are ordered with respect to the sign of the levelset function as follows: First the vertexes from the principal lattice, then all proper cut-vertexes.
+/// \brief Vertices are not ordered with respect to the sign of the levelset function: First the vertexes from the principal lattice, then all proper cut-vertexes.
 class UnorderedVertexPolicyCL
 {
   private:
     typedef LatticePartitionTypesNS::TetraContT  TetraContT;
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
-    VertexContT& vertexes_;
-
   public:
-    UnorderedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat) : vertexes_( vertexes) {
-        vertexes_.resize( 0);
-        vertexes_.reserve( lat.num_vertexes());
-        std::copy( lat.vertex_begin(), lat.vertex_end(), std::back_inserter( vertexes_));
-    }
+    UnorderedVertexPolicyCL (const PrincipalLatticeCL&, const std::valarray<double>&,
+        TetraContT::iterator, TetraContT::iterator, size_t) {}
 
-    ///\brief The container, in which TetraPartitionCL will store proper cuts of an edge: Simply the container for the vertexes of the principal lattice
-    VertexContT& cut_vertex_container () { return vertexes_; }
-    ///\brief Offset of the proper cuts in relation to the vertexes of the principal lattice
-    /// Returns zero, as the vertexes are stored in the same container as the partition vertexes.
-    Uint cut_index_offset () { return 0; }
-
-    /// \brief Sort the vertexes and update the vertex numbers in the tetras: a no-op for this policy
-    void sort_vertexes (const std::valarray<double>&, TetraContT::iterator, TetraContT::iterator, size_t, size_t&, size_t&) {}
+    /// \brief Append the cut_vertexes to vertexes.
+    /// pos_vertex_begin_ and neg_vertex_end_ are set to zero to indicate, that the vertexes are not ordered with respect to the sign of the level set function
+    void sort_vertexes (VertexContT&, VertexContT&, size_t&, size_t&);
 };
 
 /// \brief Vertices are ordered with respect to the sign of the levelset function as follows: First the negative vertexes, then the zero vertexes, then the positive vertexes. The vertexes of the negative and of the positive tetras potentially overlap in the zero vertexes.
@@ -86,23 +76,19 @@ class SortedVertexPolicyCL
     typedef LatticePartitionTypesNS::TetraContT  TetraContT;
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
-    VertexContT& vertexes_;
-    VertexContT  cut_vertexes_;
-    const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin_;
-    const Uint lattice_num_vertexes_;
+    const PrincipalLatticeCL&    lat_;
+    const std::valarray<double>& ls_;
+    const TetraContT::iterator   tetra_begin_,
+                                 tetra_end_;
 
   public:
-    SortedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat)
-        : vertexes_( vertexes),  lattice_vertex_begin_( lat.vertex_begin()),
-          lattice_num_vertexes_( lat.num_vertexes()) {}
-
-    ///\brief The container, in which TetraPartitionCL will store proper cuts of an edge
-    VertexContT& cut_vertex_container () { return cut_vertexes_; }
-    ///\brief Offset of the proper cuts in relation to the vertexes of the principal lattice
-    Uint cut_index_offset () { return lattice_num_vertexes_; }
+    SortedVertexPolicyCL (const PrincipalLatticeCL& lat, const std::valarray<double>& ls,
+        TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t)
+        : lat_( lat), ls_( ls), tetra_begin_( tetra_begin), tetra_end_(tetra_end) {}
 
     /// \brief Sort the vertexes and update the vertex numbers in the tetras.
-    void sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin, size_t& pos_vertex_begin, size_t& neg_vertex_end);
+    void sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
+        size_t& pos_vertex_begin, size_t& neg_vertex_end);
 };
 
 /// \brief Vertices are ordered with respect to the sign of the levelset function as follows: First the negative vertexes, then the zero vertexes, then the positive vertexes. Opposite to SortedVertexPolicyC, all zero vertexes are duplicated, such that the vertexes of the negative tetras and of the positive tetras are disjoint.
@@ -112,24 +98,20 @@ class PartitionedVertexPolicyCL
     typedef LatticePartitionTypesNS::TetraContT  TetraContT;
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
-    VertexContT& vertexes_;
-    VertexContT  cut_vertexes_;
-    const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin_;
-    const Uint lattice_num_vertexes_;
+    SortedVertexPolicyCL         pol_;
+    const TetraContT::iterator   tetra_begin_,
+                                 tetra_end_;
+    size_t                       pos_tetra_begin_;
 
   public:
-    PartitionedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat)
-        : vertexes_( vertexes),  lattice_vertex_begin_( lat.vertex_begin()),
-          lattice_num_vertexes_( lat.num_vertexes()) {}
-
-    ///\brief The container, in which TetraPartitionCL will store proper cuts of an edge
-    VertexContT& cut_vertex_container () { return cut_vertexes_; }
-    ///\brief Offset of the proper cuts in relation to the vertexes of the principal lattice
-    Uint cut_index_offset () { return lattice_num_vertexes_; }
+    PartitionedVertexPolicyCL (const PrincipalLatticeCL& lat, const std::valarray<double>& ls,
+        TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin)
+        : pol_( lat, ls, tetra_begin, tetra_end, pos_tetra_begin),
+          tetra_begin_( tetra_begin), tetra_end_( tetra_end), pos_tetra_begin_( pos_tetra_begin) {}
 
     /// \brief Sort the vertexes and update the vertex numbers in the tetras: Special care must be taken for the duplicated vertexes
-    void sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin,
-        TetraContT::iterator tetra_end, size_t pos_tetra_begin, size_t& pos_vertex_begin, size_t& neg_vertex_end);
+    void sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
+        size_t& pos_vertex_begin, size_t& neg_vertex_end);
 };
 
 ///\brief A cut-vertex is added to the list of vertexes for each tetra, on which it is discovered; fast, but leads to more vertices, which in turn leads to more dof for quadrature rules that use the vertexes of the partition.
@@ -139,10 +121,11 @@ class DuplicateCutPolicyCL
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
     const PrincipalLatticeCL::const_vertex_iterator lattice_vertexes_;
-    VertexContT& vertexes_;
+    VertexContT vertexes_;
 
   public:
-    DuplicateCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator lattice_vertexes, VertexContT& vertexes) : lattice_vertexes_( lattice_vertexes), vertexes_( vertexes) {}
+    DuplicateCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator lattice_vertexes)
+        : lattice_vertexes_( lattice_vertexes) {}
 
     ///\brief Add the cut vertex and return its number.
     Uint operator() (Uint v0, Uint v1, double ls0, double ls1) {
@@ -150,6 +133,8 @@ class DuplicateCutPolicyCL
         vertexes_.push_back( ConvexComb( edge_bary1_cut, lattice_vertexes_[v0], lattice_vertexes_[v1]));
         return vertexes_.size() - 1;
     }
+
+    VertexContT& cut_vertex_container () { return vertexes_; }
 };
 
 ///\brief A cut-vertex is added to the list of vertexes only by the first tetra, on which it is discovered: cuts are memoized for each edge.
@@ -168,12 +153,12 @@ class MergeCutPolicyCL
     typedef std::tr1::unordered_map<EdgeT, Uint, UintPairHasherCL> EdgeToCutMapT;
 
     const PrincipalLatticeCL::const_vertex_iterator lattice_vertexes_;
-    VertexContT& vertexes_;
+    VertexContT vertexes_;
     EdgeToCutMapT edge_to_cut_;
 
   public:
-    MergeCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator lattice_vertexes, VertexContT& vertexes)
-        : lattice_vertexes_( lattice_vertexes), vertexes_( vertexes) {}
+    MergeCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator lattice_vertexes)
+        : lattice_vertexes_( lattice_vertexes) {}
 
     ///\brief Return the number of the cut vertex, if it is already memoized, otherwise add it and return its number.
     Uint operator() (Uint v0, Uint v1, double ls0, double ls1) {
@@ -187,6 +172,8 @@ class MergeCutPolicyCL
             return edge_to_cut_[e]= vertexes_.size() - 1;
         }
     }
+
+    VertexContT& cut_vertex_container () { return vertexes_; }
 };
 
 

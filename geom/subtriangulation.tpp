@@ -45,6 +45,8 @@ template <class VertexPartitionPolicyT,
   TetraPartitionCL::partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
+    const Uint lattice_num_vertexes= lat.num_vertexes();
+
     tetras_.resize( 0);
     pos_tetra_begin_= 0;
     vertexes_.resize( 0);
@@ -52,8 +54,7 @@ template <class VertexPartitionPolicyT,
     std::valarray<byte> ls_sign;
     copy_levelset_sign( ls, ls_sign);
 
-    VertexPartitionPolicyT vertex_policy( vertexes_, lat);
-    VertexCutMergingPolicyT edgecut( lat.vertex_begin(), vertex_policy.cut_vertex_container());
+    VertexCutMergingPolicyT edgecut( lat.vertex_begin()); // Stores the genuine cuts.
 
     TetraContT loc_tetras; // temporary container for the positive tetras.
     byte lset[4];
@@ -71,7 +72,7 @@ template <class VertexPartitionPolicyT,
                 else { // Cut vertex
                     const Ubyte v0= VertOfEdge( loc_vert_num - 4, 0),
                                 v1= VertOfEdge( loc_vert_num - 4, 1);
-                    tet[j]= vertex_policy.cut_index_offset() + edgecut( (*lattice_tet)[v0], (*lattice_tet)[v1], lset[v0], lset[v1]);
+                    tet[j]= lattice_num_vertexes + edgecut( (*lattice_tet)[v0], (*lattice_tet)[v1], lset[v0], lset[v1]);
                 }
             }
             (cut.sign( it) == -1 ? tetras_ : loc_tetras).push_back( tet);
@@ -79,7 +80,9 @@ template <class VertexPartitionPolicyT,
     }
     pos_tetra_begin_= tetras_.size();
     std::copy( loc_tetras. begin(), loc_tetras.end(), std::back_inserter( tetras_));
-    vertex_policy.sort_vertexes( ls, tetras_.begin(), tetras_.end(), pos_tetra_begin_, pos_vertex_begin_, neg_vertex_end_);
+
+    VertexPartitionPolicyT vertex_order_policy( lat, ls, tetras_.begin(), tetras_.end(), pos_tetra_begin_);
+    vertex_order_policy.sort_vertexes( vertexes_, edgecut.cut_vertex_container(), pos_vertex_begin_, neg_vertex_end_);
 }
 
 } // end of namespace DROPS

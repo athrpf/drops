@@ -27,16 +27,28 @@
 namespace DROPS
 {
 
-void SortedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t, size_t& pos_vertex_begin, size_t& neg_vertex_end)
+void
+UnorderedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
+    size_t& pos_vertex_begin, size_t& neg_vertex_end)
 {
+    std::copy( cut_vertexes.begin(), cut_vertexes.end(), std::back_inserter( vertexes));
+    pos_vertex_begin= neg_vertex_end= 0;
+}
+
+void SortedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
+    size_t& pos_vertex_begin, size_t& neg_vertex_end)
+{
+    const Uint lattice_num_vertexes= lat_.num_vertexes();
+    const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin= lat_.vertex_begin();
+
     // Count signs
     Uint num_sign_arr[3]= { 0, 0, 0 };
     Uint* const num_sign= num_sign_arr + 1; // num_sign[i] == number of verts with sign i
-    for (Uint i= 0; i < lattice_num_vertexes_; ++i)
-        ++num_sign[DROPS::sign( ls[i])];
-    const Uint num_zero_vertexes= num_sign[0] + cut_vertexes_.size();
+    for (Uint i= 0; i < lattice_num_vertexes; ++i)
+        ++num_sign[DROPS::sign( ls_[i])];
+    const Uint num_zero_vertexes= num_sign[0] + cut_vertexes.size();
 
-    vertexes_.resize( num_sign[-1] + num_sign[1] + num_zero_vertexes);
+    vertexes.resize( num_sign[-1] + num_sign[1] + num_zero_vertexes);
     pos_vertex_begin= num_sign[-1];
     neg_vertex_end=   num_sign[-1] + num_zero_vertexes;
 
@@ -46,63 +58,36 @@ void SortedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, Tetra
     cursor[-1]= 0;
     cursor[0]= num_sign[-1];
     cursor[1]= num_sign[-1] + num_zero_vertexes;
-    for (Uint i= 0; i < lattice_num_vertexes_; ++i) {
-        size_t& cur= cursor[DROPS::sign( ls[i])];
+    for (Uint i= 0; i < lattice_num_vertexes; ++i) {
+        size_t& cur= cursor[DROPS::sign( ls_[i])];
         new_pos[i]= cur;
-        vertexes_[cur]= lattice_vertex_begin_[i];
+        vertexes[cur]= lattice_vertex_begin[i];
         ++cur;
     }
     size_t& cur= cursor[0];
-    for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
-        new_pos[i + lattice_num_vertexes_]= cur;
-        vertexes_[cur]= cut_vertexes_[i];
+    for (Uint i= 0; i < cut_vertexes.size(); ++i, ++cur) {
+        new_pos[i + lattice_num_vertexes]= cur;
+        vertexes[cur]= cut_vertexes[i];
     }
     // Reorder the indices in the tetras
-    for (TetraContT::iterator it= tetra_begin; it != tetra_end; ++it)
+    for (TetraContT::iterator it= tetra_begin_; it != tetra_end_; ++it)
         for (Uint i= 0; i < 4; ++i)
             (*it)[i]= new_pos[(*it)[i]];
 }
 
-void PartitionedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, TetraContT::iterator tetra_begin, TetraContT::iterator tetra_end, size_t pos_tetra_begin, size_t& pos_vertex_begin, size_t& neg_vertex_end)
+void PartitionedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes, size_t& pos_vertex_begin, size_t& neg_vertex_end)
 {
-    // Count signs
-    Uint num_sign_arr[3]= { 0, 0, 0 };
-    Uint* const num_sign= num_sign_arr + 1; // num_sign[i] == number of verts with sign i
-    for (Uint i= 0; i < lattice_num_vertexes_; ++i)
-        ++num_sign[DROPS::sign( ls[i])];
-    const Uint num_zero_vertexes= num_sign[0] + cut_vertexes_.size();
+    pol_.sort_vertexes( vertexes, cut_vertexes, pos_vertex_begin, neg_vertex_end);
+    const Uint num_zero_vertexes= neg_vertex_end - pos_vertex_begin;
 
-    vertexes_.resize( num_sign[-1] + num_sign[1] + 2*num_zero_vertexes);
-    neg_vertex_end= pos_vertex_begin= num_sign[-1] + num_zero_vertexes;
+    vertexes.reserve( vertexes.size() + num_zero_vertexes); // Make sure that inserting the new zero vertexes will not invalidate the iterators indicating the sequence of zero-vertexes itself in the same container.
+    vertexes.insert( vertexes.begin() + neg_vertex_end, vertexes.begin() + pos_vertex_begin, vertexes.begin() + neg_vertex_end);
+    pos_vertex_begin= neg_vertex_end; // This is the partitioning of the sequence of vertexes.
 
-    std::vector<Uint> new_pos( num_sign[-1] + num_sign[1] + num_zero_vertexes); // maps old vertex-index to the new one
-    size_t cursor_arr[3];
-    size_t* const cursor= cursor_arr + 1; // Insertion cursors for the sorted-by-sign vertex numbers
-    cursor[-1]= 0;
-    cursor[0]= num_sign[-1];
-    cursor[1]= num_sign[-1] + 2*num_zero_vertexes;
-    for (Uint i= 0; i < lattice_num_vertexes_; ++i) {
-        const Uint thesign= DROPS::sign( ls[i]);
-        size_t& cur= cursor[thesign];
-        new_pos[i]= cur;
-        vertexes_[cur]= lattice_vertex_begin_[i];
-        if (thesign == 1)
-            vertexes_[cur + num_zero_vertexes]= lattice_vertex_begin_[i];
-        ++cur;
-    }
-    size_t& cur= cursor[0];
-    for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
-        new_pos[i + lattice_num_vertexes_]= cur;
-        vertexes_[cur + num_zero_vertexes]= vertexes_[cur]= cut_vertexes_[i];
-    }
-    // Reorder the indices in the tetras
-    for (TetraContT::iterator it= tetra_begin; it != tetra_end; ++it) {
-        const bool t_is_pos= it >= tetra_begin + pos_tetra_begin;
-        for (Uint i= 0; i < 4; ++i) {
-            const bool duplicate= t_is_pos && ( (*it)[i] >= lattice_num_vertexes_ || ls[(*it)[i]] == 0.);
-            (*it)[i]= new_pos[(*it)[i]] + (duplicate ? num_zero_vertexes : 0);
-        }
-    }
+    // Adjust the indices of all vertexes in the positive tetras
+    for (TetraContT::iterator it= tetra_begin_ + pos_tetra_begin_; it < tetra_end_; ++it)
+        for (Uint i= 0; i < 4; ++i)
+            (*it)[i]+= num_zero_vertexes;
 }
 
 void
@@ -166,7 +151,7 @@ void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const std:
     std::valarray<byte> ls_sign;
     copy_levelset_sign( ls, ls_sign);
 
-    MergeCutPolicyCL edgecut( lat.vertex_begin(), vertexes_);
+    MergeCutPolicyCL edgecut( lat.vertex_begin()); // Fixme
     std::vector<Uint> copied_vertexes( lat.num_vertexes(), static_cast<Uint>( -1));
 
     byte lset[4];

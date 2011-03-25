@@ -38,15 +38,15 @@ make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
     q.pos_weights_begin_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
     q.all_weights_begin_= q.pos_weights_begin_ + p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC);
 
-    typename QuadDomainCL::VertexContT neg_tetra_bary;
+    QuadDomainCL::VertexContT neg_tetra_bary;
     neg_tetra_bary.reserve( p.tetra_size( NegTetraC));
-    typename QuadDomainCL::VertexContT pos_tetra_bary;
+    QuadDomainCL::VertexContT pos_tetra_bary;
     pos_tetra_bary.reserve( p.tetra_size( PosTetraC));
 
-    const typename TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    const TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
     QRDecompCL<4,4> qr;
     SMatrixCL<4,4>& T= qr.GetMatrix();
-    for (typename TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it) {
+    for (TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it) {
         for (Uint i= 0; i < NumVertsC; ++i)
             T.col( i, partition_vertexes[(*it)[i]]);
         const bool is_neg= p.sign( it) == -1;
@@ -59,7 +59,7 @@ make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
         for (int i= 0; i < 4; ++i)
             w[(*it)[i] - vertex_beg + vertex_weight_begin]+= absdet*Quad2DataCL::Wght[0];
         const Uint tetra_weight_begin= is_neg ? 0 : p.vertex_size( PosTetraC);
-        const typename TetraPartitionCL::const_tetra_iterator tetra_beg=
+        const TetraPartitionCL::const_tetra_iterator tetra_beg=
             p.tetra_begin( is_neg ? NegTetraC : PosTetraC);
         w[it - tetra_beg + tetra_weight_begin]+= absdet*Quad2DataCL::Wght[1];
     }

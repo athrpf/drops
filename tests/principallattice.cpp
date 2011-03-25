@@ -187,7 +187,9 @@ void test_sphere_integral ()
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate( ls, lat, &sphere, *it);
-        tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // tet.partition_principal_lattice<DROPS::UnorderedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        tet.partition_principal_lattice<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         // patch.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         DROPS::make_CompositeQuad5Domain( qdom, tet);
         DROPS::GridFunctionCL<> integrand( 1., qdom.size());
@@ -240,8 +242,8 @@ int main()
         // test_cut_surface();
         // test_principal_lattice();
         // test_sphere_cut();
-        // test_sphere_integral();
-        test_extrapolated_sphere_integral();
+        test_sphere_integral();
+        // test_extrapolated_sphere_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;
