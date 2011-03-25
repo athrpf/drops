@@ -1283,7 +1283,7 @@ class LocalSystem1TwoPhase_P2CL
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     LocalP2CL<> p2;
 
-    BaryCoordCL nodes_q2[Quad2CL<>::NumNodesC];
+    BaryCoordCL nodes_q2[Quad2DataCL::NumNodesC];
     BaryCoordCL nodes_q5[Quad5DataCL::NumNodesC];
     double absdets[48]; //there exists maximally 8*6=48 SubTetras
     Quad5CL<> q[48][10]; //there exists maximally 8*6=48 SubTetras
