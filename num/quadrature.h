@@ -79,29 +79,22 @@ class ExtrapolationToZeroCL;
 /// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.
 /// The template-parameter QuadDataT must be given explicitly.
 /// Helpers for common QuadDataCL are given below.
-template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+template <class QuadDataT>
   const QuadDomainCL&
-  make_CompositeQuadDomain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p);
+  make_CompositeQuadDomain (QuadDomainCL& q,const TetraPartitionCL& p);
 
 ///\brief Initialize q as a composite Quad3DataCL-quadrature-rule.
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  inline const QuadDomainCL&
-  make_CompositeQuad3Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
+inline const QuadDomainCL&
+make_CompositeQuad3Domain (QuadDomainCL& q, const TetraPartitionCL& p);
 
 ///\brief Initialize q as a composite Quad5DataCL-quadrature-rule.
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  inline const QuadDomainCL&
-  make_CompositeQuad5Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
+inline const QuadDomainCL&
+make_CompositeQuad5Domain (QuadDomainCL& q, const TetraPartitionCL& p);
 
 /// \brief Create a composite quadrature rule of degree 2 with sharing of dof.
 /// The vertices (which are all quadrature points) are shared by all adjacent tetras. Thei qudrature points are: [negative barycenters..., ...negative vertexes..., ...zero vertexes..., positive vertexes..., positive barycenters). The sequence of weights for the whole tetra is an appropriately interleaved sum of the sequences of weights for the negative and positive dof. It starts at all_weights_begin_.
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  const QuadDomainCL&
-  make_CompositeQuad2Domain (QuadDomainCL& qdom,
-    const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>& p);
+const QuadDomainCL&
+make_CompositeQuad2Domain (QuadDomainCL& qdom, const TetraPartitionCL& p);
 
 /// \brief Create an extrapolated quadrature rule.
 /// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.
@@ -135,15 +128,12 @@ class QuadDomainCL
 
     /// Friend declaration for the factory methods; if their number becomes to big, a more elaborate factory-design is in order.
     ///@{
-    template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+    template <class QuadDataT>
       friend const QuadDomainCL&
-      make_CompositeQuadDomain (QuadDomainCL&,
-        const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&);
+      make_CompositeQuadDomain (QuadDomainCL&, const TetraPartitionCL&);
 
-    template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-      friend const QuadDomainCL&
-      make_CompositeQuad2Domain (QuadDomainCL&,
-        const TetraPartitionCL<VertexPartitionPolicyT, VertexCutMergingPolicyT>&);
+    friend const QuadDomainCL&
+    make_CompositeQuad2Domain (QuadDomainCL&, const TetraPartitionCL&);
 
     template <class QuadDataT, class LocalFET>
       friend const QuadDomainCL&

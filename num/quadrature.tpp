@@ -82,12 +82,10 @@ template <class GridFunT, class DomainT>
     return quad_single_domain_integrand( f, absdet, dom, PosTetraC);
 }
 
-template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
+template <class QuadDataT>
   const QuadDomainCL&
-  make_CompositeQuadDomain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+  make_CompositeQuadDomain (QuadDomainCL& q, const TetraPartitionCL& p)
 {
-    typedef TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT> TetraPartitionT;
     const Uint num_nodes= QuadDataT::NumNodesC;
 
     q.vertexes_.resize( 0);
@@ -97,12 +95,12 @@ template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingP
     q.all_weights_begin_= 0;
     q.pos_weights_begin_= q.pos_begin_;
 
-    const typename TetraPartitionT::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    const typename TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
     const typename QuadDomainCL::WeightContT tetra_weights( QuadDataT::Weight, num_nodes);
     Uint w_begin= 0;
     QRDecompCL<4,4> qr;
     SMatrixCL<4,4>& T= qr.GetMatrix();
-    for (typename TetraPartitionT::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end();
+    for (typename TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end();
         ++it, w_begin+= num_nodes) {
         for (int i= 0; i < 4; ++i)
             T.col( i, partition_vertexes[(*it)[i]]);
@@ -114,76 +112,16 @@ template <class QuadDataT, class VertexPartitionPolicyT, class VertexCutMergingP
     return q;
 }
 
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  const QuadDomainCL&
-  make_CompositeQuad5Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+inline const QuadDomainCL&
+make_CompositeQuad5Domain (QuadDomainCL& q, const TetraPartitionCL& p)
 {
     return make_CompositeQuadDomain<Quad5DataCL>( q, p);
 }
 
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  const QuadDomainCL&
-  make_CompositeQuad3Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
+inline const QuadDomainCL&
+make_CompositeQuad3Domain (QuadDomainCL& q, const TetraPartitionCL& p)
 {
     return make_CompositeQuadDomain<Quad3DataCL>( q, p);
-}
-
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  const QuadDomainCL&
-  make_CompositeQuad2Domain (QuadDomainCL& q,
-    const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>& p)
-{
-    typedef TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT> TetraPartitionT;
-
-    q.neg_end_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
-    q.pos_begin_= p.vertex_begin( PosTetraC) - p.vertex_begin() + p.tetra_size( NegTetraC);
-
-    q.weights_.resize( p.tetra_size( NegTetraC)  + p.vertex_size( NegTetraC) // weights for NegTetraC
-                      +p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC)  // weights for PosTetraC
-                      +p.vertex_size() + p.tetra_size());                    // weights for AllTetraC
-    q.pos_weights_begin_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
-    q.all_weights_begin_= q.pos_weights_begin_ + p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC);
-
-    typename QuadDomainCL::VertexContT neg_tetra_bary;
-    neg_tetra_bary.reserve( p.tetra_size( NegTetraC));
-    typename QuadDomainCL::VertexContT pos_tetra_bary;
-    pos_tetra_bary.reserve( p.tetra_size( PosTetraC));
-
-    const typename TetraPartitionT::const_vertex_iterator partition_vertexes= p.vertex_begin();
-    QRDecompCL<4,4> qr;
-    SMatrixCL<4,4>& T= qr.GetMatrix();
-    for (typename TetraPartitionT::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it) {
-        for (Uint i= 0; i < NumVertsC; ++i)
-            T.col( i, partition_vertexes[(*it)[i]]);
-        const bool is_neg= p.sign( it) == -1;
-        (is_neg ? neg_tetra_bary : pos_tetra_bary).push_back( T*Quad2DataCL::Node[4]);
-        double* w= Addr( q.weights_) + (is_neg ? 0 : q.pos_weights_begin_);
-        const Uint vertex_weight_begin= is_neg ? p.tetra_size( NegTetraC) : 0;
-        const Uint vertex_beg= is_neg ? 0 : p.vertex_begin( PosTetraC) - p.vertex_begin();
-        qr.prepare_solve();
-        const double absdet= std::fabs( qr.Determinant_R());
-        for (int i= 0; i < 4; ++i)
-            w[(*it)[i] - vertex_beg + vertex_weight_begin]+= absdet*Quad2DataCL::Wght[0];
-        const Uint tetra_weight_begin= is_neg ? 0 : p.vertex_size( PosTetraC);
-        const typename TetraPartitionT::const_tetra_iterator tetra_beg=
-            p.tetra_begin( is_neg ? NegTetraC : PosTetraC);
-        w[it - tetra_beg + tetra_weight_begin]+= absdet*Quad2DataCL::Wght[1];
-    }
-
-    q.vertexes_.resize( 0);
-    q.vertexes_.reserve( p.vertex_size() + p.tetra_size());
-    std::copy( neg_tetra_bary.begin(), neg_tetra_bary.end(), std::back_inserter( q.vertexes_));
-    std::copy( p.vertex_begin(), p.vertex_end(), std::back_inserter( q.vertexes_));
-    std::copy( pos_tetra_bary.begin(), pos_tetra_bary.end(), std::back_inserter( q.vertexes_));
-
-    q.weights_[std::slice( q.all_weights_begin_, q.size( NegTetraC), 1)]=
-        q.weights_[std::slice( 0, q.size( NegTetraC), 1)];
-    q.weights_[std::slice( q.all_weights_begin_ + q.dof_begin( PosTetraC), q.size( PosTetraC), 1)]+=
-        q.weights_[std::slice( q.size( NegTetraC), q.size( PosTetraC), 1)];
-
-    return q;
 }
 
 template <class SubdivisionT>
@@ -222,14 +160,13 @@ template <class QuadDataT, class LocalFET>
 {
     q.vertexes_.resize( 0);
 
-    typedef TetraPartitionCL<SortedVertexPolicyCL, MergeCutPolicyCL> TetraPartitionT;
     typename QuadDomainCL::VertexContT pos_vertexes; // temporary container for the positive vertexes
     std::vector<QuadDomainCL::WeightContT> w_vec; // the weights for each level
     w_vec.reserve( extra.num_level());
     std::vector<Uint> w_pos_begin; // begin of the positive weights on each level
     w_pos_begin.reserve( extra.num_level());
 
-    TetraPartitionT partition;
+    TetraPartitionCL partition;
     QuadDomainCL qdom;
     std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
     // Accumulate quadrature-points and weights for each level
@@ -239,7 +176,7 @@ template <class QuadDataT, class LocalFET>
         ls_val.resize( lat.num_vertexes());
         for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
             ls_val[it - lat.vertex_begin()]= ls( *it);
-        partition.partition_principal_lattice( num_intervals, ls_val);
+        partition.partition_principal_lattice<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain<QuadDataT>( qdom, partition);
         std::copy( qdom.vertex_begin( NegTetraC), qdom.vertex_end( NegTetraC), std::back_inserter( q.vertexes_));
         std::copy( qdom.vertex_begin( PosTetraC), qdom.vertex_end( PosTetraC), std::back_inserter( pos_vertexes));

@@ -191,17 +191,15 @@ class MergeCutPolicyCL
 
 
 ///\brief forward declaration of TetraPartitionCL
-template <class= SortedVertexPolicyCL, class= MergeCutPolicyCL> class TetraPartitionCL;
+class TetraPartitionCL;
 
 ///\brief declaration of debug output (neccessary due to friend declaration in TetraPartitionCL)
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  std::ostream&
-  operator<< (std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&);
+std::ostream&
+operator<< (std::ostream&, const TetraPartitionCL&);
 
 ///\brief declaration of .vtu output (neccessary due to friend declaration in TetraPartitionCL)
-template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
-  void
-  write_paraview_vtu (std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&, TetraSignEnum= AllTetraC);
+void
+write_paraview_vtu (std::ostream&, const TetraPartitionCL&, TetraSignEnum= AllTetraC);
 
 
 ///\brief Partition the principal lattice of a tetra t (n intervals on each edge) according to the sign of a levelset function ls.
@@ -218,8 +216,6 @@ template <class VertexPartitionPolicyT, class VertexCutMergingPolicyT>
 /// VertexCutMergingPolicyT: Determines, how often cut vertexes are stored.
 ///     Duplicate: A cut-vertex is added for each tetra, on which it is discovered; fast, but leads to more vertices, which in turn leads to more dof for quadrature rules that use the vertexes of the partition.
 ///     Merge: The edge cuts are memoized for each edge and added only once -- default as it leads to the minimal amount of cut vertexes.
-template <class VertexPartitionPolicyT,
-          class VertexCutMergingPolicyT>
 class TetraPartitionCL
 {
   public:
@@ -242,6 +238,8 @@ class TetraPartitionCL
     TetraPartitionCL () : pos_tetra_begin_( 0), pos_vertex_begin_( 0), neg_vertex_end_( 0) {} ///< Empty default-cut
 
     ///\brief Computes the partition of the principal lattice with num_intervals on each edge of the reference-tetra given the level set values in ls.
+    template <class VertexPartitionPolicyT,
+              class VertexCutMergingPolicyT>
     void partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls);
 
     size_t tetra_size  (TetraSignEnum s= AllTetraC) const ///< number of tetras with given sign
@@ -266,8 +264,8 @@ class TetraPartitionCL
         { return s == NegTetraC ? vertexes_.begin() + neg_vertex_end_ : vertexes_.end(); }
     ///@}
 
-    friend std::ostream& operator<< <> (std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&); ///< Debug-output to a stream (dumps all members)
-    friend void write_paraview_vtu <>(std::ostream&, const TetraPartitionCL<VertexPartitionPolicyT,VertexCutMergingPolicyT>&, TetraSignEnum);  ///< Debug-output to a stream: VTU-format for paraview.
+    friend std::ostream& operator<< (std::ostream&, const TetraPartitionCL&); ///< Debug-output to a stream (dumps all members)
+    friend void write_paraview_vtu (std::ostream&, const TetraPartitionCL&, TetraSignEnum);  ///< Debug-output to a stream: VTU-format for paraview.
 };
 
 

@@ -48,8 +48,8 @@ void test_tetra_cut ()
 {
     DROPS::GridFunctionCL<> ls( 4);
     ls[0]= -1.; ls[1]= 0.; ls[2]= 0.; ls[3]= 0.;
-    DROPS::TetraPartitionCL<> tet;
-    // tet.partition_principal_lattice ( 1, ls);
+    DROPS::TetraPartitionCL tet;
+    // tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL> ( 1, ls);
     // std::cerr << tet;
     int c= 0;
     for (int i= -1; i <= 1; ++i)
@@ -61,7 +61,7 @@ void test_tetra_cut ()
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
               DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
               DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
-              tet.partition_principal_lattice ( 1, ls);
+              tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL> ( 1, ls);
 //              if (c == 5) {
 //                  std::cerr << comb_cut << std::endl;
 //                  std:: cerr << cut << std::endl;
@@ -146,8 +146,8 @@ void test_sphere_cut ()
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( 10);
     DROPS::GridFunctionCL<> ls( lat.num_vertexes());
     evaluate( ls, lat, &sphere);
-    DROPS::TetraPartitionCL<> tet;
-    tet.partition_principal_lattice( 10, ls);
+    DROPS::TetraPartitionCL tet;
+    tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( 10, ls);
     std::ostringstream name;
     name << "sphere.vtu";
     std::ofstream file( name.str().c_str());
@@ -179,7 +179,7 @@ void test_sphere_integral ()
     DROPS::MultiGridCL mg( brick);
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( num_sub_lattice);
     DROPS::GridFunctionCL<> ls( lat.num_vertexes());
-    DROPS::TetraPartitionCL<> tet;
+    DROPS::TetraPartitionCL tet;
     // DROPS::SurfacePatchCL patch;
     double vol_neg= 0., vol_pos= 0.;
     // double surf= 0.;
@@ -187,8 +187,8 @@ void test_sphere_integral ()
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate( ls, lat, &sphere, *it);
-        tet.partition_principal_lattice( num_sub_lattice, ls);
-        // patch.partition_principal_lattice( num_sub_lattice, ls);
+        tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // patch.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         DROPS::make_CompositeQuad5Domain( qdom, tet);
         DROPS::GridFunctionCL<> integrand( 1., qdom.size());
         double tmp_neg, tmp_pos;

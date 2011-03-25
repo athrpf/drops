@@ -26,6 +26,58 @@
 
 namespace DROPS {
 
+const QuadDomainCL&
+make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
+{
+    q.neg_end_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
+    q.pos_begin_= p.vertex_begin( PosTetraC) - p.vertex_begin() + p.tetra_size( NegTetraC);
+
+    q.weights_.resize( p.tetra_size( NegTetraC)  + p.vertex_size( NegTetraC) // weights for NegTetraC
+                      +p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC)  // weights for PosTetraC
+                      +p.vertex_size() + p.tetra_size());                    // weights for AllTetraC
+    q.pos_weights_begin_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
+    q.all_weights_begin_= q.pos_weights_begin_ + p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC);
+
+    typename QuadDomainCL::VertexContT neg_tetra_bary;
+    neg_tetra_bary.reserve( p.tetra_size( NegTetraC));
+    typename QuadDomainCL::VertexContT pos_tetra_bary;
+    pos_tetra_bary.reserve( p.tetra_size( PosTetraC));
+
+    const typename TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    QRDecompCL<4,4> qr;
+    SMatrixCL<4,4>& T= qr.GetMatrix();
+    for (typename TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it) {
+        for (Uint i= 0; i < NumVertsC; ++i)
+            T.col( i, partition_vertexes[(*it)[i]]);
+        const bool is_neg= p.sign( it) == -1;
+        (is_neg ? neg_tetra_bary : pos_tetra_bary).push_back( T*Quad2DataCL::Node[4]);
+        double* w= Addr( q.weights_) + (is_neg ? 0 : q.pos_weights_begin_);
+        const Uint vertex_weight_begin= is_neg ? p.tetra_size( NegTetraC) : 0;
+        const Uint vertex_beg= is_neg ? 0 : p.vertex_begin( PosTetraC) - p.vertex_begin();
+        qr.prepare_solve();
+        const double absdet= std::fabs( qr.Determinant_R());
+        for (int i= 0; i < 4; ++i)
+            w[(*it)[i] - vertex_beg + vertex_weight_begin]+= absdet*Quad2DataCL::Wght[0];
+        const Uint tetra_weight_begin= is_neg ? 0 : p.vertex_size( PosTetraC);
+        const typename TetraPartitionCL::const_tetra_iterator tetra_beg=
+            p.tetra_begin( is_neg ? NegTetraC : PosTetraC);
+        w[it - tetra_beg + tetra_weight_begin]+= absdet*Quad2DataCL::Wght[1];
+    }
+
+    q.vertexes_.resize( 0);
+    q.vertexes_.reserve( p.vertex_size() + p.tetra_size());
+    std::copy( neg_tetra_bary.begin(), neg_tetra_bary.end(), std::back_inserter( q.vertexes_));
+    std::copy( p.vertex_begin(), p.vertex_end(), std::back_inserter( q.vertexes_));
+    std::copy( pos_tetra_bary.begin(), pos_tetra_bary.end(), std::back_inserter( q.vertexes_));
+
+    q.weights_[std::slice( q.all_weights_begin_, q.size( NegTetraC), 1)]=
+        q.weights_[std::slice( 0, q.size( NegTetraC), 1)];
+    q.weights_[std::slice( q.all_weights_begin_ + q.dof_begin( PosTetraC), q.size( PosTetraC), 1)]+=
+        q.weights_[std::slice( q.size( NegTetraC), q.size( PosTetraC), 1)];
+
+    return q;
+}
+
 void
 copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec, const std::vector<Uint>& w_pos_begin,
     const std::valarray<double >& w_factor, CompositeQuadratureTypesNS::WeightContT& weights)

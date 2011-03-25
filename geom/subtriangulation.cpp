@@ -105,6 +105,55 @@ void PartitionedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, 
     }
 }
 
+void
+write_paraview_vtu (std::ostream& file_, const TetraPartitionCL& t, TetraSignEnum s)
+{
+    file_ << "<?xml version=\"1.0\"?>"  << '\n'
+          << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">"   << '\n'
+          << "<UnstructuredGrid>"   << '\n';
+
+    file_<< "<Piece NumberOfPoints=\""<< t.vertexes_.size() <<"\" NumberOfCells=\""<< t.tetra_size( s) << "\">";
+    file_<< "\n\t<Points>"
+         << "\n\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"" << "ascii\">\n\t\t";
+    for(LatticePartitionTypesNS::const_vertex_iterator it= t.vertexes_.begin(), end= t.vertexes_.end(); it != end; ++it) {
+        file_ << it[0][1] << ' ' << it[0][2] << ' ' << it[0][3] << ' ';
+    }
+    file_<< "\n\t\t</DataArray> \n"
+         << "\t</Points>\n";
+
+    file_   << "\t<Cells>\n"
+            << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\""
+            <<"ascii\">\n\t\t";
+    std::copy( t.tetra_begin( s), t.tetra_end( s), std::ostream_iterator<LatticePartitionTypesNS::TetraT>( file_));
+    file_ << "\n\t\t</DataArray>\n";
+    file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
+    for(Uint i= 1; i <= t.tetra_size( s); ++i) {
+        file_ << i*4 << " ";
+    }
+    file_ << "\n\t\t</DataArray>";
+    file_ << "\n\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n\t\t";
+    const int tetraType= 10;
+    for(Uint i= 1; i <= t.tetra_size( s); ++i) {
+            file_ << tetraType<<" ";
+    }
+    file_<<"\n\t\t</DataArray>"
+         <<"\n\t</Cells>";
+
+    file_ <<"\n</Piece>"
+          <<"\n</UnstructuredGrid>"
+          <<"\n</VTKFile>";
+}
+
+std::ostream&
+operator<< (std::ostream& out, const TetraPartitionCL& t)
+{
+    out << t.tetras_.size() << ' ' << t.pos_tetra_begin_ << ' ' << t.pos_vertex_begin_ << ' ' << t.neg_vertex_end_ << '\n';
+    std::copy( t.tetras_.begin(), t.tetras_.end(), std::ostream_iterator<LatticePartitionTypesNS::TetraT>( out));
+    out << '\n';
+    std::copy( t.vertexes_.begin(), t.vertexes_.end(), std::ostream_iterator<BaryCoordCL>( out)) ;
+    return out;
+}
+
 
 void SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls)
 {
