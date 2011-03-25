@@ -60,17 +60,17 @@ class UnorderedVertexPolicyCL
     typedef LatticePartitionTypesNS::TetraContT  TetraContT;
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
-    VertexContT& partition_vertexes_;
+    VertexContT& vertexes_;
 
   public:
-    UnorderedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat) : partition_vertexes_( vertexes) {
-        partition_vertexes_.resize( 0);
-        partition_vertexes_.reserve( lat.num_vertexes());
-        std::copy( lat.vertex_begin(), lat.vertex_end(), std::back_inserter( partition_vertexes_));
+    UnorderedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat) : vertexes_( vertexes) {
+        vertexes_.resize( 0);
+        vertexes_.reserve( lat.num_vertexes());
+        std::copy( lat.vertex_begin(), lat.vertex_end(), std::back_inserter( vertexes_));
     }
 
     ///\brief The container, in which TetraPartitionCL will store proper cuts of an edge: Simply the container for the vertexes of the principal lattice
-    VertexContT& cut_vertex_container () { return partition_vertexes_; }
+    VertexContT& cut_vertex_container () { return vertexes_; }
     ///\brief Offset of the proper cuts in relation to the vertexes of the principal lattice
     /// Returns zero, as the vertexes are stored in the same container as the partition vertexes.
     Uint cut_index_offset () { return 0; }
@@ -112,14 +112,14 @@ class PartitionedVertexPolicyCL
     typedef LatticePartitionTypesNS::TetraContT  TetraContT;
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
-    VertexContT& partition_vertexes_;
+    VertexContT& vertexes_;
     VertexContT  cut_vertexes_;
     const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin_;
     const Uint lattice_num_vertexes_;
 
   public:
     PartitionedVertexPolicyCL (VertexContT& vertexes, const PrincipalLatticeCL& lat)
-        : partition_vertexes_( vertexes),  lattice_vertex_begin_( lat.vertex_begin()),
+        : vertexes_( vertexes),  lattice_vertex_begin_( lat.vertex_begin()),
           lattice_num_vertexes_( lat.num_vertexes()) {}
 
     ///\brief The container, in which TetraPartitionCL will store proper cuts of an edge
@@ -138,16 +138,16 @@ class DuplicateCutPolicyCL
   private:
     typedef LatticePartitionTypesNS::VertexContT VertexContT;
 
-    const PrincipalLatticeCL::const_vertex_iterator partition_vertexes_;
+    const PrincipalLatticeCL::const_vertex_iterator lattice_vertexes_;
     VertexContT& vertexes_;
 
   public:
-    DuplicateCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator partition_vertexes, VertexContT& vertexes) : partition_vertexes_( partition_vertexes), vertexes_( vertexes) {}
+    DuplicateCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator lattice_vertexes, VertexContT& vertexes) : lattice_vertexes_( lattice_vertexes), vertexes_( vertexes) {}
 
     ///\brief Add the cut vertex and return its number.
     Uint operator() (Uint v0, Uint v1, double ls0, double ls1) {
         const double edge_bary1_cut= ls0/(ls0 - ls1); // the root of the level set function on the edge
-        vertexes_.push_back( ConvexComb( edge_bary1_cut, partition_vertexes_[v0], partition_vertexes_[v1]));
+        vertexes_.push_back( ConvexComb( edge_bary1_cut, lattice_vertexes_[v0], lattice_vertexes_[v1]));
         return vertexes_.size() - 1;
     }
 };
@@ -167,13 +167,13 @@ class MergeCutPolicyCL
     typedef std::pair<Uint, Uint> EdgeT;
     typedef std::tr1::unordered_map<EdgeT, Uint, UintPairHasherCL> EdgeToCutMapT;
 
-    const PrincipalLatticeCL::const_vertex_iterator partition_vertexes_;
+    const PrincipalLatticeCL::const_vertex_iterator lattice_vertexes_;
     VertexContT& vertexes_;
     EdgeToCutMapT edge_to_cut_;
 
   public:
-    MergeCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator partition_vertexes, VertexContT& vertexes)
-        : partition_vertexes_( partition_vertexes), vertexes_( vertexes) {}
+    MergeCutPolicyCL (PrincipalLatticeCL::const_vertex_iterator lattice_vertexes, VertexContT& vertexes)
+        : lattice_vertexes_( lattice_vertexes), vertexes_( vertexes) {}
 
     ///\brief Return the number of the cut vertex, if it is already memoized, otherwise add it and return its number.
     Uint operator() (Uint v0, Uint v1, double ls0, double ls1) {
@@ -183,7 +183,7 @@ class MergeCutPolicyCL
             return e_it->second;
         else {
             const double edge_bary1_cut= ls0/(ls0 - ls1); // the root of the level set function on the edge
-            vertexes_.push_back( ConvexComb( edge_bary1_cut, partition_vertexes_[v0], partition_vertexes_[v1]));
+            vertexes_.push_back( ConvexComb( edge_bary1_cut, lattice_vertexes_[v0], lattice_vertexes_[v1]));
             return edge_to_cut_[e]= vertexes_.size() - 1;
         }
     }

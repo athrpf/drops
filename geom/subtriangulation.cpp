@@ -72,7 +72,7 @@ void PartitionedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, 
         ++num_sign[DROPS::sign( ls[i])];
     const Uint num_zero_vertexes= num_sign[0] + cut_vertexes_.size();
 
-    partition_vertexes_.resize( num_sign[-1] + num_sign[1] + 2*num_zero_vertexes);
+    vertexes_.resize( num_sign[-1] + num_sign[1] + 2*num_zero_vertexes);
     neg_vertex_end= pos_vertex_begin= num_sign[-1] + num_zero_vertexes;
 
     std::vector<Uint> new_pos( num_sign[-1] + num_sign[1] + num_zero_vertexes); // maps old vertex-index to the new one
@@ -85,15 +85,15 @@ void PartitionedVertexPolicyCL::sort_vertexes (const std::valarray<double>& ls, 
         const Uint thesign= DROPS::sign( ls[i]);
         size_t& cur= cursor[thesign];
         new_pos[i]= cur;
-        partition_vertexes_[cur]= lattice_vertex_begin_[i];
+        vertexes_[cur]= lattice_vertex_begin_[i];
         if (thesign == 1)
-            partition_vertexes_[cur + num_zero_vertexes]= lattice_vertex_begin_[i];
+            vertexes_[cur + num_zero_vertexes]= lattice_vertex_begin_[i];
         ++cur;
     }
     size_t& cur= cursor[0];
     for (Uint i= 0; i < cut_vertexes_.size(); ++i, ++cur) {
         new_pos[i + lattice_num_vertexes_]= cur;
-        partition_vertexes_[cur + num_zero_vertexes]= partition_vertexes_[cur]= cut_vertexes_[i];
+        vertexes_[cur + num_zero_vertexes]= vertexes_[cur]= cut_vertexes_[i];
     }
     // Reorder the indices in the tetras
     for (TetraContT::iterator it= tetra_begin; it != tetra_end; ++it) {
