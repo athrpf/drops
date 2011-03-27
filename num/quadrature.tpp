@@ -176,7 +176,7 @@ template <class QuadDataT, class LocalFET>
         ls_val.resize( lat.num_vertexes());
         for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
             ls_val[it - lat.vertex_begin()]= ls( *it);
-        partition.partition_principal_lattice<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
+        partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain<QuadDataT>( qdom, partition);
         std::copy( qdom.vertex_begin( NegTetraC), qdom.vertex_end( NegTetraC), std::back_inserter( q.vertexes_));
         std::copy( qdom.vertex_begin( PosTetraC), qdom.vertex_end( PosTetraC), std::back_inserter( pos_vertexes));

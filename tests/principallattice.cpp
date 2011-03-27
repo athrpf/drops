@@ -61,7 +61,7 @@ void test_tetra_cut ()
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
               DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
               DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
-              tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL> ( 1, ls);
+              tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL> ( 1, ls);
 //              if (c == 5) {
 //                  std::cerr << comb_cut << std::endl;
 //                  std:: cerr << cut << std::endl;
@@ -91,7 +91,7 @@ void test_cut_surface ()
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
               DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
               DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
-              tet.partition_principal_lattice ( 1, ls);
+              tet.make_patch<DROPS::MergeCutPolicyCL>( 1, ls);
               std::ostringstream name;
               name << "hallo_surf" << c << ".vtu";
               std::ofstream file( name.str().c_str());
@@ -147,7 +147,7 @@ void test_sphere_cut ()
     DROPS::GridFunctionCL<> ls( lat.num_vertexes());
     evaluate( ls, lat, &sphere);
     DROPS::TetraPartitionCL tet;
-    tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( 10, ls);
+    tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( 10, ls);
     std::ostringstream name;
     name << "sphere.vtu";
     std::ofstream file( name.str().c_str());
@@ -155,7 +155,7 @@ void test_sphere_cut ()
     file.close();
 
     DROPS::SurfacePatchCL surf;
-    surf.partition_principal_lattice( 10, ls);
+    surf.make_patch<DROPS::MergeCutPolicyCL>( 10, ls);
     name.str( "");
     name << "sphere_surf.vtu";
     file.open( name.str().c_str());
@@ -187,10 +187,10 @@ void test_sphere_integral ()
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate( ls, lat, &sphere, *it);
-        // tet.partition_principal_lattice<DROPS::UnorderedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
-        // tet.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
-        tet.partition_principal_lattice<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
-        // patch.partition_principal_lattice<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // tet.make_partition<DROPS::UnorderedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        tet.make_partition<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // patch.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         DROPS::make_CompositeQuad5Domain( qdom, tet);
         DROPS::GridFunctionCL<> integrand( 1., qdom.size());
         double tmp_neg, tmp_pos;
@@ -220,8 +220,8 @@ void test_extrapolated_sphere_integral ()
     DROPS::MultiGridCL mg( brick);
     double vol_neg= 0., vol_pos= 0.;
     DROPS::QuadDomainCL qdom;
-    // DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::RombergSubdivisionCL());
-    DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::HarmonicSubdivisionCL());
+    DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::RombergSubdivisionCL());
+    // DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::HarmonicSubdivisionCL());
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
@@ -242,8 +242,8 @@ int main()
         // test_cut_surface();
         // test_principal_lattice();
         // test_sphere_cut();
-        test_sphere_integral();
-        // test_extrapolated_sphere_integral();
+        // test_sphere_integral();
+        test_extrapolated_sphere_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;

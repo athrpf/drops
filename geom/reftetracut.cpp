@@ -93,7 +93,7 @@ operator<< (std::ostream& out, const SignPatternTraitCL& c)
 
 
 bool
-RefTetraSurfacePatchCL::assign (const SignPatternTraitCL& cut)
+RefTetraPatchCL::assign (const SignPatternTraitCL& cut)
 {
     for (size_= 0; size_ < num_triangles( cut); ++size_)
         triangle_[size_]= MakeTriangle( cut(size_), cut(size_ + 1), cut(size_ + 2));

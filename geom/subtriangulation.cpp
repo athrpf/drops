@@ -78,52 +78,6 @@ operator<< (std::ostream& out, const TetraPartitionCL& t)
 
 
 void
-SurfacePatchCL::partition_principal_lattice (Uint num_intervals, const std::valarray<double>& ls)
-{
-    const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-    PrincipalLatticeCL::const_vertex_iterator lattice_verts= lat.vertex_begin();
-
-    triangles_.resize( 0);
-    is_boundary_triangle_.resize( 0);
-
-    std::valarray<byte> ls_sign;
-    copy_levelset_sign( ls, ls_sign);
-
-    MergeCutPolicyCL edgecut( lat.vertex_begin()); // Fixme
-    std::vector<Uint> copied_vertexes( lat.num_vertexes(), static_cast<Uint>( -1));
-
-    byte lset[4];
-    Uint loc_vert_num;
-    TriangleT tri;
-    for (PrincipalLatticeCL::const_tetra_iterator lattice_tet= lat.tetra_begin(), lattice_end= lat.tetra_end(); lattice_tet != lattice_end; ++lattice_tet) {
-        for (Uint i= 0; i < 4; ++i)
-            lset[i]= ls_sign[(*lattice_tet)[i]]; 
-        const RefTetraSurfacePatchCL& cut= RefTetraSurfacePatchCL::instance( lset);
-        if (cut.empty()) continue;
-        for (RefTetraSurfacePatchCL::const_triangle_iterator it= cut.triangle_begin(), end= cut.triangle_end(); it != end; ++it) {
-            for (Uint j= 0; j < 3; ++j) {
-                loc_vert_num= (*it)[j];
-                if (loc_vert_num < 4) {
-                    const Uint lattice_vert_num= (*lattice_tet)[loc_vert_num];
-                    if (copied_vertexes[lattice_vert_num] == static_cast<Uint>( -1)) {
-                        vertexes_.push_back( lattice_verts[lattice_vert_num]);
-                        copied_vertexes[lattice_vert_num]= vertexes_.size() - 1;
-                    }
-                    tri[j]= copied_vertexes[lattice_vert_num];
-                }
-                else { // Cut vertex
-                    const Ubyte v0= VertOfEdge( loc_vert_num - 4, 0),
-                                v1= VertOfEdge( loc_vert_num - 4, 1);
-                    tri[j]= edgecut( (*lattice_tet)[v0], (*lattice_tet)[v1], lset[v0], lset[v1]);
-                }
-            }
-            triangles_.push_back( tri);
-            is_boundary_triangle_.push_back( cut.is_boundary_triangle());
-        }
-    }
-}
-
-void
 write_paraview_vtu (std::ostream& file_, const SurfacePatchCL& t)
 {
     file_ << "<?xml version=\"1.0\"?>"  << '\n'
@@ -165,7 +119,7 @@ write_paraview_vtu (std::ostream& file_, const SurfacePatchCL& t)
 
 void
 UnorderedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
-    size_t& pos_vertex_begin, size_t& neg_vertex_end)
+    Uint& pos_vertex_begin, Uint& neg_vertex_end)
 {
     std::copy( cut_vertexes.begin(), cut_vertexes.end(), std::back_inserter( vertexes));
     pos_vertex_begin= neg_vertex_end= 0;
@@ -173,7 +127,7 @@ UnorderedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_
 
 void
 SortedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
-    size_t& pos_vertex_begin, size_t& neg_vertex_end)
+    Uint& pos_vertex_begin, Uint& neg_vertex_end)
 {
     const Uint lattice_num_vertexes= lat_.num_vertexes();
     const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin= lat_.vertex_begin();
@@ -193,18 +147,18 @@ SortedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_ver
     neg_vertex_end=   num_sign[-1] + num_zero_vertexes;
 
     std::vector<Uint> new_pos( num_sign[-1] + num_sign[1] + num_zero_vertexes); // maps old vertex-index to the new one
-    size_t cursor_arr[3];
-    size_t* const cursor= cursor_arr + 1; // Insertion cursors for the sorted-by-sign vertex numbers
+    Uint cursor_arr[3];
+    Uint* const cursor= cursor_arr + 1; // Insertion cursors for the sorted-by-sign vertex numbers
     cursor[-1]= 0;
     cursor[0]= num_sign[-1];
     cursor[1]= num_sign[-1] + num_zero_vertexes;
     for (Uint i= 0; i < lattice_num_vertexes; ++i) {
-        size_t& cur= cursor[ls_sign[i]];
+        Uint& cur= cursor[ls_sign[i]];
         new_pos[i]= cur;
         vertexes[cur]= lattice_vertex_begin[i];
         ++cur;
     }
-    size_t& cur= cursor[0];
+    Uint& cur= cursor[0];
     for (Uint i= 0; i < cut_vertexes.size(); ++i, ++cur) {
         new_pos[i + lattice_num_vertexes]= cur;
         vertexes[cur]= cut_vertexes[i];
@@ -216,7 +170,7 @@ SortedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_ver
 }
 
 void
-PartitionedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes, size_t& pos_vertex_begin, size_t& neg_vertex_end)
+PartitionedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes, Uint& pos_vertex_begin, Uint& neg_vertex_end)
 {
     pol_.sort_vertexes( vertexes, cut_vertexes, pos_vertex_begin, neg_vertex_end);
     const Uint num_zero_vertexes= neg_vertex_end - pos_vertex_begin;

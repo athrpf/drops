@@ -141,13 +141,13 @@ class QuadDomainCL
     ///@}
 
   private:
-    VertexContT vertexes_; ///< sequence of all vertexes; some may be used for both, the positive and the negative domain
-    size_t pos_begin_; ///< begin of the subsequence of vertexes of positive tetras
-    size_t neg_end_;   ///< end of the subsequence of vertexes of negative tetras
+    VertexContT vertexes_;  ///< sequence of all vertexes; some may be used for both, the positive and the negative domain
+    Uint        pos_begin_; ///< begin of the subsequence of vertexes of positive tetras
+    Uint        neg_end_;   ///< end of the subsequence of vertexes of negative tetras
 
     WeightContT weights_; ///< sequence of all weights; if there are vertexes on the interface, which are used for both domains, the weights for the whole domain are appended and all_weights_begin_ > 0.
-    size_t pos_weights_begin_;
-    size_t all_weights_begin_;
+    Uint        pos_weights_begin_;
+    Uint        all_weights_begin_;
 
   public:
     QuadDomainCL () ///< empty default constructor
@@ -161,7 +161,7 @@ class QuadDomainCL
         { return s == NegTetraC ? neg_end_ : vertexes_.size(); }
     ///@}
 
-    size_t size (TetraSignEnum s= AllTetraC) const ///< Number of quadrature points in the given domain
+    Uint size (TetraSignEnum s= AllTetraC) const ///< Number of quadrature points in the given domain
         { return dof_end( s) - dof_begin( s); }
 
     /// \brief Begin of the sequence of weights for integration on the given domain

@@ -71,7 +71,7 @@ class SignPatternTraitCL
 ///\brief The triangles of the intersection of the reference-tetra with a linear levelset-function.
 ///
 /// The class memoizes used sign-patterns if the triangulations are accessed via the instance( ls)-function. Individual instances may still be constructed (useful for debugging).
-class RefTetraSurfacePatchCL
+class RefTetraPatchCL
 {
   public:
     typedef SArrayCL<Ubyte, 3> TriangleT; ///< the vertices of a triangle of the cut: the tetra's vertices are denoted by 0..3, the edge-cuts by edge-num + 4, which is in 4..9.
@@ -87,15 +87,15 @@ class RefTetraSurfacePatchCL
     TriangleT MakeTriangle (Ubyte v0, Ubyte v1, Ubyte v2) const { return MakeSArray( v0, v1, v2); }
 
   public:
-    RefTetraSurfacePatchCL () : size_( static_cast<Ubyte>( -1)), is_boundary_triangle_( 0) {} ///< Uninitialized default state
-    RefTetraSurfacePatchCL (const SignPatternTraitCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
+    RefTetraPatchCL () : size_( static_cast<Ubyte>( -1)), is_boundary_triangle_( 0) {} ///< Uninitialized default state
+    RefTetraPatchCL (const SignPatternTraitCL& cut) { assign( cut); } ///< Initialize with sign pattern on the vertices
     bool assign (const SignPatternTraitCL& cut); ///< Assign a sign pattern on the vertices; returns the value of empty()
 
     bool  is_initialized () const { return size_ <= 2; } ///< True after assign(...)
 
     ///@{ Recommended access to the triangles for a given sign-pattern; memoizes the result.
-    static inline const RefTetraSurfacePatchCL& instance (const byte   ls[4]);
-    static inline const RefTetraSurfacePatchCL& instance (const double ls[4]);
+    static inline const RefTetraPatchCL& instance (const byte   ls[4]);
+    static inline const RefTetraPatchCL& instance (const double ls[4]);
     ///@}
 
     bool is_boundary_triangle () const { return is_boundary_triangle_ == 1; } ///< true, iff the triangle is one of the tetra's faces.
@@ -128,20 +128,20 @@ inline Ubyte instance_idx (const double ls[4])
     return  27*sign( ls[0]) + 9*sign( ls[1]) + 3*sign( ls[2]) + sign( ls[3]);
 }
 
-inline const RefTetraSurfacePatchCL&
-RefTetraSurfacePatchCL::instance (const byte ls[4])
+inline const RefTetraPatchCL&
+RefTetraPatchCL::instance (const byte ls[4])
 {
-    static RefTetraSurfacePatchCL instance_array[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
-    static RefTetraSurfacePatchCL* const instances= instance_array + 40;
+    static RefTetraPatchCL instance_array[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
+    static RefTetraPatchCL* const instances= instance_array + 40;
 
-    RefTetraSurfacePatchCL& instance= instances[instance_idx ( ls)];
+    RefTetraPatchCL& instance= instances[instance_idx ( ls)];
     if ( !instance.is_initialized())
         instance.assign( SignPatternTraitCL( ls));
     return instance;
 }
 
-inline const RefTetraSurfacePatchCL&
-RefTetraSurfacePatchCL::instance (const double ls[4])
+inline const RefTetraPatchCL&
+RefTetraPatchCL::instance (const double ls[4])
 {
     byte ls_byte[4];
     for (int i= 0; i < 4; ++i)
