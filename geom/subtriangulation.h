@@ -183,6 +183,11 @@ class SurfacePatchCL
     bool is_boundary_triangle (const_triangle_iterator it) const { return is_boundary_triangle_[it - triangles_.begin()]; }
     ///@}
 
+    Uint triangle_size  () const ///< number of triangles
+         { return triangles_.size(); }
+    Uint vertex_size () const ///< number of vertexes
+         { return vertexes_.size(); }
+
     /// Random-access to the tetras and vertices.
     ///@{
     const_triangle_iterator triangle_begin () const { return triangles_.begin(); }
