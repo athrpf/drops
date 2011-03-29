@@ -630,8 +630,9 @@ class Quad5_2DDataCL
 
     enum { NumNodesC= 7 };
 
-    static Point3DCL           Node[NumNodesC]; ///< quadrature nodes
-    static const double        Wght[3];         ///< quadrature weights
+    static Point3DCL           Node[NumNodesC];   ///< quadrature nodes
+    static const double        Wght[3];           ///< quadrature weights
+    static const double        Weight[NumNodesC]; ///< quadrature weights for each node
 
     /// Calculates the barycentric coordinates of the quadrature points
     /// of the triangle given by the 1st argument with respect to the

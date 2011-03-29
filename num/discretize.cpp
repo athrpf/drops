@@ -206,7 +206,17 @@ Point3DCL Quad5_2DDataCL::Node[NumNodesC];  // Barycentric coord for 2D
 const double Quad5_2DDataCL::Wght[3]= {
       9./80.,                          /*Node[0]*/
       (155. - std::sqrt( 15.0))/2400., /*Node[1] to Node[3]*/
+      (155. + std::sqrt( 15.0))/2400.  /*Node[4] to Node[6]*/
+};
+
+const double Quad5_2DDataCL::Weight[NumNodesC]= {
+      9./80.,                          /*Node[0]*/
+      (155. - std::sqrt( 15.0))/2400., /*Node[1] to Node[3]*/
+      (155. - std::sqrt( 15.0))/2400.,
+      (155. - std::sqrt( 15.0))/2400.,
       (155. + std::sqrt( 15.0))/2400., /*Node[4] to Node[6]*/
+      (155. + std::sqrt( 15.0))/2400.,
+      (155. + std::sqrt( 15.0))/2400.
 };
 
 Quad5_2DDataCL::Quad5_2DDataCL ()
