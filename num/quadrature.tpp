@@ -224,27 +224,24 @@ template <class QuadDataT>
     const Uint num_nodes= QuadDataT::NumNodesC;
 
     q.vertexes_.resize( 0);
-    q.vertexes_.reserve( num_nodes*p.triangle_size());
+    q.vertexes_.resize( num_nodes*p.triangle_size());
     q.weights_.resize( num_nodes*p.triangle_size());
 
     const typename SurfacePatchCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
     const typename QuadDomainCL::WeightContT triangle_weights( QuadDataT::Weight, num_nodes);
-    Uint w_begin= 0;
+    Uint beg= 0;
     BaryCoordCL tri_bary[3];
     Point3DCL   tri[3];
-    BaryCoordCL* const nodes= new BaryCoordCL[QuadDataT::NumNodesC];
     for (SurfacePatchCL::const_triangle_iterator it= p.triangle_begin(); it != p.triangle_end();
-        ++it, w_begin+= num_nodes) {
+        ++it, beg+= num_nodes) {
         for (int i= 0; i < 3; ++i) {
             tri_bary[i]= partition_vertexes[(*it)[i]];
             tri[i]= GetWorldCoord( t, tri_bary[i]);
         }
-        QuadDataT::SetInterface( tri_bary, nodes);
-        q.vertexes_.insert( q.vertexes_.end(), nodes, nodes + num_nodes);
+        QuadDataT::SetInterface( tri_bary, q.vertexes_.begin() + beg);
         const double absdet= FuncDet2D( tri[1] - tri[0], tri[2] - tri[0]);
-        q.weights_[std::slice( w_begin, num_nodes, 1)]= absdet*triangle_weights;
+        q.weights_[std::slice( beg, num_nodes, 1)]= absdet*triangle_weights;
     }
-    delete[] nodes;
 
     return q;
 }

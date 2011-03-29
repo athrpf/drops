@@ -637,7 +637,9 @@ class Quad5_2DDataCL
     /// Calculates the barycentric coordinates of the quadrature points
     /// of the triangle given by the 1st argument with respect to the
     /// tetrahedron and stores them in the 2nd argument.
-    static void SetInterface (const BaryCoordCL* const, BaryCoordCL*);
+    /// RAIterT is a random-access-iterator to a sequence of BaryCoordCL
+    template <class RAIterT>
+    static void SetInterface (const BaryCoordCL* const, RAIterT);
 };
 
 template<class T=double>

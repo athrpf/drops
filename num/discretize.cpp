@@ -234,13 +234,6 @@ Quad5_2DDataCL::Quad5_2DDataCL ()
     Node[6]= MakePoint3D( B2,A2,A2);
 }
 
-void
-Quad5_2DDataCL::SetInterface (const BaryCoordCL*const p, BaryCoordCL* NodeInTetra)
-{
-    for (Uint i= 0; i < NumNodesC; ++i)
-        NodeInTetra[i]= Node[i][0]*p[0] + Node[i][1]*p[1] + Node[i][2]*p[2];
-}
-
 namespace {
     Quad5_2DDataCL theQuad52DDataInitializer_; // The constructor sets up the static arrays
 } // end of anonymous namespace

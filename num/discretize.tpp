@@ -646,6 +646,14 @@ template<class T>
 }
 
 
+template <class RAIterT>
+  void
+  Quad5_2DDataCL::SetInterface (const BaryCoordCL*const p, RAIterT NodeInTetra)
+{
+    for (Uint i= 0; i < NumNodesC; ++i)
+        NodeInTetra[i]= Node[i][0]*p[0] + Node[i][1]*p[1] + Node[i][2]*p[2];
+}
+
 //**************************************************************************
 // Class: Quad5_2DCL                                                       *
 //**************************************************************************
