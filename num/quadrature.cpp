@@ -100,6 +100,22 @@ copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
 }
 
 void
+copy_weights_surface (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
+    const std::valarray<double >& w_factor, CompositeQuadratureTypesNS::WeightContT& weights)
+{
+    Uint s= 0;
+    for (Uint i= 0; i < w_vec.size(); ++i)
+        s+= w_vec[i].size();
+    weights.resize( s);
+
+    Uint it= 0;
+    for (Uint i= 0; i < w_vec.size(); ++i) {
+        weights[std::slice( it, w_vec[i].size(), 1)]= w_factor[i]*w_vec[i];
+        it+= w_vec[i].size();
+    }
+}
+
+void
 ExtrapolationToZeroCL::compute_divided_differences (const std::valarray<double>& x, std::vector<std::valarray<double> >& w)
 {
     for (Uint j= 1; j < x.size(); ++j)

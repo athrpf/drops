@@ -234,6 +234,63 @@ void test_extrapolated_sphere_integral ()
     std::cout << "Volume of the negative part: " << vol_neg << ", volume of the positive part: " << vol_pos << std::endl;
 }
 
+void test_sphere_surface_integral ()
+{
+    std::cout << "Enter the number of subdivisions of the cube: ";
+    DROPS::Uint num_sub;
+    std::cin >> num_sub;
+    std::cout << "Enter the number of subdivisions of the principal lattice: ";
+    DROPS::Uint num_sub_lattice;
+    std::cin >> num_sub_lattice;
+    DROPS::BrickBuilderCL brick(DROPS::Point3DCL( -1.),
+                                2.*DROPS::std_basis<3>(1),
+                                2.*DROPS::std_basis<3>(2),
+                                2.*DROPS::std_basis<3>(3),
+                                num_sub, num_sub, num_sub);
+    DROPS::MultiGridCL mg( brick);
+    const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( num_sub_lattice);
+    DROPS::GridFunctionCL<> ls( lat.num_vertexes());
+    DROPS::SurfacePatchCL patch;
+    double surf= 0.;
+    DROPS::QuadDomain2DCL qdom;
+
+    DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
+        evaluate( ls, lat, &sphere, *it);
+        patch.make_patch<DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        DROPS::make_CompositeQuad5Domain2D( qdom, patch, *it);
+        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
+        surf+= quad_2D( integrand, qdom);
+    }
+    std::cout << "Surface: " <<surf << std::endl;
+}
+
+void test_extrapolated_sphere_surface_integral ()
+{
+    std::cout << "Enter the number of subdivisions of the cube: ";
+    DROPS::Uint num_sub;
+    std::cin >> num_sub;
+    std::cout << "Enter the number of extrapolation levels: ";
+    DROPS::Uint num_level;
+    std::cin >> num_level;
+    DROPS::BrickBuilderCL brick(DROPS::Point3DCL( -1.),
+                                2.*DROPS::std_basis<3>(1),
+                                2.*DROPS::std_basis<3>(2),
+                                2.*DROPS::std_basis<3>(3),
+                                num_sub, num_sub, num_sub);
+    DROPS::MultiGridCL mg( brick);
+    double surf= 0.;
+    DROPS::QuadDomain2DCL qdom;
+    DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::RombergSubdivisionCL());
+    // DROPS::ExtrapolationToZeroCL extra( num_level, DROPS::HarmonicSubdivisionCL());
+
+    DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
+        DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
+        make_ExtrapolatedQuad5Domain2D( qdom, ls_loc, *it, extra);
+        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
+        surf+= quad_2D( integrand, qdom);
+    }
+    std::cout << "Surface: " << surf << std::endl;
+}
 
 int main()
 {
@@ -243,7 +300,9 @@ int main()
         // test_principal_lattice();
         // test_sphere_cut();
         // test_sphere_integral();
-        test_extrapolated_sphere_integral();
+        // test_extrapolated_sphere_integral();
+        // test_sphere_surface_integral();
+        test_extrapolated_sphere_surface_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;

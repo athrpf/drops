@@ -22,28 +22,36 @@
  * Copyright 2011 LNM/SC RWTH Aachen, Germany
  */
 
+#include <memory>
 #include "num/discretize.h"
 
 namespace DROPS {
 
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   typename ValueHelperCL<GridFunT>::value_type
-  quad (const GridFunT& f, double absdet, const DomainT& dom, TetraSignEnum s=AllTetraC)
+  quad_impl (typename CompositeQuadratureTypesNS::const_weight_iterator w_iter, const GridFunT& f, Uint begin, Uint end)
 {
-          Uint begin= dom.dof_begin( s);
-    const Uint end=   dom.dof_end(   s);
-    typename DomainT::const_weight_iterator w_iter= dom.weight_begin( s);
-
     typedef typename ValueHelperCL<GridFunT>::value_type value_type;
     value_type sum= value_type();
     while (begin != end)
        sum+= (*w_iter++)*f[begin++];
-    return sum*absdet;
+    return sum;
 }
 
-template <class GridFunT, class DomainT>
+template <class GridFunT>
+  typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s=AllTetraC)
+{
+    Uint begin= dom.dof_begin( s);
+    Uint end=   dom.dof_end(   s);
+    typename QuadDomainCL::const_weight_iterator w_iter= dom.weight_begin( s);
+
+    return quad_impl(w_iter, f, begin, end)*absdet;
+}
+
+template <class GridFunT>
   inline void
-  quad (const GridFunT& f, double absdet, const DomainT& dom,
+  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom,
     typename ValueHelperCL<GridFunT>::value_type& neg_int,
     typename ValueHelperCL<GridFunT>::value_type& pos_int)
 {
@@ -53,33 +61,39 @@ template <class GridFunT, class DomainT>
 
 ///\brief Helper to quad_{neg,pos}_integrand
 /// Integrate a integrand, that is defined only on either the negative or the positive tetras. It does not work for standard integrands.
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   typename ValueHelperCL<GridFunT>::value_type
-  quad_single_domain_integrand (const GridFunT& f, double absdet, const DomainT& dom, TetraSignEnum s)
+  quad_single_domain_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s)
 {
-    typename DomainT::const_weight_iterator w_iter= dom.weight_begin( s);
-          Uint begin= 0;
+    typename QuadDomainCL::const_weight_iterator w_iter= dom.weight_begin( s);
     const Uint end= dom.dof_end( s) - dom.dof_begin( s);
 
-    typedef typename ValueHelperCL<GridFunT>::value_type value_type;
-    value_type sum= value_type();
-    while (begin != end)
-       sum+= (*w_iter++)*f[begin++];
-    return sum*absdet;
+    return quad_impl(w_iter, f, 0, end)*absdet;
 }
 
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_neg_integrand (const GridFunT& f, double absdet, const DomainT& dom)
+  quad_neg_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom)
 {
     return quad_single_domain_integrand( f, absdet, dom, NegTetraC);
 }
 
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_pos_integrand (const GridFunT& f, double absdet, const DomainT& dom)
+  quad_pos_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom)
 {
     return quad_single_domain_integrand( f, absdet, dom, PosTetraC);
+}
+
+template <class GridFunT>
+  typename ValueHelperCL<GridFunT>::value_type
+  quad_2D (const GridFunT& f, const QuadDomain2DCL& dom)
+{
+    Uint begin= dom.dof_begin();
+    Uint end=   dom.dof_end();
+    typename QuadDomain2DCL::const_weight_iterator w_iter= dom.weight_begin();
+
+    return quad_impl( w_iter, f, begin, end);
 }
 
 template <class QuadDataT>
@@ -200,6 +214,88 @@ template <class LocalFET>
   make_ExtrapolatedQuad5Domain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra)
 {
     return make_ExtrapolatedQuadDomain<Quad5DataCL>( q, ls, extra);
+}
+
+
+template <class QuadDataT>
+  const QuadDomain2DCL&
+  make_CompositeQuadDomain2D (QuadDomain2DCL& q, const SurfacePatchCL& p, const TetraCL& t)
+{
+    const Uint num_nodes= QuadDataT::NumNodesC;
+
+    q.vertexes_.resize( 0);
+    q.vertexes_.reserve( num_nodes*p.triangle_size());
+    q.weights_.resize( num_nodes*p.triangle_size());
+
+    const typename SurfacePatchCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
+    const typename QuadDomainCL::WeightContT triangle_weights( QuadDataT::Weight, num_nodes);
+    Uint w_begin= 0;
+    BaryCoordCL tri_bary[3];
+    Point3DCL   tri[3];
+    BaryCoordCL* const nodes= new BaryCoordCL[QuadDataT::NumNodesC];
+    for (SurfacePatchCL::const_triangle_iterator it= p.triangle_begin(); it != p.triangle_end();
+        ++it, w_begin+= num_nodes) {
+        for (int i= 0; i < 3; ++i) {
+            tri_bary[i]= partition_vertexes[(*it)[i]];
+            tri[i]= GetWorldCoord( t, tri_bary[i]);
+        }
+        QuadDataT::SetInterface( tri_bary, nodes);
+        q.vertexes_.insert( q.vertexes_.end(), nodes, nodes + num_nodes);
+        const double absdet= FuncDet2D( tri[1] - tri[0], tri[2] - tri[0]);
+        q.weights_[std::slice( w_begin, num_nodes, 1)]= absdet*triangle_weights;
+    }
+    delete[] nodes;
+
+    return q;
+}
+
+inline const QuadDomain2DCL&
+make_CompositeQuad5Domain2D (QuadDomain2DCL& q, const SurfacePatchCL& p, const TetraCL& t)
+{
+    return make_CompositeQuadDomain2D<Quad5_2DDataCL>( q, p, t);
+}
+
+/// \brief Multiply the weight for each level with the extrapolation factor and copy it to weights.
+void
+copy_weights_surface (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
+    const std::valarray<double >& w_factor, CompositeQuadratureTypesNS::WeightContT& weights);
+
+template <class QuadDataT, class LocalFET>
+  const QuadDomain2DCL&
+  make_ExtrapolatedQuadDomain2D (QuadDomain2DCL& q, const LocalFET& ls, const TetraCL& t, const ExtrapolationToZeroCL& extra)
+{
+    q.vertexes_.resize( 0);
+
+    std::vector<QuadDomain2DCL::WeightContT> w_vec; // the weights for each level
+    w_vec.reserve( extra.num_level());
+
+    SurfacePatchCL partition;
+    QuadDomain2DCL qdom;
+    std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
+    // Accumulate quadrature-points and weights for each level
+    for (Uint i= 0; i < extra.num_level(); ++i) {
+        const Uint num_intervals= extra.num_intervals( i);
+        const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
+        ls_val.resize( lat.num_vertexes());
+        for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
+            ls_val[it - lat.vertex_begin()]= ls( *it);
+        partition.make_patch<MergeCutPolicyCL>( num_intervals, ls_val);
+        make_CompositeQuadDomain2D<QuadDataT>( qdom, partition, t);
+        std::copy( qdom.vertex_begin(), qdom.vertex_end(), std::back_inserter( q.vertexes_));
+        w_vec.push_back( QuadDomain2DCL::WeightContT( qdom.weight_begin(), qdom.size()));
+    }
+
+    // Compute the extrapolated weights
+    copy_weights_surface( w_vec, extra.weights(), q.weights_);
+    return q;
+
+}
+
+template <class LocalFET>
+  inline const QuadDomain2DCL&
+  make_ExtrapolatedQuad5Domain2D (QuadDomain2DCL& q, const LocalFET& ls, const TetraCL& t, const ExtrapolationToZeroCL& extra)
+{
+    return make_ExtrapolatedQuadDomain2D<Quad5_2DDataCL>( q, ls, t, extra);
 }
 
 } // end of namespace DROPS

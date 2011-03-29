@@ -32,17 +32,20 @@
 
 namespace DROPS {
 
+class QuadDomainCL;   ///< forward declaration for quad
+class QuadDomain2DCL; ///< forward declaration for quad
+
 /// Integration of full-sized integrands, which have size( AllTetraC) components.
 ///@{
 /// \brief Integrate on the negative, the positive or all tetras.
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   typename ValueHelperCL<GridFunT>::value_type
-  quad (const GridFunT& f, double absdet, const DomainT& dom, TetraSignEnum s=AllTetraC);
+  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s=AllTetraC);
 
 /// \brief Integrate on the negative and the positive tetras.
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   inline void
-  quad (const GridFunT& f, double absdet, const DomainT& dom,
+  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom,
     typename ValueHelperCL<GridFunT>::value_type& neg_int,
     typename ValueHelperCL<GridFunT>::value_type& pos_int);
 ///@}
@@ -50,16 +53,20 @@ template <class GridFunT, class DomainT>
 /// Integration of small integrands, which have size( NegTetraC) or size( PosTetraC) components
 ///@{
 /// \brief Integrate an integrand, that is defined only on the negative tetras. It does not work for full-sized integrands. Use quad for the latter.
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_neg_integrand (const GridFunT& f, double absdet, const DomainT& dom);
+  quad_neg_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom);
 
 /// \brief Integrate an integrand, that is defined only on the positive tetras. It does not work for standard integrands. Use quad for the latter.
-template <class GridFunT, class DomainT>
+template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_pos_integrand (const GridFunT& f, double absdet, const DomainT& dom);
+  quad_pos_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom);
 ///@}
 
+/// \brief Integrate on a surface-patch
+template <class GridFunT>
+  typename ValueHelperCL<GridFunT>::value_type
+  quad_2D (const GridFunT& f, const QuadDomain2DCL& dom);
 
 namespace CompositeQuadratureTypesNS {
 
@@ -68,12 +75,8 @@ typedef const double* const_weight_iterator;
 
 } // end of namespace DROPS::CompositeQudratureTypesNS
 
-/// forward declarations for the factory-methods
-///@{
-class QuadDomainCL;
-class ExtrapolationToZeroCL;
-///@}
 
+class ExtrapolationToZeroCL; ///< forward declarations for the factory-method
 
 /// \brief Create a composite quadrature rule.
 /// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.
@@ -180,6 +183,86 @@ class QuadDomainCL
     ///@}
 };
 
+class QuadDomain2DCL;
+
+/// \brief Create a composite quadrature rule for a surface-patch.
+/// No sharing of quadrature points is performed.
+/// The template-parameter QuadDataT must be given explicitly.
+/// Helpers for common QuadData_2DCL are given below.
+template <class QuadDataT>
+  const QuadDomain2DCL&
+  make_CompositeQuadDomain2D (QuadDomain2DCL& q, const SurfacePatchCL& p, const TetraCL& t);
+
+///\brief Initialize q as a composite Quad5_2DDataCL-quadrature-rule.
+inline const QuadDomain2DCL&
+make_CompositeQuad5Domain2D (QuadDomain2DCL& q, const SurfacePatchCL& p, const TetraCL& t);
+
+/// \brief Create an extrapolated quadrature rule.
+/// No sharing of quadrature points is performed.
+/// The extrapolation method is determined by extra.
+/// ls can be anything that has the interface of e.g. LocalP2CL for evaluation on a tetra.
+/// The template-parameter QuadDataT must be given explicitly.
+template <class QuadDataT, class LocalFET>
+  const QuadDomain2DCL&
+  make_ExtrapolatedQuadDomain2D (QuadDomain2DCL&, const LocalFET&, const TetraCL&, const ExtrapolationToZeroCL&);
+
+///\brief Initialize q as an extrapolated Quad5_2DDataCL-quadrature-rule.
+/// The extrapolation method is determined by extra.
+/// ls can be anything that has the interface of e.g. LocalP2CL for evaluation on a tetra.
+template <class LocalFET>
+  inline const QuadDomain2DCL&
+  make_ExtrapolatedQuad5Domain2D (QuadDomain2DCL&, const LocalFET&, const TetraCL&, const ExtrapolationToZeroCL&);
+
+/// \brief General 2D-quadrature-domain
+/// A quadrature rule is defined (and implemented) as a collection of quadrature points and a corresponding collection of weights.
+class QuadDomain2DCL
+{
+  public:
+     /// \brief Container for barycentric coordinates of quadrature points.
+    typedef LatticePartitionTypesNS::VertexContT           VertexContT;
+    typedef LatticePartitionTypesNS::const_vertex_iterator const_vertex_iterator;
+
+     ///\brief Container for the quadrature weights
+    typedef CompositeQuadratureTypesNS::WeightContT           WeightContT;
+    typedef CompositeQuadratureTypesNS::const_weight_iterator const_weight_iterator;
+
+    /// Friend declaration for the factory methods; if their number becomes to big, a more elaborate factory-design is in order.
+    ///@{
+    template <class QuadDataT>
+      friend const QuadDomain2DCL&
+      make_CompositeQuadDomain2D (QuadDomain2DCL&, const SurfacePatchCL&, const TetraCL&);
+
+    template <class QuadDataT, class LocalFET>
+      friend const QuadDomain2DCL&
+      make_ExtrapolatedQuadDomain2D (QuadDomain2DCL&, const LocalFET&, const TetraCL&, const ExtrapolationToZeroCL&);
+    ///@}
+
+  private:
+    VertexContT vertexes_;  ///< sequence of all vertexes
+    WeightContT weights_;
+
+  public:
+    QuadDomain2DCL () ///< empty default constructor
+        {}
+
+    /// \brief sequence of the indices of the vertexes (quadrature points)
+    ///@{
+    Uint dof_begin () const { return 0; }
+    Uint dof_end   () const { return vertexes_.size(); }
+    ///@}
+
+    Uint size () const ///< Number of quadrature points
+        { return dof_end() - dof_begin(); }
+
+    /// \brief Begin of the sequence of weights for integration
+    const_weight_iterator weight_begin () const { return Addr( weights_); }
+
+    /// \brief sequence of quadrature points
+    ///@{
+    const_vertex_iterator vertex_begin () const { return vertexes_.begin(); }
+    const_vertex_iterator vertex_end   () const { return vertexes_.end(); }
+    ///@}
+};
 
 /// Determine, how many subdivisions of the tetra-edges are required for extrapolation on level i.
 ///@{
