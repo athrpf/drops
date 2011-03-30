@@ -76,7 +76,7 @@ class PrincipalLatticeCL
     ///\brief number of intervals on each edge
     Uint num_intervals () const { return n_; }
     ///\brief number of vertices in the lattice
-    Uint num_vertexes () const {
+    Uint vertex_size () const {
         const Uint nv= num_intervals() + 1;
         return (nv*(nv + 1)*(nv + 2))/6; // \binom(num_intervals() + 3, 3)
     }

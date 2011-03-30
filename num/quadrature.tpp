@@ -187,15 +187,15 @@ template <class QuadDataT, class LocalFET>
     for (Uint i= 0; i < extra.num_level(); ++i) {
         const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-        ls_val.resize( lat.num_vertexes());
+        ls_val.resize( lat.vertex_size());
         for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
             ls_val[it - lat.vertex_begin()]= ls( *it);
         partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain<QuadDataT>( qdom, partition);
         std::copy( qdom.vertex_begin( NegTetraC), qdom.vertex_end( NegTetraC), std::back_inserter( q.vertexes_));
         std::copy( qdom.vertex_begin( PosTetraC), qdom.vertex_end( PosTetraC), std::back_inserter( pos_vertexes));
-        w_vec.push_back( QuadDomainCL::WeightContT( qdom.weight_begin(), qdom.size()));
-        w_pos_begin.push_back( qdom.size( NegTetraC));
+        w_vec.push_back( QuadDomainCL::WeightContT( qdom.weight_begin(), qdom.vertex_size()));
+        w_pos_begin.push_back( qdom.vertex_size( NegTetraC));
     }
     // Setup the data for the quadrature points
     q.pos_begin_= q.neg_end_= q.vertexes_.size();
@@ -273,13 +273,13 @@ template <class QuadDataT, class LocalFET>
     for (Uint i= 0; i < extra.num_level(); ++i) {
         const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-        ls_val.resize( lat.num_vertexes());
+        ls_val.resize( lat.vertex_size());
         for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
             ls_val[it - lat.vertex_begin()]= ls( *it);
         partition.make_patch<MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain2D<QuadDataT>( qdom, partition, t);
         std::copy( qdom.vertex_begin(), qdom.vertex_end(), std::back_inserter( q.vertexes_));
-        w_vec.push_back( QuadDomain2DCL::WeightContT( qdom.weight_begin(), qdom.size()));
+        w_vec.push_back( QuadDomain2DCL::WeightContT( qdom.weight_begin(), qdom.vertex_size()));
     }
 
     // Compute the extrapolated weights

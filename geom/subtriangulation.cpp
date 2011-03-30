@@ -129,7 +129,7 @@ void
 SortedVertexPolicyCL::sort_vertexes (VertexContT& vertexes, VertexContT& cut_vertexes,
     Uint& pos_vertex_begin, Uint& neg_vertex_end)
 {
-    const Uint lattice_num_vertexes= lat_.num_vertexes();
+    const Uint lattice_num_vertexes= lat_.vertex_size();
     const PrincipalLatticeCL::const_vertex_iterator lattice_vertex_begin= lat_.vertex_begin();
 
     std::valarray<byte> ls_sign;

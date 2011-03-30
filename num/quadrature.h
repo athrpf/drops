@@ -164,7 +164,7 @@ class QuadDomainCL
         { return s == NegTetraC ? neg_end_ : vertexes_.size(); }
     ///@}
 
-    Uint size (TetraSignEnum s= AllTetraC) const ///< Number of quadrature points in the given domain
+    Uint vertex_size (TetraSignEnum s= AllTetraC) const ///< Number of quadrature points in the given domain
         { return dof_end( s) - dof_begin( s); }
 
     /// \brief Begin of the sequence of weights for integration on the given domain
@@ -251,7 +251,7 @@ class QuadDomain2DCL
     Uint dof_end   () const { return vertexes_.size(); }
     ///@}
 
-    Uint size () const ///< Number of quadrature points
+    Uint vertex_size () const ///< Number of quadrature points
         { return dof_end() - dof_begin(); }
 
     /// \brief Begin of the sequence of weights for integration

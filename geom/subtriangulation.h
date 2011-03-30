@@ -52,6 +52,10 @@ typedef VertexContT::const_iterator const_vertex_iterator;
 
 } // end of namespace DROPS::LatticePartitionTypesNS
 
+///\brief sums the signs and returns fabs(sum) == #dof. If true is returned, the interface does not intersect the domain of f up to subgrid-resolution.
+template <class GridFunT>
+  inline bool
+  equal_signs (const GridFunT& f);
 
 class TetraPartitionCL;
 

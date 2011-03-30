@@ -70,10 +70,10 @@ make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
     std::copy( p.vertex_begin(), p.vertex_end(), std::back_inserter( q.vertexes_));
     std::copy( pos_tetra_bary.begin(), pos_tetra_bary.end(), std::back_inserter( q.vertexes_));
 
-    q.weights_[std::slice( q.all_weights_begin_, q.size( NegTetraC), 1)]=
-        q.weights_[std::slice( 0, q.size( NegTetraC), 1)];
-    q.weights_[std::slice( q.all_weights_begin_ + q.dof_begin( PosTetraC), q.size( PosTetraC), 1)]+=
-        q.weights_[std::slice( q.size( NegTetraC), q.size( PosTetraC), 1)];
+    q.weights_[std::slice( q.all_weights_begin_, q.vertex_size( NegTetraC), 1)]=
+        q.weights_[std::slice( 0, q.vertex_size( NegTetraC), 1)];
+    q.weights_[std::slice( q.all_weights_begin_ + q.dof_begin( PosTetraC), q.vertex_size( PosTetraC), 1)]+=
+        q.weights_[std::slice( q.vertex_size( NegTetraC), q.vertex_size( PosTetraC), 1)];
 
     return q;
 }

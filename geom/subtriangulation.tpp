@@ -29,6 +29,17 @@
 namespace DROPS
 {
 
+template <class GridFunT>
+  inline bool
+  equal_signs (const GridFunT& f)
+{
+    int sum= 0;
+    for (Uint i= 0; i < f.size(); ++i)
+        sum+= sign( f[i]);
+
+    return std::abs( sum) == f.size();
+}
+
 ///\brief Write the sign of the levelset function src to the sequence dst.
 /// \return end-iterator of the sequence of written signs
 inline void
@@ -77,7 +88,7 @@ template <class VertexPartitionPolicyT,
   TetraPartitionCL::make_partition (Uint num_intervals, const std::valarray<double>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-    const Uint lattice_num_vertexes= lat.num_vertexes();
+    const Uint lattice_num_vertexes= lat.vertex_size();
 
     tetras_.resize( 0);
     pos_tetra_begin_= 0;
@@ -121,7 +132,7 @@ template <class VertexCutMergingPolicyT>
         loc_vert_num= ref_tri[j];
         if (loc_vert_num < 4) { // zero vertex
             if (copied_vertexes.empty()) // lazy initialization of the lookup-table for copied zero-vertexes
-                copied_vertexes.resize( lattice.num_vertexes(), NotCopiedC);
+                copied_vertexes.resize( lattice.vertex_size(), NotCopiedC);
             const Uint lattice_vert_num= lattice_tet[loc_vert_num];
             if (copied_vertexes[lattice_vert_num] == NotCopiedC) {
                 copied_vertexes[lattice_vert_num]= vertexes_.size();
