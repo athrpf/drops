@@ -108,6 +108,7 @@ class GridFunctionCL: public std::valarray<T>
     typedef GridFunctionCL<T> self_;
 
   public:
+    GridFunctionCL () {}
     GridFunctionCL (value_type v, Uint s): base_type( v, s) {}
     GridFunctionCL (const value_type* p, Uint s): base_type( p, s) {}
 
