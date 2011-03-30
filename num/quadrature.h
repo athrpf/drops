@@ -37,10 +37,16 @@ class QuadDomain2DCL; ///< forward declaration for quad
 
 /// Integration of full-sized integrands, which have size( AllTetraC) components.
 ///@{
+
+///\brief Integrate on a tetra using the QuadDataCL-rules from num/discretize.h
+template <class GridFunT, class QuadDataT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const QuadDataT&);
+
 /// \brief Integrate on the negative, the positive or all tetras.
 template <class GridFunT>
-  typename ValueHelperCL<GridFunT>::value_type
-  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s=AllTetraC);
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s= AllTetraC);
 
 /// \brief Integrate on the negative and the positive tetras.
 template <class GridFunT>
@@ -65,7 +71,7 @@ template <class GridFunT>
 
 /// \brief Integrate on a surface-patch
 template <class GridFunT>
-  typename ValueHelperCL<GridFunT>::value_type
+  inline typename ValueHelperCL<GridFunT>::value_type
   quad_2D (const GridFunT& f, const QuadDomain2DCL& dom);
 
 namespace CompositeQuadratureTypesNS {
@@ -76,7 +82,14 @@ typedef const double* const_weight_iterator;
 } // end of namespace DROPS::CompositeQudratureTypesNS
 
 
-class ExtrapolationToZeroCL; ///< forward declarations for the factory-method
+class ExtrapolationToZeroCL; ///< forward declaration for the factory-method
+
+class Quad2DataCL; ///< forward declaration for the factory method
+
+/// \brief returns a Quad2DataCL-object.
+/// Used as a type selector for the quad()-function, that integrates on a tetra with the base-quadrature-rule
+inline const Quad2DataCL&
+make_Quad2Data ();
 
 /// \brief Create a composite quadrature rule.
 /// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.

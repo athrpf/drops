@@ -38,15 +38,18 @@ template <class GridFunT>
     return sum;
 }
 
+template <class GridFunT, class QuadDataT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const QuadDataT&)
+{
+    return quad_impl( QuadDataT::Weight, f, 0, QuadDataT::NumNodesC)*absdet;
+}
+
 template <class GridFunT>
-  typename ValueHelperCL<GridFunT>::value_type
+  inline typename ValueHelperCL<GridFunT>::value_type
   quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s=AllTetraC)
 {
-    Uint begin= dom.dof_begin( s);
-    Uint end=   dom.dof_end(   s);
-    typename QuadDomainCL::const_weight_iterator w_iter= dom.weight_begin( s);
-
-    return quad_impl(w_iter, f, begin, end)*absdet;
+    return quad_impl( dom.weight_begin( s), f, dom.dof_begin( s), dom.dof_end( s))*absdet;
 }
 
 template <class GridFunT>
@@ -62,13 +65,10 @@ template <class GridFunT>
 ///\brief Helper to quad_{neg,pos}_integrand
 /// Integrate a integrand, that is defined only on either the negative or the positive tetras. It does not work for standard integrands.
 template <class GridFunT>
-  typename ValueHelperCL<GridFunT>::value_type
+  inline typename ValueHelperCL<GridFunT>::value_type
   quad_single_domain_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s)
 {
-    typename QuadDomainCL::const_weight_iterator w_iter= dom.weight_begin( s);
-    const Uint end= dom.dof_end( s) - dom.dof_begin( s);
-
-    return quad_impl(w_iter, f, 0, end)*absdet;
+    return quad_impl( dom.weight_begin( s), f, 0, dom.dof_end( s) - dom.dof_begin( s))*absdet;
 }
 
 template <class GridFunT>
@@ -86,15 +86,19 @@ template <class GridFunT>
 }
 
 template <class GridFunT>
-  typename ValueHelperCL<GridFunT>::value_type
+  inline typename ValueHelperCL<GridFunT>::value_type
   quad_2D (const GridFunT& f, const QuadDomain2DCL& dom)
 {
-    Uint begin= dom.dof_begin();
-    Uint end=   dom.dof_end();
-    typename QuadDomain2DCL::const_weight_iterator w_iter= dom.weight_begin();
-
-    return quad_impl( w_iter, f, begin, end);
+    return quad_impl( dom.weight_begin(), f, dom.dof_begin(), dom.dof_end());
 }
+
+inline const Quad2DataCL&
+make_Quad2Data ()
+{
+    static const Quad2DataCL quad2data;
+    return quad2data;
+}
+
 
 template <class QuadDataT>
   const QuadDomainCL&
