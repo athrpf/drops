@@ -227,6 +227,21 @@ inline void ExtractComponent( const GridFunctionCL<Point3DCL>& src, GridFunction
         target[i]= src[i][comp];
 }
 
+/// \brief Represent the outer product without computing it immediately.
+/// Drop in for a real expression-template mechanism. This saves considerable time when calling quad() in SetupSystem1.
+class OuterProductExpressionCL
+{
+    const GridFunctionCL<Point3DCL>& a_;
+    const GridFunctionCL<Point3DCL>& b_;
+
+  public:
+    typedef SMatrixCL<3,3> value_type;
+
+    OuterProductExpressionCL (const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
+        : a_( a), b_( b) {}
+    value_type operator[] (size_t i) const { return outer_product( a_[i], b_[i]); }
+};
+
 inline GridFunctionCL< SMatrixCL<3,3> >
 outer_product(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
 {
@@ -371,6 +386,20 @@ class Quad2DataCL
     ///          If p == 0, the array is new[]-allocated
     /// \return  adress of the array of quadrature points
     static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
+};
+
+///\brief Weights to integrate the product \f$f*\phi_i\f$, where \f$\phi_i\f$ is a P2-basis-function, exactly up to degree 2 of f with the quadrature points of Quad2DataCL
+/// Use with quad( f, absdet, Quad2Data_Mul_P2_CL(), i).
+class Quad2Data_Mul_P2_CL
+{
+  public:
+    enum { NumNodesC= Quad2DataCL::NumNodesC };
+
+  private:
+    static const double weights_[10][NumNodesC];
+
+  public:
+    const double* weights( Uint i) const { return weights_[i]; }
 };
 
 template<class T=double>

@@ -43,6 +43,11 @@ template <class GridFunT, class QuadDataT>
   inline typename ValueHelperCL<GridFunT>::value_type
   quad (const GridFunT& f, double absdet, const QuadDataT&);
 
+///\brief Integrate on a tetra using the QuadDataCL-rules from num/discretize.h with special weights
+template <class GridFunT, class QuadDataT, class WeightSelectorT>
+  inline typename ValueHelperCL<GridFunT>::value_type
+  quad (const GridFunT& f, double absdet, const QuadDataT& q, const WeightSelectorT& weightsel);
+
 /// \brief Integrate on the negative, the positive or all tetras.
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type

@@ -66,6 +66,20 @@ Quad2DataCL::Quad2DataCL()
     Node[4]= BaryCoordCL( 0.25);
 }
 
+const double Quad2Data_Mul_P2_CL::weights_[10][NumNodesC]= {
+    { 1./360., 0., 0., 0., -1./90. },
+    { 0., 1./360., 0., 0., -1./90. },
+    { 0., 0., 1./360., 0., -1./90. },
+    { 0., 0., 0., 1./360., -1./90. },
+
+    { 1./180., 1./180., 0., 0., 1./45. },
+    { 1./180., 0., 1./180., 0., 1./45. },
+    { 0., 1./180., 1./180., 0., 1./45. },
+    { 1./180., 0., 0., 1./180., 1./45. },
+    { 0., 1./180., 0., 1./180., 1./45. },
+    { 0., 0., 1./180., 1./180., 1./45. }
+};
+
 ///\brief special implementation to copy the first 4 nodes.
 BaryCoordCL*
 Quad2DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
