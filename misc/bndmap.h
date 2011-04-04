@@ -40,7 +40,7 @@ class SingletonMapCL : public std::map<std::string, T>
     ~SingletonMapCL() {}
   public:
     static SingletonMapCL& getInstance();
-    T operator[](std::string s);
+    T& operator[](std::string s);
 };
 
 typedef SingletonMapCL<DROPS::instat_vector_fun_ptr> InVecMap;

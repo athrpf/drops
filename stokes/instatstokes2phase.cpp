@@ -36,7 +36,7 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
                         MatrixCL* B, VecDescCL* c, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P0 FEs for vel/pr
 {
-    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >  mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     LocalNumbP2CL n;
@@ -61,9 +61,7 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
             if (n.WithUnknowns( vel))
             {
                 tmp= Grad[vel].quad( absdet);
-                mB( prNumbTetra, n.num[vel])  -=  tmp[0];
-                mB( prNumbTetra, n.num[vel]+1)-=  tmp[1];
-                mB( prNumbTetra, n.num[vel]+2)-=  tmp[2];
+                mB( prNumbTetra, n.num[vel])  -=  SMatrixCL<1,3>(tmp);
             }
             else if (c != 0) // put coupling on rhs
             {
@@ -83,7 +81,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
                         IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1 FEs (Taylor-Hood) for vel/pr
 {
-    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    SparseMatBuilderCL<double, SMatrixCL<1,3> > mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
@@ -106,9 +104,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
                     tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
-                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
-                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
                 }
             else if (c != 0)
             { // put coupling on rhs
@@ -138,7 +134,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 // P2 / P1X FEs (X=extended) for vel/pr
 {
     const ExtIdxDescCL& Xidx= RowIdx->GetXidx();
-    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    SparseMatBuilderCL<double, SMatrixCL<1,3> > mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
@@ -163,9 +159,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
                     tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
-                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
-                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
                 }
             else if (c != 0) { // put coupling on rhs
                 typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
@@ -205,11 +199,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
                 if (is_pos) integral= -integral;
 
                 if (n.WithUnknowns( vel))
-                {
-                    mB( xidx, n.num[vel])  -=  integral[0];
-                    mB( xidx, n.num[vel]+1)-=  integral[1];
-                    mB( xidx, n.num[vel]+2)-=  integral[2];
-                }
+                    mB( xidx, n.num[vel])  -=  SMatrixCL<1,3>(integral);
                 else if (c != 0)
                 { // put coupling on rhs
                     typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
@@ -230,7 +220,7 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
 {
     const ExtIdxDescCL& prXidx=    RowIdx->GetXidx();
     const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
-    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >  mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
@@ -258,9 +248,7 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
                     tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
-                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
-                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
                 }
             else if (c != 0) { // put coupling on rhs
                 typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
@@ -325,15 +313,11 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
                 if (vidx!=NoIdx)
                 {
                     if (xidx!=NoIdx) {
-                        mB( xidx, vidx)  -=  int_Px_gradV[0];
-                        mB( xidx, vidx+1)-=  int_Px_gradV[1];
-                        mB( xidx, vidx+2)-=  int_Px_gradV[2];
+                        mB( xidx, vidx)  -=  SMatrixCL<1,3>(int_Px_gradV);
                     }
                     if (vel>=10) { // extended vel: write also entry for p_gradVx
                         const IdxT pidx= prNumb[pr];
-                        mB( pidx, vidx)  -=  int_P_gradV[0];
-                        mB( pidx, vidx+1)-=  int_P_gradV[1];
-                        mB( pidx, vidx+2)-=  int_P_gradV[2];
+                        mB( pidx, vidx)  -=  SMatrixCL<1,3>(int_P_gradV);
                     }
                 }
                 else if (c != 0 && vel<10)
@@ -355,7 +339,7 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 // P2X / P1 FEs (X=extended) for vel/pr
 {
     const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
-    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    SparseMatBuilderCL<double, SMatrixCL<1,3> > mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
@@ -383,9 +367,7 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
                     tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
-                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
-                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
                 }
             else if (c != 0) { // put coupling on rhs
                 typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
@@ -433,9 +415,7 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 
                 // extended vel: write entry for p_gradVx
                 const IdxT pidx= prNumb[pr];
-                mB( pidx, xvidx)  -=  int_P_gradV[0];
-                mB( pidx, xvidx+1)-=  int_P_gradV[1];
-                mB( pidx, xvidx+2)-=  int_P_gradV[2];
+                mB( pidx, xvidx)  -=  SMatrixCL<1,3>(int_P_gradV);
             }
         }
     }
@@ -447,7 +427,7 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
                          IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1D FEs for vel/pr
 {
-    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    SparseMatBuilderCL<double, SMatrixCL<1,3> > mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
@@ -470,9 +450,7 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
                     tmp= Grad[vel].quadP1D( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
-                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
-                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
                 }
             else if (c != 0)
             { // put coupling on rhs

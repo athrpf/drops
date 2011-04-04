@@ -111,7 +111,8 @@ Transp {
   Tol		=	1e-10
   DiffPos	=	5e-3
   DiffNeg	=	1e-2
-  H			=	0.5
+  HPos      =	0.5
+  HNeg      =   0.5
   IniCPos	=	0.1
   IniCNeg	=	5
   NitschePenalty=       0
@@ -153,6 +154,7 @@ DomainCond {
   InitialFile   =       xxx
   MeshFile      =       2x2x2@5x5x5     # size and num subdivisions of cube
   BoundaryType  =       1       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+  BoundaryFncs  =       0       # no effect
 }
 
 # restart computation

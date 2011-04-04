@@ -271,6 +271,21 @@
     <ClCompile Include="..\..\..\levelset\coupling.cpp">
       <Filter>levelset</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\poisson\poissonCoeff.cpp">
+      <Filter>poisson</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\bndScalarFunctions.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\bndVelFunctions.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\principallattice.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\bndmap.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\geom\boundary.h">
@@ -486,6 +501,15 @@
     <ClInclude Include="..\..\..\surfactant\params.h">
       <Filter>surfactant</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\poisson\poissonCoeff.h">
+      <Filter>poisson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\principallattice.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\bndmap.h">
+      <Filter>misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\levelset\brick_transp.param">
@@ -595,6 +619,9 @@
     </None>
     <None Include="..\..\..\surfactant\ifacetransp.tpp">
       <Filter>surfactant</Filter>
+    </None>
+    <None Include="..\..\..\geom\geomselect.tpp">
+      <Filter>geom</Filter>
     </None>
   </ItemGroup>
 </Project>

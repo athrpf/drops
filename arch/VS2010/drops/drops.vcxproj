@@ -299,6 +299,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\geom\bndScalarFunctions.cpp" />
+    <ClCompile Include="..\..\..\geom\bndVelFunctions.cpp" />
     <ClCompile Include="..\..\..\geom\boundary.cpp" />
     <ClCompile Include="..\..\..\geom\builder.cpp" />
     <ClCompile Include="..\..\..\geom\geomselect.cpp" />
@@ -313,6 +315,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\geom\multigrid.cpp" />
+    <ClCompile Include="..\..\..\geom\principallattice.cpp" />
     <ClCompile Include="..\..\..\geom\simplex.cpp" />
     <ClCompile Include="..\..\..\geom\topo.cpp" />
     <ClCompile Include="..\..\..\geom\triang.cpp" />
@@ -393,6 +396,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\levelset\twophasedrops.cpp" />
     <ClCompile Include="..\..\..\levelset\twophaseutils.cpp" />
+    <ClCompile Include="..\..\..\misc\bndmap.cpp" />
     <ClCompile Include="..\..\..\misc\compensight.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
@@ -553,13 +557,13 @@
     </ClCompile>
     <ClCompile Include="..\..\..\poisson\drops_statP2.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\poisson\ipdropsAD.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
@@ -572,15 +576,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\poisson\poisson.cpp" />
+    <ClCompile Include="..\..\..\poisson\poissonCoeff.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\poisson\poissonP1.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\poisson\poissonparams.cpp" />
     <ClCompile Include="..\..\..\poisson\transport2phase.cpp" />
@@ -644,6 +651,7 @@
     <ClInclude Include="..\..\..\geom\builder.h" />
     <ClInclude Include="..\..\..\geom\geomselect.h" />
     <ClInclude Include="..\..\..\geom\multigrid.h" />
+    <ClInclude Include="..\..\..\geom\principallattice.h" />
     <ClInclude Include="..\..\..\geom\simplex.h" />
     <ClInclude Include="..\..\..\geom\topo.h" />
     <ClInclude Include="..\..\..\levelset\adaptriang.h" />
@@ -655,6 +663,7 @@
     <ClInclude Include="..\..\..\levelset\params.h" />
     <ClInclude Include="..\..\..\levelset\surfacetension.h" />
     <ClInclude Include="..\..\..\levelset\twophaseutils.h" />
+    <ClInclude Include="..\..\..\misc\bndmap.h" />
     <ClInclude Include="..\..\..\misc\container.h" />
     <ClInclude Include="..\..\..\misc\KDtree.h" />
     <ClInclude Include="..\..\..\misc\params.h" />
@@ -778,6 +787,7 @@
     <ClInclude Include="..\..\..\poisson\integrTime.h" />
     <ClInclude Include="..\..\..\poisson\params.h" />
     <ClInclude Include="..\..\..\poisson\poisson.h" />
+    <ClInclude Include="..\..\..\poisson\poissonCoeff.h" />
     <ClInclude Include="..\..\..\poisson\transport2phase.h" />
     <ClInclude Include="..\..\..\stokes\instatstokes2phase.h" />
     <ClInclude Include="..\..\..\stokes\integrTime.h" />
@@ -787,6 +797,7 @@
     <ClInclude Include="..\..\..\surfactant\params.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\geom\geomselect.tpp" />
     <None Include="..\..\..\levelset\adaptriang.tpp" />
     <None Include="..\..\..\levelset\brick_transp.param" />
     <None Include="..\..\..\levelset\butanol.param" />
