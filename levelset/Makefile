@@ -42,7 +42,7 @@ lsshear: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
     ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o ../navstokes/instatnavstokes2phase.o \
     ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o \
-    ../misc/bndmap.o
+    ../misc/bndmap.o ../geom/bndScalarFunctions.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfTens: \
@@ -51,7 +51,8 @@ surfTens: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../navstokes/instatnavstokes2phase.o \
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/MGsolver.o ../misc/bndmap.o \
-    ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o 
+    ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o \
+    ../geom/bndScalarFunctions.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prJump: \
@@ -60,7 +61,8 @@ prJump: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o \
     ../num/fe.o  ../out/ensightOut.o ../stokes/integrTime.o ../num/interfacePatch.o \
-    ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o ../misc/bndmap.o
+    ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o ../misc/bndmap.o \
+    ../geom/bndScalarFunctions.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \
@@ -70,6 +72,7 @@ film: \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/interfacePatch.o \
     ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o ../misc/bndmap.o \
+    ../geom/bndScalarFunctions.o \
     ../levelset/filmCoeff.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -79,8 +82,8 @@ brick_transp: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../num/fe.o \
     ../poisson/transport2phase.o ../out/ensightOut.o ../out/vtkOut.o ../num/interfacePatch.o \
-    ../levelset/surfacetension.o ../stokes/instatstokes2phase.o ../geom/bndVelFunctions.o ../misc/bndmap.o \
-    ../levelset/twophaseCoeff.o
+    ../levelset/surfacetension.o ../stokes/instatstokes2phase.o ../geom/bndVelFunctions.o ../geom/bndScalarFunctions.o \
+    ../misc/bndmap.o ../levelset/twophaseCoeff.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 twophasedrops: \
