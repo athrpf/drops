@@ -81,14 +81,14 @@ class PrincipalLatticeCL
         return (nv*(nv + 1)*(nv + 2))/6; // \binom(num_intervals() + 3, 3)
     }
     ///\brief number of tetras in the triangulation
-    Uint num_tetras  () const { return n_*n_*n_; }
+    Uint tetra_size  () const { return n_*n_*n_; }
 
     ///\brief Access to vertexes and tetras as sequences (random access iterators)
     ///@{
     const_vertex_iterator vertex_begin ()  const { return vertex_.begin(); }
     const_vertex_iterator vertex_end   ()  const { return vertex_.end(); }
     const_tetra_iterator tetra_begin ()  const { return tetra_.begin(); }
-    const_tetra_iterator tetra_end   ()  const { return tetra_.begin() + num_tetras(); }
+    const_tetra_iterator tetra_end   ()  const { return tetra_.begin() + tetra_size(); }
     ///@}
 
     ///\brief Access the principal lattice with n intervals on each edge (singleton pattern)

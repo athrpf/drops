@@ -103,7 +103,7 @@ void test_principal_lattice ()
 {
     for (int i= 1; i <= 4; ++i) {
         const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( i);
-        std::cout << "=======================================" << lat.num_intervals() << ' ' << lat.vertex_size() << " " << lat.num_tetras() << std::endl;
+        std::cout << "=======================================" << lat.num_intervals() << ' ' << lat.vertex_size() << " " << lat.tetra_size() << std::endl;
         for (DROPS::PrincipalLatticeCL::const_vertex_iterator v= lat.vertex_begin(), end= lat.vertex_end(); v != end; ++v) {
             std::cout << lat.num_intervals()*(*v) << std::endl;
         }
