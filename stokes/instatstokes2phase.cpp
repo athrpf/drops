@@ -77,48 +77,120 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
 }
 
 
-void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c,
-                        IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
-// P2 / P1 FEs (Taylor-Hood) for vel/pr
+/// shared data between P1 and P1X routines
+struct LocalSystem2_sharedDataCL
 {
-    SparseMatBuilderCL<double, SMatrixCL<1,3> > mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear( t);
-    const Uint lvl= RowIdx->TriangLevel();
-    IdxT prNumb[4];
-    LocalNumbP2CL n;
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];
-    SMatrixCL<3,3> T;
-    double det, absdet;
-    Point3DCL tmp;
+    IdxT prNumb[4];  ///< global numbering of the P1-unknowns
+    LocalNumbP2CL n; ///< global numbering of the P2-unknowns
 
+    Quad2CL<Point3DCL> Grad[10];
+
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >* mB_;
+    VecDescCL* c;
+
+    double absdet;
+};
+
+
+/// \brief Accumulator to set up the matrix B and, if requested the right-hand side C for two-phase flow.
+class System2Accumulator_P2P1CL : public TetraAccumulatorCL
+{
+  private:
+    const TwoPhaseFlowCoeffCL& coeff;
+    const StokesBndDataCL& BndData;
+    const double t;
+
+    const IdxDescCL& RowIdx;
+    const IdxDescCL& ColIdx;
+    MatrixCL& B;
+
+    LocalSystem2_sharedDataCL loc;
+
+    Quad2CL<Point3DCL> GradRef[10];
+
+    SMatrixCL<3,3> T;
+    double det;
+
+    ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
+    void local_setup (const TetraCL& tet);
+    ///\brief Update the global system.
+    void update_global_system ();
+
+  public:
+    System2Accumulator_P2P1CL ( const TwoPhaseFlowCoeffCL& coeff, const StokesBndDataCL& BndData_, const IdxDescCL& RowIdx_, const IdxDescCL& ColIdx_, MatrixCL& B_,
+        VecDescCL* c_, double t);
+
+    ///\brief Initializes matrix-builders and load-vectors
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+
+    LocalSystem2_sharedDataCL& GetLocalData() { return loc; }
+};
+
+System2Accumulator_P2P1CL::System2Accumulator_P2P1CL ( const TwoPhaseFlowCoeffCL& coeff_, const StokesBndDataCL& BndData_,
+    const IdxDescCL& RowIdx_, const IdxDescCL& ColIdx_, MatrixCL& B_, VecDescCL* c_, double t_)
+    : coeff( coeff_), BndData( BndData_), t( t_), RowIdx( RowIdx_), ColIdx( ColIdx_), B( B_)
+{
+    loc.c = c_;
     P2DiscCL::GetGradientsOnRef( GradRef);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
-         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
-        GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= std::fabs( det);
-        n.assign( *sit, *ColIdx, BndData.Vel);
-        GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
-        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel) {
-            if (n.WithUnknowns( vel))
-                for(int pr=0; pr<4; ++pr) {
-                    tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
-                }
-            else if (c != 0)
-            { // put coupling on rhs
-                typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                        : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
-            }
+}
+
+void System2Accumulator_P2P1CL::begin_accumulation ()
+{
+    loc.mB_ = new SparseMatBuilderCL<double, SMatrixCL<1,3> > ( &B, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    if (loc.c != 0) loc.c->Clear( t);
+}
+
+void System2Accumulator_P2P1CL::finalize_accumulation ()
+{
+    loc.mB_->Build();
+    delete loc.mB_;
+}
+
+void System2Accumulator_P2P1CL::visit (const TetraCL& tet)
+{
+    GetTrafoTr( T, det, tet);
+    P2DiscCL::GetGradients( loc.Grad, GradRef, T);
+    loc.absdet= std::fabs( det);
+    loc.n.assign( tet, ColIdx, BndData.Vel);
+    GetLocalNumbP1NoBnd( loc.prNumb, tet, RowIdx);
+    local_setup( tet);
+}
+
+void System2Accumulator_P2P1CL::local_setup (const TetraCL& tet)
+{
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >& mB= *loc.mB_;
+    // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
+    for(int vel=0; vel<10; ++vel) {
+        if (loc.n.WithUnknowns( vel))
+            for(int pr=0; pr<4; ++pr)
+                mB( loc.prNumb[pr], loc.n.num[vel])  -=  SMatrixCL<1,3>(loc.Grad[vel].quadP1( pr, loc.absdet));
+        else if (loc.c != 0)
+        { // put coupling on rhs
+            typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+            bnd_val_fun bf= BndData.Vel.GetBndSeg( loc.n.bndnum[vel]).GetBndFun();
+            const Point3DCL tmp= vel<4 ? bf( tet.GetVertex( vel)->GetCoord(), t)
+                    : bf( GetBaryCenter( *tet.GetEdge( vel-4)), t);
+            for(int pr=0; pr<4; ++pr)
+                loc.c->Data[ loc.prNumb[pr]]+= inner_prod( loc.Grad[vel].quadP1( pr, loc.absdet), tmp);
         }
     }
-    mB.Build();
 }
+
+
+void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c,
+        IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
+/// Set up matrices B and rhs c
+{
+    System2Accumulator_P2P1CL accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &accu);
+    accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
+}
+
 
 inline void ComputePgradV( LocalP2CL<Point3DCL>& PgradV, Uint pr, const Quad2CL<Point3DCL>& gradV)
 {
@@ -129,89 +201,107 @@ inline void ComputePgradV( LocalP2CL<Point3DCL>& PgradV, Uint pr, const Quad2CL<
             PgradV[EdgeByVert(pr,vert)+4]= 0.25*(gradV[pr]+gradV[vert]);
 }
 
-
-void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
-// P2 / P1X FEs (X=extended) for vel/pr
+/// \brief Accumulator to set up the matrix B and, if requested the right-hand side C for two-phase flow.
+class System2Accumulator_P2P1XCL : public TetraAccumulatorCL
 {
-    const ExtIdxDescCL& Xidx= RowIdx->GetXidx();
-    SparseMatBuilderCL<double, SMatrixCL<1,3> > mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear( t);
-    const Uint lvl= RowIdx->TriangLevel();
-    IdxT prNumb[4];
-    LocalNumbP2CL n;
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];
-    SMatrixCL<3,3> T;
-    double det, absdet;
-    Point3DCL tmp;
+  private:
+    const TwoPhaseFlowCoeffCL& coeff;
+    const StokesBndDataCL& BndData;
+    double t;
+
+    const LocalSystem2_sharedDataCL& loc;
+    const LevelsetP2CL& lset_;
     InterfaceTetraCL cut;
-    LocalP2CL<> loc_phi;
 
-    P2DiscCL::GetGradientsOnRef( GradRef);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
-         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
-        GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= std::fabs( det);
-        n.assign( *sit, *ColIdx, BndData.Vel);
-        GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
-        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel) {
-            if (n.WithUnknowns( vel))
-                for(int pr=0; pr<4; ++pr) {
-                    tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], n.num[vel])  -=  SMatrixCL<1,3>(tmp);
-                }
-            else if (c != 0) { // put coupling on rhs
-                typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                        : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
-            }
-        }
+    const IdxDescCL& RowIdx;
 
-        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
-        cut.Init( *sit, loc_phi);
-        if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
-        for(int pr=0; pr<4; ++pr) {
-            // compute the integrals
-            // I = \int_{T_+} grad v_vel p_pr dx  -  C \int_{T}grad v_vel p_pr dx,
-            // where C= (sign Phi_pr==1) \in {0,1} and T_+ = T \cap \Omega_2 (positive part)
-            LocalP2CL<Point3DCL> PgradV;
-            const IdxT xidx= Xidx[prNumb[pr]];
-            if (xidx==NoIdx) continue;
+    const ExtIdxDescCL* Xidx;
 
-            for(int vel=0; vel<10; ++vel)
+    ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
+    void local_setup (const TetraCL& tet);
+    ///\brief Update the global system.
+    void update_global_system ();
+
+  public:
+    System2Accumulator_P2P1XCL ( const LocalSystem2_sharedDataCL& loc_p1, const TwoPhaseFlowCoeffCL& coeff_, const StokesBndDataCL& BndData_, const LevelsetP2CL& lset, const IdxDescCL& RowIdx, double t);
+
+    ///\brief Initializes matrix-builders and load-vectors
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+};
+
+System2Accumulator_P2P1XCL::System2Accumulator_P2P1XCL ( const LocalSystem2_sharedDataCL& loc_p1, const TwoPhaseFlowCoeffCL& coeff_, const StokesBndDataCL& BndData_, const LevelsetP2CL& lset, const IdxDescCL& RowIdx_, double t_)
+    : coeff( coeff_), BndData( BndData_), t( t_), loc( loc_p1), lset_( lset), RowIdx( RowIdx_)
+{}
+
+void System2Accumulator_P2P1XCL::begin_accumulation ()
+{
+    Xidx = &RowIdx.GetXidx();
+}
+
+void System2Accumulator_P2P1XCL::finalize_accumulation ()
+{}
+
+void System2Accumulator_P2P1XCL::visit (const TetraCL& tet)
+{
+    local_setup( tet);
+}
+
+void System2Accumulator_P2P1XCL::local_setup (const TetraCL& tet)
+{
+    cut.Init( tet, lset_.Phi, lset_.GetBndData());
+    if (!cut.Intersects()) return; // extended basis functions have only support on tetra intersecting Gamma!
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >& mB= *loc.mB_;
+    for(int pr=0; pr<4; ++pr) {
+        // compute the integrals
+        // I = \int_{T_+} grad v_vel p_pr dx  -  C \int_{T}grad v_vel p_pr dx,
+        // where C= (sign Phi_pr==1) \in {0,1} and T_+ = T \cap \Omega_2 (positive part)
+        LocalP2CL<Point3DCL> PgradV;
+        const IdxT xidx= (*Xidx)[loc.prNumb[pr]];
+        if (xidx==NoIdx) continue;
+
+        for(int vel=0; vel<10; ++vel)
+        {
+            ComputePgradV( PgradV, pr, loc.Grad[vel]);
+
+            Point3DCL integral;
+            const bool is_pos= cut.GetSign(pr)==1;
+            // for C=0 (<=> !is_pos) we have I = -\int_{T_-} grad v_vel p_pr dx
+            for (int ch=0; ch<8; ++ch)
             {
-                ComputePgradV( PgradV, pr, Grad[vel]);
+                cut.ComputeCutForChild(ch);
+                integral+= cut.quad( PgradV, loc.absdet, !is_pos); // integrate on other part
+            }
 
-                Point3DCL integral;
-                const bool is_pos= cut.GetSign(pr)==1;
-                // for C=0 (<=> !is_pos) we have I = -\int_{T_-} grad v_vel p_pr dx
-                for (int ch=0; ch<8; ++ch)
-                {
-                    cut.ComputeCutForChild(ch);
-                    integral+= cut.quad( PgradV, absdet, !is_pos); // integrate on other part
-                }
+            // for C=0 we have I = -\int_{T_-} grad v_vel p_pr dx
+            if (is_pos) integral= -integral;
 
-                // for C=0 we have I = -\int_{T_-} grad v_vel p_pr dx
-                if (is_pos) integral= -integral;
-
-                if (n.WithUnknowns( vel))
-                    mB( xidx, n.num[vel])  -=  SMatrixCL<1,3>(integral);
-                else if (c != 0)
-                { // put coupling on rhs
-                    typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                            : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                    c->Data[ xidx]+= inner_prod( integral, tmp);
-                }
+            if (loc.n.WithUnknowns( vel))
+                mB( xidx, loc.n.num[vel])  -=  SMatrixCL<1,3>(integral);
+            else if (loc.c != 0)
+            { // put coupling on rhs
+                typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( loc.n.bndnum[vel]).GetBndFun();
+                const Point3DCL tmp= vel<4 ? bf( tet.GetVertex( vel)->GetCoord(), t)
+                        : bf( GetBaryCenter( *tet.GetEdge( vel-4)), t);
+                loc.c->Data[ xidx]+= inner_prod( integral, tmp);
             }
         }
     }
-    mB.Build();
+}
+
+void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
+// P2 / P1X FEs (X=extended) for vel/pr
+{
+    System2Accumulator_P2P1CL p1_accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
+    System2Accumulator_P2P1XCL p1x_accu( p1_accu.GetLocalData(), coeff, BndData, lset, *RowIdx, t);
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &p1_accu);
+    accus.push_back( &p1x_accu);
+    accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
 }
 
 
