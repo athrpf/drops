@@ -40,21 +40,6 @@ template <class GridFunT>
     return std::abs( sum) == f.size();
 }
 
-/// Could probably be implemented with std::transform.
-template<class LocalFET, class iterator>
-  inline iterator
-  evaluate_on_lattice (const LocalFET& ls,
-    LatticePartitionTypesNS::const_vertex_iterator vert_begin,
-    LatticePartitionTypesNS::const_vertex_iterator vert_end,
-    iterator begin)
-{
-    while (vert_begin != vert_end) {
-        *begin++= ls( *vert_begin++);
-    }
-    return begin;
-}
-
-
 ///\brief Write the sign of the levelset function src to the sequence dst.
 inline void
 copy_levelset_sign (const std::valarray<double>& src, std::valarray<byte>& dst)

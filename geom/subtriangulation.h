@@ -57,16 +57,6 @@ template <class GridFunT>
   inline bool
   equal_signs (const GridFunT& f);
 
-///\brief Write the values of the levelset function ls in the quadrature points [vert_begin, vert_end) to the sequence beginning at begin.
-/// LocalFET must provide double operator() (const BaryCoordCL&)
-/// \return end-iterator of the sequence of written signs
-template<class LocalFET, class iterator>
-  inline iterator
-  evaluate_on_lattice (const LocalFET& ls,
-    LatticePartitionTypesNS::const_vertex_iterator vert_begin,
-    LatticePartitionTypesNS::const_vertex_iterator vert_end,
-    iterator begin);
-
 
 class TetraPartitionCL;
 
