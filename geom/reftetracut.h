@@ -149,9 +149,6 @@ RefTetraPatchCL::instance (const double ls[4])
     return instance( ls_byte);
 }
 
-///\brief Designates the subset of tetras one is interested in RefTetraPartitionCL and TetraPartitionCL
-enum TetraSignEnum { AllTetraC, NegTetraC, PosTetraC };
-
 ///\brief The tetras partition the positive and negative part of the reference-tetra with respect to a linear levelset-function ls.
 ///
 /// The class memoizes used sign-patterns if the triangulations are accessed via the instance( ls)-function. Individual instances may still be constructed (useful for debugging).

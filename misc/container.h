@@ -1176,6 +1176,8 @@ class MLDataCL : public std::list<T>
     typename MLDataCL::const_iterator GetCoarsestIter() const { return this->begin(); }
 };
 
+///\brief Designates the part of the domain, usually on tetras at the interface, one is interested in.
+enum TetraSignEnum { AllTetraC, NegTetraC, PosTetraC };
 
 } // end of namespace DROPS
 
