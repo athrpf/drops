@@ -53,9 +53,9 @@ make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
     q.pos_weights_begin_= p.vertex_size( NegTetraC) + p.tetra_size( NegTetraC);
     q.all_weights_begin_= q.pos_weights_begin_ + p.vertex_size( PosTetraC) + p.tetra_size( PosTetraC);
 
-    QuadDomainCL::VertexContT neg_tetra_bary;
+    QuadDomainCL::VertexContT neg_tetra_bary; // positive barycenters
     neg_tetra_bary.reserve( p.tetra_size( NegTetraC));
-    QuadDomainCL::VertexContT pos_tetra_bary;
+    QuadDomainCL::VertexContT pos_tetra_bary; // negative barycenters
     pos_tetra_bary.reserve( p.tetra_size( PosTetraC));
 
     const TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();

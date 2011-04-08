@@ -388,6 +388,20 @@ class Quad2DataCL
     static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
 };
 
+///\brief Weights to integrate the product \f$f*\phi_i\f$, where \f$\phi_i\f$ is a P1-basis-function, exactly up to degree 2 of f with the quadrature points of Quad2DataCL
+/// Use with quad( f, absdet, Quad2Data_Mul_P2_CL(), i).
+class Quad2Data_Mul_P1_CL
+{
+  public:
+    enum { NumNodesC= Quad2DataCL::NumNodesC };
+
+  private:
+    static const double weights_[4][NumNodesC];
+
+  public:
+    const double* weights( Uint i) const { return weights_[i]; }
+};
+
 ///\brief Weights to integrate the product \f$f*\phi_i\f$, where \f$\phi_i\f$ is a P2-basis-function, exactly up to degree 2 of f with the quadrature points of Quad2DataCL
 /// Use with quad( f, absdet, Quad2Data_Mul_P2_CL(), i).
 class Quad2Data_Mul_P2_CL

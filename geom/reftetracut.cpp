@@ -69,7 +69,7 @@ SignPatternTraitCL::assign (const double ls[4])
 
     byte sum= 0;
     for (Ubyte i= 0; i < NumVertsC; ++i)
-        sum+= (sign_[i]= ls[i] < 0. ? -1 : (ls[i] > 0. ? 1 : 0));
+        sum+= (sign_[i]= sign( ls[i]));
     if (sum == 4 || sum == -4) // optimize the case of uncut tetras
         return;
 

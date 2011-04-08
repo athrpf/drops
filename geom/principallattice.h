@@ -32,7 +32,7 @@ namespace DROPS {
 
 ///\brief Evaluate the function f on [dom.vertex_begin(), dom.vertex_end()).
 /// The result is either stored to the sequence starting at result_iterator or to the result_container. The latter is resized to dom_vertex_size() first.
-/// ResultContainerT may be std::valarray and derivatives.
+/// ResultContainerT may be std::valarray and its derivatives, e.g. GridFunctionCL.
 /// LocalFET must provide double operator() (const BaryCoordCL&).
 /// \return end-iterator of the sequence of written signs or reference to the container of results.
 ///
