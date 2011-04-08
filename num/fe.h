@@ -945,8 +945,9 @@ class FunAsP2EvalCL
         { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, Uint, _Cont&): Sorry, not implemented.\n"); }
     DataT val(const TetraCL&, double, double, double) const
         { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, double, double, double): Sorry, not implemented.\n"); }
-    DataT val(const TetraCL&, const BaryCoordCL&) const
-        { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, const BaryCoordCL&): Sorry, not implemented.\n"); }
+    DataT val(const TetraCL& t, const BaryCoordCL& b) const {
+        return f_( GetWorldCoord( t, b), t_);
+    }
 };
 
 typedef FunAsP2EvalCL<double (*) (const Point3DCL&, double), double>       ScalarFunAsP2EvalCL;
