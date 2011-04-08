@@ -103,7 +103,7 @@ void test_principal_lattice ()
 {
     for (int i= 1; i <= 4; ++i) {
         const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( i);
-        std::cout << "=======================================" << lat.num_intervals() << ' ' << lat.num_vertexes() << " " << lat.num_tetras() << std::endl;
+        std::cout << "=======================================" << lat.num_intervals() << ' ' << lat.vertex_size() << " " << lat.tetra_size() << std::endl;
         for (DROPS::PrincipalLatticeCL::const_vertex_iterator v= lat.vertex_begin(), end= lat.vertex_end(); v != end; ++v) {
             std::cout << lat.num_intervals()*(*v) << std::endl;
         }
@@ -144,7 +144,7 @@ void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& l
 void test_sphere_cut ()
 {
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( 10);
-    DROPS::GridFunctionCL<> ls( lat.num_vertexes());
+    DROPS::GridFunctionCL<> ls( lat.vertex_size());
     evaluate( ls, lat, &sphere);
     DROPS::TetraPartitionCL tet;
     tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( 10, ls);
@@ -178,7 +178,7 @@ void test_sphere_integral ()
                                 num_sub, num_sub, num_sub);
     DROPS::MultiGridCL mg( brick);
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( num_sub_lattice);
-    DROPS::GridFunctionCL<> ls( lat.num_vertexes());
+    DROPS::GridFunctionCL<> ls( lat.vertex_size());
     DROPS::TetraPartitionCL tet;
     // DROPS::SurfacePatchCL patch;
     double vol_neg= 0., vol_pos= 0.;
@@ -192,7 +192,7 @@ void test_sphere_integral ()
         tet.make_partition<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         // patch.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         DROPS::make_CompositeQuad5Domain( qdom, tet);
-        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
+        DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
         double tmp_neg, tmp_pos;
         quad( integrand, it->GetVolume()*6., qdom, tmp_neg, tmp_pos);
         vol_neg+= tmp_neg; vol_pos+= tmp_pos;
@@ -226,7 +226,7 @@ void test_extrapolated_sphere_integral ()
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
         make_ExtrapolatedQuad5Domain( qdom, ls_loc, extra);
-        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
+        DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
         double tmp_neg, tmp_pos;
         quad( integrand, it->GetVolume()*6., qdom, tmp_neg, tmp_pos);
         vol_neg+= tmp_neg; vol_pos+= tmp_pos;
@@ -249,7 +249,7 @@ void test_sphere_surface_integral ()
                                 num_sub, num_sub, num_sub);
     DROPS::MultiGridCL mg( brick);
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( num_sub_lattice);
-    DROPS::GridFunctionCL<> ls( lat.num_vertexes());
+    DROPS::GridFunctionCL<> ls( lat.vertex_size());
     DROPS::SurfacePatchCL patch;
     double surf= 0.;
     DROPS::QuadDomain2DCL qdom;
@@ -258,7 +258,7 @@ void test_sphere_surface_integral ()
         evaluate( ls, lat, &sphere, *it);
         patch.make_patch<DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         DROPS::make_CompositeQuad5Domain2D( qdom, patch, *it);
-        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
+        DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
         surf+= quad_2D( integrand, qdom);
     }
     std::cout << "Surface: " <<surf << std::endl;
@@ -286,7 +286,7 @@ void test_extrapolated_sphere_surface_integral ()
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         DROPS::LocalP2CL<> ls_loc( *it, &sphere_instat);
         make_ExtrapolatedQuad5Domain2D( qdom, ls_loc, *it, extra);
-        DROPS::GridFunctionCL<> integrand( 1., qdom.size());
+        DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
         surf+= quad_2D( integrand, qdom);
     }
     std::cout << "Surface: " << surf << std::endl;
@@ -300,9 +300,9 @@ int main()
         // test_principal_lattice();
         // test_sphere_cut();
         // test_sphere_integral();
-        // test_extrapolated_sphere_integral();
+        test_extrapolated_sphere_integral();
         // test_sphere_surface_integral();
-        test_extrapolated_sphere_surface_integral();
+        // test_extrapolated_sphere_surface_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
     return 0;
