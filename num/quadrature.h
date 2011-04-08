@@ -35,9 +35,6 @@ namespace DROPS {
 class QuadDomainCL;   ///< forward declaration for quad
 class QuadDomain2DCL; ///< forward declaration for quad
 
-/// Integration of full-sized integrands, which have size( AllTetraC) components.
-///@{
-
 ///\brief Integrate on a tetra using the QuadDataCL-rules from num/discretize.h
 /// Uses QuadDataT::Weight as weights.
 template <class GridFunT, class QuadDataT>
@@ -50,12 +47,14 @@ template <class GridFunT, class QuadDataT, class WeightSelectorT>
   inline typename ValueHelperCL<GridFunT>::value_type
   quad (const GridFunT& f, double absdet, const QuadDataT& q, const WeightSelectorT& weightsel);
 
-/// \brief Integrate on the negative, the positive or all tetras.
+/// Integration of full-sized integrands, which have size( AllTetraC) components.
+///@{
+/// \brief Integrate on the negative, the positive part or on the whole tetra.
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
   quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s= AllTetraC);
 
-/// \brief Integrate on the negative and the positive tetras.
+/// \brief Integrate on the negative and the positive part of a tetra.
 template <class GridFunT>
   inline void
   quad (const GridFunT& f, double absdet, const QuadDomainCL& dom,
@@ -90,7 +89,6 @@ typedef const double* const_weight_iterator;
 
 
 class ExtrapolationToZeroCL; ///< forward declaration for the factory-method
-
 class Quad2DataCL; ///< forward declaration for the factory method
 
 /// \brief returns a Quad2DataCL-object.
@@ -218,7 +216,6 @@ class QuadDomainCL
     ///@}
 };
 
-class QuadDomain2DCL;
 
 /// \brief Create a composite quadrature rule for a surface-patch.
 /// No sharing of quadrature points is performed.
@@ -305,7 +302,6 @@ class QuadDomain2DCL
 
 /// Determine, how many subdivisions of the tetra-edges are required for extrapolation on level i.
 ///@{
-
 ///\brief The step size is halved for each additional level
 struct RombergSubdivisionCL {
     Uint operator() (Uint i) const { return 1 << i; }
@@ -348,21 +344,6 @@ class ExtrapolationToZeroCL
     ///\brief return the number of subdivisions of the tetra's edges on level i
     Uint num_intervals (Uint i) const { return num_intervals_[i]; }
 };
-
-///\brief Write the sign of the levelset function ls in the quadrature points [vert_begin, vert_end) to the sequence beginning at begin.
-/// \return end-iterator of the sequence of written signs
-// template<class sign_iterator>
-//   sign_iterator
-//   copy_levelset_sign (const LocalP2CL<>& ls,
-//     LatticePartitionTypesNS::const_vertex_iterator vert_begin,
-//     LatticePartitionTypesNS::const_vertex_iterator vert_end,
-//     sign_iterator begin)
-// {
-//     while (vert_begin != vert_end) {
-//         *begin++= sign( ls( *vert_begin++));
-//     }
-//     return begin;
-// }
 
 } // end of namespace DROPS
 

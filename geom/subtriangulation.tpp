@@ -40,14 +40,27 @@ template <class GridFunT>
     return std::abs( sum) == f.size();
 }
 
+/// Could probably be implemented with std::transform.
+template<class LocalFET, class iterator>
+  inline iterator
+  evaluate_on_lattice (const LocalFET& ls,
+    LatticePartitionTypesNS::const_vertex_iterator vert_begin,
+    LatticePartitionTypesNS::const_vertex_iterator vert_end,
+    iterator begin)
+{
+    while (vert_begin != vert_end) {
+        *begin++= ls( *vert_begin++);
+    }
+    return begin;
+}
+
+
 ///\brief Write the sign of the levelset function src to the sequence dst.
-/// \return end-iterator of the sequence of written signs
 inline void
-copy_levelset_sign ( const std::valarray<double>& src, std::valarray<byte>& dst)
+copy_levelset_sign (const std::valarray<double>& src, std::valarray<byte>& dst)
 {
     dst.resize( src.size());
-    for (Uint i= 0; i < src.size(); ++i)
-        dst[i]= sign( src[i]);
+    std::transform( Addr( src), Addr( src) + src.size(), Addr( dst), sign);
 }
 
 ///\brief Copies the level set values and the corresponding signs from the global vectors to an array specific to the given lattice-tetra
@@ -57,14 +70,16 @@ copy_local_level_set_values( const std::valarray<double>& ls, const std::valarra
 {
     for (Uint i= 0; i < 4; ++i) {
         loc_ls_sign[i]= ls_sign[lattice_tet[i]];
-        loc_ls[i]=      ls     [lattice_tet[i]];
+        loc_ls     [i]= ls     [lattice_tet[i]];
     }
 }
 
 template <class VertexCutMergingPolicyT>
   const TetraPartitionCL::TetraT
-  TetraPartitionCL::make_sub_tetra (const RefTetraPartitionCL::TetraT& ref_tet, const PrincipalLatticeCL::TetraT& lattice_tet,
-    const double lset[4], Uint lattice_num_vertexes, VertexCutMergingPolicyT& edgecut)
+  TetraPartitionCL::make_sub_tetra (
+    const RefTetraPartitionCL::TetraT& ref_tet, const PrincipalLatticeCL::TetraT& lattice_tet,
+    const double lset[4], Uint lattice_num_vertexes,
+    VertexCutMergingPolicyT& edgecut)
 {
     Uint loc_vert_num;
     TetraT tet;

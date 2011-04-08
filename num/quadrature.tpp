@@ -217,8 +217,7 @@ template <class QuadDataT, class LocalFET>
         const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
         ls_val.resize( lat.vertex_size());
-        for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
-            ls_val[it - lat.vertex_begin()]= ls( *it);
+        evaluate_on_lattice( ls, lat.vertex_begin(), lat.vertex_end(), Addr( ls_val));
         partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain<QuadDataT>( qdom, partition);
         // if (i == extra.num_level() - 1 && lat.tetra_size() == partition.tetra_size()) // No interface cut; no extrapolation; this makes sense, if the order through extrapolation is not higher than the order of the base quadrature in the uncut case.
@@ -306,8 +305,7 @@ template <class QuadDataT, class LocalFET>
         const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
         ls_val.resize( lat.vertex_size());
-        for (typename PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it)
-            ls_val[it - lat.vertex_begin()]= ls( *it);
+        evaluate_on_lattice( ls, lat.vertex_begin(), lat.vertex_end(), Addr( ls_val));
         partition.make_patch<MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain2D<QuadDataT>( qdom, partition, t);
         std::copy( qdom.vertex_begin(), qdom.vertex_end(), std::back_inserter( q.vertexes_));
