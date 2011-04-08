@@ -39,11 +39,13 @@ class QuadDomain2DCL; ///< forward declaration for quad
 ///@{
 
 ///\brief Integrate on a tetra using the QuadDataCL-rules from num/discretize.h
+/// Uses QuadDataT::Weight as weights.
 template <class GridFunT, class QuadDataT>
   inline typename ValueHelperCL<GridFunT>::value_type
   quad (const GridFunT& f, double absdet, const QuadDataT&);
 
 ///\brief Integrate on a tetra using the QuadDataCL-rules from num/discretize.h with special weights
+/// Calls q.weights( weightsel) to determine the weights.
 template <class GridFunT, class QuadDataT, class WeightSelectorT>
   inline typename ValueHelperCL<GridFunT>::value_type
   quad (const GridFunT& f, double absdet, const QuadDataT& q, const WeightSelectorT& weightsel);
@@ -66,12 +68,12 @@ template <class GridFunT>
 /// \brief Integrate an integrand, that is defined only on the negative tetras. It does not work for full-sized integrands. Use quad for the latter.
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_neg_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom);
+  quad_neg_part_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom);
 
 /// \brief Integrate an integrand, that is defined only on the positive tetras. It does not work for standard integrands. Use quad for the latter.
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_pos_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom);
+  quad_pos_part_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom);
 ///@}
 
 /// \brief Integrate on a surface-patch

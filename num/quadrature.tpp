@@ -80,14 +80,14 @@ template <class GridFunT>
 
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_neg_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom)
+  quad_neg_part_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom)
 {
     return quad_single_domain_integrand( f, absdet, dom, NegTetraC);
 }
 
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad_pos_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom)
+  quad_pos_part_integrand (const GridFunT& f, double absdet, const QuadDomainCL& dom)
 {
     return quad_single_domain_integrand( f, absdet, dom, PosTetraC);
 }
