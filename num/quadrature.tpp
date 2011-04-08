@@ -106,6 +106,23 @@ make_Quad2Data ()
     return quad2data;
 }
 
+template <class QuadDataT>
+  const QuadDomainCL&
+  make_SimpleQuadDomain (QuadDomainCL& q, const TetraSignEnum& s)
+{
+    static const QuadDataT quaddata; // ensure that the fields of QuadDataT are initialized.
+
+    q.vertexes_.resize( QuadDataT::NumNodesC);
+    std::copy( QuadDataT::Node, QuadDataT::Node + QuadDataT::NumNodesC, q.vertexes_.begin());
+    q.pos_begin_= q.neg_end_= (s == NegTetraC ? QuadDataT::NumNodesC : 0);
+
+    q.weights_.resize( QuadDataT::NumNodesC);
+    q.weights_= QuadDomainCL::WeightContT( QuadDataT::Weight, QuadDataT::NumNodesC);
+    q.pos_weights_begin_= (s == NegTetraC ? QuadDataT::NumNodesC : 0);
+    q.all_weights_begin_= 0;
+
+    return q;
+}
 
 template <class QuadDataT>
   const QuadDomainCL&
@@ -169,9 +186,9 @@ template <class SubdivisionT>
     evaluate_newton_polynomial_and_derivative( x, f, 0., f0_, der0);
     eliminate_linear_term( x, f0_, der0);
 
-    for (Uint i= 0; i < num_level; ++i)
-        std::cerr << weights()[i] << ' ';
-    std::cerr << std::endl;
+    // for (Uint i= 0; i < num_level; ++i)
+    //     std::cerr << weights()[i] << ' ';
+    // std::cerr << std::endl;
 }
 
 /// \brief Multiply the weight for each level with the extrapolation factor and copy it to weights.
@@ -184,6 +201,7 @@ template <class QuadDataT, class LocalFET>
   make_ExtrapolatedQuadDomain (QuadDomainCL& q, const LocalFET& ls, const ExtrapolationToZeroCL& extra)
 {
     q.vertexes_.resize( 0);
+    q.weights_.resize( 0);
 
     typename QuadDomainCL::VertexContT pos_vertexes; // temporary container for the positive vertexes
     std::vector<QuadDomainCL::WeightContT> w_vec; // the weights for each level
@@ -195,7 +213,7 @@ template <class QuadDataT, class LocalFET>
     QuadDomainCL qdom;
     std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
     // Accumulate quadrature-points and weights for each level
-    for (Uint i= 0; i < extra.num_level(); ++i) {
+    for (Uint i= extra.num_level() - 1; i < extra.num_level(); --i) {
         const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
         ls_val.resize( lat.vertex_size());
@@ -203,6 +221,9 @@ template <class QuadDataT, class LocalFET>
             ls_val[it - lat.vertex_begin()]= ls( *it);
         partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
         make_CompositeQuadDomain<QuadDataT>( qdom, partition);
+        // if (i == extra.num_level() - 1 && lat.tetra_size() == partition.tetra_size()) // No interface cut; no extrapolation; this makes sense, if the order through extrapolation is not higher than the order of the base quadrature in the uncut case.
+        //     return make_SimpleQuadDomain<QuadDataT>( q, qdom.vertex_size( NegTetraC) > 0 ? NegTetraC : PosTetraC);
+
         std::copy( qdom.vertex_begin( NegTetraC), qdom.vertex_end( NegTetraC), std::back_inserter( q.vertexes_));
         std::copy( qdom.vertex_begin( PosTetraC), qdom.vertex_end( PosTetraC), std::back_inserter( pos_vertexes));
         w_vec.push_back( QuadDomainCL::WeightContT( qdom.weight_begin(), qdom.vertex_size()));

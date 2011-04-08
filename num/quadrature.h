@@ -96,6 +96,13 @@ class Quad2DataCL; ///< forward declaration for the factory method
 inline const Quad2DataCL&
 make_Quad2Data ();
 
+/// \brief Create a quadrature rule that equals a QuadDataCL-type rule.
+/// This lets one use a QuadDataCL-rule as QuadDomainCL. Generally, one should use the appropriate quad()-function for QuadDataCL-types directly and spare the copying. For obscure extrapolation rules, this approach is not possible, as a QuadDomainCL is required.
+/// The template-parameter QuadDataT must be given explicitly.
+template <class QuadDataT>
+  const QuadDomainCL&
+  make_SimpleQuadDomain (QuadDomainCL& q, const TetraSignEnum& s);
+
 /// \brief Create a composite quadrature rule.
 /// No sharing of quadrature points is performed. The sequence of weights for the whole tetra is the concatenation of the sequences of weights for the negative and positive dof.
 /// The template-parameter QuadDataT must be given explicitly.
@@ -151,6 +158,10 @@ class QuadDomainCL
     ///@{
     template <class QuadDataT>
       friend const QuadDomainCL&
+      make_SimpleQuadDomain (QuadDomainCL&, const TetraSignEnum& s);
+
+    template <class QuadDataT>
+      friend const QuadDomainCL&
       make_CompositeQuadDomain (QuadDomainCL&, const TetraPartitionCL&);
 
     friend const QuadDomainCL&
@@ -173,6 +184,10 @@ class QuadDomainCL
   public:
     QuadDomainCL () ///< empty default constructor
         : pos_begin_( 0), neg_end_( 0), weights_( 0), pos_weights_begin_( 0), all_weights_begin_( 0) {}
+
+    /// The default copy-constructor does the right thing
+    /// \brief copy assignment: resize the valarray for weights to make it behave like a container
+    QuadDomainCL& operator= (const QuadDomainCL&);
 
     /// \brief sequence of the indices of the vertexes (quadrature points) for the given domain
     ///@{
@@ -262,6 +277,10 @@ class QuadDomain2DCL
   public:
     QuadDomain2DCL () ///< empty default constructor
         {}
+
+    /// The default copy-constructor does the right thing
+    /// \brief copy assignment: resize the valarray for weights to make it behave like a container
+    QuadDomain2DCL& operator= (const QuadDomain2DCL&);
 
     /// \brief sequence of the indices of the vertexes (quadrature points)
     ///@{

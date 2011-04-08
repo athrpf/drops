@@ -26,6 +26,21 @@
 
 namespace DROPS {
 
+QuadDomainCL&
+QuadDomainCL::operator= (const QuadDomainCL& q)
+{
+    vertexes_=  q.vertexes_;
+    pos_begin_= q.pos_begin_;
+    neg_end_=   q.neg_end_;
+
+    weights_.resize( q.weights_.size());
+    weights_=           q.weights_;
+    pos_weights_begin_= q.pos_weights_begin_;
+    all_weights_begin_= q.all_weights_begin_;
+
+    return *this;
+}
+
 const QuadDomainCL&
 make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
 {
@@ -90,13 +105,25 @@ copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
     weights.resize( s);
 
     Uint neg_it= 0, pos_it= s_neg;
-    for (Uint i= 0; i < w_vec.size(); ++i) {
-        weights[std::slice( neg_it, w_pos_begin[i], 1)]= w_factor[i]*w_vec[i][std::slice( 0, w_pos_begin[i], 1)];
+    for (Uint i= w_vec.size() - 1; i < w_vec.size(); --i) {
+        const Uint j= w_vec.size() - 1 - i; // To access the extrapolation-weights, which are ordered from coarse to fine level
+        weights[std::slice( neg_it, w_pos_begin[i], 1)]= w_factor[j]*w_vec[i][std::slice( 0, w_pos_begin[i], 1)];
         weights[std::slice( pos_it, w_vec[i].size() - w_pos_begin[i], 1)]
-            = w_factor[i]*w_vec[i][std::slice( w_pos_begin[i], w_vec[i].size() - w_pos_begin[i], 1)];
+            = w_factor[j]*w_vec[i][std::slice( w_pos_begin[i], w_vec[i].size() - w_pos_begin[i], 1)];
         neg_it+= w_pos_begin[i];
         pos_it+= w_vec[i].size() - w_pos_begin[i];
     }
+}
+
+QuadDomain2DCL&
+QuadDomain2DCL::operator= (const QuadDomain2DCL& q)
+{
+    vertexes_= q.vertexes_;
+
+    weights_.resize( q.weights_.size());
+    weights_= q.weights_;
+
+    return *this;
 }
 
 void
