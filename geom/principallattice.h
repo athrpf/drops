@@ -30,6 +30,31 @@
 
 namespace DROPS {
 
+///\brief Evaluate the function f on [dom.vertex_begin(), dom.vertex_end()).
+/// The result is either stored to the sequence starting at result_iterator or to the result_container. The latter is resized to dom_vertex_size() first.
+/// ResultContainerT may be std::valarray and derivatives.
+/// LocalFET must provide double operator() (const BaryCoordCL&).
+/// \return end-iterator of the sequence of written signs or reference to the container of results.
+///
+/// This works for PrincipalLatticeCL, TetraPartitionCL, SurfacePatchCL, QuadDomainCL and QuadDomain2DCL.
+///@{
+template <class LocalFET, class DomainT, class ResultIterT>
+  inline ResultIterT
+  evaluate_on_vertexes (const LocalFET& f, const DomainT& dom, ResultIterT result_iterator);
+
+template <class LocalFET, class DomainT, class ResultIterT>
+  inline ResultIterT
+  evaluate_on_vertexes (const LocalFET& f, const DomainT& dom, TetraSignEnum s, ResultIterT result_iterator);
+
+template <class LocalFET, class DomainT, class ResultContT>
+  inline const ResultContT&
+  resize_and_evaluate_on_vertexes (const LocalFET& f, const DomainT& dom, ResultContT& result_container);
+
+template <class LocalFET, class DomainT, class ResultContT>
+  inline const ResultContT&
+  resize_and_evaluate_on_vertexes (const LocalFET& f, const DomainT& dom, TetraSignEnum s, ResultContT& result_container);
+///@}
+
 /// \brief The principal lattice on the reference tetra.
 ///
 /// The barycentric coordinates of the vertices are computed. The tetras are computed as 4-tuples to the container of vertices.
@@ -97,4 +122,7 @@ class PrincipalLatticeCL
 };
 
 } // end of namespace DROPS
+
+#include "geom/principallattice.tpp"
+
 #endif
