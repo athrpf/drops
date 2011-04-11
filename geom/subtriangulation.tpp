@@ -37,7 +37,7 @@ template <class GridFunT>
     for (Uint i= 0; i < f.size(); ++i)
         sum+= sign( f[i]);
 
-    return std::abs( sum) == f.size();
+    return static_cast<size_t>( std::abs( sum)) == f.size(); // std::abs return a signed type --> silence g++ warning
 }
 
 ///\brief Write the sign of the levelset function src to the sequence dst.
