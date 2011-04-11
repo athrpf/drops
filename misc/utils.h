@@ -755,6 +755,12 @@ logical_xor (bool a, bool b)
     return ( a || b) && !(a && b);
 }
 
+///\brief The sign of the argument in \f$\{-1,0,+1\}\f$
+inline byte sign (double d)
+{
+    return d > 0. ? 1 : (d < 0. ? -1 : 0);
+}
+
 
 } // end of namespace DROPS
 

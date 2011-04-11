@@ -116,12 +116,6 @@ inline byte instance_idx (const byte ls[4])
     return  27*ls[0] + 9*ls[1] + 3*ls[2] + ls[3];
 }
 
-///\brief Helper to instance_idx below
-inline byte sign (double d)
-{
-    return d > 0. ? 1 : (d < 0. ? -1 : 0);
-}
-
 ///\brief Return a signed array-index for the possible 3^4 sign-patterns on the vertices of a tetra.
 inline Ubyte instance_idx (const double ls[4])
 {
