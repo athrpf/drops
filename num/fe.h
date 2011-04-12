@@ -462,6 +462,13 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 };
 
 
+template <class T>
+  class LocalP1CL; ///< forward declaration for typedef
+
+template <class T>
+  class LocalP2CL; ///< forward declaration for typedef
+
+
 //**************************************************************************
 // Class:   P1EvalCL                                                       *
 // Template Parameter:                                                     *
@@ -501,6 +508,8 @@ public:
     typedef P1EvalCL<Data, _BndData, _VD> _self;
     typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
+
+    typedef LocalP1CL<DataT> LocalFET;
 
 protected:
     // numerical data
@@ -732,6 +741,8 @@ public:
     typedef P2EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P2EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
 
+    typedef LocalP2CL<DataT> LocalFET;
+
 protected:
     // numerical data
     VecDescT*          _sol;
@@ -945,8 +956,9 @@ class FunAsP2EvalCL
         { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, Uint, _Cont&): Sorry, not implemented.\n"); }
     DataT val(const TetraCL&, double, double, double) const
         { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, double, double, double): Sorry, not implemented.\n"); }
-    DataT val(const TetraCL&, const BaryCoordCL&) const
-        { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, const BaryCoordCL&): Sorry, not implemented.\n"); }
+    DataT val(const TetraCL& t, const BaryCoordCL& b) const {
+        return f_( GetWorldCoord( t, b), t_);
+    }
 };
 
 typedef FunAsP2EvalCL<double (*) (const Point3DCL&, double), double>       ScalarFunAsP2EvalCL;

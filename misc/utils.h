@@ -613,6 +613,75 @@ template<class T, size_t S>
 };
 //@}
 
+
+/// \brief Provide begin()-iterator uniformly for standard-containers, std::valarray and arrays.
+///@{
+template <class ContainerT>
+class SequenceTraitCL
+{
+  public:
+    typedef ContainerT container_type;
+
+    typedef typename ContainerT::iterator             iterator;
+    typedef typename ContainerT::const_iterator const_iterator;
+
+    static       iterator       begin (container_type& c)       { return c.begin(); }
+    static const_iterator const_begin (const container_type& c) { return c.begin(); }
+};
+
+template <class T>
+class SequenceTraitCL<std::valarray<T> >
+{
+  public:
+    typedef std::valarray<T> container_type;
+
+    typedef       T*       iterator;
+    typedef const T* const_iterator;
+
+    static       iterator       begin (container_type& c)       { return Addr( c); }
+    static const_iterator const_begin (const container_type& c) { return Addr( c); }
+};
+
+template <class T>
+  class GridFunctionCL; ///< forward declaration
+
+template <class T>
+class SequenceTraitCL<GridFunctionCL<T> >
+{
+  public:
+    typedef GridFunctionCL<T> container_type;
+
+    typedef       T*       iterator;
+    typedef const T* const_iterator;
+
+    static       iterator       begin (container_type& c)       { return Addr( c); }
+    static const_iterator const_begin (const container_type& c) { return Addr( c); }
+};
+
+template <class T, size_t S>
+class SequenceTraitCL<T[S]>
+{
+  public:
+    typedef       T*       iterator;
+    typedef const T* const_iterator;
+
+    static       iterator       begin (T c[S])       { return c; }
+    static const_iterator const_begin (const T c[S]) { return c; }
+};
+
+///\brief returns the begin of c for container-types, valarrays and arrays.
+template <class ContainerT>
+  inline typename SequenceTraitCL<ContainerT>::iterator
+  sequence_begin (ContainerT& c) { return SequenceTraitCL<ContainerT>::begin( c); }
+
+///\brief returns the begin of c for const-container-types, const-valarrays and const-arrays.
+template <class ContainerT>
+  inline typename SequenceTraitCL<ContainerT>::const_iterator
+  sequence_begin (const ContainerT& c) { return SequenceTraitCL<ContainerT>::const_begin( c); }
+///@}
+
+
+
 /// \brief Create a directory
 int CreateDirectory(std::string path);
 
@@ -700,6 +769,12 @@ inline bool
 logical_xor (bool a, bool b)
 {
     return ( a || b) && !(a && b);
+}
+
+///\brief The sign of the argument in \f$\{-1,0,+1\}\f$
+inline byte sign (double d)
+{
+    return d > 0. ? 1 : (d < 0. ? -1 : 0);
 }
 
 

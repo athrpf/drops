@@ -24,6 +24,8 @@
 
 #include "stokes/instatstokes2phase.h"
 #include "num/accumulator.h"
+#include "num/quadrature.h"
+#include "num/lattice-eval.h"
 
 namespace DROPS
 {
@@ -1302,7 +1304,7 @@ class LocalSystem1OnePhase_P2CL
     double rho_;
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
-    Quad2CL<> Ones;
+    const SVectorCL<Quad2DataCL::NumNodesC> Ones;
 
   public:
     LocalSystem1OnePhase_P2CL (double muarg= 0., double rhoarg= 0.)
@@ -1320,19 +1322,17 @@ class LocalSystem1OnePhase_P2CL
 void LocalSystem1OnePhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, LocalSystem1DataCL& loc)
 {
     P2DiscCL::GetGradients( Grad, GradRef, T);
-    for (int i=0; i<10; ++i)
-    {
-        loc.rho_phi[i]= rho()*Ones.quadP2( i, absdet);
-        for (int j=0; j<=i; ++j)
-        {
+    for (Uint i= 0; i < 10; ++i) {
+        loc.rho_phi[i]= rho()*quad( Ones, absdet, Quad2Data_Mul_P2_CL(), i);
+        for (Uint j= 0; j <= i; ++j) {
             // M: As we are not at the phase-boundary this is exact.
             loc.M[j][i]= rho()*P2DiscCL::GetMass( j, i)*absdet;
 
             // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k) = \int mu *\nabla\phi_i \outerprod \nabla\phi_j
-            loc.Ak[j][i]= mu()*Quad2CL< SMatrixCL<3,3> >( outer_product( Grad[i], Grad[j])).quad( absdet);
+            loc.Ak[j][i]= mu()*quad( OuterProductExpressionCL( Grad[i], Grad[j]), absdet, make_Quad2Data());
             // dot-product of the gradients
             loc.A[j][i]= trace( loc.Ak[j][i]);
-            if (i!=j) { // The local matrices coupM, coupA, coupAk are symmetric.
+            if (i != j) { // The local matrices coupM, coupA, coupAk are symmetric.
                 loc.M[i][j]= loc.M[j][i];
                 loc.A[i][j]= loc.A[j][i];
                 assign_transpose( loc.Ak[i][j], loc.Ak[j][i]);
@@ -1351,56 +1351,47 @@ class LocalSystem1TwoPhase_P2CL
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     LocalP2CL<> p2;
 
-    BaryCoordCL nodes_q2[Quad2CL<>::NumNodesC];
-    BaryCoordCL nodes_q5[Quad5DataCL::NumNodesC];
-    double absdets[48]; //there exists maximally 8*6=48 SubTetras
-    Quad5CL<> q[48][10]; //there exists maximally 8*6=48 SubTetras
-    Quad2CL<Point3DCL> qA[48][10]; //there exists maximally 8*6=48 SubTetras
+    std::valarray<double> ls_loc;
+    TetraPartitionCL partition;
+    QuadDomainCL q2dom;
+    QuadDomainCL q5dom;
+    std::valarray<double> q[10];
+    GridFunctionCL<Point3DCL> qA[10];
 
     double intpos, intneg;
     SMatrixCL<3,3> cAkp, cAkn;
 
   public:
     LocalSystem1TwoPhase_P2CL (double mup, double mun, double rhop, double rhon)
-        : mu_p( mup), mu_n( mun), rho_p( rhop), rho_n( rhon)
+        : mu_p( mup), mu_n( mun), rho_p( rhop), rho_n( rhon), ls_loc( 10)
     { P2DiscCL::GetGradientsOnRef( GradRefLP1); }
 
     double mu  (int sign) const { return sign > 0 ? mu_p  : mu_n; }
     double rho (int sign) const { return sign > 0 ? rho_p : rho_n; }
 
-    void setup (const SMatrixCL<3,3>& T, double absdet, InterfaceTetraCL& tetra, LocalSystem1DataCL& loc);
+    void setup (const SMatrixCL<3,3>& T, double absdet, const LocalP2CL<>& ls, LocalSystem1DataCL& loc);
 };
 
-void LocalSystem1TwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, InterfaceTetraCL& tetra, LocalSystem1DataCL& loc)
+void LocalSystem1TwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, const LocalP2CL<>& ls, LocalSystem1DataCL& loc)
 {
-    std::memset( loc.rho_phi, 0, 10*sizeof( double));
     P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
 
-    tetra.ComputeSubTets();
-    for (Uint k=0; k<tetra.GetNumTetra(); ++k) {
-        absdets[k]= absdet*VolFrac( tetra.GetTetra( k));
-        Quad2CL<>::TransformNodes( tetra.GetTetra( k), nodes_q2);
-        Quad5CL<>::TransformNodes( tetra.GetTetra( k), nodes_q5);
-        for (int i= 0; i < 10; ++i) {
-            // For M
-            p2[i]= 1.; p2[i==0 ? 9 : i - 1]= 0.;
-            q[k][i].assign( p2, nodes_q5);
-            // For A
-            qA[k][i].assign( GradLP1[i], nodes_q2);
-            // \int rho*phi_i
-            loc.rho_phi[i]+= (k < tetra.GetNumNegTetra() ? rho_n : rho_p )*q[k][i].quad( absdets[k]);
-        }
+    evaluate_on_vertexes( ls, PrincipalLatticeCL::instance( 2), Addr( ls_loc));
+    partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( 2, ls_loc);
+    make_CompositeQuad5Domain( q5dom, partition);
+    make_CompositeQuad2Domain( q2dom, partition);
+    double phi_neg, phi_pos;
+    for (int i= 0; i < 10; ++i) {
+        p2[i]= 1.; p2[i==0 ? 9 : i - 1]= 0.;
+        resize_and_evaluate_on_vertexes( p2,         q5dom, q[i]); // for M
+        resize_and_evaluate_on_vertexes( GradLP1[i], q2dom, qA[i]); // for A
+        quad( q[i], absdet, q5dom, phi_neg, phi_pos); // for rho
+        loc.rho_phi[i]= rho_n*phi_neg + rho_p*phi_pos;
     }
     for (int i= 0; i < 10; ++i) {
         for (int j= 0; j <= i; ++j) {
-            intneg= intpos = 0.;
-            std::memset( &cAkn, 0, sizeof( SMatrixCL<3,3>));
-            std::memset( &cAkp, 0, sizeof( SMatrixCL<3,3>));
-            for (Uint k=0; k<tetra.GetNumTetra(); ++k) {
-                (k<tetra.GetNumNegTetra() ? intneg : intpos)+= Quad5CL<>( q[k][i]*q[k][j]).quad( absdets[k]);
-                // A: kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
-                (k < tetra.GetNumNegTetra() ? cAkn : cAkp)+= Quad2CL< SMatrixCL<3,3> >( outer_product( qA[k][i], qA[k][j])).quad( absdets[k]);
-            }
+            quad( q[i]*q[j], absdet, q5dom, intneg, intpos);
+            quad( OuterProductExpressionCL( qA[i], qA[j]), absdet, q2dom, cAkn, cAkp);
             loc.M[j][i]= rho_p*intpos + rho_n*intneg;
             loc.Ak[j][i]= mu_p*cAkp + mu_n*cAkn;
             // dot-product of the gradients
@@ -1441,7 +1432,7 @@ class System1Accumulator_P2CL : public TetraAccumulatorCL
 
     SMatrixCL<3,3> T;
     double det, absdet;
-    InterfaceTetraCL tetra;
+    LocalP2CL<> ls_loc;
 
     Quad2CL<Point3DCL> rhs;
     Point3DCL loc_b[10], dirichlet_val[10]; ///< Used to transfer boundary-values from local_setup() update_global_system().
@@ -1512,14 +1503,14 @@ void System1Accumulator_P2CL::local_setup (const TetraCL& tet)
     rhs.assign( tet, Coeff.volforce, t);
     n.assign( tet, RowIdx, BndData.Vel);
 
-    tetra.Init( tet, lset.Phi, lset.GetBndData());
-    if (tetra.Intersects())
-        local_twophase.setup( T, absdet, tetra, loc);
-    else {
-        local_onephase.mu(  local_twophase.mu(  tetra.GetSign( 0)));
-        local_onephase.rho( local_twophase.rho( tetra.GetSign( 0)));
+    ls_loc.assign( tet, lset.Phi, lset.GetBndData());
+    if (equal_signs( ls_loc)) {
+        local_onephase.mu(  local_twophase.mu(  sign( ls_loc[0])));
+        local_onephase.rho( local_twophase.rho( sign( ls_loc[0])));
         local_onephase.setup( T, absdet, loc);
     }
+    else
+        local_twophase.setup( T, absdet, ls_loc, loc);
     add_transpose_kronecker_id( loc.Ak, loc.A);
 
     if (b != 0) {
@@ -1541,12 +1532,12 @@ void System1Accumulator_P2CL::update_global_system ()
     SparseMatBuilderCL<double, SMatrixCL<3,3> >& mA= *mA_;
     SparseMatBuilderCL<double, SDiagMatrixCL<3> >& mM= *mM_;
 
-    for(int i=0; i<10; ++i)    // assemble row Numb[i]
+    for(int i= 0; i < 10; ++i)    // assemble row Numb[i]
         if (n.WithUnknowns( i)) { // dof i is not on a Dirichlet boundary
-            for(int j=0; j<10; ++j) {
+            for(int j= 0; j < 10; ++j) {
                 if (n.WithUnknowns( j)) { // dof j is not on a Dirichlet boundary
-                    mA( n.num[i],   n.num[j]  )+= loc.Ak[i][j];
-                    mM( n.num[i],   n.num[j]  )+= SDiagMatrixCL<3>( loc.M[j][i]);
+                    mA( n.num[i], n.num[j])+= loc.Ak[i][j];
+                    mM( n.num[i], n.num[j])+= SDiagMatrixCL<3>( loc.M[j][i]);
                 }
                 else if (b != 0) { // right-hand side for eliminated Dirichlet-values
                     add_to_global_vector( cplA->Data, -loc.Ak[i][j]*dirichlet_val[j], n.num[i]);

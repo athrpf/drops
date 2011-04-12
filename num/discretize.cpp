@@ -28,6 +28,81 @@
 
 namespace DROPS
 {
+
+static inline BaryCoordCL*
+TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p, Uint NumNodes, const BaryCoordCL* Node)
+{
+    if (!p) p= new BaryCoordCL[NumNodes];
+    for (Uint i=0; i < NumNodes; ++i)
+        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+        for (Uint k= 0; k < 4; ++k)
+            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
+                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
+    return p;
+}
+
+BaryCoordCL Quad2DataCL::Node[NumNodesC];
+
+const double Quad2DataCL::Wght[2]= {
+    1./120., /* Node[0] bis Node[3]*/
+    2./15., /* 2./15., Node[4]*/
+};
+
+const double Quad2DataCL::Weight[NumNodesC]= {
+    1./120.,
+    1./120.,
+    1./120.,
+    1./120.,
+
+    2./15.
+};
+
+Quad2DataCL::Quad2DataCL()
+{
+    Node[0]= MakeBaryCoord( 1., 0., 0., 0.);
+    Node[1]= MakeBaryCoord( 0., 1., 0., 0.);
+    Node[2]= MakeBaryCoord( 0., 0., 1., 0.);
+    Node[3]= MakeBaryCoord( 0., 0., 0., 1.);
+    Node[4]= BaryCoordCL( 0.25);
+}
+
+const double Quad2Data_Mul_P2_CL::weights_[10][NumNodesC]= {
+    { 1./360., 0., 0., 0., -1./90. },
+    { 0., 1./360., 0., 0., -1./90. },
+    { 0., 0., 1./360., 0., -1./90. },
+    { 0., 0., 0., 1./360., -1./90. },
+
+    { 1./180., 1./180., 0., 0., 1./45. },
+    { 1./180., 0., 1./180., 0., 1./45. },
+    { 0., 1./180., 1./180., 0., 1./45. },
+    { 1./180., 0., 0., 1./180., 1./45. },
+    { 0., 1./180., 0., 1./180., 1./45. },
+    { 0., 0., 1./180., 1./180., 1./45. }
+};
+
+const double Quad2Data_Mul_P1_CL::weights_[4][NumNodesC]= {
+    { 1./120., 0., 0., 0., -1./30. },
+    { 0., 1./120., 0., 0., -1./30. },
+    { 0., 0., 1./120., 0., -1./30. },
+    { 0., 0., 0., 1./120., -1./30. }
+};
+
+///\brief special implementation to copy the first 4 nodes.
+BaryCoordCL*
+Quad2DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
+{
+    if (!p) p= new BaryCoordCL[NumNodesC];
+    //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+    std::memcpy( p, M.begin(), 4*sizeof( BaryCoordCL));
+    for (Uint k= 0; k < 4; ++k)
+            p[4][k]= 0.25*( M[0][k] + M[1][k] + M[2][k] + M[3][k]);
+    return p;
+}
+
+namespace {
+    Quad2DataCL theQuad2DataInitializer_; // The constructor sets up the static arrays
+} // end of anonymous namespace
+
 //**************************************************************************
 // Class: Quad3DataCL                                                      *
 //**************************************************************************
@@ -36,7 +111,15 @@ BaryCoordCL Quad3DataCL::Node[NumNodesC];
 
 const double Quad3DataCL::Wght[2]= {
     -2./15., /* -(n+1)^2/[4(n+2)] /6       Node[0]*/
+    3./40.  /* (n+3)^2/[4(n+1)(n+2)] /6 , Node[1] bis Node[4]*/
+};
+
+const double Quad3DataCL::Weight[5]= {
+    -2./15., /* -(n+1)^2/[4(n+2)] /6       Node[0]*/
     3./40.,  /* (n+3)^2/[4(n+1)(n+2)] /6 , Node[1] bis Node[4]*/
+    3./40.,
+    3./40.,
+    3./40.
 };
 
 std::valarray<double> Quad3DataCL::P2_Val[10]; // P2_Val[i] contains FE_P2CL::H_i( Node).
@@ -56,13 +139,7 @@ Quad3DataCL::Quad3DataCL()
 
 BaryCoordCL* Quad3DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
 {
-    if (!p) p= new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i < NumNodesC; ++i)
-        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k= 0; k < 4; ++k)
-            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return p;
+    return DROPS::TransformNodes( M, p, NumNodesC, Node);
 }
 
 namespace {
@@ -80,6 +157,27 @@ const double Quad5DataCL::Wght[4]= {
     0.01198951396316977000173064248499538621936, /* (2665.0 + 14.0*std::sqrt( 15.0))/226800.0, Node[1] bis Node[4]*/
     0.01151136787104539754677023934921978132914, /* (2665.0 - 14.0*std::sqrt( 15.0))/226800.0, Node[5] bis Node[8]*/
     0.008818342151675485008818342151675485008818 /* 5./567.,                                   Node[9] bis Node[14]*/
+};
+
+const double Quad5DataCL::Weight[NumNodesC]= {
+    0.01975308641975308641975308641975308641975,
+
+    0.01198951396316977000173064248499538621936,
+    0.01198951396316977000173064248499538621936,
+    0.01198951396316977000173064248499538621936,
+    0.01198951396316977000173064248499538621936,
+
+    0.01151136787104539754677023934921978132914,
+    0.01151136787104539754677023934921978132914,
+    0.01151136787104539754677023934921978132914,
+    0.01151136787104539754677023934921978132914,
+
+    0.008818342151675485008818342151675485008818,
+    0.008818342151675485008818342151675485008818,
+    0.008818342151675485008818342151675485008818,
+    0.008818342151675485008818342151675485008818,
+    0.008818342151675485008818342151675485008818,
+    0.008818342151675485008818342151675485008818
 };
 
 std::valarray<double> Quad5DataCL::P2_Val[10]; // P2_Val[i] contains FE_P2CL::H_i( Node).
@@ -114,13 +212,7 @@ Quad5DataCL::Quad5DataCL()
 BaryCoordCL*
 Quad5DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
 {
-    if (!p) p= new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i < NumNodesC; ++i)
-        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k= 0; k < 4; ++k)
-            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return p;
+    return DROPS::TransformNodes( M, p, NumNodesC, Node);
 }
 
 namespace {
@@ -135,7 +227,17 @@ Point3DCL Quad5_2DDataCL::Node[NumNodesC];  // Barycentric coord for 2D
 const double Quad5_2DDataCL::Wght[3]= {
       9./80.,                          /*Node[0]*/
       (155. - std::sqrt( 15.0))/2400., /*Node[1] to Node[3]*/
+      (155. + std::sqrt( 15.0))/2400.  /*Node[4] to Node[6]*/
+};
+
+const double Quad5_2DDataCL::Weight[NumNodesC]= {
+      9./80.,                          /*Node[0]*/
+      (155. - std::sqrt( 15.0))/2400., /*Node[1] to Node[3]*/
+      (155. - std::sqrt( 15.0))/2400.,
+      (155. - std::sqrt( 15.0))/2400.,
       (155. + std::sqrt( 15.0))/2400., /*Node[4] to Node[6]*/
+      (155. + std::sqrt( 15.0))/2400.,
+      (155. + std::sqrt( 15.0))/2400.
 };
 
 Quad5_2DDataCL::Quad5_2DDataCL ()
@@ -151,13 +253,6 @@ Quad5_2DDataCL::Quad5_2DDataCL ()
     Node[4]= MakePoint3D( A2,A2,B2);
     Node[5]= MakePoint3D( A2,B2,A2);
     Node[6]= MakePoint3D( B2,A2,A2);
-}
-
-void
-Quad5_2DDataCL::SetInterface (const BaryCoordCL*const p, BaryCoordCL* NodeInTetra)
-{
-    for (Uint i= 0; i < NumNodesC; ++i)
-        NodeInTetra[i]= Node[i][0]*p[0] + Node[i][1]*p[1] + Node[i][2]*p[2];
 }
 
 namespace {
