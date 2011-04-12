@@ -108,6 +108,7 @@ class GridFunctionCL: public std::valarray<T>
     typedef GridFunctionCL<T> self_;
 
   public:
+    GridFunctionCL () {}
     GridFunctionCL (value_type v, Uint s): base_type( v, s) {}
     GridFunctionCL (const value_type* p, Uint s): base_type( p, s) {}
 
@@ -226,6 +227,21 @@ inline void ExtractComponent( const GridFunctionCL<Point3DCL>& src, GridFunction
         target[i]= src[i][comp];
 }
 
+/// \brief Represent the outer product without computing it immediately.
+/// Drop in for a real expression-template mechanism. This saves considerable time when calling quad() in SetupSystem1.
+class OuterProductExpressionCL
+{
+    const GridFunctionCL<Point3DCL>& a_;
+    const GridFunctionCL<Point3DCL>& b_;
+
+  public:
+    typedef SMatrixCL<3,3> value_type;
+
+    OuterProductExpressionCL (const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
+        : a_( a), b_( b) {}
+    value_type operator[] (size_t i) const { return outer_product( a_[i], b_[i]); }
+};
+
 inline GridFunctionCL< SMatrixCL<3,3> >
 outer_product(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
 {
@@ -339,6 +355,27 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
     inline value_type operator()(const BaryCoordCL&) const;
 };
 
+///\brief Evaluates a function expecting world-coordinates and time as arguments in barycentric coordinates on a tetra.
+/// This gives the function the interface of the LocalFE-classes.
+template <class T>
+class WorldCoordFunctionAsLocalFECL
+{
+  public:
+    typedef T (*fun_type)(const Point3DCL&, double);
+    typedef T value_type;
+
+  private:
+    Bary2WorldCoordCL mapper_;
+    double t_;
+    fun_type f_;
+
+  public:
+    WorldCoordFunctionAsLocalFECL (const TetraCL& tet, double t, fun_type f)
+        : mapper_( tet), t_( t), f_(f) {}
+
+    value_type operator() (const BaryCoordCL& b) const { return f_( mapper_( b), t_); }
+};
+
 
 /// \brief Extends/Interpolates P1 function on regular child to P1 function on parent.
 ///
@@ -351,6 +388,55 @@ void ExtendP1onChild( const LocalP2CL<T>& isoP2, int child, LocalP2CL<T>& P1onPa
 // ===================================
 //        Quadrature formulas
 // ===================================
+/// \brief Contains the nodes and weights of a positive quadrature rule on the reference tetrahedron. It uses 5 nodes an is exact up to degree 2.
+///
+/// The data is initialized exactly once on program-startup by the global object in num/discretize.cpp.
+class Quad2DataCL
+{
+  public:
+    Quad2DataCL ();
+
+    enum { NumNodesC= 5 };
+
+    static BaryCoordCL  Node[NumNodesC]; ///< quadrature nodes
+    static const double Wght[2];         ///< quadrature weights
+    static const double Weight[NumNodesC];///< quadrature weight for each node
+
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
+};
+
+///\brief Weights to integrate the product \f$f*\phi_i\f$, where \f$\phi_i\f$ is a P1-basis-function, exactly up to degree 2 of f with the quadrature points of Quad2DataCL
+/// Use with quad( f, absdet, Quad2Data_Mul_P2_CL(), i).
+class Quad2Data_Mul_P1_CL
+{
+  public:
+    enum { NumNodesC= Quad2DataCL::NumNodesC };
+
+  private:
+    static const double weights_[4][NumNodesC];
+
+  public:
+    const double* weights( Uint i) const { return weights_[i]; }
+};
+
+///\brief Weights to integrate the product \f$f*\phi_i\f$, where \f$\phi_i\f$ is a P2-basis-function, exactly up to degree 2 of f with the quadrature points of Quad2DataCL
+/// Use with quad( f, absdet, Quad2Data_Mul_P2_CL(), i).
+class Quad2Data_Mul_P2_CL
+{
+  public:
+    enum { NumNodesC= Quad2DataCL::NumNodesC };
+
+  private:
+    static const double weights_[10][NumNodesC];
+
+  public:
+    const double* weights( Uint i) const { return weights_[i]; }
+};
+
 template<class T=double>
 class Quad2CL: public GridFunctionCL<T>
 {
@@ -359,13 +445,8 @@ class Quad2CL: public GridFunctionCL<T>
     typedef typename base_type::value_type value_type;
     typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
-    enum { NumNodesC= 5 };
-
     static const double Node[5][4]; // Stuetzstellen (NumNodesC*4 doubles)
     static const double Wght[5];    // Gewichte      (NumNodesC   doubles)
-
-    static inline BaryCoordCL // Das kopiert leider.
-    GetNode( Uint i) { return Node[i]; }
 
     /// \param M contains the barycentric coordinates of a tetrahedron;
     /// \param p array to be used for the quadrature points for this tetrahedron.
@@ -377,8 +458,8 @@ class Quad2CL: public GridFunctionCL<T>
     typedef Quad2CL<T> self_;
 
   public:
-    Quad2CL(): base_type( value_type(), NumNodesC) {}
-    Quad2CL(const value_type& t): base_type( t, NumNodesC) {}
+    Quad2CL(): base_type( value_type(), Quad2DataCL::NumNodesC) {}
+    Quad2CL(const value_type& t): base_type( t, Quad2DataCL::NumNodesC) {}
 
     Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad2CL(const LocalP2CL<value_type>&);
@@ -406,7 +487,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     T quad (double absdet) const
     {
         value_type sum= this->sum()/120.;
-        return (sum + 0.125*(*this)[NumNodesC-1])*absdet;
+        return (sum + 0.125*(*this)[Quad2DataCL::NumNodesC-1])*absdet;
     }
 
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
@@ -448,6 +529,7 @@ class Quad3DataCL
 
     static BaryCoordCL           Node[NumNodesC]; ///< quadrature nodes
     static const double          Wght[2];         ///< quadrature weights
+    static const double          Weight[NumNodesC];///< quadrature weight for each node
     static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
 
     /// \param M contains the barycentric coordinates of a tetrahedron;
@@ -531,6 +613,7 @@ class Quad5DataCL
 
     static BaryCoordCL           Node[NumNodesC]; ///< quadrature nodes
     static const double          Wght[4];         ///< quadrature weights
+    static const double          Weight[NumNodesC];///< quadrature weight for each node
     static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
 
     /// \param M contains the barycentric coordinates of a tetrahedron;
@@ -612,13 +695,16 @@ class Quad5_2DDataCL
 
     enum { NumNodesC= 7 };
 
-    static Point3DCL           Node[NumNodesC]; ///< quadrature nodes
-    static const double        Wght[3];         ///< quadrature weights
+    static Point3DCL           Node[NumNodesC];   ///< quadrature nodes
+    static const double        Wght[3];           ///< quadrature weights
+    static const double        Weight[NumNodesC]; ///< quadrature weights for each node
 
     /// Calculates the barycentric coordinates of the quadrature points
     /// of the triangle given by the 1st argument with respect to the
     /// tetrahedron and stores them in the 2nd argument.
-    static void SetInterface (const BaryCoordCL* const, BaryCoordCL*);
+    /// RAIterT is a random-access-iterator to a sequence of BaryCoordCL
+    template <class RAIterT>
+    static void SetInterface (const BaryCoordCL* const, RAIterT);
 };
 
 template<class T=double>
