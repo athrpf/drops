@@ -27,21 +27,12 @@
 #include "num/quadrature.h"
 #include "misc/container.h"
 #include "num/discretize.h"
+#include "num/lattice-eval.h"
 #include "geom/multigrid.h"
 
 #include <iostream>
 #include <sstream>
 #include <tr1/unordered_map>
-
-namespace DROPS {
-
-// GridFunDomainT: const TetraCL* tetra () const (may return 0); iterator (ueber BaryCoordCL) vertex_begin(), vertex_end()
-// TetraSubTriangCL + tetra_begin(), tetra_end()
-// PartitionedTetraSubTriangCL + tetra_begin() und tetra_end() haben ein default enum-arg : {AllTetra, PosTetra, NegTetra}
-// TetraSurfacePatchCL: GridFunDomainT + triangle_begin(), triangle_end()
-// template <class GridFunT, class GridFunDomainT, class ResultContT> Evaluate (ResultContT& r, GridFunT& f, const GridFunDomainT& dom) { EvaluatorCL<GridFunT, GridFunDomainT>::evaluate( r, f, dom); }
-
-} // end of namespace DROPS
 
 
 void test_tetra_cut ()
@@ -124,28 +115,14 @@ inline double sphere_instat (const DROPS::Point3DCL& p, double)
     return sphere( p);
 }
 
-void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& lat, double (*f)(const DROPS::Point3DCL& p))
-{
-    for (DROPS::PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it) {
-        dest[it - lat.vertex_begin()]= f( DROPS::MakePoint3D( it[0][1], it[0][2], it[0][3]));
-    }
-}
-
-void evaluate (DROPS::GridFunctionCL<>& dest, const DROPS::PrincipalLatticeCL& lat, double (*f)(const DROPS::Point3DCL& p), const DROPS::TetraCL& t)
-{
-    for (DROPS::PrincipalLatticeCL::const_vertex_iterator it= lat.vertex_begin(), end= lat.vertex_end(); it != end; ++it) {
-        dest[it - lat.vertex_begin()]= f(  it[0][0]*t.GetVertex( 0)->GetCoord()
-                                         + it[0][1]*t.GetVertex( 1)->GetCoord()
-                                         + it[0][2]*t.GetVertex( 2)->GetCoord()
-                                         + it[0][3]*t.GetVertex( 3)->GetCoord());
-    }
-}
-
 void test_sphere_cut ()
 {
+    DROPS::TetraBuilderCL tetrabuilder( 0);
+    DROPS::MultiGridCL mg( tetrabuilder);
+
     const DROPS::PrincipalLatticeCL& lat= DROPS::PrincipalLatticeCL::instance( 10);
     DROPS::GridFunctionCL<> ls( lat.vertex_size());
-    evaluate( ls, lat, &sphere);
+    evaluate_on_vertexes( &sphere_instat, *mg.GetAllTetraBegin(), lat, 0., Addr( ls));
     DROPS::TetraPartitionCL tet;
     tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( 10, ls);
     std::ostringstream name;
@@ -186,7 +163,7 @@ void test_sphere_integral ()
     DROPS::QuadDomainCL qdom;
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
-        evaluate( ls, lat, &sphere, *it);
+        evaluate_on_vertexes( sphere_instat, *it, lat, 0., Addr( ls));
         // tet.make_partition<DROPS::UnorderedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         // tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         tet.make_partition<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
@@ -255,7 +232,7 @@ void test_sphere_surface_integral ()
     DROPS::QuadDomain2DCL qdom;
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
-        evaluate( ls, lat, &sphere, *it);
+        evaluate_on_vertexes( &sphere_instat, *it, lat, 0., Addr( ls));
         patch.make_patch<DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
         DROPS::make_CompositeQuad5Domain2D( qdom, patch, *it);
         DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
@@ -300,8 +277,8 @@ int main()
         // test_principal_lattice();
         // test_sphere_cut();
         // test_sphere_integral();
-        test_extrapolated_sphere_integral();
-        // test_sphere_surface_integral();
+        // test_extrapolated_sphere_integral();
+        test_sphere_surface_integral();
         // test_extrapolated_sphere_surface_integral();
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }

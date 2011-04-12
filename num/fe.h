@@ -462,6 +462,13 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 };
 
 
+template <class T>
+  class LocalP1CL; ///< forward declaration for typedef
+
+template <class T>
+  class LocalP2CL; ///< forward declaration for typedef
+
+
 //**************************************************************************
 // Class:   P1EvalCL                                                       *
 // Template Parameter:                                                     *
@@ -501,6 +508,8 @@ public:
     typedef P1EvalCL<Data, _BndData, _VD> _self;
     typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
+
+    typedef LocalP1CL<DataT> LocalFET;
 
 protected:
     // numerical data
@@ -731,6 +740,8 @@ public:
     typedef P2EvalCL<Data, _BndData, _VD> _self;
     typedef P2EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P2EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
+
+    typedef LocalP2CL<DataT> LocalFET;
 
 protected:
     // numerical data

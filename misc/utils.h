@@ -642,6 +642,22 @@ class SequenceTraitCL<std::valarray<T> >
     static const_iterator const_begin (const container_type& c) { return Addr( c); }
 };
 
+template <class T>
+  class GridFunctionCL; ///< forward declaration
+
+template <class T>
+class SequenceTraitCL<GridFunctionCL<T> >
+{
+  public:
+    typedef GridFunctionCL<T> container_type;
+
+    typedef       T*       iterator;
+    typedef const T* const_iterator;
+
+    static       iterator       begin (container_type& c)       { return Addr( c); }
+    static const_iterator const_begin (const container_type& c) { return Addr( c); }
+};
+
 template <class T, size_t S>
 class SequenceTraitCL<T[S]>
 {

@@ -355,6 +355,27 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
     inline value_type operator()(const BaryCoordCL&) const;
 };
 
+///\brief Evaluates a function expecting world-coordinates and time as arguments in barycentric coordinates on a tetra.
+/// This gives the function the interface of the LocalFE-classes.
+template <class T>
+class WorldCoordFunctionAsLocalFECL
+{
+  public:
+    typedef T (*fun_type)(const Point3DCL&, double);
+    typedef T value_type;
+
+  private:
+    Bary2WorldCoordCL mapper_;
+    double t_;
+    fun_type f_;
+
+  public:
+    WorldCoordFunctionAsLocalFECL (const TetraCL& tet, double t, fun_type f)
+        : mapper_( tet), t_( t), f_(f) {}
+
+    value_type operator() (const BaryCoordCL& b) const { return f_( mapper_( b), t_); }
+};
+
 
 /// \brief Extends/Interpolates P1 function on regular child to P1 function on parent.
 ///
