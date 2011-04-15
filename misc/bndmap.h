@@ -47,6 +47,8 @@ typedef SingletonMapCL<DROPS::instat_vector_fun_ptr> InVecMap;
 typedef SingletonMapCL<DROPS::instat_scalar_fun_ptr> InScaMap;
 typedef SingletonMapCL<DROPS::scalar_fun_ptr> ScaMap;
 typedef SingletonMapCL<DROPS::match_fun> MatchMap;
+typedef SingletonMapCL<DROPS::instat_matrix_fun_ptr> InMatMap;
+
 
 Point3DCL TestFunction(const Point3DCL& , double);
 
@@ -67,6 +69,12 @@ class RegisterMatchingFunction
 {
   public:
     RegisterMatchingFunction(std::string, match_fun);
+};
+
+class RegisterMatrixFunction
+{
+  public:
+    RegisterMatrixFunction(std::string, instat_matrix_fun_ptr);
 };
 
 } //end of namespace DROPS

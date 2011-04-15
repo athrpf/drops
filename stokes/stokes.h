@@ -134,10 +134,10 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     /// \brief  Check system and computed solution
     void GetDiscError (instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t= 0.0) const;
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
-    // XXX: merge stationary and instationary version
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*,
-                       instat_vector_fun_ptr, instat_scalar_fun_ptr, double t) const;
+    //void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
+    void CheckSolution_merge(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, instat_matrix_fun_ptr, instat_scalar_fun_ptr, bool) const;
+    //void CheckSolution(const VelVecDescCL*, const VecDescCL*,
+    //                   instat_vector_fun_ptr, instat_scalar_fun_ptr, double t) const;
 
     /// \brief  estimation a la Verfuerth
     static double ResidualErrEstimator(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double t=0.0);

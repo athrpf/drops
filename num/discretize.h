@@ -42,6 +42,7 @@ typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);
 typedef bool      (*match_fun)        (const Point3DCL&, const Point3DCL&);
 
 typedef double    (*SmoothFunT)           (double,double);
+typedef SMatrixCL<3, 3> (*instat_matrix_fun_ptr) (const Point3DCL&, double);
 
 
 // SmoothedJumpCL for jumping coefficients

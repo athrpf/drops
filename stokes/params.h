@@ -85,7 +85,8 @@ class ParamMiscCL : public virtual ParamBaseCL
     double      misc_Omega;                            ///< damping factor for SSOR
     double      misc_Tau;                              ///< factor for mass matrix in Uzawa method
     int         misc_ModifyGrid;
-      //@}
+    double      misc_MarkLower;						   ///< range from 0 to the maximum value of Y coordinate, mark all tetrahedron (y<MarkLower) for further refinement
+  //@}
 
   public:
       ParamMiscCL()                             { RegisterParams(); }
@@ -93,15 +94,38 @@ class ParamMiscCL : public virtual ParamBaseCL
 
 };
 
+/// \brief Parameter class for Stokes coefficents
+class ParamStokesCoeffCL : public virtual ParamBaseCL
+{
+  protected:
+	void RegisterParams();
+
+  public:
+  /// \name StokesCoeff
+  //@{
+    std::string    		stc_Reaction;
+    std::string    		stc_Source;
+    std::string    		stc_Solution_Vel;
+    std::string    		stc_Solution_DVel;
+    std::string    		stc_Solution_Pr;
+
+  //@}
+
+  public:
+      ParamStokesCoeffCL()                             { RegisterParams(); }
+      ParamStokesCoeffCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+
+};
+
 /// \brief Parameter class for the poisson case
 class ParamStokesProblemCL:
 	public ParamStokesCL,
-	public ParamNavStokesCL,
 	public ParamEnsightCL,
 	public ParamTimeDiscCL,
 	public ParamDomainCondCL,
 	public ParamAdaptRefCL,
 	public ParamMiscCL,
+	public ParamStokesCoeffCL,
 	public ParamStokesExperimentalDataCL,
 	public ParamStokesMaterialDataCL,
 	public ParamErrCL

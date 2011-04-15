@@ -811,7 +811,7 @@ class StokesSolverFactoryObsoleteHelperCL
     bool PrMGUsed  ( const ParamsT& C) const
     {
         const int SPc = (C.stk_StokesMethod / 1000) % 10;
-        return SPc == 1;
+        return (SPc == 1);
     }
 };
 
@@ -846,7 +846,7 @@ class StokesSolverFactoryObsoleteCL : public StokesSolverFactoryBaseCL<StokesT, 
 
     //PMinres
     typedef SolverAsPreCL<PCG_SsorCL> PPcT;
-    typedef BlockPreCL<PPcT, ISPreCL> BlockDiagPCGPreCL;
+    typedef BlockPreCL<PPcT, ISPreCL,DiagSpdBlockPreCL> BlockDiagPCGPreCL;
     typedef PMResSolverCL<PLanczosONBCL<VectorCL, BlockDiagPCGPreCL> > PMinresSP_DiagPCGT;
 
     PCG_SsorCL PPA_;
@@ -876,7 +876,7 @@ class StokesSolverFactoryObsoleteCL : public StokesSolverFactoryBaseCL<StokesT, 
 
     //PMinresSP_FullMG
     typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
-    typedef BlockPreCL<APcT, ISMGPreCL> PcT;
+    typedef BlockPreCL<APcT, ISMGPreCL,DiagSpdBlockPreCL> PcT;
     typedef PMResSolverCL<PLanczosONBCL<DROPS::VectorCL,PcT> > PMinresSP_FullMG;
 
     PMinresSP_FullMG pminresMGsolver_;
