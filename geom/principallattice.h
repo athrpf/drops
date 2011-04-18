@@ -1,4 +1,4 @@
-/// \file principallattice.cpp
+/// \file principallattice.h
 /// \brief The principal lattice on the reference tetra obtained by slicing with planes parallel to the faces.
 /// \author LNM RWTH Aachen: Joerg Grande; SC RWTH Aachen:
 

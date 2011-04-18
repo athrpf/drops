@@ -358,8 +358,8 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
 ///\brief Evaluates a function expecting world-coordinates and time as arguments in barycentric coordinates on a tetra.
 /// This gives the function the interface of the LocalFE-classes.
-template <class T>
-class WorldCoordFunctionAsLocalFECL
+template <class T= double>
+class BaryEvalCL
 {
   public:
     typedef T (*fun_type)(const Point3DCL&, double);
@@ -371,7 +371,7 @@ class WorldCoordFunctionAsLocalFECL
     fun_type f_;
 
   public:
-    WorldCoordFunctionAsLocalFECL (const TetraCL& tet, double t, fun_type f)
+    BaryEvalCL (const TetraCL& tet, double t, fun_type f)
         : mapper_( tet), t_( t), f_(f) {}
 
     value_type operator() (const BaryCoordCL& b) const { return f_( mapper_( b), t_); }
@@ -411,7 +411,7 @@ class Quad2DataCL
 };
 
 ///\brief Weights to integrate the product \f$f*\phi_i\f$, where \f$\phi_i\f$ is a P1-basis-function, exactly up to degree 2 of f with the quadrature points of Quad2DataCL
-/// Use with quad( f, absdet, Quad2Data_Mul_P2_CL(), i).
+/// Use with quad( f, absdet, Quad2Data_Mul_P1_CL(), i).
 class Quad2Data_Mul_P1_CL
 {
   public:
