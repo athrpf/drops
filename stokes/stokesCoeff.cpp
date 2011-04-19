@@ -202,12 +202,21 @@ static DROPS::RegisterScalarFunction regin3scaprsolution("PrSol_FSdrops_instat3"
 }//end of namespace
 
 
-// File : drcavad.cpp
-namespace drcavad{
+// File : drivcav.cpp
+namespace drivcav{
 
-DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
+DROPS::SVectorCL<3> Inflow1( const DROPS::Point3DCL& , double)
 {
-	const double st = 0.1;
+	DROPS::SVectorCL<3> ret(0.);
+	ret[0]= 1.;
+	return ret;
+}
+
+static DROPS::RegisterVectorFunction reginflow1("Inflow_drivcav_v1",Inflow1 );
+
+DROPS::SVectorCL<3> Inflow2( const DROPS::Point3DCL& p, double)
+{
+    const double st = 0.1;
     const DROPS::SVectorCL<3> ret= DROPS::std_basis<3>(1);
     const double d0= std::fabs(p[0]-.5);
     const double d1= std::fabs(p[1]-.5);
@@ -215,21 +224,7 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
     return (.5-st<m) ? ((.5-m)/st)*ret : ret;
 }
 
-static DROPS::RegisterVectorFunction reginflow("Inflow_drcavad",Inflow );
-
-}//end of namespace
-
-// File : drivcav.cpp
-namespace drivcav{
-
-DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& , double)
-{
-	DROPS::SVectorCL<3> ret(0.);
-	ret[0]= 1.;
-	return ret;
-}
-
-static DROPS::RegisterVectorFunction reginflow("Inflow_drivcav",Inflow );
+static DROPS::RegisterVectorFunction reginflow2("Inflow_drivcav_v2",Inflow2 );
 
 }//end of namespace
 
