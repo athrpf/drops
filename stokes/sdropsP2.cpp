@@ -552,7 +552,9 @@ void Strategy( StokesProblemT& Stokes)
     }
 
     // Solve the linear equation system
-    Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+    if( C_Stokes.tm_NumSteps != 0){
+        Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+    }
 
     Ensight6OutCL  ens(C_Stokes.ens_EnsCase+".case", C_Stokes.tm_NumSteps+1, C_Stokes.ens_Binary, C_Stokes.ens_MasterOut);
     const std::string filename= C_Stokes.ens_EnsDir + "/" + C_Stokes.ens_EnsCase;
