@@ -252,6 +252,33 @@ outer_product(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL
     return ret;
 }
 
+inline GridFunctionCL< SMatrixCL<3,3> >
+outer_product (const Point3DCL& a, const GridFunctionCL<Point3DCL>& b)
+{
+    GridFunctionCL< SMatrixCL<3,3> > ret( b.size());
+    for (size_t i= 0; i<b.size(); ++i)
+        ret[i]= outer_product( a, b[i]);
+    return ret;
+}
+
+inline GridFunctionCL<>
+frobenius_norm_sq (const GridFunctionCL< SMatrixCL<3,3> >& a)
+{
+    GridFunctionCL<> ret( double(), a.size());
+    for (size_t i= 0; i<a.size(); ++i)
+        ret[i]= frobenius_norm_sq( a[i]);
+    return ret;
+}
+
+inline GridFunctionCL<>
+trace (const GridFunctionCL< SMatrixCL<3,3> >& a)
+{
+    GridFunctionCL<> ret( double(), a.size());
+    for (size_t i= 0; i<a.size(); ++i)
+        ret[i]= trace( a[i]);
+    return ret;
+}
+
 //**************************************************************************
 // Class:   LocalP1CL                                                      *
 // Template Parameter:                                                     *

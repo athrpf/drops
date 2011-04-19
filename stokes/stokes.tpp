@@ -892,10 +892,10 @@ void StokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVe
     }
 }
 
-/*
-// merge CheckSolution
+
+// CheckSolution
 template <class Coeff>
-void StokesP2P1CL<Coeff>::CheckSolution_merge(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
+void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
     instat_vector_fun_ptr LsgVel, instat_matrix_fun_ptr DLsgVel, instat_scalar_fun_ptr LsgPr, bool is_stat) const
 {
     double t = lsgpr->t;
@@ -945,8 +945,8 @@ void StokesP2P1CL<Coeff>::CheckSolution_merge(const VelVecDescCL* lsgvel, const 
     {
         const double volT= sit->GetVolume();
         LocalP1CL<> loc_pr( *sit, make_P1Eval(MG_,BndData_.Pr,*lsgpr));
-	    q5_pr.assign(loc_pr);
-	    q5_pr_exact.assign(*sit,LsgPr,t);
+        q5_pr.assign(loc_pr);
+        q5_pr_exact.assign(*sit,LsgPr,t);
         MW_pr+= Quad5CL<> (q5_pr-q5_pr_exact).quad(6.*volT);
         vol+= volT;
     }
@@ -959,7 +959,7 @@ void StokesP2P1CL<Coeff>::CheckSolution_merge(const VelVecDescCL* lsgvel, const 
         std::cout << "\n  mean value of exact pressure - discrete pressure is " << c_pr << ", volume of cube is " << vol << std::endl;
 
     // Some norms of velocities: u_h - u
-    // Uint numpts =15; // number of nodes for Quad5CL rule is 15 (see discretize.h Quad5_DataCL NumNodesC =15)
+    // number of nodes for Quad5CL rule is 15 (see discretize.h Quad5_DataCL NumNodesC =15)
     double Frob_Dvel(0.0), L2_vel(0.0);
     double L2_pr(0.0), H1_vel(0.0);
 
@@ -967,8 +967,7 @@ void StokesP2P1CL<Coeff>::CheckSolution_merge(const VelVecDescCL* lsgvel, const 
     Quad5CL<Point3DCL> Grad[10], GradRef[10];
     Quad5CL<SMatrixCL<3,3> > q5_dvel, q5_dvel_exact;
     P2DiscCL::GetGradientsOnRef( GradRef);
-    SMatrixCL<3,3> dlsgvel;
-    for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
         send= const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
          GetTrafoTr(T,det,*sit);
@@ -981,16 +980,17 @@ void StokesP2P1CL<Coeff>::CheckSolution_merge(const VelVecDescCL* lsgvel, const 
          q5_vel_exact.assign(*sit,LsgVel,t);
          q5_dvel_exact.assign(*sit,DLsgVel,t);
          Quad5CL<Point3DCL> q5_vel_diff( q5_vel-q5_vel_exact);
-	     L2_vel += Quad5CL<> (dot(q5_vel_diff,q5_vel_diff)).quad(absdet);
+         L2_vel += Quad5CL<> (dot(q5_vel_diff,q5_vel_diff)).quad(absdet);
 
          L2_pr  += Quad5CL<> (std::pow(q5_pr-q5_pr_exact-c_pr,2)).quad(absdet);
 
 	 P2DiscCL::GetGradients( Grad, GradRef, T);
+	 q5_dvel= SMatrixCL<3,3>();
 	 for (int i=0; i<10; i++)
 	 {
-         q5_dvel += outer_product(loc_vel[i],Grad[i]);
-     }
-     Quad5CL< SMatrixCL<3,3> > q5_dvel_diff( q5_dvel-q5_dvel_exact);
+             q5_dvel += outer_product(loc_vel[i],Grad[i]);
+         }
+         Quad5CL< SMatrixCL<3,3> > q5_dvel_diff( q5_dvel-q5_dvel_exact);
 	 Frob_Dvel += Quad5CL<> (frobenius_norm_sq(q5_dvel_diff)).quad(absdet);
 	 L2_div += Quad5CL<> (trace(q5_dvel)).quad(absdet);
      }
@@ -1005,8 +1005,10 @@ void StokesP2P1CL<Coeff>::CheckSolution_merge(const VelVecDescCL* lsgvel, const 
                   << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << Frob_Dvel
                   << ", || p_h - p ||_L2 = " << L2_pr
                   << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
+
 }
-*/
+
+
 #ifndef _PAR
 template <class Coeff>
   double
