@@ -96,6 +96,9 @@ class PrincipalLatticeCL
         { return is_memoized( n) ? read_cache( n) : memoize( n); }
 };
 
+extern const size_t p1_dof_on_lattice_2[4];  ///< For vertex i (in 0..3) as counted in topo.h, p1_dof_on_lattice_2[i] is the number of the vertex in the principal lattice of order 2.
+extern const size_t p2_dof_on_lattice_2[10]; ///< For a P2-dof i (numbered from 0..9: vertexes, then edges) as counted in topo.h, p2_dof_on_lattice_2[i] is the number of the vertex in the principal lattice of order 2.
+
 } // end of namespace DROPS
 
 #endif
