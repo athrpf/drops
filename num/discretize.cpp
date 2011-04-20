@@ -81,10 +81,10 @@ const double Quad2Data_Mul_P2_CL::weights_[10][NumNodesC]= {
 };
 
 const double Quad2Data_Mul_P1_CL::weights_[4][NumNodesC]= {
-    { 1./120., 0., 0., 0., -1./30. },
-    { 0., 1./120., 0., 0., -1./30. },
-    { 0., 0., 1./120., 0., -1./30. },
-    { 0., 0., 0., 1./120., -1./30. }
+    { 1./120., 0., 0., 0., 1./30. },
+    { 0., 1./120., 0., 0., 1./30. },
+    { 0., 0., 1./120., 0., 1./30. },
+    { 0., 0., 0., 1./120., 1./30. }
 };
 
 ///\brief special implementation to copy the first 4 nodes.
