@@ -44,15 +44,6 @@ DROPS::Point3DCL Source( const DROPS::Point3DCL&, double)
     return ret; 
 }
 
-static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&, double)
-{
-   return DROPS::SVectorCL<3>(0.);
-}
-
-static double LsgPr(const DROPS::Point3DCL&, double)
-{
-    return 0;
-}
 static const double st=0.1;
 static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
 {
