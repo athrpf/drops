@@ -913,7 +913,7 @@ StokesSolverFactoryObsoleteCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT
       PPA_( ssor_, 8, 1e-20), PA_( PPA_), PS_( Stokes_.prM.Data.GetFinest(), Stokes_.prM.Data.GetFinest(), kA_, kM_, C_.misc_Omega),
       pre_( PA_, PS_), pq_( pre_), pminressolver_( pq_, C_.stk_InnerIter, C.stk_OuterTol),
       smoother_(1.0), coarsesolver_( ssorom_, 500, C_.stk_InnerTol),
-      MGsolver_( smoother_, coarsesolver_, C_.stk_InnerIter, ( C_.stk_StokesMethod == 500101)?-1:C_.stk_InnerTol),
+      MGsolver_( smoother_, coarsesolver_, C_.stk_InnerIter, ( C_.stk_StokesMethod == 501101)?-1:C_.stk_InnerTol),
       MGpc_( MGsolver_), ismgpcp_( Stokes_.prA.Data, Stokes_.prM.Data, kA_, kM_),
       PCGMGPresolver_( ismgpcp_, C_.stk_OuterIter, C_.stk_OuterTol),
       ispcp_( Stokes_.prA.Data, Stokes_.prM.Data, kA_, kM_), PCGPresolver_( ispcp_, C_.stk_OuterIter, C_.stk_OuterTol),

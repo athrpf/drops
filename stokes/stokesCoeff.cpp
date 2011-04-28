@@ -228,8 +228,8 @@ static DROPS::RegisterVectorFunction reginflow2("Inflow_drivcav_v2",Inflow2 );
 
 }//end of namespace
 
-// File : isdrops.cpp
-namespace isdrops{
+// File : isstokes
+namespace isstokes{
 
 DROPS::Point3DCL Source( const DROPS::Point3DCL& p, double t)
 {
@@ -256,9 +256,9 @@ double PrSolution( const DROPS::Point3DCL& p, double t)
 	        + std::sin( 1.)*std::pow( std::cos( 1.), 2))*t*t; // (...)==0.1778213062
 }
 
-static DROPS::RegisterVectorFunction regvecsource("Source_isdrops",     Source );
-static DROPS::RegisterVectorFunction regvecvelsolution("VelSol_isdrops",   VelSolution );
-static DROPS::RegisterScalarFunction regscaprsolution("PrSol_isdrops",      PrSolution);
+static DROPS::RegisterVectorFunction regvecsource("Source_isstokes",      Source );
+static DROPS::RegisterVectorFunction regvecvelsolution("VelSol_isstokes", VelSolution );
+static DROPS::RegisterScalarFunction regscaprsolution("PrSol_isstokes",   PrSolution);
 
 }// end of namespace
 

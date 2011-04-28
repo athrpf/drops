@@ -978,7 +978,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
          q5_pr_exact.assign(*sit,LsgPr,t);
          q5_vel.assign(loc_vel);
          q5_vel_exact.assign(*sit,LsgVel,t);
-         q5_dvel_exact.assign(*sit,DLsgVel,t);
+         if( DLsgVel != NULL)
+             q5_dvel_exact.assign(*sit,DLsgVel,t);
          Quad5CL<Point3DCL> q5_vel_diff( q5_vel-q5_vel_exact);
          L2_vel += Quad5CL<> (dot(q5_vel_diff,q5_vel_diff)).quad(absdet);
 
@@ -990,21 +991,32 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 	 {
              q5_dvel += outer_product(loc_vel[i],Grad[i]);
          }
-         Quad5CL< SMatrixCL<3,3> > q5_dvel_diff( q5_dvel-q5_dvel_exact);
-	 Frob_Dvel += Quad5CL<> (frobenius_norm_sq(q5_dvel_diff)).quad(absdet);
-	 L2_div += Quad5CL<> (trace(q5_dvel)).quad(absdet);
+         if( DLsgVel != NULL)
+	 {
+	     Quad5CL< SMatrixCL<3,3> > q5_dvel_diff( q5_dvel-q5_dvel_exact);
+	     Frob_Dvel += Quad5CL<> (frobenius_norm_sq(q5_dvel_diff)).quad(absdet);
+	     L2_div += Quad5CL<> (trace(q5_dvel)).quad(absdet);
+	 }
+         
      }
      L2_pr = std::sqrt(L2_pr);
-     H1_vel = std::sqrt(L2_vel+Frob_Dvel);
-     L2_vel = std::sqrt(L2_vel);
-     Frob_Dvel = std::sqrt(Frob_Dvel);
-     L2_div = std::sqrt(std::fabs(L2_div));
-
+     if( DLsgVel != NULL)
+     {
+         H1_vel = std::sqrt(L2_vel+Frob_Dvel); //L2_vel is squared here, Frob_Dvel is squared.
+         Frob_Dvel = std::sqrt(Frob_Dvel);     //Frob_Dvel is the true value.
+	 L2_div = std::sqrt(std::fabs(L2_div));
+     }
+     L2_vel = std::sqrt(L2_vel);               //L2_vel is the true value.  
+     
      IF_MASTER
-        std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << H1_vel
-                  << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << Frob_Dvel
-                  << ", || p_h - p ||_L2 = " << L2_pr
-                  << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
+        if( DLsgVel != NULL)
+            std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << H1_vel
+                      << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << Frob_Dvel
+                      << ", || p_h - p ||_L2 = " << L2_pr
+                      << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
+	else
+	    std::cout << ", || u_h - u ||_L2 = " <<  L2_vel 
+                      << ", || p_h - p ||_L2 = " << L2_pr << '\n' << std::endl;
 
 }
 
