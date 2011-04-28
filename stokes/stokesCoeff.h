@@ -61,11 +61,20 @@ class StokesFlowCoeffCL
         q = scamap[C.stc_Reaction];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
         f = vecmap[C.stc_Source];
-        LsgVel = vecmap[C.stc_Solution_Vel];
+        if( C.stc_Solution_Vel.compare("None")!=0)
+            LsgVel = vecmap[C.stc_Solution_Vel];
+        else
+            LsgVel = NULL;
         DROPS::InMatMap & matmap = DROPS::InMatMap::getInstance();
-        DLsgVel = matmap[C.stc_Solution_DVel];
+        if( C.stc_Solution_DVel.compare("None")!=0)
+            DLsgVel = matmap[C.stc_Solution_DVel];
+        else
+            DLsgVel = NULL;
         DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
-        LsgPr = inscamap[C.stc_Solution_Pr];
+        if( C.stc_Solution_Pr.compare("None")!=0)
+            LsgPr = inscamap[C.stc_Solution_Pr];
+        else
+            LsgPr = NULL;
     }
 
 

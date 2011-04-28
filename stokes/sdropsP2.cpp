@@ -410,8 +410,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         std::cout << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
         std::cout << "Solver: "<<timer.GetTime()<<" seconds.\n";
         if(C_Stokes.stc_Solution_Vel.compare("None")!=0)  // check whether solution is given
-          //todo: validate this method!
-          //Stokes.CheckSolution_merge ( v1, p1, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, true);
+          Stokes.CheckSolution( v1, p1, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, true);
 
         if( step==0 && C_Stokes.err_DoErrorEstimate )
         {
@@ -552,7 +551,9 @@ void Strategy( StokesProblemT& Stokes)
     }
 
     // Solve the linear equation system
-    Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+    if( C_Stokes.tm_NumSteps != 0){
+        Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+    }
 
     Ensight6OutCL  ens(C_Stokes.ens_EnsCase+".case", C_Stokes.tm_NumSteps+1, C_Stokes.ens_Binary, C_Stokes.ens_MasterOut);
     const std::string filename= C_Stokes.ens_EnsDir + "/" + C_Stokes.ens_EnsCase;
@@ -582,8 +583,7 @@ void Strategy( StokesProblemT& Stokes)
     if(C_Stokes.stc_Solution_Vel.compare("None")!=0 && C_Stokes.tm_NumSteps != 0)  // check whether solution is given
     {
         Stokes.SetupSystem( &Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c, Stokes.v.t);
-        //todo: Validate this method!
-        //Stokes.CheckSolution_merge ( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
+        Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
     }
 
 

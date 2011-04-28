@@ -74,6 +74,7 @@ class VTKOutCL
 
     VectorBaseCL<float>   coords_;                  ///< Coordinates of the points
     TetraVecT             tetras_;                  ///< Connectivities (tetras)
+    Uint                  lvl_;                      ///< Triangulation Level 
     Uint                  numPoints_;               ///< number of points (only accessible by master process)
     Uint                  numTetras_;               ///< number of tetras (only accessible by master process)
     Uint                  numLocPoints_;            ///< number of local exclusive verts and edges
@@ -129,7 +130,7 @@ class VTKOutCL
   public:
     /// \brief Constructor of this class
     VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
-             const std::string& filename, bool binary);
+             const std::string& filename, bool binary, Uint lvl=-1);
     ~VTKOutCL();
 
     /// \brief Register a variable or the geometry for output with Write().
@@ -313,12 +314,12 @@ template <typename DiscScalT>
 
     // Get values on vertices
     Uint pos= 0;
-    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
+    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(lvl_); it!=mg_.GetTriangVertexEnd(lvl_); ++it){
         locData[pos++]= (float)f.val( *it);
     }
 
     // Get values on edges
-    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(lvl_); it!=mg_.GetTriangEdgeEnd(lvl_); ++it){
         locData[pos++]= (float)f.val( *it, 0.5);
     }
 }
@@ -332,14 +333,14 @@ template <typename DiscVecT>
 
     // Get values of vertices
     Uint pos= 0;
-    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
+    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(lvl_); it!=mg_.GetTriangVertexEnd(lvl_); ++it){
         const Point3DCL val= f.val( *it);
         for (int j=0; j<3; ++j)
             locData[pos++]= (float)val[j];
     }
 
     // Get values on edges
-    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(lvl_); it!=mg_.GetTriangEdgeEnd(lvl_); ++it){
         const Point3DCL val= f.val( *it, 0.5);
         for (int j=0; j<3; ++j)
             locData[pos++]= (float)val[j];

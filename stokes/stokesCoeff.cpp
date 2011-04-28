@@ -202,12 +202,21 @@ static DROPS::RegisterScalarFunction regin3scaprsolution("PrSol_FSdrops_instat3"
 }//end of namespace
 
 
-// File : drcavad.cpp
-namespace drcavad{
+// File : drivcav.cpp
+namespace drivcav{
 
-DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
+DROPS::SVectorCL<3> Inflow1( const DROPS::Point3DCL& , double)
 {
-	const double st = 0.1;
+	DROPS::SVectorCL<3> ret(0.);
+	ret[0]= 1.;
+	return ret;
+}
+
+static DROPS::RegisterVectorFunction reginflow1("Inflow_drivcav_v1",Inflow1 );
+
+DROPS::SVectorCL<3> Inflow2( const DROPS::Point3DCL& p, double)
+{
+    const double st = 0.1;
     const DROPS::SVectorCL<3> ret= DROPS::std_basis<3>(1);
     const double d0= std::fabs(p[0]-.5);
     const double d1= std::fabs(p[1]-.5);
@@ -215,26 +224,12 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
     return (.5-st<m) ? ((.5-m)/st)*ret : ret;
 }
 
-static DROPS::RegisterVectorFunction reginflow("Inflow_drcavad",Inflow );
+static DROPS::RegisterVectorFunction reginflow2("Inflow_drivcav_v2",Inflow2 );
 
 }//end of namespace
 
-// File : drivcav.cpp
-namespace drivcav{
-
-DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& , double)
-{
-	DROPS::SVectorCL<3> ret(0.);
-	ret[0]= 1.;
-	return ret;
-}
-
-static DROPS::RegisterVectorFunction reginflow("Inflow_drivcav",Inflow );
-
-}//end of namespace
-
-// File : isdrops.cpp
-namespace isdrops{
+// File : isstokes
+namespace isstokes{
 
 DROPS::Point3DCL Source( const DROPS::Point3DCL& p, double t)
 {
@@ -261,9 +256,9 @@ double PrSolution( const DROPS::Point3DCL& p, double t)
 	        + std::sin( 1.)*std::pow( std::cos( 1.), 2))*t*t; // (...)==0.1778213062
 }
 
-static DROPS::RegisterVectorFunction regvecsource("Source_isdrops",     Source );
-static DROPS::RegisterVectorFunction regvecvelsolution("VelSol_isdrops",   VelSolution );
-static DROPS::RegisterScalarFunction regscaprsolution("PrSol_isdrops",      PrSolution);
+static DROPS::RegisterVectorFunction regvecsource("Source_isstokes",      Source );
+static DROPS::RegisterVectorFunction regvecvelsolution("VelSol_isstokes", VelSolution );
+static DROPS::RegisterScalarFunction regscaprsolution("PrSol_isstokes",   PrSolution);
 
 }// end of namespace
 
