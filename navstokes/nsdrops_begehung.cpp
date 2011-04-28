@@ -30,54 +30,75 @@
 #include "navstokes/navstokes.h"
 #include <fstream>
 
+typedef double    (*instat_scalar_fun_ptr)(const DROPS::Point3DCL&, double);
+typedef DROPS::Point3DCL (*instat_vector_fun_ptr)(const DROPS::Point3DCL&, double);
 
-struct NSDrCavCL
+static double Reaction(const DROPS::Point3DCL&, double =0)
 {
-    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&, double)
-    {
-        return DROPS::SVectorCL<3>(0.);
-    }
+    return 0.0;
+}
+   
+DROPS::Point3DCL Source( const DROPS::Point3DCL&, double)
+{
+    DROPS::SVectorCL<3> ret(0.0);
+    return ret; 
+}
 
-    static double LsgPr(const DROPS::Point3DCL&, double)
-    {
-        return 0;
-    }
-    static const double st;
-    static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
-    {
-        const DROPS::SVectorCL<3> ret= 5.*DROPS::std_basis<3>(1);
-        const double d0= std::fabs(p[0]-.5);
-        const double d1= std::fabs(p[1]-.5);
-        const double m= std::max(d0, d1);
-        return (.5-st<m) ? ((.5-m)/st)*ret : ret;
-    }
+static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&, double)
+{
+   return DROPS::SVectorCL<3>(0.);
+}
 
-    static inline DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double)
+static double LsgPr(const DROPS::Point3DCL&, double)
+{
+    return 0;
+}
+static const double st=0.1;
+static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
+{
+    const DROPS::SVectorCL<3> ret= 5.*DROPS::std_basis<3>(1);
+    const double d0= std::fabs(p[0]-.5);
+    const double d1= std::fabs(p[1]-.5);
+    const double m= std::max(d0, d1);
+    return (.5-st<m) ? ((.5-m)/st)*ret : ret;
+}
+
+static inline DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double)
+{
+    return DROPS::Point3DCL(0.);
+}
+
+// q*u - nu*laplace u + (u*D)u + Dp = f
+//                           -div u = 0
+class StokesCoeffCL
+{
+  public:
+    //reaction
+    static instat_scalar_fun_ptr q;
+    //source term
+    static instat_vector_fun_ptr f;
+        
+    const double nu;
+
+    StokesCoeffCL(): nu(1.0)
     {
-    	return DROPS::Point3DCL(0.);
+       q = &Reaction,
+       f = &Source;
     }
-
-    // q*u - nu*laplace u + (u*D)u + Dp = f
-    //                           -div u = 0
-    class StokesCoeffCL
-    {
-      public:
-        static double q(const DROPS::Point3DCL&) { return 0.0; }
-        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
-            { DROPS::SVectorCL<3> ret(0.0); return ret; }
-        const double nu;
-
-        StokesCoeffCL() : nu(1.0) {}
-    };
 
 };
 
-const double NSDrCavCL::st= .1;
+instat_scalar_fun_ptr StokesCoeffCL::q;
+instat_vector_fun_ptr StokesCoeffCL::f;
 
-typedef DROPS::StokesP2P1CL<NSDrCavCL::StokesCoeffCL>
+
+
+
+// const double NSDrCavCL::st= .1;
+
+typedef DROPS::StokesP2P1CL<StokesCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
-typedef NSDrCavCL MyPdeCL;
 
 namespace DROPS // for Strategy
 {
@@ -560,9 +581,9 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::Stroem};
+        { &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &Stroem};
 
-    StokesOnBrickCL stokesprob(brick, NSDrCavCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
+    StokesOnBrickCL stokesprob(brick, StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = stokesprob.GetMG();
     DROPS::RBColorMapperCL colormap;
 
@@ -633,11 +654,11 @@ int main (int argc, char** argv)
         std::cout << "uzawa_red: " << uzawa_red << ", ";
         std::cout << "num_ref: " << num_ref << std::endl;
 
-        typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL>
+        typedef DROPS::NavierStokesP2P1CL<StokesCoeffCL>
                 NSOnBrickCL;
         typedef NSOnBrickCL MyNavierStokesCL;
 
-        MyNavierStokesCL prob(stokesprob.GetMG(), MyPdeCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
+        MyNavierStokesCL prob(stokesprob.GetMG(), StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
         DROPS::MultiGridCL& mg = prob.GetMG();
 
         StrategyNavSt(prob, num_ref, fp_tol, fp_maxiter, uzawa_red, poi_tol, poi_maxiter);

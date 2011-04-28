@@ -37,7 +37,8 @@ ns_transp: \
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../transport/transportNitsche.o \
     ../num/interfacePatch.o  ../misc/params.o ../levelset/fastmarch.o ../num/fe.o ../misc/xfem.o\
     ../out/vtkOut.o ../levelset/surfacetension.o ../geom/simplex.o ../surfactant/ifacetransp.o\
-    ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o ../levelset/coupling.o$(PAR_OBJ)
+    ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o ../levelset/coupling.o \
+    ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 

@@ -33,7 +33,7 @@ PrincipalLatticeCL::TetraContT PrincipalLatticeCL::tetra_;
 PrincipalLatticeCL::PrincipalLatticeCL (Uint n)
     : n_( n)
 {
-    vertex_.reserve( num_vertexes());
+    vertex_.reserve( vertex_size());
     // Compute vertices of the first tetra in the Kuhn-triangulation of the reference cube in rlex-order of their cartesian coordinates (x,y,z).
     for (Uint x= 0; x <= num_intervals(); ++x)
         for (Uint y= 0; y <= x; ++y)

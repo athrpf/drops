@@ -38,11 +38,11 @@ void ParamStokesExperimentalDataCL::RegisterParams()
 {
     rp_.BeginGroup("Exp");
     rp_.RegCoord(  exp_Gravity,    "Gravity");
-    rp_.RegDouble( exp_InflowVel,  "InflowVel");
-    rp_.RegDouble( exp_RadInlet,   "RadInlet");
-    rp_.RegInt(    exp_FlowDir,    "FlowDir");
-    rp_.RegDouble( exp_InflowFreq, "InflowFreq");
-    rp_.RegDouble( exp_InflowAmpl, "InflowAmpl");
+    rp_.RegDouble( exp_InflowVel,  "InflowVel",  0.0);
+    rp_.RegDouble( exp_RadInlet,   "RadInlet",   1.0);
+    rp_.RegInt(    exp_FlowDir,    "FlowDir",    1);
+    rp_.RegDouble( exp_InflowFreq, "InflowFreq", 0.0);
+    rp_.RegDouble( exp_InflowAmpl, "InflowAmpl", 0.0);
     rp_.EndGroup();
 }
 
@@ -51,7 +51,19 @@ void ParamMiscCL::RegisterParams()
 	rp_.BeginGroup("Misc");
 	rp_.RegDouble( misc_Omega,    "Omega");
 	rp_.RegDouble( misc_Tau,      "Tau");
-	rp_.RegInt( misc_ModifyGrid,  "ModifyGrid");
+	rp_.RegInt( misc_ModifyGrid,  "ModifyGrid", 0);
+	rp_.RegDouble( misc_MarkLower,"MarkLower",  0.0);
+	rp_.EndGroup();
+}
+
+void ParamStokesCoeffCL::RegisterParams()
+{
+	rp_.BeginGroup("StokesCoeff");
+	rp_.RegString( stc_Reaction,	"Reaction");
+	rp_.RegString( stc_Source,	    "Source");
+	rp_.RegString( stc_Solution_Vel,    "Solution_Vel");
+	rp_.RegString( stc_Solution_DVel,    "Solution_DVel");
+	rp_.RegString( stc_Solution_Pr, "Solution_Pr");
 	rp_.EndGroup();
 }
 

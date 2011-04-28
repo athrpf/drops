@@ -104,7 +104,7 @@ template <class Coeff>
 *****************************************************************************************************/
 
 // ToDo: Kann man auf diese haessliche Formel verzichten??
-inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
+inline double Quad( const TetraCL& s, instat_scalar_fun_ptr f, int i, int j,  double t= 0.0)
 // cubatur formula for int f(x)*phi_i*phi_j dx, exact up to degree 1
 {
     double a[5];
@@ -168,9 +168,9 @@ inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
       case 99: a[2]= a[3]= 37./17010.; a[0]= a[1]= -17./17010.; a[4]= 88./8505.; break;
       default: throw DROPSErrCL("Quad(i,j): no such shape function");
     }
-    double sum= a[4]*f(GetBaryCenter(t));
+    double sum= a[4]*f(GetBaryCenter(s),t);
     for(Uint i=0; i<4; ++i)
-        sum+= a[i]*f(t.GetVertex(i)->GetCoord());
+        sum+= a[i]*f(s.GetVertex(i)->GetCoord(),t);
     return sum;
 }
 
@@ -248,7 +248,7 @@ template <class CoeffT>
             {
                 // dot-product of the gradients
                 coup[i][j]= Coeff.nu * Quad2CL<>( dot(Grad[i], Grad[j])).quad(absdet);
-                coup[i][j]+= Quad(*sit, &CoeffT::q, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, CoeffT::q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
 
@@ -275,7 +275,7 @@ template <class CoeffT>
                 }
                 if ( vecA !=0)
                 {
-                    tmp= P2DiscCL::Quad(*sit, &CoeffT::f, i, t)*absdet;
+                    tmp= P2DiscCL::Quad(*sit, CoeffT::f, i, t)*absdet;
                     b.Data[Numb[i]]+=          tmp[0];
                     b.Data[Numb[i]+stride]+=   tmp[1];
                     b.Data[Numb[i]+2*stride]+= tmp[2];
@@ -748,7 +748,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
                         id[Numb[i]+2*stride]-= val*tmp[2];
                     }
                 }
-                tmp= P2DiscCL::Quad(*sit, &Coeff::f, i, tf)*absdet;
+                tmp= P2DiscCL::Quad(*sit, Coeff::f, i, tf)*absdet;
                 f[Numb[i]]+=          tmp[0];
                 f[Numb[i]+stride]+=   tmp[1];
                 f[Numb[i]+2*stride]+= tmp[2];
@@ -893,93 +893,61 @@ void StokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVe
 }
 
 
-
-
+// CheckSolution
 template <class Coeff>
 void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
-    instat_vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
+    instat_vector_fun_ptr LsgVel, instat_matrix_fun_ptr DLsgVel, instat_scalar_fun_ptr LsgPr, bool is_stat) const
 {
+    double t = lsgpr->t;
 #ifdef _PAR
     const ExchangeCL& exV = vel_idx.GetEx();
     const ExchangeCL& exP = pr_idx.GetEx();
 #endif
-    double mindiff=0, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel();
 
-    VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
-    VectorCL res2( B.Data*lsgvel->Data - c.Data);
-
-#ifndef _PAR
-    const double norm_res1      = norm(res1);
-    const double norm_res2      = norm(res2);
-    const double norm_sup_res_1 = supnorm(res1);
-    const double norm_sup_res_2 = supnorm(res2);
-#else
-    VectorCL res1_acc(res1);
-    VectorCL res2_acc(res2);
-    const double norm_res1      = std::sqrt(exV.ParDotAcc(res1_acc,res1));
-    const double norm_res2      = std::sqrt(exP.ParDotAcc(res2_acc,res2));
-    const double norm_sup_res_1 = ProcCL::GlobalMax(supnorm(res1_acc));
-    const double norm_sup_res_2 = ProcCL::GlobalMax(supnorm(res2_acc));
-#endif
-
-    IF_MASTER
-        std::cout << "\nChecken der Loesung..."
-                  << "\n|| Ax + BTy - F || = " << norm_res1 << ", max. " << norm_sup_res_1
-                  << "\n||       Bx - G || = " << norm_res2 << ", max. " << norm_sup_res_2
-                  << '\n' << std::endl;
-
-    const_DiscPrSolCL  pr(lsgpr, &BndData_.Pr, &MG_);
-    const_DiscVelSolCL  vel(lsgvel, &BndData_.Vel, &MG_);
-    double L1_div= 0, L2_div= 0;
-    SMatrixCL<3,3> T, M;
-    double det, absdet;
-
-    // Calculate div(u).
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
-         send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl); sit != send; ++sit)
+    if (is_stat)
     {
-        double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
-        GetTrafoTr(T,det,*sit);
-        absdet= std::fabs(det);
-        for(Uint i= 0; i<10; ++i)
-        {
-            const SVectorCL<3> value= i<4 ? vel.val(*sit->GetVertex(i))
-                                          : vel.val(*sit->GetEdge(i-4));
-            div[0]+= inner_prod(T*FE_P2CL::DHRef(i,0,0,0),value);
-            div[1]+= inner_prod(T*FE_P2CL::DHRef(i,1,0,0),value);
-            div[2]+= inner_prod(T*FE_P2CL::DHRef(i,0,1,0),value);
-            div[3]+= inner_prod(T*FE_P2CL::DHRef(i,0,0,1),value);
-            div[4]+= inner_prod(T*FE_P2CL::DHRef(i,0.25,0.25,0.25),value);
-        }
-        L1_div+= ( (std::fabs(div[0])+std::fabs(div[1])+std::fabs(div[2])+std::fabs(div[3]))/120 + std::fabs(div[4])*2./15. ) * absdet;
-        L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
-    }
-#ifdef _PAR
-    L2_div = ProcCL::GlobalSum(L2_div);
-    L1_div = ProcCL::GlobalSum(L1_div);
-#endif
-    L2_div= std::sqrt(L2_div);
+        VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
+        VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
-    IF_MASTER
-        std::cout << "|| div x ||_L1 = " << L1_div
-                  << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
+        #ifndef _PAR
+            const double norm_res1      = norm(res1);
+            const double norm_res2      = norm(res2);
+            const double norm_sup_res_1 = supnorm(res1);
+            const double norm_sup_res_2 = supnorm(res2);
+        #else
+            VectorCL res1_acc(res1);
+            VectorCL res2_acc(res2);
+            const double norm_res1      = std::sqrt(exV.ParDotAcc(res1_acc,res1));
+            const double norm_res2      = std::sqrt(exP.ParDotAcc(res2_acc,res2));
+            const double norm_sup_res_1 = ProcCL::GlobalMax(supnorm(res1_acc));
+            const double norm_sup_res_2 = ProcCL::GlobalMax(supnorm(res2_acc));
+        #endif
+
+        IF_MASTER
+            std::cout << "\nChecken der Loesung..."
+                      << "\n|| Ax + BTy - F || = " << norm_res1 << ", max. " << norm_sup_res_1
+                      << "\n||       Bx - G || = " << norm_res2 << ", max. " << norm_sup_res_2
+                      << '\n' << std::endl;
+    }
+
+    double L2_div= 0;
+    SMatrixCL<3,3> T;
+    double det;
 
     // Compute the pressure-coefficient in direction of 1/std::sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double MW_pr= 0, vol= 0;
-    const Uint numpts= Quad3PosWeightsCL::GetNumPoints();
-    double* pvals= new double[numpts];
+    Quad5CL<> q5_pr, q5_pr_exact;
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
          send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
         const double volT= sit->GetVolume();
-        for (Uint i=0; i<numpts; ++i)
-        {
-            const Point3DCL& p= Quad3PosWeightsCL::GetPoints()[i];
-            pvals[i]= pr.val(*sit, p[0], p[1], p[2]);
-        }
-        MW_pr+= Quad3PosWeightsCL::Quad(pvals)*volT*6.;
+        LocalP1CL<> loc_pr( *sit, make_P1Eval(MG_,BndData_.Pr,*lsgpr));
+        q5_pr.assign(loc_pr);
+        q5_pr_exact.assign(*sit,LsgPr,t);
+        MW_pr+= Quad5CL<> (q5_pr-q5_pr_exact).quad(6.*volT);
         vol+= volT;
     }
 #ifdef _PAR
@@ -988,300 +956,58 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 #endif
     const double c_pr= MW_pr/vol;
     IF_MASTER
-        std::cout << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
+        std::cout << "\n  mean value of exact pressure - discrete pressure is " << c_pr << ", volume of cube is " << vol << std::endl;
 
     // Some norms of velocities: u_h - u
-    double L2_Dvel(0.0), L2_vel(0.0);
-    double L2_pr(0.0);
-    double* vals= new double[numpts];
-    double* Dvals= new double[numpts];
-    for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    // number of nodes for Quad5CL rule is 15 (see discretize.h Quad5_DataCL NumNodesC =15)
+    double Frob_Dvel(0.0), L2_vel(0.0);
+    double L2_pr(0.0), H1_vel(0.0);
+
+    Quad5CL<Point3DCL> q5_vel, q5_vel_exact;
+    Quad5CL<Point3DCL> Grad[10], GradRef[10];
+    Quad5CL<SMatrixCL<3,3> > q5_dvel, q5_dvel_exact;
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
         send= const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
-        GetTrafoTr(M,det,*sit);
-        const double absdet= std::fabs(det);
-        // Put velocity degrees of freedom in veldof
-        std::vector< SVectorCL<3> > veldof( 10);
-        vel.GetDoF(*sit, veldof);
-        for (Uint i=0; i<numpts; ++i)
-        {
-            const Point3DCL& p= Quad3PosWeightsCL::GetPoints()[i];
-            const Point3DCL  p_world= GetWorldCoord(*sit, p);
+         GetTrafoTr(T,det,*sit);
+         const double absdet= std::fabs(det);
+         LocalP2CL<Point3DCL> loc_vel(*sit, make_P2Eval(MG_,BndData_.Vel,*lsgvel));
+         LocalP1CL<> loc_pr(*sit, make_P1Eval(MG_,BndData_.Pr,*lsgpr));
+         q5_pr.assign(loc_pr);
+         q5_pr_exact.assign(*sit,LsgPr,t);
+         q5_vel.assign(loc_vel);
+         q5_vel_exact.assign(*sit,LsgVel,t);
+         q5_dvel_exact.assign(*sit,DLsgVel,t);
+         Quad5CL<Point3DCL> q5_vel_diff( q5_vel-q5_vel_exact);
+         L2_vel += Quad5CL<> (dot(q5_vel_diff,q5_vel_diff)).quad(absdet);
 
-            const double prtmp= pr.val(*sit, p[0], p[1], p[2]) - c_pr - LsgPr(p_world);
-            pvals[i]= prtmp*prtmp;
-            const SVectorCL<3> tmp= vel.val(veldof, p[0], p[1], p[2]) - LsgVel(p_world, 0.);
-            vals[i]= inner_prod(tmp, tmp);
+         L2_pr  += Quad5CL<> (std::pow(q5_pr-q5_pr_exact-c_pr,2)).quad(absdet);
 
-            Dvals[i]= 0.;
-            Point3DCL Db_xi[10];
-            for (Uint j=0; j<10; ++j)
-            {
-                Db_xi[j]+=M*FE_P2CL::DHRef(j, p[0], p[1], p[2]);
-            }
-            const SMatrixCL<3, 3> JacobiVel_T= DLsgVel(p_world);
-            for (Uint k=0; k<3; ++k)
-            {
-                Point3DCL tmpD;
-                tmpD[0]= -JacobiVel_T(k, 0); tmpD[1]= -JacobiVel_T(k, 1); tmpD[2]= -JacobiVel_T(k, 2);
-                for (Uint j=0; j<10; ++j)
-                    tmpD+= veldof[j][k]*Db_xi[j];
-                Dvals[i]+= inner_prod(tmpD, tmpD);
-            }
-        }
-        L2_pr+= Quad3PosWeightsCL::Quad(pvals)*absdet;
-        L2_vel+= Quad3PosWeightsCL::Quad(vals)*absdet;
-        L2_Dvel+= Quad3PosWeightsCL::Quad(Dvals)*absdet;
-    }
-#ifdef _PAR
-    L2_pr   = ProcCL::GlobalSum(L2_pr);
-    L2_vel  = ProcCL::GlobalSum(L2_pr);
-    L2_Dvel = ProcCL::GlobalSum(L2_pr);
-#endif
-    const double X_norm= std::sqrt(L2_pr + L2_vel + L2_Dvel);
-    L2_pr= std::sqrt(L2_pr);
-    L2_vel= std::sqrt(L2_vel);
-    L2_Dvel= std::sqrt(L2_Dvel);
-    delete[] Dvals;
-    delete[] vals;
-    delete[] pvals;
+	 P2DiscCL::GetGradients( Grad, GradRef, T);
+	 q5_dvel= SMatrixCL<3,3>();
+	 for (int i=0; i<10; i++)
+	 {
+             q5_dvel += outer_product(loc_vel[i],Grad[i]);
+         }
+         Quad5CL< SMatrixCL<3,3> > q5_dvel_diff( q5_dvel-q5_dvel_exact);
+	 Frob_Dvel += Quad5CL<> (frobenius_norm_sq(q5_dvel_diff)).quad(absdet);
+	 L2_div += Quad5CL<> (trace(q5_dvel)).quad(absdet);
+     }
+     L2_pr = std::sqrt(L2_pr);
+     H1_vel = std::sqrt(L2_vel+Frob_Dvel);
+     L2_vel = std::sqrt(L2_vel);
+     Frob_Dvel = std::sqrt(Frob_Dvel);
+     L2_div = std::sqrt(std::fabs(L2_div));
 
-    IF_MASTER
-        std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << X_norm
-                  << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << L2_Dvel
+     IF_MASTER
+        std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << H1_vel
+                  << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << Frob_Dvel
                   << ", || p_h - p ||_L2 = " << L2_pr
-                  << "\nDruck: Abweichung von der tatsaechlichen Loesung:"
-                  << "\nw-2-Norm= " << norm2
-                  << "\n L2-Norm= " << L2_pr
-                  << "\nDifferenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
-}
-
-template <class Coeff>
-  void
-  StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
-      instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t) const
-{
-    double diff, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->GetLevel(),
-         vidx=lsgvel->RowIdx->GetIdx();
-
-/*
-    {   // XXX still not correct as the system solved involves old values for v and p on the rhs.
-        const double theta= 0.5, dt= 1.0/128.0;
-        VelVecDescCL bb, cc, cplM;
-        bb.SetIdx( lsgvel->RowIdx);
-        cc.SetIdx( lsgpr->RowIdx);
-        cplM.SetIdx( lsgvel->RowIdx);
-        SetupInstatRhs( &bb, &cc, &cplM, t, &bb, t);
-        VectorCL res1( M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data);
-        VectorCL res2( B.Data*lsgvel->Data - cc.Data);
-        std::cout << "\nChecken der Loesung...\n";
-        std::cout << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
-        std::cout << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
-    }
-*/
-
-    const_DiscVelSolCL vel(lsgvel, &BndData_.Vel, &MG_);
-    double L1_div= 0, L2_div= 0;
-    SMatrixCL<3,3> T;
-    double det, absdet;
-
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
-         send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
-        GetTrafoTr(T,det,*sit);
-        absdet= std::fabs(det);
-        for(Uint i= 0; i<10; ++i)
-        {
-            SVectorCL<3> value= i<4 ? vel.val(*sit->GetVertex(i))
-                                    : vel.val(*sit->GetEdge(i-4));
-            div[0]+= inner_prod(T*FE_P2CL::DHRef(i,0,0,0),value);
-            div[1]+= inner_prod(T*FE_P2CL::DHRef(i,1,0,0),value);
-            div[2]+= inner_prod(T*FE_P2CL::DHRef(i,0,1,0),value);
-            div[3]+= inner_prod(T*FE_P2CL::DHRef(i,0,0,1),value);
-            div[4]+= inner_prod(T*FE_P2CL::DHRef(i,0.25,0.25,0.25),value);
-        }
-        L1_div+= ( (std::fabs(div[0])+std::fabs(div[1])+std::fabs(div[2])+std::fabs(div[3]))/120 + std::fabs(div[4])*2./15. ) * absdet;
-        L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
-    }
-#ifdef _PAR
-    L2_div= ProcCL::GlobalSum(L2_div);
-    L1_div= ProcCL::GlobalSum(L1_div);
-#endif
-    L2_div= std::sqrt(L2_div);
-
-    IF_MASTER
-        std::cout << "|| div x ||_L1 = " << L1_div
                   << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!BndData_.Vel.IsOnDirBnd(*sit))
-        {
-           for(int i=0; i<3; ++i)
-           {
-               diff= std::fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i]);
-               norm2+= diff*diff;
-               if (diff>maxdiff)
-               {
-                   maxdiff= diff;
-               }
-           }
-        }
-    }
-
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangEdgeEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!BndData_.Vel.IsOnDirBnd(*sit))
-        {
-           for(int i=0; i<3; ++i)
-           {
-               diff= std::fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i]);
-               norm2+= diff*diff;
-               if (diff>maxdiff)
-               {
-                   maxdiff= diff;
-               }
-           }
-        }
-    }
-    norm2= std::sqrt(norm2 / lsgvel->Data.size());
-
-    Point3DCL L1_vel(0.0), L2_vel(0.0);
-    for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send= const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-        sit != send; ++sit)
-    {
-        Point3DCL sum(0.0), diff, Diff[10];
-        const double absdet= sit->GetVolume()*6;
-
-        for(int i=0; i<4; ++i)
-        {
-            Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
-            diff[0]= std::fabs(diff[0]); diff[1]= std::fabs(diff[1]); diff[2]= std::fabs(diff[2]);
-            sum+= diff;
-        }
-        sum/= 120;
-        diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
-        diff[0]= std::fabs(diff[0]); diff[1]= std::fabs(diff[1]); diff[2]= std::fabs(diff[2]);
-        sum+= diff*2./15.;
-        sum*= absdet;
-        L1_vel+= sum;
-
-        for(int i=4; i<10; ++i) // differences on edges
-            Diff[i]= LsgVel( GetBaryCenter(*sit->GetEdge(i-4)), t) - vel.val(*sit->GetEdge(i-4));
-
-        for(int i=0; i<10; ++i)
-        {
-            sum= P2DiscCL::Quad(Diff, i)*absdet;
-            sum*= Diff[i];
-            L2_vel+= sum;
-        }
-    }
-#ifdef _PAR
-    double loc_vel[6], global_vel[6];
-    loc_vel[0]=L1_vel[0]; loc_vel[1]=L1_vel[1]; loc_vel[2]=L1_vel[2];
-    loc_vel[3]=L2_vel[0]; loc_vel[4]=L2_vel[1]; loc_vel[5]=L2_vel[2];
-    ProcCL::GlobalSum(loc_vel, global_vel, 6, Drops_MasterC);
-    L1_vel[0]=global_vel[0]; L1_vel[1]=global_vel[1]; L1_vel[2]=global_vel[2];
-    L2_vel[0]=global_vel[3]; L2_vel[1]=global_vel[4]; L2_vel[2]=global_vel[5];
-#endif
-    L2_vel= sqrt(L2_vel);
-    IF_MASTER
-        std::cout << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:"
-                  << "\nw-2-Norm= " << norm2
-                  << "\n L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")"
-                  << "\n L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")"
-                  << "\nmax-Norm= " << maxdiff << std::endl;
-
-    norm2= 0; maxdiff= 0; double mindiff= 1000;
-
-    // Compute the pressure-coefficient in direction of 1/std::sqrt(meas(Omega)), which eliminates
-    // the allowed offset of the pressure by setting it to 0.
-    double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    const_DiscPrSolCL pr(lsgpr, &BndData_.Pr, &MG_);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        double sum= 0;
-        for(int i=0; i<4; ++i)
-            sum+= pr.val(*sit->GetVertex(i)); // XXX: Hae? das steht hier so seit Ewigkeiten...- LsgPr(sit->GetVertex(i)->GetCoord(), t);
-        sum/= 120;
-        sum+= 2./15.* (pr.val(*sit, .25, .25, .25)); // s. o.: Hae? - LsgPr(GetBaryCenter(*sit), t));
-        MW_pr+= sum * sit->GetVolume()*6.;
-        vol+= sit->GetVolume();
-    }
-#ifdef _PAR
-    MW_pr= ProcCL::GlobalSum(MW_pr);
-    vol  = ProcCL::GlobalSum(vol);
-#endif
-    const double c_pr= MW_pr / vol;
-    IF_MASTER
-        std::cout << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
-
-    const VertexCL* maxvert= 0;
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-    {
-        diff= std::fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
-        norm2+= diff*diff;
-        if (diff>maxdiff) {
-            maxdiff= diff;
-            maxvert= &*sit;
-        }
-        if (diff<mindiff)
-            mindiff= diff;
-    }
-    size_t pr_size= lsgpr->Data.size();
-#ifdef _PAR
-    pr_size= ProcCL::GlobalSum(pr_size);
-    norm2  = ProcCL::GlobalSum(norm2);
-#endif
-    norm2= std::sqrt( norm2 / pr_size);
-
-#ifndef _PAR
-    if (maxvert)
-    {
-        std::cout << "Maximaler Druckfehler: ";
-        maxvert->DebugInfo( std::cout);
-        std::cout << std::endl;
-    }
-#endif
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        double sum= 0, sum1= 0;
-        for(int i=0; i<4; ++i)
-        {
-            diff= c_pr + LsgPr(sit->GetVertex(i)->GetCoord(), t) - pr.val(*sit->GetVertex(i));
-            sum+= diff*diff; sum1+= std::fabs(diff);
-        }
-        sum/= 120;   sum1/= 120;
-        diff= c_pr + LsgPr(GetBaryCenter(*sit), t) - pr.val(*sit, .25, .25, .25);
-        sum+= 2./15.*diff*diff;   sum1+= 2./15.*std::fabs(diff);
-        L2_pr+= sum * sit->GetVolume()*6.;
-        L1_pr+= sum1 * sit->GetVolume()*6.;
-    }
-#ifdef _PAR
-    L2_pr  = ProcCL::GlobalSum(L2_pr);
-    L1_pr  = ProcCL::GlobalSum(L1_pr);
-    mindiff= ProcCL::GlobalMin(mindiff);
-    maxdiff= ProcCL::GlobalMax(maxdiff);
-#endif
-    L2_pr= std::sqrt( L2_pr);
-
-    IF_MASTER
-        std::cout << "Druck: Abweichung von der tatsaechlichen Loesung:"
-                  << "\nw-2-Norm= " << norm2
-                  << "\n L2-Norm= " << L2_pr
-                  << "\n L1-Norm= " << L1_pr
-                  << "\nDifferenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
+
 
 #ifndef _PAR
 template <class Coeff>
@@ -1298,7 +1024,7 @@ template <class Coeff>
     double hT; // radius of circumcircle of T
     circumcircle(s, cc, hT);
     // P_0(f) := (f, 1_T)_T * 1_T = int(f, T)/|T|
-    const SVectorCL<3> P0f= Quad3PosWeightsCL::Quad(s, &Coeff::f, t)*6.;
+    const SVectorCL<3> P0f= Quad3PosWeightsCL::Quad(s, Coeff::f, t)*6.;
 
     const Uint numpts= Quad3PosWeightsCL::GetNumPoints();
     double* vals= new double[numpts];

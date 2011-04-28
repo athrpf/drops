@@ -59,11 +59,17 @@ namespace DROPS
     RegisterMatchingFunction::RegisterMatchingFunction(std::string name, match_fun fptr){
         MatchMap::getInstance().insert(std::make_pair(name,fptr));
     }
+    
+    RegisterMatrixFunction::RegisterMatrixFunction(std::string name, instat_matrix_fun_ptr fptr){
+        InMatMap::getInstance().insert(std::make_pair(name,fptr));
+    }
+
 
 
     template class SingletonMapCL<DROPS::instat_scalar_fun_ptr>;
     template class SingletonMapCL<DROPS::instat_vector_fun_ptr>;
     template class SingletonMapCL<DROPS::scalar_fun_ptr>;
+    template class SingletonMapCL<DROPS::instat_matrix_fun_ptr>;
     template class SingletonMapCL<DROPS::match_fun>;
 
 } //end of namespace DROPS

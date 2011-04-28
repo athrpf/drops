@@ -800,6 +800,23 @@ class World2BaryCoordCL
     BaryCoordCL operator() (const Point3DCL& p) const;
 };
 
+///\brief Compute world-coordinates from a tetra and barycentric coordinates.
+/// This class is similar to GetWorldCoord( tetra, barycoord). It is better suited for many consecutive evaluations. It can be used in std-algorithms.
+class Bary2WorldCoordCL
+{
+  private:
+    SMatrixCL<3,4> mat_;
+
+  public:
+    typedef Point3DCL value_type;
+
+    Bary2WorldCoordCL (const TetraCL& tet) : mat_( Uninitialized) {
+        for (int i= 0; i < 4; ++i)
+            mat_.col( i, tet.GetVertex( i)->GetCoord());
+    }
+    Point3DCL operator() (const BaryCoordCL& b) const { return mat_*b; }
+};
+
 /// \brief Collect the faces of the the children of a refined tetra that refine a given face.
 ///
 /// If the tetra is unrefined, the given face is returned.
