@@ -151,6 +151,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
         { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG()); }
     //@}
+    bool UsesXFEM() { return false; } // just for consistency
 };
 
 #ifndef _PAR

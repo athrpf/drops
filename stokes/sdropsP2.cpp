@@ -1,6 +1,6 @@
 /// \file sdropsP2.cpp
 /// \brief stokes problem
-/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -353,10 +353,11 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 
         MG.Refine();
 
-        if( StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+        if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes)
+        	|| StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes)) {
             Stokes.SetNumVelLvl( MG.GetNumLevel());
-        if( StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
             Stokes.SetNumPrLvl( MG.GetNumLevel());
+        }
 
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
@@ -392,8 +393,11 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
             Stokes.GetDiscError( StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::LsgPr);
         timer.Reset();
 
-        if( StokesSolverFactoryObsoleteHelperCL<ParamsT>().VelMGUsed(C_Stokes))
+
+        if( StokesSolverFactoryHelperCL<ParamsT>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<ParamsT>().PrMGUsed(C_Stokes)) {
             Stokes.prM.Data.resize(pidx1->size());
+            Stokes.prA.Data.resize(pidx1->size()); // superflous?
+        }
 
         Stokes.prM.SetIdx( pidx1, pidx1);
         Stokes.SetupPrMass( &Stokes.prM);
@@ -432,7 +436,8 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-    }while (++step<C_Stokes.err_NumRef);
+    } while (++step<C_Stokes.err_NumRef);
+
     // we want the solution to be in Stokes.v, Stokes.pr
     if (v2 == &loc_v)
     {
@@ -467,11 +472,11 @@ void Strategy( StokesProblemT& Stokes)
     if( C_Stokes.misc_ModifyGrid == 1)
         MakeInitialTriangulation( MG, &SignedDistToInterface, C_Stokes.ref_Width, C_Stokes.ref_CoarsestLevel, C_Stokes.ref_FinestLevel);
 
-    if( StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes)
+    	|| StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes)) {
         Stokes.SetNumVelLvl( MG.GetNumLevel());
-
-    if( StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
         Stokes.SetNumPrLvl( MG.GetNumLevel());
+    }
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), &Stokes.vel_idx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), &Stokes.pr_idx);
@@ -511,21 +516,22 @@ void Strategy( StokesProblemT& Stokes)
     std::cout << line << "Solve the linear equation system ...\n";
 
     // type of preconditioner and solver
-    StokesSolverFactoryObsoleteCL< StokesProblemT,Params> factory( Stokes, C_Stokes);
-    StokesSolverBaseCL* stokessolver = factory.CreateStokesSolver();
+    StokesSolverFactoryCL< StokesProblemT,Params>         factory( Stokes, C_Stokes);
+    StokesSolverFactoryObsoleteCL< StokesProblemT,Params> obsoletefactory( Stokes, C_Stokes);
+    StokesSolverBaseCL* stokessolver = (C_Stokes.stk_StokesMethod < 50000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
 
-    if( StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
     {
-        MLMatrixCL* PVel = factory.GetPVel();
+        MLMatrixCL* PVel = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPVel() : obsoletefactory.GetPVel();
         SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
         std::cout << "Check MG-Data..." << std::endl;
         std::cout << "                begin     " << Stokes.vel_idx.GetCoarsest().NumUnknowns() << std::endl;
         std::cout << "                end       " << Stokes.vel_idx.GetFinest().NumUnknowns() << std::endl;
         CheckMGData( Stokes.A.Data, *PVel);
     }
-    if( StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
     {
-        MLMatrixCL* PPr = factory.GetPPr();
+        MLMatrixCL* PPr = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPPr() : obsoletefactory.GetPPr();
         SetupP1ProlongationMatrix( MG, *PPr, &Stokes.pr_idx, &Stokes.pr_idx);
     }
 
@@ -586,9 +592,7 @@ void Strategy( StokesProblemT& Stokes)
         Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
     }
 
-
     delete stokessolver;
-
 }
 
 } // end of namespace DROPS
@@ -610,6 +614,7 @@ int main ( int argc, char** argv)
             std::cerr << "error while opening parameter file\n";
             return 1;
         }
+        C_Stokes.ns_Nonlinear = 0.0;
         param >> C_Stokes;
         param.close();
         std::cout << C_Stokes << std::endl;
