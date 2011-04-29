@@ -358,6 +358,226 @@ template <class Coeff>
     }
 }
 
+/// \brief Raw data for "system 1", both for one phase and two phases.
+///
+/// scalar-valued mass-matrix, scalar-valued mu-Laplacian, genuinely tensor-valued part of the deformation tensor and the integrals of \f$\rho\phi_i\f$ for the gravitation as load-vector
+/// \todo: Precise description
+struct LocalSystem1DataCL
+{
+    double         M [10][10];
+    double         A [10][10];
+
+    double rho_phi[10];
+};
+
+/// \brief Setup of the local "system 1" on a tetra in a single phase.
+class LocalStokesSystem1OnePhase_P2CL
+{
+  private:
+    double mu_;
+    double rho_;
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    const SVectorCL<Quad2DataCL::NumNodesC> Ones;
+
+  public:
+    LocalStokesSystem1OnePhase_P2CL (double muarg= 0., double rhoarg= 0.)
+        : mu_( muarg), rho_( rhoarg), Ones( 1.)
+    { P2DiscCL::GetGradientsOnRef( GradRef); }
+
+    void   mu  (double new_mu)        { mu_= new_mu; }
+    double mu  ()               const { return mu_; }
+    void   rho (double new_rho)       { rho_= new_rho; }
+    double rho ()               const { return rho_; }
+
+    void setup (const SMatrixCL<3,3>& T, double absdet, LocalSystem1DataCL& loc)
+    {
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        for (Uint i= 0; i < 10; ++i) {
+            loc.rho_phi[i]= rho()*quad( Ones, absdet, Quad2Data_Mul_P2_CL(), i);
+            for (Uint j= 0; j <= i; ++j) {
+                // M: As we are not at the phase-boundary this is exact.
+                loc.M[j][i]= rho()*P2DiscCL::GetMass( j, i)*absdet;
+                loc.A[j][i]= mu()*quad( dot( Grad[i], Grad[j]), absdet, make_Quad2Data());
+
+                if (i != j) { // The local matrices coupM, coupA, coupAk are symmetric.
+                    loc.M[i][j]= loc.M[j][i];
+                    loc.A[i][j]= loc.A[j][i];
+                }
+            }
+        }
+    }
+
+};
+
+
+/// \brief Accumulator to set up the matrices A, M and, if requested the right-hand side b and cplM, cplA for Stokes flow.
+template< class CoeffT>
+class StokesSystem1Accumulator_P2CL : public TetraAccumulatorCL
+{
+  private:
+    const CoeffT& Coeff;
+    const StokesBndDataCL& BndData;
+    double t;
+
+    IdxDescCL& RowIdx;
+    MatrixCL& A;
+    MatrixCL& M;
+    VecDescCL* cplA;
+    VecDescCL* cplM;
+    VecDescCL* b;
+
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >* mA_;
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >* mM_;
+
+    LocalStokesSystem1OnePhase_P2CL local_onephase; ///< used on tetras in a single phase
+    LocalSystem1DataCL loc; ///< Contains the memory, in which the local operators are set up; former coupM, coupA, coupAk, rho_phi.
+
+    LocalNumbP2CL n; ///< global numbering of the P2-unknowns
+
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    LocalP2CL<> ls_loc;
+
+    Quad2CL<Point3DCL> rhs;
+    Point3DCL loc_b[10], dirichlet_val[10]; ///< Used to transfer boundary-values from local_setup() update_global_system().
+
+    ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
+    void local_setup (const TetraCL& tet);
+    ///\brief Update the global system.
+    void update_global_system ();
+
+  public:
+    StokesSystem1Accumulator_P2CL (const CoeffT& Coeff, const StokesBndDataCL& BndData_,
+        IdxDescCL& RowIdx_, MatrixCL& A_, MatrixCL& M_,
+        VecDescCL* b_, VecDescCL* cplA_, VecDescCL* cplM_, double t);
+
+    ///\brief Initializes matrix-builders and load-vectors
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+};
+
+template< class CoeffT>
+StokesSystem1Accumulator_P2CL<CoeffT>::StokesSystem1Accumulator_P2CL (const CoeffT& Coeff_, const StokesBndDataCL& BndData_,
+    IdxDescCL& RowIdx_, MatrixCL& A_, MatrixCL& M_,
+    VelVecDescCL* b_, VelVecDescCL* cplA_, VelVecDescCL* cplM_, double t_)
+    : Coeff( Coeff_), BndData( BndData_), t( t_),
+      RowIdx( RowIdx_), A( A_), M( M_), cplA( cplA_), cplM( cplM_), b( b_)
+{}
+
+template< class CoeffT>
+void StokesSystem1Accumulator_P2CL<CoeffT>::begin_accumulation ()
+{
+    const size_t num_unks_vel= RowIdx.NumUnknowns();
+    mA_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &A, num_unks_vel, num_unks_vel);
+    mM_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &M, num_unks_vel, num_unks_vel);
+    if (b != 0) {
+        b->Clear( t);
+        cplM->Clear( t);
+        cplA->Clear( t);
+    }
+}
+
+template< class CoeffT>
+void StokesSystem1Accumulator_P2CL<CoeffT>::finalize_accumulation ()
+{
+    mA_->Build();
+    delete mA_;
+    mM_->Build();
+    delete mM_;
+}
+
+template< class CoeffT>
+void StokesSystem1Accumulator_P2CL<CoeffT>::visit (const TetraCL& tet)
+{
+    local_setup( tet);
+    update_global_system();
+}
+
+template< class CoeffT>
+void StokesSystem1Accumulator_P2CL<CoeffT>::local_setup (const TetraCL& tet)
+{
+    GetTrafoTr( T, det, tet);
+    absdet= std::fabs( det);
+
+    rhs.assign( tet, Coeff.f, t);
+    n.assign( tet, RowIdx, BndData.Vel);
+
+    local_onephase.mu(  Coeff.nu);
+    local_onephase.rho( 1.0);
+    local_onephase.setup( T, absdet, loc);
+
+    if (b != 0) {
+        for (int i= 0; i < 10; ++i) {
+            if (!n.WithUnknowns( i)) {
+                typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[i]).GetBndFun();
+                dirichlet_val[i]= i<4 ? bf( tet.GetVertex( i)->GetCoord(), t)
+                    : bf( GetBaryCenter( *tet.GetEdge( i-4)), t);
+            }
+            else
+                loc_b[i]= rhs.quadP2( i, absdet);
+        }
+    }
+}
+
+template< class CoeffT>
+void StokesSystem1Accumulator_P2CL<CoeffT>::update_global_system ()
+{
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >& mA= *mA_;
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >& mM= *mM_;
+
+    for(int i= 0; i < 10; ++i)    // assemble row Numb[i]
+        if (n.WithUnknowns( i)) { // dof i is not on a Dirichlet boundary
+            for(int j= 0; j < 10; ++j) {
+                if (n.WithUnknowns( j)) { // dof j is not on a Dirichlet boundary
+                    mA( n.num[i], n.num[j])+= SDiagMatrixCL<3>( loc.A[j][i]);
+                    mM( n.num[i], n.num[j])+= SDiagMatrixCL<3>( loc.M[j][i]);
+                }
+                else if (b != 0) { // right-hand side for eliminated Dirichlet-values
+                    add_to_global_vector( cplA->Data, -loc.A[j][i]*dirichlet_val[j], n.num[i]);
+                    add_to_global_vector( cplM->Data, -loc.M[j][i]*dirichlet_val[j], n.num[i]);
+                }
+            }
+            if (b != 0) // assemble the right-hand side
+                add_to_global_vector( b->Data, loc_b[i], n.num[i]);
+       }
+}
+
+template< class CoeffT>
+void SetupSystem1_P2( const MultiGridCL& MG_, const CoeffT& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, MatrixCL& M,
+                      VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, IdxDescCL& RowIdx, double t)
+/// Set up matrices A, M and rhs b (depending on phase bnd)
+{
+    StokesSystem1Accumulator_P2CL<CoeffT> accu( Coeff_, BndData_, RowIdx, A, M, b, cplA, cplM, t);
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &accu);
+    accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+}
+
+
+template< class CoeffT>
+void StokesP2P1CL<CoeffT>::SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, double t) const
+{
+    MLMatrixCL::iterator itA = A->Data.begin();
+    MLMatrixCL::iterator itM = M->Data.begin();
+    MLIdxDescCL::iterator it = A->RowIdx->begin();
+    for (size_t lvl=0; lvl < A->Data.size(); ++lvl, ++itA, ++itM, ++it) {
+#ifndef _PAR
+        std::cout << "entering SetupSystem1: " << it->NumUnknowns() << " unknowns ";
+#endif
+        SetupSystem1_P2 ( MG_, Coeff_, BndData_, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, *it, t);
+#ifndef _PAR
+        std::cout << itA->num_nonzeros() << " nonzeros in A, "
+                  << itM->num_nonzeros() << " nonzeros in M! " << std::endl;
+#endif
+    }
+}
+
+
 /// \brief Shared data for "system 2" between P1 and P1X.
 /// All members are setup by System2Accumulator_P2P1CL::visit.
 struct LocalSystem2_sharedDataCL
@@ -517,7 +737,7 @@ void StokesP2P1CL<CoeffT>::SetupSystem2( MLMatDescCL* B, VecDescCL* c, double t)
         std::cout << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs, " << itCol->NumUnknowns() << " vels. ";
 #endif
         VecDescCL* rhsPtr= itB==B->Data.GetFinestIter() ? c : 0; // setup rhs only on finest level
-        SetupSystem2_P2P1 ( MG_, Coeff_, BndData_, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+        SetupSystem2_P2P1 ( MG_, Coeff_, BndData_, &(*itB), rhsPtr, &(*itRow), &(*itCol), t);
 #ifndef _PAR
         std::cout << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
 #endif
@@ -620,131 +840,6 @@ void StokesP2P1CL<Coeff>::SetupPrMass(MLMatDescCL* matM) const
         SetupPrMass_P2P1( MG_, Coeff_, *itM, *itRow);
 }
 
-template <class CoeffT>
-void SetupInstatSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const StokesBndDataCL& BndData,
-                             MatrixCL& matA, MatrixCL& matB, MatrixCL& matI, IdxDescCL& RowIdxA, IdxDescCL& RowIdxB)
-/// Sets up the stiffness matrices and right hand sides
-{
-    const IdxT num_unks_vel= RowIdxA.NumUnknowns();
-    const IdxT num_unks_pr=  RowIdxB.NumUnknowns();
-
-    MatrixBuilderCL A(&matA, num_unks_vel, num_unks_vel),
-                    B(&matB, num_unks_pr,  num_unks_vel),
-                    I(&matI, num_unks_vel, num_unks_vel);
-
-    const Uint lvl    = RowIdxA.TriangLevel();
-    const Uint vidx   = RowIdxA.GetIdx(),
-               pidx   = RowIdxB.GetIdx();
-
-    IdxT Numb[10], prNumb[4];
-    bool IsOnDirBnd[10];
-
-    const IdxT stride= 1;   // stride between unknowns on same simplex, which
-                            // depends on numbering of the unknowns
-#ifndef _PAR
-    std::cout << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
-#endif
-
-    // fill value part of matrices
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
-    SMatrixCL<3,3> T;
-    double coup[10][10], coupMass[10][10];
-    double det, absdet;
-
-    P2DiscCL::GetGradientsOnRef(GradRef);
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        GetTrafoTr(T,det,*sit);
-        P2DiscCL::GetGradients(Grad, GradRef, T);
-        absdet= std::fabs(det);
-
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb and IsOnDirBnd
-        for(int i=0; i<4; ++i)
-        {
-            if(!(IsOnDirBnd[i]= BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
-        }
-        for(int i=0; i<6; ++i)
-        {
-            if (!(IsOnDirBnd[i+4]= BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
-        }
-
-        // compute all couplings between HatFunctions on edges and verts
-        for(int i=0; i<10; ++i)
-            for(int j=0; j<=i; ++j)
-            {
-                // dot-product of the gradients
-                const double c= Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
-//                c+= Quad(*sit, &Coeff::q, i, j)*absdet;
-                coup[i][j]= c;
-                coup[j][i]= c;
-
-                const double cM= P2DiscCL::GetMass( j, i)*absdet;
-                coupMass[i][j]= cM;
-                coupMass[j][i]= cM;
-           }
-
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
-            {
-                for(int j=0; j<10; ++j)
-                {
-                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
-                    {
-                        A(Numb[i],          Numb[j])+=          coup[j][i];
-                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i];
-                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
-                        I(Numb[i],          Numb[j])
-                        = I(Numb[i]+stride,   Numb[j]+stride)
-                        = I(Numb[i]+2*stride, Numb[j]+2*stride)+= coupMass[i][j];
-                    }
-                }
-
-            }
-
-        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel)
-        {
-            if (!IsOnDirBnd[vel])
-                for(int pr=0; pr<4; ++pr)
-                {
-                    // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
-                    const Point3DCL tmp= Grad[vel].quadP1( pr, absdet);
-                    B(prNumb[pr],Numb[vel])-=          tmp[0];
-                    B(prNumb[pr],Numb[vel]+stride)-=   tmp[1];
-                    B(prNumb[pr],Numb[vel]+2*stride)-= tmp[2];
-                } // else put coupling on rhs
-        }
-    }
-#ifndef _PAR
-    std::cout << "done: value part fill" << std::endl;
-#endif
-
-    A.Build();
-    B.Build();
-    I.Build();
-#ifndef _PAR
-    std::cout << matA.num_nonzeros() << " nonzeros in A, "
-              << matB.num_nonzeros() << " nonzeros in B, "
-              << matI.num_nonzeros() << " nonzeros in I! " << std::endl;
-#endif
-}
-
-template<class Coeff>
-void StokesP2P1CL<Coeff>::SetupInstatSystem(MLMatDescCL* matA, MLMatDescCL* matB, MLMatDescCL* matI) const
-{
-    MLIdxDescCL::iterator itRowA = matA->RowIdx->begin();
-    MLIdxDescCL::iterator itRowB = matB->RowIdx->begin();
-    MLMatrixCL::iterator  itB    = matB->Data.begin();
-    MLMatrixCL::iterator  itI    = matI->Data.begin();
-    for ( MLMatrixCL::iterator itA= matA->Data.begin(); itA != matA->Data.end(); ++itA, ++itB, ++itI, ++itRowA, ++itRowB)
-        SetupInstatSystem_P2P1( MG_, Coeff_, BndData_, *itA, *itB, *itI, *itRowA, *itRowB);
-}
 
 template <class Coeff>
 void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB,

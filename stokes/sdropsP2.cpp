@@ -194,7 +194,7 @@ void
 UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
                     const signed_dist_fun Dist,
                     const double t,
-                    const double width,         // Thickness of refined shell on eache side of the interface
+                    const double width,         // Thickness of refined shell on each side of the interface
                     const DROPS::Uint c_level,  // Outside the shell, use this level
                     const DROPS::Uint f_level,  // Inside the shell, use this level
                     DROPS::VelVecDescCL* v1,
@@ -312,7 +312,6 @@ using ::MyStokesCL;
 template <class StokesProblemT, class ParamsT>
 void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 {
-
     TimerCL timer;
     timer.Reset();
 
@@ -332,6 +331,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
     VelVecDescCL* v2= &loc_v;
     VecDescCL*    p1= &Stokes.p;
     VecDescCL*    p2= &loc_p;
+    VelVecDescCL  cplM(vidx1);
 
     int step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
@@ -345,15 +345,14 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 
     do
     {
-        if( C_Stokes.misc_MarkLower != 0) MarkLower(MG,C_Stokes.misc_MarkLower);
+        if( C_Stokes.misc_MarkLower != 0) MarkLower( MG, C_Stokes.misc_MarkLower);
 
         MG.Refine();
 
-        if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes)
-        	|| StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes)) {
-            Stokes.SetNumVelLvl( MG.GetNumLevel());
+        if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+        	Stokes.SetNumVelLvl( MG.GetNumLevel());
+        if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
             Stokes.SetNumPrLvl( MG.GetNumLevel());
-        }
 
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
@@ -379,10 +378,22 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         Stokes.A.SetIdx(vidx1, vidx1);
         Stokes.M.SetIdx(vidx1, vidx1);
         Stokes.B.SetIdx(pidx1, vidx1);
+        cplM.SetIdx( vidx1);
         timer.Reset();
         timer.Start();
         Stokes.SetupSystem(&Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c);
+
+        VectorCL tmpb(Stokes.b.Data);
+
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, 0.0);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
+
+        tmpb -= Stokes.b.Data;
+
+        std::cout << "Norm diff rhs1: " << norm(tmpb)/norm( Stokes.b.Data) << std::endl;
+        std::cout << "Max  diff rhs1: " << (std::abs(tmpb)).max() << std::endl;
         timer.Stop();
+
         std::cout << "SetupSystem: " << timer.GetTime() << " seconds." << std::endl;
         timer.Reset();
 
@@ -393,7 +404,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 
         if( StokesSolverFactoryHelperCL<ParamsT>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<ParamsT>().PrMGUsed(C_Stokes)) {
             Stokes.prM.Data.resize(pidx1->size());
-            Stokes.prA.Data.resize(pidx1->size()); // superflous?
+            Stokes.prA.Data.resize(pidx1->size()); // superflous? perhaps needed by a preconditioner
         }
 
         Stokes.prM.SetIdx( pidx1, pidx1);
@@ -469,11 +480,10 @@ void Strategy( StokesProblemT& Stokes)
     if( C_Stokes.misc_ModifyGrid == 1)
         MakeInitialTriangulation( MG, &SignedDistToInterface, C_Stokes.ref_Width, C_Stokes.ref_CoarsestLevel, C_Stokes.ref_FinestLevel);
 
-    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes)
-    	|| StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes)) {
-        Stokes.SetNumVelLvl( MG.GetNumLevel());
+    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+    	Stokes.SetNumVelLvl( MG.GetNumLevel());
+    if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
         Stokes.SetNumPrLvl( MG.GetNumLevel());
-    }
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), &Stokes.vel_idx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), &Stokes.pr_idx);
@@ -483,7 +493,7 @@ void Strategy( StokesProblemT& Stokes)
     Stokes.v.SetIdx( &Stokes.vel_idx);
     Stokes.p.SetIdx( &Stokes.pr_idx);
     Stokes.A.SetIdx( &Stokes.vel_idx, &Stokes.vel_idx);
-    Stokes.B.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
+    Stokes.B.SetIdx( &Stokes.pr_idx, &Stokes.vel_idx);
     Stokes.M.SetIdx( &Stokes.vel_idx, &Stokes.vel_idx);
     Stokes.prM.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
     Stokes.SetupPrMass( &Stokes.prM);
@@ -503,8 +513,11 @@ void Strategy( StokesProblemT& Stokes)
     std::cout << line << "Discretize (setup linear equation system) ...\n";
 
     timer.Reset();
-    if( C_Stokes.tm_NumSteps != 0)
-        Stokes.SetupInstatSystem( &Stokes.A, &Stokes.B, &Stokes.M);
+    if( C_Stokes.tm_NumSteps != 0) {
+    	Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &Stokes.b, 0.0);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
+        Stokes.b.Clear(0.0);
+    }
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
