@@ -332,10 +332,6 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
     VelVecDescCL* v2= &loc_v;
     VecDescCL*    p1= &Stokes.p;
     VecDescCL*    p2= &loc_p;
-    VelVecDescCL* b= &Stokes.b;
-    VelVecDescCL* c= &Stokes.c;
-    MLMatDescCL*  A= &Stokes.A;
-    MLMatDescCL*  B= &Stokes.B;
 
     int step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
@@ -364,8 +360,8 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         std::cout << "old and new TriangLevel: " << vidx2->TriangLevel() << ", "
                   << vidx1->TriangLevel() << std::endl;
         MG.SizeInfo(std::cout);
-        b->SetIdx(vidx1);
-        c->SetIdx(pidx1);
+        Stokes.b.SetIdx(vidx1);
+        Stokes.c.SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
         std::cout << "Number of pressure unknowns: " << p2->Data.size() << ", "
@@ -380,11 +376,12 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
             p2->Reset();
         }
 
-        A->SetIdx(vidx1, vidx1);
-        B->SetIdx(pidx1, vidx1);
+        Stokes.A.SetIdx(vidx1, vidx1);
+        Stokes.M.SetIdx(vidx1, vidx1);
+        Stokes.B.SetIdx(pidx1, vidx1);
         timer.Reset();
         timer.Start();
-        Stokes.SetupSystem(A, b, B, c);
+        Stokes.SetupSystem(&Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c);
         timer.Stop();
         std::cout << "SetupSystem: " << timer.GetTime() << " seconds." << std::endl;
         timer.Reset();
@@ -402,15 +399,15 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         Stokes.prM.SetIdx( pidx1, pidx1);
         Stokes.SetupPrMass( &Stokes.prM);
 
-        double err0= norm_sq( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data)
-	                 +norm_sq( B->Data*v1->Data - c->Data);
+        double err0= norm_sq( Stokes.A.Data*v1->Data + transp_mul( Stokes.B.Data, p1->Data) - Stokes.b.Data)
+	                 +norm_sq( Stokes.B.Data*v1->Data - Stokes.c.Data);
         std::cout << "000 residual: " << std::sqrt( err0) << std::endl;
 
         timer.Start();
-        solver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
+        solver.Solve( Stokes.A.Data, Stokes.B.Data, v1->Data, p1->Data, Stokes.b.Data, Stokes.c.Data);
         timer.Stop();
-        double err= norm_sq( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data)
-                    +norm_sq( B->Data*v1->Data - c->Data);
+        double err= norm_sq( Stokes.A.Data*v1->Data + transp_mul( Stokes.B.Data, p1->Data) - Stokes.b.Data)
+                    +norm_sq( Stokes.B.Data*v1->Data - Stokes.c.Data);
         std::cout << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
         std::cout << "Solver: "<<timer.GetTime()<<" seconds.\n";
         if(C_Stokes.stc_Solution_Vel.compare("None")!=0)  // check whether solution is given
@@ -427,10 +424,10 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
             new_marks= Estimator.Estimate(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG) );
         timer.Stop();
         std::cout << "Estimation: " << timer.GetTime() << " seconds.\n";
-        A->Reset();
-        B->Reset();
-        b->Reset();
-        c->Reset();
+        Stokes.A.Reset();
+        Stokes.B.Reset();
+        Stokes.b.Reset();
+        Stokes.c.Reset();
 
         std::swap(v2, v1);
         std::swap(p2, p1);
