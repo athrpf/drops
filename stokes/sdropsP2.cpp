@@ -375,15 +375,18 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
             p2->Reset();
         }
 
-        Stokes.A.SetIdx(vidx1, vidx1);
-        Stokes.M.SetIdx(vidx1, vidx1);
-        Stokes.B.SetIdx(pidx1, vidx1);
+        Stokes.A.SetIdx  ( vidx1, vidx1);
+        Stokes.M.SetIdx  ( vidx1, vidx1);
+        Stokes.B.SetIdx  ( pidx1, vidx1);
+        Stokes.prM.SetIdx( pidx1, pidx1);
+
         cplM.SetIdx( vidx1);
         timer.Reset();
         timer.Start();
 
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, 0.0);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
+        Stokes.SetupPrMass( &Stokes.prM);
 
         timer.Stop();
 
@@ -393,9 +396,6 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         if( C_Stokes.stc_Solution_Vel.compare("None")!=0 )  // check whether solution is given
             Stokes.GetDiscError( StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::LsgPr);
         timer.Reset();
-
-        Stokes.prM.SetIdx( pidx1, pidx1);
-        Stokes.SetupPrMass( &Stokes.prM);
 
         double err0= norm_sq( Stokes.A.Data*v1->Data + transp_mul( Stokes.B.Data, p1->Data) - Stokes.b.Data)
 	                 +norm_sq( Stokes.B.Data*v1->Data - Stokes.c.Data);
@@ -423,6 +423,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         timer.Stop();
         std::cout << "Estimation: " << timer.GetTime() << " seconds.\n";
         Stokes.A.Reset();
+        Stokes.M.Reset();
         Stokes.B.Reset();
         Stokes.b.Reset();
         Stokes.c.Reset();
@@ -475,17 +476,15 @@ void Strategy( StokesProblemT& Stokes)
     Stokes.CreateNumberingVel( MG.GetLastLevel(), &Stokes.vel_idx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), &Stokes.pr_idx);
 
-    Stokes.b.SetIdx( &Stokes.vel_idx);
-    Stokes.c.SetIdx( &Stokes.pr_idx);
-    Stokes.v.SetIdx( &Stokes.vel_idx);
-    Stokes.p.SetIdx( &Stokes.pr_idx);
-    Stokes.A.SetIdx( &Stokes.vel_idx, &Stokes.vel_idx);
-    Stokes.B.SetIdx( &Stokes.pr_idx, &Stokes.vel_idx);
-    Stokes.M.SetIdx( &Stokes.vel_idx, &Stokes.vel_idx);
-    Stokes.prM.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
-    Stokes.SetupPrMass( &Stokes.prM);
-    Stokes.prA.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
-    Stokes.SetupPrStiff( &Stokes.prA);
+    Stokes.b.SetIdx  ( &Stokes.vel_idx);
+    Stokes.c.SetIdx  ( &Stokes.pr_idx);
+    Stokes.v.SetIdx  ( &Stokes.vel_idx);
+    Stokes.p.SetIdx  ( &Stokes.pr_idx);
+    Stokes.A.SetIdx  ( &Stokes.vel_idx, &Stokes.vel_idx);
+    Stokes.M.SetIdx  ( &Stokes.vel_idx, &Stokes.vel_idx);
+    Stokes.B.SetIdx  ( &Stokes.pr_idx,  &Stokes.vel_idx);
+    Stokes.prM.SetIdx( &Stokes.pr_idx,  &Stokes.pr_idx);
+    Stokes.prA.SetIdx( &Stokes.pr_idx,  &Stokes.pr_idx);
 
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
@@ -503,6 +502,8 @@ void Strategy( StokesProblemT& Stokes)
     if( C_Stokes.tm_NumSteps != 0) {
     	Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &Stokes.b, 0.0);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
+        Stokes.SetupPrMass ( &Stokes.prM);
+        Stokes.SetupPrStiff( &Stokes.prA);
         Stokes.b.Clear(0.0);
         Stokes.c.Clear(0.0);
     }
@@ -522,6 +523,7 @@ void Strategy( StokesProblemT& Stokes)
     {
         MLMatrixCL* PVel = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPVel() : obsoletefactory.GetPVel();
         SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
+
         std::cout << "Check MG-Data..." << std::endl;
         std::cout << "                begin     " << Stokes.vel_idx.GetCoarsest().NumUnknowns() << std::endl;
         std::cout << "                end       " << Stokes.vel_idx.GetFinest().NumUnknowns() << std::endl;
@@ -531,6 +533,12 @@ void Strategy( StokesProblemT& Stokes)
     {
         MLMatrixCL* PPr = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPPr() : obsoletefactory.GetPPr();
         SetupP1ProlongationMatrix( MG, *PPr, &Stokes.pr_idx, &Stokes.pr_idx);
+
+        std::cout << "Check MG-Data..." << std::endl;
+        std::cout << "                begin     " << Stokes.pr_idx.GetCoarsest().NumUnknowns() << std::endl;
+        std::cout << "                end       " << Stokes.pr_idx.GetFinest().NumUnknowns() << std::endl;
+        CheckMGData( Stokes.prM.Data, *PPr);
+
     }
 
     // choose time discretization scheme
@@ -546,16 +554,11 @@ void Strategy( StokesProblemT& Stokes)
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
 
-    if( C_Stokes.tm_NumSteps != 0){
-        TimeScheme->SetTimeStep( C_Stokes.tm_StepSize);
-    }
-
     if (C_Stokes.tm_NumSteps == 0) {
         SolveStatProblem<MyStokesCL, Params>( Stokes, *stokessolver);
     }
-
-    // Solve the linear equation system
-    if( C_Stokes.tm_NumSteps != 0){
+    else {
+        TimeScheme->SetTimeStep( C_Stokes.tm_StepSize);
         Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
     }
 
