@@ -379,6 +379,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         Stokes.M.SetIdx  ( vidx1, vidx1);
         Stokes.B.SetIdx  ( pidx1, vidx1);
         Stokes.prM.SetIdx( pidx1, pidx1);
+	Stokes.prA.SetIdx( pidx1, pidx1);
 
         cplM.SetIdx( vidx1);
         timer.Reset();
@@ -387,6 +388,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, 0.0);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
         Stokes.SetupPrMass( &Stokes.prM);
+	Stokes.SetupPrStiff( &Stokes.prA);
 
         timer.Stop();
 
