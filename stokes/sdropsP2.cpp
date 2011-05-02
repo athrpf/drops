@@ -381,17 +381,10 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         cplM.SetIdx( vidx1);
         timer.Reset();
         timer.Start();
-        Stokes.SetupSystem(&Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c);
-
-        VectorCL tmpb(Stokes.b.Data);
 
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, 0.0);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
 
-        tmpb -= Stokes.b.Data;
-
-        std::cout << "Norm diff rhs1: " << norm(tmpb)/norm( Stokes.b.Data) << std::endl;
-        std::cout << "Max  diff rhs1: " << (std::abs(tmpb)).max() << std::endl;
         timer.Stop();
 
         std::cout << "SetupSystem: " << timer.GetTime() << " seconds." << std::endl;
@@ -400,12 +393,6 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         if( C_Stokes.stc_Solution_Vel.compare("None")!=0 )  // check whether solution is given
             Stokes.GetDiscError( StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::LsgPr);
         timer.Reset();
-
-
-        if( StokesSolverFactoryHelperCL<ParamsT>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<ParamsT>().PrMGUsed(C_Stokes)) {
-            Stokes.prM.Data.resize(pidx1->size());
-            Stokes.prA.Data.resize(pidx1->size()); // superflous? perhaps needed by a preconditioner
-        }
 
         Stokes.prM.SetIdx( pidx1, pidx1);
         Stokes.SetupPrMass( &Stokes.prM);
@@ -517,6 +504,7 @@ void Strategy( StokesProblemT& Stokes)
     	Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &Stokes.b, 0.0);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
         Stokes.b.Clear(0.0);
+        Stokes.c.Clear(0.0);
     }
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
@@ -598,7 +586,9 @@ void Strategy( StokesProblemT& Stokes)
 
     if(C_Stokes.stc_Solution_Vel.compare("None")!=0 && C_Stokes.tm_NumSteps != 0)  // check whether solution is given
     {
-        Stokes.SetupSystem( &Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c, Stokes.v.t);
+        VelVecDescCL  cplM( &Stokes.vel_idx);
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, Stokes.v.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.v.t);
         Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
     }
 

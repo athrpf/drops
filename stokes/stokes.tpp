@@ -181,193 +181,14 @@ inline double Quad( const TetraCL& s, instat_scalar_fun_ptr f, int i, int j,  do
 *                                   setup routines
 *****************************************************************************************************/
 
-
-template <class CoeffT>
-  void
-  SetupSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const StokesBndDataCL& BndData, MatrixCL& matA,
-               VelVecDescCL* vecA, MatrixCL& matB, VelVecDescCL* vecB, IdxDescCL& RowIdxA, IdxDescCL& RowIdxB, double t)
-/// Sets up the stiffness matrices and right hand sides
-/// \todo (merge) No output "entering SetupSystem: ..." in parallel version. OK? Same question for all Setup procedures.
-{
-    if ( vecA != 0)
-    {
-        vecA->Clear( t);
-        vecB->Clear( t);
-    }
-
-    const IdxT num_unks_vel= RowIdxA.NumUnknowns();
-    const IdxT num_unks_pr=  RowIdxB.NumUnknowns();
-
-    MatrixBuilderCL A(&matA, num_unks_vel, num_unks_vel),
-                    B(&matB, num_unks_pr,  num_unks_vel);
-    VelVecDescCL& b   = *vecA;
-    VelVecDescCL& c   = *vecB;
-    const Uint lvl    = RowIdxA.TriangLevel();
-    const Uint vidx   = RowIdxA.GetIdx(),
-               pidx   = RowIdxB.GetIdx();
-
-    IdxT Numb[10], prNumb[4];
-    bool IsOnDirBnd[10];
-
-    const IdxT stride= 1;   // stride between unknowns on same simplex, which
-                            // depends on numbering of the unknowns
-#ifndef _PAR
-    std::cout << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
-#endif
-
-    // fill value part of matrices
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
-    SMatrixCL<3,3> T;
-    double coup[10][10];
-    double det, absdet;
-    SVectorCL<3> tmp;
-
-    P2DiscCL::GetGradientsOnRef(GradRef);
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        GetTrafoTr(T,det,*sit);
-        P2DiscCL::GetGradients(Grad, GradRef, T);
-        absdet= std::fabs(det);
-
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb and IsOnDirBnd
-        for(int i=0; i<4; ++i)
-        {
-            if(!(IsOnDirBnd[i]= BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
-        }
-        for(int i=0; i<6; ++i)
-        {
-            if (!(IsOnDirBnd[i+4]= BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
-        }
-
-        // compute all couplings between HatFunctions on edges and verts
-        for(int i=0; i<10; ++i)
-            for(int j=0; j<=i; ++j)
-            {
-                // dot-product of the gradients
-                coup[i][j]= Coeff.nu * Quad2CL<>( dot(Grad[i], Grad[j])).quad(absdet);
-                coup[i][j]+= Quad(*sit, CoeffT::q, i, j)*absdet;
-                coup[j][i]= coup[i][j];
-            }
-
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
-            {
-                for(int j=0; j<10; ++j)
-                {
-                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
-                    {
-                        A(Numb[i],          Numb[j])+=          coup[j][i];
-                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i];
-                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
-                    }
-                    else // coupling with vert/edge j on right-hand-side
-                        if (vecA != 0)
-                        {
-                            tmp= j<4 ? BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t)
-                                    : BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t);
-                            b.Data[Numb[i]]-=          coup[j][i] * tmp[0];
-                            b.Data[Numb[i]+stride]-=   coup[j][i] * tmp[1];
-                            b.Data[Numb[i]+2*stride]-= coup[j][i] * tmp[2];
-                        }
-                }
-                if ( vecA !=0)
-                {
-                    tmp= P2DiscCL::Quad(*sit, CoeffT::f, i, t)*absdet;
-                    b.Data[Numb[i]]+=          tmp[0];
-                    b.Data[Numb[i]+stride]+=   tmp[1];
-                    b.Data[Numb[i]+2*stride]+= tmp[2];
-
-                    if ( i<4 ? BndData.Vel.IsOnNatBnd(*sit->GetVertex(i))
-                            : BndData.Vel.IsOnNatBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on natural boundary
-                    {
-                        Uint face;
-                        for (int f=0; f < (i<4?3:2); ++f)
-                        {// TODO: FIXME: Hier muss doch eigentlich eine 2D-Integrationsformel fuer P2-Elemente stehen, oder?
-                            face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
-                            if ( sit->IsBndSeg(face))
-                            {
-    /*                            tmp= Quad2D(*sit, face, i, BndData_.Vel.GetSegData(sit->GetBndIdx(face)).GetBndFun(), t);
-                                b.Data[Numb[i]]+=          tmp[0];
-                                b.Data[Numb[i]+stride]+=   tmp[1];
-                                b.Data[Numb[i]+2*stride]+= tmp[2];
-    */                        }
-                        }
-                    }
-                }
-            }
-
-        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel)
-        {
-            if (!IsOnDirBnd[vel])
-                for(int pr=0; pr<4; ++pr)
-                {
-                    // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
-                    tmp= Grad[vel].quadP1( pr, absdet);
-                    B(prNumb[pr],Numb[vel])-=          tmp[0];
-                    B(prNumb[pr],Numb[vel]+stride)-=   tmp[1];
-                    B(prNumb[pr],Numb[vel]+2*stride)-= tmp[2];
-                }
-            else // put coupling on rhs
-                if ( vecB != 0)
-                {
-                    const Point3DCL bndval= vel<4 ? BndData.Vel.GetDirBndValue( *sit->GetVertex(vel), t)
-                                                :  BndData.Vel.GetDirBndValue( *sit->GetEdge(vel-4), t);
-                    for(int pr=0; pr<4; ++pr)
-                    {
-                        // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
-                        tmp= Grad[vel].quadP1( pr, absdet);
-                        c.Data[prNumb[pr]]+= inner_prod( tmp, bndval);
-                    }
-                }
-        }
-    }
-#ifndef _PAR
-    std::cout << "done: value part fill" << std::endl;
-#endif
-
-    A.Build();
-    B.Build();
-#ifndef _PAR
-    std::cout << matA.num_nonzeros() << " nonzeros in A, "
-              << matB.num_nonzeros() << " nonzeros in B! " << std::endl;
-#endif
-}
-
-template <class Coeff>
-  void
-  StokesP2P1CL<Coeff>::SetupSystem( MLMatDescCL* matA, VelVecDescCL* vecA,
-      MLMatDescCL* matB, VelVecDescCL* vecB, double t) const
-{
-    MLMatrixCL::iterator  itA    = matA->Data.begin();
-    MLMatrixCL::iterator  itB    = matB->Data.begin();
-    MLIdxDescCL::iterator itRowA = matA->RowIdx->begin();
-    MLIdxDescCL::iterator itRowB = matB->RowIdx->begin();
-    for ( size_t lvl=0; lvl < matA->Data.size(); ++lvl, ++itA, ++itB, ++itRowA, ++itRowB)
-    {
-        if (lvl != matA->Data.size()-1)
-            SetupSystem_P2P1( MG_, Coeff_, BndData_, *itA, 0, *itB, 0, *itRowA, *itRowB, t);
-        else
-            SetupSystem_P2P1( MG_, Coeff_, BndData_, *itA, vecA, *itB, vecB, *itRowA, *itRowB, t);
-    }
-}
-
 /// \brief Raw data for "system 1", both for one phase and two phases.
 ///
 /// scalar-valued mass-matrix, scalar-valued mu-Laplacian, genuinely tensor-valued part of the deformation tensor and the integrals of \f$\rho\phi_i\f$ for the gravitation as load-vector
 /// \todo: Precise description
-struct LocalSystem1DataCL
+struct LocalStokesSystem1DataCL
 {
     double         M [10][10];
     double         A [10][10];
-
-    double rho_phi[10];
 };
 
 /// \brief Setup of the local "system 1" on a tetra in a single phase.
@@ -390,11 +211,10 @@ class LocalStokesSystem1OnePhase_P2CL
     void   rho (double new_rho)       { rho_= new_rho; }
     double rho ()               const { return rho_; }
 
-    void setup (const SMatrixCL<3,3>& T, double absdet, LocalSystem1DataCL& loc)
+    void setup (const SMatrixCL<3,3>& T, double absdet, LocalStokesSystem1DataCL& loc)
     {
         P2DiscCL::GetGradients( Grad, GradRef, T);
         for (Uint i= 0; i < 10; ++i) {
-            loc.rho_phi[i]= rho()*quad( Ones, absdet, Quad2Data_Mul_P2_CL(), i);
             for (Uint j= 0; j <= i; ++j) {
                 // M: As we are not at the phase-boundary this is exact.
                 loc.M[j][i]= rho()*P2DiscCL::GetMass( j, i)*absdet;
@@ -431,7 +251,7 @@ class StokesSystem1Accumulator_P2CL : public TetraAccumulatorCL
     SparseMatBuilderCL<double, SDiagMatrixCL<3> >* mM_;
 
     LocalStokesSystem1OnePhase_P2CL local_onephase; ///< used on tetras in a single phase
-    LocalSystem1DataCL loc; ///< Contains the memory, in which the local operators are set up; former coupM, coupA, coupAk, rho_phi.
+    LocalStokesSystem1DataCL loc; ///< Contains the memory, in which the local operators are set up; former coupM, coupA, coupAk, rho_phi.
 
     LocalNumbP2CL n; ///< global numbering of the P2-unknowns
 
@@ -875,6 +695,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
                             // depends on numbering of the unknowns
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    Quad2CL<Point3DCL> rhs;
     SMatrixCL<3,3> T;
     double coup[10][10], coupMass[10][10];
     double det, absdet;
@@ -888,6 +709,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
         GetTrafoTr(T,det,*sit);
         P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
+        rhs.assign( *sit, Coeff::f, tf);
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -937,7 +759,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
                         id[Numb[i]+2*stride]-= val*tmp[2];
                     }
                 }
-                tmp= P2DiscCL::Quad(*sit, Coeff::f, i, tf)*absdet;
+                tmp= rhs.quadP2( i, absdet);//P2DiscCL::Quad(*sit, Coeff::f, i, tf)*absdet;
                 f[Numb[i]]+=          tmp[0];
                 f[Numb[i]+stride]+=   tmp[1];
                 f[Numb[i]+2*stride]+= tmp[2];

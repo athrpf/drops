@@ -111,9 +111,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetNumPrLvl ( size_t n);
     //@}
 
-    /// \brief Set up matrices and complete rhs
-    void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double = 0.0) const;
-    /// Set up matrices A, M and rhs b (depending on phase bnd)
+    /// Set up matrices A, M and rhs b
     void SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VelVecDescCL* b, VelVecDescCL* cplA, VelVecDescCL* cplM, double t) const;
     /// Set up matrix B and rhs c
     void SetupSystem2( MLMatDescCL* B, VecDescCL* c, double t) const;
