@@ -84,6 +84,9 @@ class TimeDiscStokesCL
     virtual void SetTimeStep( double dt, double theta)= 0;
 
     virtual void DoStep( VectorCL& v, VectorCL& p)= 0;
+
+    MLMatrixCL* GetUpperLeftBlock() { return &_mat; }
+    const MLMatrixCL* GetUpperLeftBlock() const { return &_mat; }
 };
 
 template < class StokesT, class SolverT>
