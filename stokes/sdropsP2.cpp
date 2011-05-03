@@ -309,8 +309,8 @@ namespace DROPS // for Strategy
 
 using ::MyStokesCL;
 
-template <class StokesProblemT, class ParamsT>
-void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
+template <class StokesProblemT, class ParamsT, class ProlongVelT, class ProlongPrT>
+void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver, ProlongVelT* PVel=0, ProlongPrT* PPr=0)
 {
     TimerCL timer;
     timer.Reset();
@@ -349,10 +349,14 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 
         MG.Refine();
 
-        if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+        if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes)){
         	Stokes.SetNumVelLvl( MG.GetNumLevel());
-        if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
+        	vidx1->resize( MG.GetNumLevel(), vecP2_FE);
+        }
+        if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes)){
             Stokes.SetNumPrLvl( MG.GetNumLevel());
+            pidx1->resize( MG.GetNumLevel(), P1_FE);
+        }
 
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
@@ -379,7 +383,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         Stokes.M.SetIdx  ( vidx1, vidx1);
         Stokes.B.SetIdx  ( pidx1, vidx1);
         Stokes.prM.SetIdx( pidx1, pidx1);
-	Stokes.prA.SetIdx( pidx1, pidx1);
+        Stokes.prA.SetIdx( pidx1, pidx1);
 
         cplM.SetIdx( vidx1);
         timer.Reset();
@@ -388,7 +392,12 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, 0.0);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
         Stokes.SetupPrMass( &Stokes.prM);
-	Stokes.SetupPrStiff( &Stokes.prA);
+        Stokes.SetupPrStiff( &Stokes.prA);
+        if( PVel)
+            SetupP2ProlongationMatrix( MG, *PVel, vidx1, vidx1);
+
+        if( PPr)
+            SetupP1ProlongationMatrix( MG, *PPr, pidx1, pidx1);
 
         timer.Stop();
 
@@ -521,28 +530,6 @@ void Strategy( StokesProblemT& Stokes)
     StokesSolverFactoryObsoleteCL< StokesProblemT,Params> obsoletefactory( Stokes, C_Stokes);
     StokesSolverBaseCL* stokessolver = (C_Stokes.stk_StokesMethod < 50000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
 
-    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
-    {
-        MLMatrixCL* PVel = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPVel() : obsoletefactory.GetPVel();
-        SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
-
-        std::cout << "Check MG-Data..." << std::endl;
-        std::cout << "                begin     " << Stokes.vel_idx.GetCoarsest().NumUnknowns() << std::endl;
-        std::cout << "                end       " << Stokes.vel_idx.GetFinest().NumUnknowns() << std::endl;
-        CheckMGData( Stokes.A.Data, *PVel);
-    }
-    if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
-    {
-        MLMatrixCL* PPr = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPPr() : obsoletefactory.GetPPr();
-        SetupP1ProlongationMatrix( MG, *PPr, &Stokes.pr_idx, &Stokes.pr_idx);
-
-        std::cout << "Check MG-Data..." << std::endl;
-        std::cout << "                begin     " << Stokes.pr_idx.GetCoarsest().NumUnknowns() << std::endl;
-        std::cout << "                end       " << Stokes.pr_idx.GetFinest().NumUnknowns() << std::endl;
-        CheckMGData( Stokes.prM.Data, *PPr);
-
-    }
-
     // choose time discretization scheme
     TimeDiscStokesCL< StokesProblemT,  StokesSolverBaseCL>* TimeScheme;
     switch ( C_Stokes.tm_Scheme)
@@ -557,11 +544,35 @@ void Strategy( StokesProblemT& Stokes)
     }
 
     if (C_Stokes.tm_NumSteps == 0) {
-        SolveStatProblem<MyStokesCL, Params>( Stokes, *stokessolver);
+        SolveStatProblem<MyStokesCL, Params>( Stokes, *stokessolver,
+        		( C_Stokes.stk_StokesMethod < 50000) ? factory.GetPVel() : obsoletefactory.GetPVel(),
+                ( C_Stokes.stk_StokesMethod < 50000) ? factory.GetPPr()  : obsoletefactory.GetPPr());
     }
     else {
         TimeScheme->SetTimeStep( C_Stokes.tm_StepSize);
         Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+
+        if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+        {
+            MLMatrixCL* PVel = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPVel() : obsoletefactory.GetPVel();
+            SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
+
+            std::cout << "Check MG-Data..." << std::endl;
+            std::cout << "                begin     " << Stokes.vel_idx.GetCoarsest().NumUnknowns() << std::endl;
+            std::cout << "                end       " << Stokes.vel_idx.GetFinest().NumUnknowns() << std::endl;
+            CheckMGData( Stokes.A.Data, *PVel);
+        }
+
+        if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
+        {
+            MLMatrixCL* PPr = (C_Stokes.stk_StokesMethod < 50000) ? factory.GetPPr() : obsoletefactory.GetPPr();
+            SetupP1ProlongationMatrix( MG, *PPr, &Stokes.pr_idx, &Stokes.pr_idx);
+
+            std::cout << "Check MG-Data..." << std::endl;
+            std::cout << "                begin     " << Stokes.pr_idx.GetCoarsest().NumUnknowns() << std::endl;
+            std::cout << "                end       " << Stokes.pr_idx.GetFinest().NumUnknowns() << std::endl;
+            CheckMGData( Stokes.prM.Data, *PPr);
+        }
     }
 
     Ensight6OutCL  ens(C_Stokes.ens_EnsCase+".case", C_Stokes.tm_NumSteps+1, C_Stokes.ens_Binary, C_Stokes.ens_MasterOut);
