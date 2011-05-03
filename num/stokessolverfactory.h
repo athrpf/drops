@@ -553,8 +553,6 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
 void StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
     SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
     if ( APc_ == PVanka_SM || APc_ == BraessSarazin_SM) { //  Vanka or Braess Sarazin smoother
-        mincommispc_.SetMatrices(A, B, Mvel, M, pr_idx);
-        bdinvbtispc_.SetMatrices(A, B, Mvel, M, pr_idx);
         bbtispc_.SetMatrices(B, Mvel, M, pr_idx);
     }
     if ( SPc_ == VankaSchur_SPC) {              // VankaSchur
