@@ -865,7 +865,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         #endif
 
         IF_MASTER
-            std::cout << "\nChecken der Loesung..."
+            std::cout << "\nCheck the solution..."
                       << "\n|| Ax + BTy - F || = " << norm_res1 << ", max. " << norm_sup_res_1
                       << "\n||       Bx - G || = " << norm_res2 << ", max. " << norm_sup_res_2
                       << '\n' << std::endl;
@@ -1094,6 +1094,22 @@ void StokesP2P1CL<Coeff>::SetNumPrLvl( size_t n)
     B.Data.resize( pr_idx.size());
     prM.Data.resize( pr_idx.size());
     prA.Data.resize( pr_idx.size());
+}
+
+template <class Coeff>
+void StokesP2P1CL<Coeff>::SetIdx()
+{
+    MLIdxDescCL* vidx= &vel_idx;
+    MLIdxDescCL* pidx= &pr_idx;
+
+    b.SetIdx   ( vidx);
+    c.SetIdx   ( pidx);
+
+    A.SetIdx   ( vidx, vidx);
+    B.SetIdx   ( pidx, vidx);
+    prM.SetIdx ( pidx, pidx);
+    prA.SetIdx ( pidx, pidx);
+    M.SetIdx   ( vidx, vidx);
 }
 
 //*********************************************************************

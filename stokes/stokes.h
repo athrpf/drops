@@ -109,6 +109,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { idx->DeleteNumbering( MG_); }
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
+    void SetIdx();
     //@}
 
     /// Set up matrices A, M and rhs b
