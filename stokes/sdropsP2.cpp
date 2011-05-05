@@ -277,8 +277,8 @@ void Strategy( StokesProblemT& Stokes)
         if (C_Stokes.stk_StokesMethod < 500000) {
             factory.SetMatrixA( &Stokes.A.Data.GetFinest());
             //for Stokes-MGM: coarse level solver uses bbt
-            factory.SetMatrices( &Stokes.A.Data.GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                 &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+            factory.SetMatrices( &Stokes.A.Data, &Stokes.B.Data,
+                                 &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
         }
     	SolveStatProblem<MyStokesCL, Params>( Stokes, *stokessolver);
 
@@ -288,8 +288,8 @@ void Strategy( StokesProblemT& Stokes)
         Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
         if (C_Stokes.stk_StokesMethod < 500000) {
         	factory.SetMatrixA ( &TimeScheme->GetUpperLeftBlock()->GetFinest());
-        	factory.SetMatrices( &TimeScheme->GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-        	                     &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        	factory.SetMatrices( TimeScheme->GetUpperLeftBlock(), &Stokes.B.Data,
+        	                     &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
         }
     }
 

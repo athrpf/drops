@@ -345,14 +345,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
         stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        stokessolverfactory.SetMatrices( navstokessolver->GetAN(), &Stokes.B.Data,
+                                         &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
     }
     else {
         stokessolverfactory.SetMatrixA( &timedisc->GetUpperLeftBlock()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( &timedisc->GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        stokessolverfactory.SetMatrices( timedisc->GetUpperLeftBlock(), &Stokes.B.Data,
+                                         &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
     }
 
     UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
