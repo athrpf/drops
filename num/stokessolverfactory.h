@@ -554,6 +554,7 @@ void StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
     SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx) {
     if ( APc_ == PVanka_SM || APc_ == BraessSarazin_SM) { //  Vanka or Braess Sarazin smoother
         bbtispc_.SetMatrices(B->GetCoarsestPtr(), Mvel->GetCoarsestPtr(), M->GetCoarsestPtr(), pr_idx->GetCoarsestPtr());
+        return;
     }
     if ( SPc_ == VankaSchur_SPC) {              // VankaSchur
         vankaschurpc_.SetAB(A->GetCoarsestPtr(), B->GetCoarsestPtr());

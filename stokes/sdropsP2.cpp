@@ -273,6 +273,8 @@ void Strategy( StokesProblemT& Stokes)
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
 
+    StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
+
     if (C_Stokes.tm_NumSteps == 0) {
         if (C_Stokes.stk_StokesMethod < 500000) {
             factory.SetMatrixA( &Stokes.A.Data.GetFinest());
@@ -285,7 +287,10 @@ void Strategy( StokesProblemT& Stokes)
     }
     else {
         TimeScheme->SetTimeStep( C_Stokes.tm_StepSize);
-        Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+        if (C_Stokes.stc_Solution_Vel.compare("None")!=0)
+        	Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+        else
+        	Stokes.InitVel( &Stokes.v, ZeroVel);
         if (C_Stokes.stk_StokesMethod < 500000) {
         	factory.SetMatrixA ( &TimeScheme->GetUpperLeftBlock()->GetFinest());
         	factory.SetMatrices( TimeScheme->GetUpperLeftBlock(), &Stokes.B.Data,
