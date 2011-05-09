@@ -108,6 +108,7 @@ class ParamStokesCoeffCL : public virtual ParamBaseCL
     std::string    		stc_Solution_Vel;
     std::string    		stc_Solution_DVel;
     std::string    		stc_Solution_Pr;
+    double              ns_Nonlinear;
 
   //@}
 

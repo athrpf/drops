@@ -140,7 +140,7 @@ class StokesSolverFactoryBaseCL
     /// Set the A-block in the minimal commutator
     virtual void       SetMatrixA ( const MatrixCL*) = 0;
     /// Set all matrices in Schur complement preconditioner
-    virtual void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*, const IdxDescCL* pr_idx) = 0;
+    virtual void       SetMatrices( const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLIdxDescCL* pr_idx) = 0;
     /// Returns pointer to prolongation for velocity
     virtual ProlongationVelT* GetPVel() = 0;
     /// Returns pointer to prolongation for pressure
@@ -306,7 +306,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     /// Set the A-block in the minimal commutator
     void       SetMatrixA ( const MatrixCL* A) { mincommispc_.SetMatrixA(A); bdinvbtispc_.SetMatrixA(A); }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
-    void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx);
+    void       SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx);
     /// Returns pointer to prolongation for velocity
     ProlongationVelT* GetPVel();
     /// Returns pointer to prolongation for pressure
@@ -551,14 +551,18 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
 void StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
-    SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
+    SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx) {
     if ( APc_ == PVanka_SM || APc_ == BraessSarazin_SM) { //  Vanka or Braess Sarazin smoother
-        mincommispc_.SetMatrices(A, B, Mvel, M, pr_idx);
-        bdinvbtispc_.SetMatrices(A, B, Mvel, M, pr_idx);
-        bbtispc_.SetMatrices(B, Mvel, M, pr_idx);
+        bbtispc_.SetMatrices(B->GetCoarsestPtr(), Mvel->GetCoarsestPtr(), M->GetCoarsestPtr(), pr_idx->GetCoarsestPtr());
+        return;
     }
     if ( SPc_ == VankaSchur_SPC) {              // VankaSchur
-        vankaschurpc_.SetAB(A, B);
+        vankaschurpc_.SetAB(A->GetCoarsestPtr(), B->GetCoarsestPtr());
+    }
+    else {
+        mincommispc_.SetMatrices(A->GetFinestPtr(), B->GetFinestPtr(), Mvel->GetFinestPtr(), M->GetFinestPtr(), pr_idx->GetFinestPtr());
+        bdinvbtispc_.SetMatrices(A->GetFinestPtr(), B->GetFinestPtr(), Mvel->GetFinestPtr(), M->GetFinestPtr(), pr_idx->GetFinestPtr());
+        bbtispc_.SetMatrices(B->GetFinestPtr(), Mvel->GetFinestPtr(), M->GetFinestPtr(), pr_idx->GetFinestPtr());
     }
 }
 
@@ -680,7 +684,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     void       SetMatrixA ( const MatrixCL*)  {};
     /// Nothing is to be done in parallel, because special preconditioners does not exist
-    void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*, const IdxDescCL*){}
+    void       SetMatrices( const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLIdxDescCL*){}
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     ProlongationVelT* GetPVel() { return 0; }
     /// Nothing is to be done in parallel, because special preconditioners does not exist
@@ -891,7 +895,7 @@ class StokesSolverFactoryObsoleteCL : public StokesSolverFactoryBaseCL<StokesT, 
     /// Set the A-block in the minimal commutator
     void       SetMatrixA ( const MatrixCL* /*A*/) { }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
-    void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx);
+    void       SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx);
     /// Returns pointer to prolongation for velocity
     ProlongationVelT* GetPVel();
     /// Returns pointer to prolongation for pressure
@@ -976,7 +980,7 @@ StokesSolverBaseCL* StokesSolverFactoryObsoleteCL<StokesT, ParamsT, Prolongation
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
 void StokesSolverFactoryObsoleteCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
-    SetMatrices( const MatrixCL* /*A*/, const MatrixCL* /*B*/, const MatrixCL* /*Mvel*/, const MatrixCL* /*M*/, const IdxDescCL* /*pr_idx*/) {
+    SetMatrices( const MLMatrixCL* /*A*/, const MLMatrixCL* /*B*/, const MLMatrixCL* /*Mvel*/, const MLMatrixCL* /*M*/, const MLIdxDescCL* /*pr_idx*/) {
 }
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>

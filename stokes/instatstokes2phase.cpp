@@ -79,134 +79,11 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
 }
 
 
-/// \brief Shared data for "system 2" between P1 and P1X.
-/// All members are setup by System2Accumulator_P2P1CL::visit.
-struct LocalSystem2_sharedDataCL
-{
-    IdxT          prNumb[4];  ///< global numbering of the P1-unknowns
-    LocalNumbP2CL n;          ///< global numbering of the P2-unknowns
-
-    Point3DCL dirichlet_val[10]; ///< Dirichlet values, filled in only on the Dirichlet-boundary.
-
-    SparseMatBuilderCL<double, SMatrixCL<1,3> >* mB;
-    VecDescCL*                                   c;
-
-    SMatrixCL<3,3> T;
-    double         absdet;
-};
-
-
-/// \brief Accumulator to set up the matrix B and, if requested the right-hand side C for two-phase flow.
-class System2Accumulator_P2P1CL : public TetraAccumulatorCL
-{
-  private:
-    const TwoPhaseFlowCoeffCL& coeff;
-    const StokesBndDataCL& BndData;
-    const double t;
-
-    const IdxDescCL& RowIdx;
-    const IdxDescCL& ColIdx;
-    MatrixCL& B;
-
-    LocalSystem2_sharedDataCL loc;
-
-    Quad2CL<Point3DCL> GradRef[10],
-                       Grad[10];
-    SMatrixCL<1,3>     locB[10][4];
-
-    ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
-    void local_setup ();
-    ///\brief Update the global system.
-    void update_global_system ();
-
-  public:
-    System2Accumulator_P2P1CL (const TwoPhaseFlowCoeffCL& coeff_arg, const StokesBndDataCL& BndData_arg,
-        const IdxDescCL& RowIdx_arg, const IdxDescCL& ColIdx_arg,
-        MatrixCL& B_arg, VecDescCL* c_arg, double t_arg);
-
-    ///\brief Initializes matrix-builders and load-vectors
-    void begin_accumulation ();
-    ///\brief Builds the matrices
-    void finalize_accumulation();
-
-    void visit (const TetraCL& sit);
-
-    LocalSystem2_sharedDataCL& GetLocalData() { return loc; }
-};
-
-System2Accumulator_P2P1CL::System2Accumulator_P2P1CL (const TwoPhaseFlowCoeffCL& coeff_arg, const StokesBndDataCL& BndData_arg,
-    const IdxDescCL& RowIdx_arg, const IdxDescCL& ColIdx_arg,
-    MatrixCL& B_arg, VecDescCL* c_arg, double t_arg)
-    : coeff( coeff_arg), BndData( BndData_arg), t( t_arg), RowIdx( RowIdx_arg), ColIdx( ColIdx_arg), B( B_arg)
-{
-    loc.c = c_arg;
-    P2DiscCL::GetGradientsOnRef( GradRef);
-}
-
-void System2Accumulator_P2P1CL::begin_accumulation ()
-{
-    loc.mB = new SparseMatBuilderCL<double, SMatrixCL<1,3> > ( &B, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
-    if (loc.c != 0) loc.c->Clear( t);
-}
-
-void System2Accumulator_P2P1CL::finalize_accumulation ()
-{
-    loc.mB->Build();
-    delete loc.mB;
-}
-
-void System2Accumulator_P2P1CL::visit (const TetraCL& tet)
-{
-    double det;
-    GetTrafoTr( loc.T, det, tet);
-    P2DiscCL::GetGradients( Grad, GradRef, loc.T);
-    loc.absdet= std::fabs( det);
-    loc.n.assign( tet, ColIdx, BndData.Vel);
-    GetLocalNumbP1NoBnd( loc.prNumb, tet, RowIdx);
-
-    if (loc.c != 0) {
-        typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-        for (int i= 0; i < 10; ++i)
-            if (!loc.n.WithUnknowns( i)) {
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( loc.n.bndnum[i]).GetBndFun();
-                loc.dirichlet_val[i]= i<4 ? bf( tet.GetVertex( i)->GetCoord(), t)
-                    : bf( GetBaryCenter( *tet.GetEdge( i-4)), t);
-            }
-    }
-    local_setup();
-    update_global_system();
-}
-
-void System2Accumulator_P2P1CL::local_setup ()
-{
-    // b(i,j) =  -\int psi_i * div( phi_j)
-    for(int vel=0; vel<10; ++vel) {
-        for(int pr=0; pr<4; ++pr)
-            locB[vel][pr]= SMatrixCL<1,3>( quad( Grad[vel], loc.absdet, Quad2Data_Mul_P1_CL(), pr));
-    }
-}
-
-void System2Accumulator_P2P1CL::update_global_system ()
-{
-    SparseMatBuilderCL<double, SMatrixCL<1,3> >& mB= *loc.mB;
-
-    for(int vel=0; vel<10; ++vel) {
-        if (loc.n.WithUnknowns( vel))
-            for(int pr=0; pr<4; ++pr)
-                mB( loc.prNumb[pr], loc.n.num[vel])-= locB[vel][pr];
-        else if (loc.c != 0) { // put coupling on rhs
-            for(int pr=0; pr<4; ++pr)
-                loc.c->Data[loc.prNumb[pr]]+= inner_prod( locB[vel][pr], loc.dirichlet_val[vel]); // operator* returns SVectorCL<1>.
-        }
-    }
-}
-
-
 void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c,
         IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 /// Set up matrices B and rhs c
 {
-    System2Accumulator_P2P1CL accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
+    System2Accumulator_P2P1CL<TwoPhaseFlowCoeffCL> accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
     accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
@@ -325,7 +202,7 @@ void System2Accumulator_P2P1XCL::update_global_system ()
 void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1X FEs (X=extended) for vel/pr
 {
-    System2Accumulator_P2P1CL p1_accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
+    System2Accumulator_P2P1CL<TwoPhaseFlowCoeffCL> p1_accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
     System2Accumulator_P2P1XCL p1x_accu( p1_accu.GetLocalData(), coeff, BndData, lset, *RowIdx, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &p1_accu);

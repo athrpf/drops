@@ -109,22 +109,17 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { idx->DeleteNumbering( MG_); }
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
+    void SetIdx();
     //@}
 
-    /// \brief Set up matrices and complete rhs
-    void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double = 0.0) const;
-    /// \brief  Set up only A.
-    void SetupStiffnessMatrix(MLMatDescCL*) const;
+    /// Set up matrices A, M and rhs b
+    void SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VelVecDescCL* b, VelVecDescCL* cplA, VelVecDescCL* cplM, double t) const;
+    /// Set up matrix B and rhs c
+    void SetupSystem2( MLMatDescCL* B, VecDescCL* c, double t) const;
     /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
     void SetupPrStiff(MLMatDescCL* ) const;
     /// \brief  Set up mass-matrix for pressure-unknowns (P1)
     void SetupPrMass(MLMatDescCL*) const;
-    /// \brief  Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme,
-    /// Time-independent
-    void SetupMassMatrix(MLMatDescCL* matI) const;
-
-    /// \brief  Setup time independent part of system
-    void SetupInstatSystem( MLMatDescCL* A, MLMatDescCL* B, MLMatDescCL* M) const;
     /// \brief  Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
     /** If the function is called with the same vector for some arguments (out of 1, 2, 4),
         the vector will contain the sum of the results after the call*/
@@ -151,7 +146,18 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
         { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG()); }
     //@}
+    bool UsesXFEM() { return false; } // just for consistency
 };
+
+//forward declarations
+/// \brief Accumulator to set up the matrix B and, if requested the right-hand side C for Stokes flow.
+template<class CoeffT>
+class System2Accumulator_P2P1CL;
+
+/// \brief Shared data for "system 2" between P1 and P1X.
+/// All members are setup by System2Accumulator_P2P1CL::visit.
+struct LocalSystem2_sharedDataCL;
+
 
 #ifndef _PAR
 template <class Coeff>

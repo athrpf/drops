@@ -415,8 +415,8 @@ public:
     SparseMatBuilderCL(spmatT* mat, size_t rows, size_t cols, bool reuse= false)
         : _rows(rows), _cols(cols), _mat(mat), _reuse( reuse)
     {
-        Assert( _rows%BlockTrait::num_rows == 0, "SparseMatBuilderCL (): number of rows incompatible with block_type", DebugNumericC);
-        Assert( _cols%BlockTrait::num_cols == 0, "SparseMatBuilderCL (): number of columns incompatible with block_type", DebugNumericC);
+        Assert( _rows%BlockTraitT::num_rows == 0, "SparseMatBuilderCL (): number of rows incompatible with block_type", DebugNumericC);
+        Assert( _cols%BlockTraitT::num_cols == 0, "SparseMatBuilderCL (): number of columns incompatible with block_type", DebugNumericC);
         mat->IncrementVersion();
         if (_reuse)
         {

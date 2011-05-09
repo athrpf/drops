@@ -197,7 +197,11 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         NS.InitVel(v1, &MyPdeCL::LsgVel);
         time.Reset();
         time.Start();
-        NS.SetupInstatSystem(A, B, M);
+    	NS.SetupSystem1( A, M, b, b, b, 0.0);
+        NS.SetupSystem2( B, c, 0.0);
+        NS.b.Clear(0.0);
+        NS.c.Clear(0.0);
+
         time.Stop();
         std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
         time.Reset();

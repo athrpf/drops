@@ -239,14 +239,14 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
         stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        stokessolverfactory.SetMatrices( navstokessolver->GetAN(), &Stokes.B.Data,
+                                         &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
     }
     else {
         stokessolverfactory.SetMatrixA( &cpl.GetUpperLeftBlock()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( &cpl.GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        stokessolverfactory.SetMatrices( cpl.GetUpperLeftBlock(), &Stokes.B.Data,
+                                         &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
     }
 
 
