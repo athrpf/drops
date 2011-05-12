@@ -449,7 +449,7 @@ int main (int argc, char** argv)
 
     std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 #ifdef _PAR
-    adap.GetLb().GetLB().SetWeightFnct(3);
+    adap.GetLb().GetLB().SetWeightFnct(1);
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
