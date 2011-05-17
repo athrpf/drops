@@ -1,0 +1,208 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for twophasedrops
+#    simulation of two-phase flow:
+#    droplet in a cuboid
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		10,
+		"StepSize":		0.125,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"StokesMethod":		10101,
+		"InnerIter":		1000,
+		"OuterIter":		200,
+		"InnerTol":		0.6,
+		"OuterTol":		1e-8,
+		"PcAIter":		2,
+		"PcATol":		1e-99,
+		"PcSTol":		1e-4,
+		"XFEMStab":		0.1,
+		"Theta":		1
+	},
+
+	"NavStokes":
+	{
+		"Nonlinear":		1,
+		"Tol":		1e-10,
+		"Iter":		20,
+		"Reduction":		0.1
+	},
+
+	"Levelset":
+	{
+		"_comment":
+"# levelset solver",
+
+		"Tol":		1e-14,
+		"Iter":		1000,
+		"SD":		0.1,
+		"CurvDiff":		-1,
+		"VolCorrection":		1,
+		"Theta":		1
+	},
+
+	"Coupling":
+	{
+		"Tol":		1e-10,
+		"Iter":		20,
+		"Stab":		1.0,
+		"Projection":		0
+	},
+
+	"Reparam":
+	{
+		"_comment":
+"# re-initialization of levelset function",
+
+		"Freq":		1,
+		"Method":		03,
+		"MinGrad":		0.1,
+		"MaxGrad":		10,
+		"NarrowBand":		-1.0
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		1,
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		0.1,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"DensDrop":		1,
+		"ViscDrop":		10,
+		"DensFluid":		10,
+		"ViscFluid":		1,
+		"SmoothZone":		0.05
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"RadDrop":		[ 0.25 0.25 0.25 ],
+		"PosDrop":		[ 0.5 0.5 0.5 ],
+		"Gravity":		[ 0 0 -9.81 ],
+		"FlowDir":		0,
+		"InflowVel":		0,
+		"RadInlet":		1,
+		"InflowFreq":		0,
+		"InflowAmpl":		0
+	},
+
+	"SurfTens":
+	{
+		"_comment":
+"# surface tension",
+
+		"VarTension":		0,
+		"SurfTension":		1,
+		"JumpWidth":		5e-4,
+		"RelPos":		1.5,
+		"DirtFactor":		0.8
+	},
+
+	"Transp":
+	{
+		"_comment":
+"# mass transport",
+
+		"DoTransp":		0,
+		"Theta":		0.5,
+		"Iter":		200,
+		"Tol":		1e-10,
+		"DiffPos":		5e-3,
+		"DiffNeg":		1e-2,
+		"HPos":		1,
+		"HNeg":		0.5,
+		"IniCPos":		0.1,
+		"IniCNeg":		5,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0.1
+	},
+
+	"SurfTransp":
+	{
+		"_comment":
+"# surfactant transport",
+
+		"DoTransp":		0,
+		"Theta":		0.5,
+		"Iter":		1000,
+		"Tol":		1e-10,
+		"OmitBound":		-1.,
+		"Visc":		1e-5
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"risingdroplet",
+		"EnsDir":		"ensight",
+		"Binary":		0,
+		"MasterOut":		1,
+		"GeomName":		"Brick"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		1,
+		"VTKDir":		"vtk",
+		"VTKName":		"risingdroplet",
+		"Binary":		1
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# Write out results, read in for restart",
+
+		"Serialization":		0,
+		"Overwrite":		1,
+		"Inputfile":		"none",
+		"Outputfile":		"mg/data",
+		"Binary":		0
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"RefineSteps":		0,
+		"GeomType":		1,
+		"InitialFile":		"mg/data",
+		"MeshFile":		"1x1x2@3x3x6",
+		"BoundaryType":		"0!0!0!0!0!0",
+		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+	}
+
+}

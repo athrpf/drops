@@ -25,6 +25,7 @@
 #define POISSONCOEFF_H_
 
 #include "misc/container.h"
+#include "misc/params.h"
 #include <sstream>
 
 namespace DROPS{
@@ -62,24 +63,23 @@ class PoissonCoeffCL
     //velocity
     static instat_vector_fun_ptr Vel;
   
-    PoissonCoeffCL( ParamsT& params){
-        C_ = params;
+    PoissonCoeffCL( ParamCL& P){
         int nx_,ny_,nz_;
         double dz_;
-        std::string mesh( C_.dmc_MeshFile), delim("x@");
+        std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
         size_t idx_;
         while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
             mesh[idx_]= ' ';
         std::istringstream brick_info( mesh);
         brick_info >> dx_ >> dy_ >> dz_ >> nx_ >> ny_ >> nz_;
         DROPS::InScaMap & scamap = DROPS::InScaMap::getInstance();
-        q = scamap[params.poc_Reaction];
-        alpha = params.poc_Diffusion;
-        f = scamap[params.poc_Source];
-        Solution = scamap[params.poc_Solution];
-        InitialCondition = scamap[params.poc_InitialCond];
+        q = scamap[P.get<std::string>("PoissonCoeff.Reaction")];
+        alpha = P.get<double>("PoissonCoeff.Diffusion");
+        f = scamap[P.get<std::string>("PoissonCoeff.Source")];
+        Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
+        InitialCondition = scamap[P.get<std::string>("PoissonCoeff.InitialVal")];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
-        Vel = vecmap[params.poc_Flowfield];      
+        Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
     }
     
 };

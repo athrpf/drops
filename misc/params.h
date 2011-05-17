@@ -1,6 +1,6 @@
 /// \file params.h
 /// \brief read parameters from file.
-/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt, Thorolf Schulte; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -25,6 +25,9 @@
 #ifndef DROPS_MISC_PARAMS_H
 #define DROPS_MISC_PARAMS_H
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/foreach.hpp>
 #include "misc/container.h"
 #include <string>
 #include <map>
@@ -32,6 +35,44 @@
 
 namespace DROPS
 {
+
+/// \brief Parser and container for JSON parameter files
+/// Usage
+///   - read in a JSON file via open(...) or << ifstream
+///   - get parameters by .get(hierarchy within file + name)
+///     e.g. .get("Poisson.Method")
+
+class ParamCL: public boost::property_tree::ptree
+{
+  public:
+    ParamCL();
+
+    template <typename OutType>
+    OutType get(const std::string pathInPT)
+    {
+      return this->pt.get<OutType>(pathInPT);
+    }
+
+    template <typename OutType>
+    OutType get(const std::string pathInPT, OutType default_val)
+    {
+      return this->pt.get(pathInPT, default_val);
+    }
+
+    friend std::istream &operator>>(std::istream& stream, ParamCL& P);
+    friend std::ostream &operator<<(std::ostream& stream, ParamCL& P);
+
+  private:
+    boost::property_tree::ptree pt;
+
+    void open(const std::string path);
+    std::ostream& print(std::ostream& s);
+    void print(boost::property_tree::ptree child, std::string level, std::ostream& s);
+
+};
+
+
+
 
 ///   \brief Parser for parameter files used by ParamBaseCL.
 ///
