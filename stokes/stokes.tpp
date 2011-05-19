@@ -957,7 +957,6 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
      else
          std::cout << ", || u_h - u ||_L2 = " <<  L2_vel 
                    << ", || p_h - p ||_L2 = " << L2_pr << '\n' << std::endl;
-     }
 }
 
 
