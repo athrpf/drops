@@ -114,7 +114,7 @@ Transp {
   IniCNeg         = 0            # initial concentration (neg. part)
   NitschePenalty  = 100
   NitscheXFEMStab = 0.01
-  SDStabilization = 0
+  SDStabilization = 1
   Levelset        = Ellipsoid
 }
 

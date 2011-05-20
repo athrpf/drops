@@ -405,7 +405,6 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
         {
             // couplings between standard basis functions
             SetupLocalOnePhaseSystem (transfp1fel, elmats, local_cdcoef, pPart);
-            Profiler::StopTimer(timerelmats1);  
         }
         else{
             // compute element matrix for standard basis functions and XFEM basis functions 
