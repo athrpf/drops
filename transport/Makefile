@@ -28,6 +28,7 @@ PAR_OBJ = $(if $(PAR_BUILD),$(PAR_OBJ_),)
 default: ClrScr all
 
 ns_transp: \
+    ../transport/transportCoeff.o \
     ../transport/ns_transp.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \

@@ -383,6 +383,7 @@ class ParamTransportCL : public virtual ParamBaseCL
   ///\name Mass Transport
   //@{
     int    trp_DoTransp;                     ///< mass transport on (1) or off (0)
+    int    trp_UseNSSol;                     ///< use navier stokes velocity/levelset? on (1) or off (0)
     double trp_Theta;                        ///< time integration theta scheme
     int    trp_Iter;
     double trp_Tol,
@@ -393,7 +394,10 @@ class ParamTransportCL : public virtual ParamBaseCL
            trp_IniCPos,                      ///< initial concentration (pos. part)
            trp_IniCNeg,                      ///< initial concentration (neg. part)
            trp_NitschePenalty,
-           trp_NitscheXFEMStab;              ///< threshold for discarding ext. dofs parameter, default 0.1
+           trp_NitscheXFEMStab,              ///< threshold for discarding ext. dofs parameter, default 0.1
+           trp_SDStabilization;              ///< should stabilization be used?!
+    std::string trp_FlowField,               ///< which prescribed flowfield should I use?
+           trp_Levelset;                     ///< which prescribed interface should I use?
   //@}
   public:
     ParamTransportCL()                             { RegisterParams(); }

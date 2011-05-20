@@ -148,6 +148,92 @@ double TransportP1XCL::MeanDropConcentration()
     return c_avrg;
 }
 
+
+double TransportP1XCL::CheckSolution(instat_scalar_fun_ptr Lsgn, instat_scalar_fun_ptr Lsgp, double time)
+{
+    VecDescCL cn (&idx);
+    GetSolutionOnPart(cn, false, false);
+    VecDescCL cp (&idx);
+    GetSolutionOnPart(cp, true, false);
+  
+    double errl2p = 0, errl2n = 0;
+    double errl1p = 0, errl1n = 0;
+    InterfaceTetraCL patch;
+
+    LocalP2CL<double> ones( 1.);
+    std::cout << "Difference to exact solution:" << std::endl;
+
+    const Uint lvl= ct.GetLevel();
+    DROPS_FOR_TRIANG_TETRA( MG_, lvl, it)
+    {
+        LocalP2CL<double> lp2_soln (*it, Lsgn, time);
+        LocalP2CL<double> lp2_solp (*it, Lsgp, time);
+        LocalP1CL<double> lp1_p (*it, cp, Bnd_);
+        LocalP2CL<double> lp2_p (lp1_p);
+        LocalP1CL<double> lp1_n (*it, cn, Bnd_);
+        LocalP2CL<double> lp2_n (lp1_n);
+        SMatrixCL<3,3> M;
+        double det;
+        GetTrafoTr(M,det,*it);
+        double absdet= std::fabs(det);
+        patch.Init( *it, lset_,0.);
+        if (patch.Intersects()){
+          patch.ComputeSubTets();
+          Uint NumTets=patch.GetNumTetra(); //# of subtetras          
+          for (Uint k=0; k<NumTets; ++k)
+          {
+            bool pPart = (k>=patch.GetNumNegTetra());  
+            const SArrayCL<BaryCoordCL,4>& T =patch.GetTetra(k);
+            BaryCoordCL* nodes = Quad3CL<>::TransformNodes(T);
+            Quad3CL<> q3_sol = Quad3CL<>(pPart?lp2_solp : lp2_soln, nodes);      
+            Quad3CL<> q3_dsol = Quad3CL<>(pPart? lp2_p : lp2_n, nodes);      
+            Quad3CL<> q3_diff; q3_diff = q3_dsol - q3_sol;
+            Quad3CL<> q3_diff2; q3_diff2 = q3_diff * q3_diff;
+            Quad3CL<> q3_diffabs; q3_diffabs = std::abs(q3_dsol - q3_sol);
+            
+            double Vol = absdet*VolFrac(T);
+            if (pPart) 
+              errl2p += q3_diff2.quad(Vol);
+            else
+              errl2n += q3_diff2.quad(Vol);
+            if (pPart) 
+              errl1p += q3_diffabs.quad(Vol);
+            else
+              errl1n += q3_diffabs.quad(Vol);
+            delete nodes;
+          }
+          
+        }
+        else
+        {
+          bool pPart= (patch.GetSign( 0) == 1);  
+          Quad3CL<> q3_sol = Quad3CL<>(pPart?lp2_solp : lp2_soln);      
+          Quad3CL<> q3_dsol = Quad3CL<>(pPart? lp2_p : lp2_n);      
+          Quad3CL<> q3_diff; q3_diff = q3_dsol - q3_sol;
+          Quad3CL<> q3_diff2; q3_diff2 = q3_diff * q3_diff;
+          Quad3CL<> q3_diffabs; q3_diffabs = std::abs(q3_dsol - q3_sol);
+          if (pPart) 
+            errl2p += q3_diff2.quad(absdet);
+          else
+            errl2n += q3_diff2.quad(absdet);
+          if (pPart) 
+            errl1p += q3_diffabs.quad(absdet);          
+          else
+            errl1n += q3_diffabs.quad(absdet);          
+        }
+    }
+    double errl2 = std::sqrt(errl2n + errl2p);
+    double errl1 = (errl1n + errl1p);
+    std::cout << "errl2p = " << std::sqrt(errl2p) << "\t";
+    std::cout << "errl2n = " << std::sqrt(errl2n) << "\t";
+    std::cout << "errl2  = " << errl2 << std::endl;
+    std::cout << "errl1p = " << errl1p << "\t";
+    std::cout << "errl1n = " << errl1n << "\t";
+    std::cout << "errl1  = " << errl1 << std::endl;
+    return errl2;
+}
+
+
 ///Calls 
 /// -InitStep (Setup of linear system)
 /// -DoStep (Solution of linear system)
@@ -242,7 +328,6 @@ void TransportP1XCL::DoStep (const VectorCL& rhs)
 void TransportP1XCL::CommitStep ()
 {
     oldlset_.Data= lset_.Data;
-    oldv_->Data = v_->Data;
     UpdateXNumbering( oldlset_, false, false);
     oldct.SetIdx(&oldidx);
     oldct.Data= ct.Data;
@@ -288,9 +373,12 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
     bool sign[4];
 
     P1FEGridfunctions p1feq;
-    TransformedP1FiniteElement transfp1fel(p1feq);
 
-    GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
+    TransformedP1FiniteElement & transfp1fel = sdstab_? 
+        *new StabilizedTransformedP1FiniteElement (p1feq,sdstab_) : 
+        *new TransformedP1FiniteElement (p1feq);
+    
+    GlobalConvDiffReacCoefficients global_cdcoef(D_,H_, GetVelocity() , c_, f_ ,time);
 	
     ConvDiffElementMatrices elmats;
     ConvDiffElementVectors elvecs;
@@ -304,18 +392,20 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
         cut.Init( *sit, lset_,0.);
         bool nocut=!cut.Intersects();
 
-        LocalConvDiffCoefficients local_cdcoef(global_cdcoef,*sit,time);
-
+        LocalConvDiffReacCoefficients local_cdcoef(global_cdcoef,*sit);
+        bool pPart= (cut.GetSign( 0) == 1);        
+        //transfp1fel.SetTetra(*sit);
+        transfp1fel.SetLocal(*sit,local_cdcoef,pPart);
         elmats.ResetAll();
         elvecs.ResetAll();
 
-        SetupLocalRhs( elvecs.f, local_cdcoef.GetSourceAsQuad5(), transfp1fel); 
+        ComputeRhsElementVector( elvecs.f, local_cdcoef, transfp1fel); 
 
         if (nocut) // tetra is not intersected by the interface
         {
-            bool pPart= (cut.GetSign( 0) == 1);
             // couplings between standard basis functions
-            SetupLocalOnePhaseSystem (transfp1fel, elmats, elvecs,  local_cdcoef, pPart);
+            SetupLocalOnePhaseSystem (transfp1fel, elmats, local_cdcoef, pPart);
+            Profiler::StopTimer(timerelmats1);  
         }
         else{
             // compute element matrix for standard basis functions and XFEM basis functions 
@@ -376,6 +466,7 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
     A.Build();
     M.Build();
     C.Build();
+    delete &transfp1fel;
 }
 
 /// Setup of all volume integral - Bi- and Linearforms (not Nitsche yet, this is in SetupNitscheSystem)
@@ -394,6 +485,7 @@ void TransportP1XCL::SetupInstatSystem (MLMatDescCL& matA, VecDescCL& cplA,
 
 
 /// \todo Is this used by anyone?
+/*
 void TransportP1XCL::SetupInstatRhs( VecDescCL & b,  const double time) const
 {
     b.Data=0.;
@@ -404,22 +496,24 @@ void TransportP1XCL::SetupInstatRhs( VecDescCL & b,  const double time) const
     bool sign[4];
 
     P1FEGridfunctions p1feq;
-    TransformedP1FiniteElement transfp1fel(p1feq);
-	
-    GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
+    TransformedP1FiniteElement & transfp1fel = sdstab_? 
+        *new StabilizedTransformedP1FiniteElement (p1feq,sdstab_) : 
+        *new TransformedP1FiniteElement (p1feq);
+    GlobalConvDiffReacCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ , c_);
 	
     ConvDiffElementVectors elvecs;
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
-        transfp1fel.SetTetra(*sit);    
+        transfp1fel.SetTetra(*sit); 
+        LocalConvDiffReacCoefficients local_cdcoef(global_cdcoef,*sit,time);	
+        transfp1fel.SetLocal(*sit,local_cdcoef,pPart);
         n.assign( *sit, RowIdx, Bndt_);
         InterfaceTetraCL cut;
         cut.Init( *sit, lset_,0.);
         bool nocut=!cut.Intersects();
-        LocalConvDiffCoefficients local_cdcoef(global_cdcoef,*sit,time);	
 		
         elvecs.ResetAll();
  
-        SetupLocalRhs( elvecs.f, local_cdcoef.GetSourceAsQuad5(), transfp1fel);
+        ComputeRhsElementVector( elvecs.f, local_cdcoef, transfp1fel);
         for(int i= 0; i < 4; ++i){
             if (n.WithUnknowns( i))
                 b.Data[n.num[i]]+= elvecs.f[i];
@@ -433,8 +527,10 @@ void TransportP1XCL::SetupInstatRhs( VecDescCL & b,  const double time) const
                 if (xidx_i!=NoIdx)
                     b.Data[xidx_i] +=sign[i] ?  - elvecs.f_n[i] :elvecs.f_p[i];
             }
-    }
+    } 
+    delete transfp1fel;
 }
+*/
 
 void TransportP1XCL::GetSolutionOnPart( VecDescCL& ct_part, bool pPart, bool Is_ct)
 {
@@ -549,6 +645,7 @@ void TransportP1XCL::SetupNitscheSystem (MLMatDescCL& matA) const
 
 /// Couplings between basis functions wrt old and new interfaces, s.t. Bilinearform-Applications
 /// M(uold,v) make sense also for the new time step (and the functions therein (like v))
+// This is only used as a matrix application. So actually there is no need to setting up the matrix!
 void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM, IdxDescCL& RowIdx, IdxDescCL& ColIdx,
     const double time) const
 {
@@ -567,15 +664,17 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
     // The 16 products of the P1-shape-functions
 
     P1FEGridfunctions p1feq;
-    TransformedP1FiniteElement transfp1fel(p1feq);
-//
-//    GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
+    TransformedP1FiniteElement & transfp1fel = sdstab_? 
+        *new StabilizedTransformedP1FiniteElement (p1feq,sdstab_) : 
+        *new TransformedP1FiniteElement (p1feq);    
+//    
+    GlobalConvDiffReacCoefficients global_cdcoef(D_,H_, GetVelocity() , f_, c_, time);
 //	
 //    ConvDiffElementMatrices elmats;
 //    ConvDiffElementVectors elvecs;    
 
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) { 
-        transfp1fel.SetTetra(*sit);
+        
         n.assign( *sit, RowIdx, Bndt_);
         InterfaceTetraCL cut, oldcut;
         cut.Init( *sit, lset_,0.);
@@ -583,61 +682,72 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
         nocut=!cut.Intersects();
         nocut1=!oldcut.Intersects();
 
-        double M_P1_P1[4][4],                  ///< (FEM, FEM)
-               M_P1_XOLD_n[4][4], M_P1_XOLD_p[4][4],   ///< (test FEM, old XFEM)
-               M_XNEW_P1_n[4][4], M_XNEW_P1_p[4][4],   ///< (test new XFEM, FEM) with only new interface
-               M_XNEW_P1[4][4],                  ///< (test new XFEM, FEM) two interfaces
-               M_XNEW_XOLD[4][4];                  ///< (new XFEM, old XFEM) two interfaces
-        std::memset( M_P1_P1,  0, 4*4*sizeof(double));
-        std::memset( M_XNEW_XOLD,  0, 4*4*sizeof(double));
-        std::memset( M_XNEW_P1,  0, 4*4*sizeof(double));
-        std::memset( M_P1_XOLD_n,0, 4*4*sizeof(double));
-        std::memset( M_XNEW_P1_n,0, 4*4*sizeof(double));
-        std::memset( M_P1_XOLD_p,0, 4*4*sizeof(double));
-        std::memset( M_XNEW_P1_p,0, 4*4*sizeof(double));
+        LocalConvDiffReacCoefficients local_cdcoef(global_cdcoef,*sit);
+        bool pPart= (oldcut.GetSign( 0) == 1);
+        transfp1fel.SetLocal(*sit,local_cdcoef,pPart);
+        //transfp1fel.SetTetra(*sit);
 
-        // compute matrices
-        // the old interface doesn't cut the tetra 
-        if ( nocut1) {
-            bool pPart= (oldcut.GetSign( 0) == 1);
-            // couplings between standard basis functions
-            SetupLocalOnePhaseMassMatrix ( M_P1_P1, transfp1fel, H_, pPart);
-            // the new interface cuts the tetra
-            if (!nocut){
-	        // couplings between standard basis functions and XFEM basis functions wrt new interface
-                SetupLocalOneInterfaceMassMatrix( cut, M_XNEW_P1_n, M_XNEW_P1_p, transfp1fel, H_, sign, false, pPart);
+        Elmat4x4 M_P1NEW_P1OLD,                   ///< (test FEM, shape FEM)
+                 M_P1NEW_XOLD,                    ///< (test FEM, shape old XFEM) [at least old interface]
+                 M_XNEW_P1OLD,                    ///< (test new XFEM, shape FEM) [at least new interface]
+                 M_XNEW_XOLD;                     ///< (test new XFEM, shape old XFEM) [two interfaces]
+                 
+        std::memset( M_P1NEW_P1OLD, 0, 4*4*sizeof(double));
+        std::memset( M_XNEW_XOLD  , 0, 4*4*sizeof(double));
+        std::memset( M_XNEW_P1OLD , 0, 4*4*sizeof(double));
+        std::memset( M_P1NEW_XOLD , 0, 4*4*sizeof(double));
+
+        
+        if(nocut1){ //old interface does not cut 
+          if (nocut){ //new interface does not cut 
+            SetupLocalOnePhaseMassMatrix ( M_P1NEW_P1OLD, transfp1fel, H_, pPart);
+          }
+          else
+          { //new interface does cut
+            Elmat4x4 M_XNEW_P1OLD_n, M_XNEW_P1OLD_p;
+            std::memset( M_XNEW_P1OLD_n,0, 4*4*sizeof(double));
+            std::memset( M_XNEW_P1OLD_p,0, 4*4*sizeof(double));
+                SetupLocalOneInterfaceMassMatrix( cut, M_XNEW_P1OLD_n, M_XNEW_P1OLD_p, transfp1fel, H_, sign, false, pPart);
                 for(int i= 0; i < 4; ++i){
                     for(int j= 0; j < 4; ++j){
-                        M_XNEW_P1[i][j]= sign[i]? -M_XNEW_P1_n[i][j] : M_XNEW_P1_p[i][j];
+                        M_XNEW_P1OLD[i][j]= sign[i]? -M_XNEW_P1OLD_n[i][j] : M_XNEW_P1OLD_p[i][j];
+                        M_P1NEW_P1OLD[i][j]= M_XNEW_P1OLD_n[i][j] + M_XNEW_P1OLD_p[i][j];
                     }
                 }
-            }
+          }  
         }
         // the old interface cuts the tetra
-        else {
+        else 
+        {
+            Elmat4x4 M_P1NEW_XOLD_n, M_P1NEW_XOLD_p;
+            std::memset( M_P1NEW_XOLD_n,0, 4*4*sizeof(double));
+            std::memset( M_P1NEW_XOLD_p,0, 4*4*sizeof(double));          
             // couplings between standard basis functions and XFEM basis functions wrt old interface
-            SetupLocalOneInterfaceMassMatrix( oldcut, M_P1_XOLD_n, M_P1_XOLD_p, transfp1fel, H_, oldsign, true, 0);
+            SetupLocalOneInterfaceMassMatrix( oldcut, M_P1NEW_XOLD_n,  M_P1NEW_XOLD_p, transfp1fel, H_, oldsign, true, 0);
             for(int i= 0; i < 4; ++i){
                 for(int j= 0; j < 4; ++j){
-                    M_P1_P1[i][j]= M_P1_XOLD_n[i][j] + M_P1_XOLD_p[i][j];
+                    M_P1NEW_P1OLD[i][j]= M_P1NEW_XOLD_n[i][j] +  M_P1NEW_XOLD_p[i][j];
+                    M_P1NEW_XOLD[i][j]= oldsign[j] ? - M_P1NEW_XOLD_n[i][j] :   M_P1NEW_XOLD_p[i][j];                    
                 }
             }
             // both interfaces cut the tetra
             if (!nocut) {
                 LocalP2CL<> lp2_oldlset(*sit, oldlset_, Bndlset);
 		// couplings between XFEM basis functions wrt old and new interfaces
-                SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M_XNEW_XOLD, M_XNEW_P1, transfp1fel, H_, lp2_oldlset);
+                SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M_XNEW_XOLD, M_XNEW_P1OLD, transfp1fel, H_, lp2_oldlset);
             }
         }
+        
+        
         for(int i= 0; i < 4; ++i)
             if (n.WithUnknowns( i)){
                 for(int j= 0; j < 4; ++j)
                     if (n.WithUnknowns( j)) {
-                        M( n.num[i], n.num[j])+= M_P1_P1[j][i];
+                        M( n.num[i], n.num[j])+= M_P1NEW_P1OLD[i][j];
                     }
                      else if (cplM!=0){
                         const double val= Bndt_.GetBndFun( n.bndnum[j])( sit->GetVertex( j)->GetCoord(), time);
-                        cplM->Data[n.num[i]]-= M_P1_P1[j][i]*val;
+                        cplM->Data[n.num[i]]-= M_P1NEW_P1OLD[i][j]*val;
                     }
             }
         if (nocut && nocut1) continue;
@@ -647,16 +757,17 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
                 for(int j= 0; j < 4; ++j)
                     if(n.WithUnknowns(j)){
                         const IdxT xidx_j= oldXidx[n.num[j]];
-                        if (xidx_j!=NoIdx)
-                            M( n.num[i], xidx_j)+= oldsign[j] ? - M_P1_XOLD_n[i][j] :  M_P1_XOLD_p[i][j];
-                        if (xidx_i!=NoIdx)
-                            M( xidx_i, n.num[j])+= M_XNEW_P1[i][j];
-                        if (xidx_i!=NoIdx && xidx_j!=NoIdx)
+                        if (xidx_j!=NoIdx) // at least old cuts
+                            M( n.num[i], xidx_j)+= M_P1NEW_XOLD[i][j];
+                        if (xidx_i!=NoIdx) // at least new cuts
+                            M( xidx_i, n.num[j])+= M_XNEW_P1OLD[i][j];
+                        if (xidx_i!=NoIdx && xidx_j!=NoIdx) //both cut
                             M( xidx_i, xidx_j)+= M_XNEW_XOLD[i][j];
                      }
              }
     }
     M.Build();
+    delete &transfp1fel;
 }
 
 void TransportP1XCL::SetupInstatMixedMassMatrix(MLMatDescCL& matM, VecDescCL& cplM, const double time) const
@@ -714,16 +825,16 @@ double TransportP1XCL::Interface_L2error() const
 void
 TransportXRepairCL::post_refine ()
 {
+    match_fun match= c_.GetMG().GetBnd().GetMatchFun();
     VecDescCL loc_ct;
-    IdxDescCL loc_cidx( P1X_FE);
+    IdxDescCL loc_cidx( P1X_FE, c_.GetBndData(), match, c_.GetXFEMOmitBound());
     VecDescCL loc_oldct;
-    IdxDescCL loc_oldcidx(P1X_FE);
+    IdxDescCL loc_oldcidx( P1X_FE, c_.GetBndData(), match, c_.GetXFEMOmitBound());
     VecDescCL& ct= c_.ct;
     VecDescCL& oldct= c_.oldct;
-    match_fun match= c_.GetMG().GetBnd().GetMatchFun();
 
-    loc_cidx.CreateNumbering( c_.GetMG().GetLastLevel(), c_.GetMG(), c_.GetBndData(), match, &(c_.GetLevelset()),&(c_.GetLevelsetBnd()));
-    loc_oldcidx.CreateNumbering( c_.GetMG().GetLastLevel(), c_.GetMG(), c_.GetBndData(),  match, &(c_.GetOldLevelset()),&(c_.GetLevelsetBnd()));
+    loc_cidx.CreateNumbering( mylvl, c_.GetMG(), c_.GetBndData(), match, &(c_.GetLevelset()),&(c_.GetLevelsetBnd()));
+    loc_oldcidx.CreateNumbering( mylvl, c_.GetMG(), c_.GetBndData(),  match, &(c_.GetOldLevelset()),&(c_.GetLevelsetBnd()));
     loc_ct.SetIdx( &loc_cidx);
     loc_oldct.SetIdx( &loc_oldcidx);
     RepairAfterRefineP1( c_.GetSolution( ct, true), loc_ct);
@@ -752,7 +863,7 @@ void
 void
   TransportXRepairCL::post_refine_sequence ()
 {
-     c_.CreateNumbering(c_.GetMG().GetLastLevel(), &c_.idx, &c_.oldidx, (c_.GetLevelset()), (c_.GetOldLevelset()));
+     c_.CreateNumbering(mylvl, &c_.idx, &c_.oldidx, (c_.GetLevelset()), (c_.GetOldLevelset()));
     (*oldp1xrepair_)();
      oldp1xrepair_.reset();
      c_.ct.SetIdx( &c_.idx);

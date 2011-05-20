@@ -229,6 +229,10 @@ void ParamTransportCL::RegisterParams()
     rp_.RegDouble ( trp_IniCNeg,         "IniCNeg");
     rp_.RegDouble ( trp_NitschePenalty,  "NitschePenalty");
     rp_.RegDouble ( trp_NitscheXFEMStab, "NitscheXFEMStab");
+    rp_.RegDouble ( trp_SDStabilization, "SDStabilization", 0.0);
+    rp_.RegInt    ( trp_UseNSSol, "UseNSSol", 1);
+    rp_.RegString ( trp_FlowField, "Flow", "ZeroVel");
+    rp_.RegString ( trp_Levelset, "Levelset", "Ellipsoid");
     rp_.EndGroup();
 }
 

@@ -102,6 +102,7 @@ SurfTens {
 # mass transport
 Transp {
   DoTransp        = 1            # 0=off, 1=on
+  UseNSSol        = 1
   Theta           = 1            # time integration theta scheme
   Iter            = 200
   Tol             = 1e-15
@@ -113,7 +114,8 @@ Transp {
   IniCNeg         = 0            # initial concentration (neg. part)
   NitschePenalty  = 100
   NitscheXFEMStab = 0.01
-#  SDStabilization = 0
+  SDStabilization = 0
+  Levelset        = Ellipsoid
 }
 
 # surfactant transport
@@ -159,7 +161,7 @@ DomainCond {
   GeomType      = 1	  # 0=ReadMeshBuilder, 1=BrickBuilder
   InitialFile   = none    #ensight/nsmzi
   MeshFile      = 20e-3x40e-3x20e-3@10x20x10   #8e-3x20e-3x8e-3@6x15x6 8e-3x4e-2x8e-3@4x20x4 #
-  BoundaryType  = 2!2!2!2!2!2!    # Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99 
+  BoundaryType  = 0!0!0!0!0!0    # Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99 
   BoundaryFncs  = ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel   #InflowBrick!InflowBrick!InflowBrick!InflowCell!InflowCell!ZeroVel
 
 }
