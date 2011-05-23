@@ -1,6 +1,6 @@
 /// \file poissonCoeff.cpp
 /// \brief boundary and source functions for the poisson-type problems
-/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande, Thorolf Schulte
 
 /*
  * This file is part of DROPS.

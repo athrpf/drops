@@ -1,6 +1,6 @@
 /// \file poissonCoeff.h
 /// \brief PoissonCoeffCL the Coefficient-Function Container
-/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Liang Zhang; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Liang Zhang, Thorolf Schulte; SC RWTH Aachen:
 /*
  * This file is part of DROPS.
  *

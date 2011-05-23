@@ -1,6 +1,6 @@
 /// \file stokesCoeff.cpp
 /// \brief  solution and rhs functions for stokes-problems
-/// \author LNM RWTH Aachen: Eva Loch, Yuanjun Zhang
+/// \author LNM RWTH Aachen: Eva Loch, Yuanjun Zhang, Thorolf Schulte
 
 /*
  * This file is part of DROPS.
@@ -23,7 +23,8 @@
 */
 
 #include "misc/bndmap.h"
-#include "stokes/params.h"
+#include "misc/params.h"
+
 
 using namespace std;
 

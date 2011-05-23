@@ -5,7 +5,7 @@ Autor: Thorolf Schulte (LNM)
 """
 
 #settings
-FILES = ["./stokes/stokes"]
+FILES = ["./poisson/ipfilm", "./poisson/ipdrops"]
 SUFFIX_IN = ".param"
 SUFFIX_OUT = ".json"
 DEBUG = False

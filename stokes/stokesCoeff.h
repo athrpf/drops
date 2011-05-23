@@ -1,6 +1,6 @@
 /// \file stokesCoeff.h
 /// \brief  coefficient class for stokes problems
-/// \author LNM RWTH Aachen: Eva Loch, Yuanjun Zhang
+/// \author LNM RWTH Aachen: Eva Loch, Yuanjun Zhang, Thorolf Schulte
 
 /*
  * This file is part of DROPS.
@@ -51,12 +51,7 @@ class StokesFlowCoeffCL
     //solution of pressure
     static instat_scalar_fun_ptr LsgPr;
 
-    //TMP
-    double rho, nu;
-    DROPS::Point3DCL g;
-    ///TMP
-
-    /*const double rho, nu;
+    const double rho, nu;
     const DROPS::Point3DCL g;
 
     StokesFlowCoeffCL( const DROPS::ParamCL& P)
@@ -72,27 +67,7 @@ class StokesFlowCoeffCL
         DLsgVel = matmap[P.get<std::string>("StokesCoeff.Solution_DVel")];
         DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
         LsgPr = inscamap[P.get<std::string>("StokesCoeff.Solution_Pr")];
-    }*/
-
-    StokesFlowCoeffCL( const DROPS::ParamCL& P)
-    {
-            rho = P.get<double>("Mat.Dens");
-            nu = P.get<double>("Mat.Visc");
-            std::cout << "vorher" << std::endl;
-            g = P.get<DROPS::Point3DCL>("Exp.Gravity");
-            std::cout << "nachher" << std::endl;
-            DROPS::InScaMap & scamap = DROPS::InScaMap::getInstance();
-            q = scamap[P.get<std::string>("StokesCoeff.Reaction")];
-            DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
-            f = vecmap[P.get<std::string>("StokesCoeff.Source")];
-            LsgVel = vecmap[P.get<std::string>("StokesCoeff.Solution_Vel")];
-            DROPS::InMatMap & matmap = DROPS::InMatMap::getInstance();
-            DLsgVel = matmap[P.get<std::string>("StokesCoeff.Solution_DVel")];
-            DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
-            LsgPr = inscamap[P.get<std::string>("StokesCoeff.Solution_Pr")];
-        }
-
-
+    }
 
 };
 
