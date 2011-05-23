@@ -27,7 +27,7 @@
 
 using namespace std;
 
-extern DROPS::ParamStokesProblemCL C_Stokes;
+extern DROPS::ParamCL P_Stokes;
 
 double ScaZero(const DROPS::Point3DCL&, double =0)
 {
@@ -349,12 +349,12 @@ double PrSolution( const DROPS::Point3DCL& p, double)
 
 double ConstQ(const DROPS::Point3DCL&, double =0)
 {
-    return C_Stokes.mat_Dens;
+    return P_Stokes.get<double>("Mat.Dens");
 }
 
 DROPS::Point3DCL Source( const DROPS::Point3DCL& p, double)
 {
-    const double g= C_Stokes.mat_Dens;
+    const double g= P_Stokes.get<double>("Mat.Dens");
     DROPS::SVectorCL<3> ret;
     ret[0]= g/3.*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
     ret[1]= -g/3.*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);

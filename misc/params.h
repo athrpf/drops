@@ -27,7 +27,6 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
 #include "misc/container.h"
 #include <string>
 #include <map>
@@ -48,19 +47,35 @@ class ParamCL: public boost::property_tree::ptree
     ParamCL();
 
     template <typename OutType>
-    OutType get(const std::string pathInPT)
+    OutType get(const std::string & pathInPT) const
     {
       return this->pt.get<OutType>(pathInPT);
     }
 
     template <typename OutType>
-    OutType get(const std::string pathInPT, OutType default_val)
+    OutType get(const char* pathInPT) const
+    {
+      return get<OutType>(std::string(pathInPT));
+    }
+
+    template <typename InType>
+    void put(const std::string & pathToNode, InType value)
+    {
+      this->pt.put(pathToNode, value);
+    }
+
+    template <typename OutType>
+    OutType get(const std::string & pathInPT, OutType default_val) const
     {
       return this->pt.get(pathInPT, default_val);
     }
 
+//    DROPS::Point3DCL get(const std::string pathInPT) const;
+
     friend std::istream &operator>>(std::istream& stream, ParamCL& P);
     friend std::ostream &operator<<(std::ostream& stream, ParamCL& P);
+
+    //Point3DCL getPoint(const std::string pathInPT) const;
 
   private:
     boost::property_tree::ptree pt;
@@ -71,8 +86,8 @@ class ParamCL: public boost::property_tree::ptree
 
 };
 
-
-
+template<>
+DROPS::Point3DCL ParamCL::get<DROPS::Point3DCL>(const std::string & pathInPT) const;
 
 ///   \brief Parser for parameter files used by ParamBaseCL.
 ///

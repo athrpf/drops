@@ -43,7 +43,7 @@
 #include <vector>
 
 
-DROPS::ParamMesszelleNsCL C;
+DROPS::ParamCL P;
 
 // program for testing various FE pressure spaces
 // using a special constant surface force:

@@ -50,22 +50,22 @@ namespace DROPS
   }
 
 
+
   //explicit implementation of get for Point3DCL due to lacking support of this by PropertyTree
   template<>
-  Point3DCL ParamCL::get<Point3DCL>(const std::string pathInPT)
+  Point3DCL ParamCL::get<Point3DCL>(const std::string & pathInPT) const
   {
-      Point3DCL point(Uninitialized);
-      int i=0;
-      BOOST_FOREACH(boost::property_tree::ptree::value_type &v, this->pt.get_child(pathInPT))
-      {
-        std::istringstream iss(v.second.data());
-        iss >> point[i++];
-        if (i > 3)
-          std::cout << "ERROR: Point3DCL couldn't be created by PTParamsCL::get<Point3DCL>: too much data" << std::endl;
-      };
-      if (i < 3)
-          std::cout << "ERROR: Point3DCL couldn't be created by PTParamsCL::get<Point3DCL>: too little data" << std::endl;
-      return point;
+     Point3DCL point;
+
+     using boost::property_tree::ptree;
+     int i=0;
+
+     ptree curPT = this->pt.get_child(pathInPT);
+     for (ptree::const_iterator it = curPT.begin(); it != curPT.end(); ++it) {
+         point[i++] = it->second.get_value<double>();
+     }
+
+     return point;
   }
 
   std::ostream& ParamCL::print(std::ostream& s)
