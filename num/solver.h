@@ -1,6 +1,6 @@
 /// \file solver.h
 /// \brief iterative solvers
-/// \author LNM RWTH Aachen: Sven Gross, Joerg Peters, Volker Reichelt; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Patrick Esser, Sven Gross, Helmut Jarausch, Joerg Peters, Volker Reichelt; SC RWTH Aachen:
 
 /*
  * This file is part of DROPS.
@@ -633,7 +633,7 @@ Vec NEGSPcCL::transp_mul(const Mat& A, const Vec& b) const
 //*****************************************************************************
 //
 //  Iterative solvers: CG, PCG, PCGNE, GMRES, PMINRES, MINRES, BiCGStab, GCR,
-//                     GMRESR
+//                     GMRESR, IDR(s)
 //
 //*****************************************************************************
 
@@ -1500,6 +1500,148 @@ GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
 }
 
 
+//*****************************************************************
+// IDR(s)
+//
+// IDR(s) solves the unsymmetric linear system Ax = b
+// using the method by Martin B. van Gijzen / Peter Sonneveld
+// An Elegant IDR(s) Variant that Efficiently Exploits
+// Bi-Orthogonality Properties
+// ISSN 1389-6520
+// Departent of Applied Mathematical Analysis,  Report 10-16
+// Delft University of Technology, 2010
+//
+// The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within
+// max_iter iterations (false).
+//
+// Upon successful return, output arguments have the following values:
+//
+//        x  --  approximate solution to Ax = b
+// max_iter  --  the number of iterations performed before the
+//               tolerance was reached
+//      tol  --  the residual after the final iteration
+//
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
+//
+//*****************************************************************
+template <class Mat, class Vec, class PC>
+bool
+IDRS( const Mat& A, Vec& x, const Vec& rhs, PC& pc, int& max_iter, double& tol, bool measure_relative_tol= false,
+		const int s=4, typename Vec::value_type omega_bound=0.7)
+{
+    typedef typename Vec::value_type ElementTyp;
+    int n= x.size(),  it;
+
+    ElementTyp omega = 1.0;
+    Vec v(n), t(n), f(s);
+
+    double normb = norm(rhs);
+    if (normb == 0.0 || measure_relative_tol == false)
+    	normb= 1.0;
+
+    Vec resid( rhs - A*x);
+    double normres = norm (resid);
+    if ( normres/normb <= tol ) {
+        tol= normres;
+        max_iter= 0;
+        return true;
+    }
+
+    std::vector<Vec> P(s, Vec( x.size()));
+    srand ( time(NULL) );
+    for (int i=0; i<s; ++i){
+        for ( size_t j=0; j< x.size(); ++j)
+            P[i][j] = (double) (2.0 *rand()) / RAND_MAX - 1.0;  // random in [-1,1)
+    }
+
+    // orthonormalize P   (mod. Gram-Schmidt)
+    for ( int k= 0; k < s; k++ ) {
+        for ( int j= 0; j < k; j++ ) {
+            ElementTyp sm= dot( P[j], P[k]);
+            P[k]-= sm*P[j];
+        }
+        P[k]/= norm(P[k]);
+    }
+
+    std::vector<Vec> G(s, Vec( x.size())), U(s, Vec( x.size()));
+    DMatrixCL<ElementTyp> M(s,s);
+    for (int i = 0; i <s; ++i)
+        M(i,i) = 1.0;
+    it= 0;
+    while ( normres/normb > tol && it < max_iter ) {
+        for (int i=0; i < s; i++)  f[i]= dot(P[i], resid);
+        for (int k=0; k < s; k++) {
+//            if (it % 10 == 0) std::cout << "IDR(s) iter: " << it << "\tres: " << normres << std::endl;
+            // solve the lower tridiagonal system  M[k:s,k:s] c = f[k:s]
+            Vec c(s-k);
+            for (int j=0; j < s-k; j++) {
+                double cs = f[k+j];
+                for (int l=0; l < j; l++) cs-= M(k+j,k+l)*c[l];
+                c[j]= cs/M(k+j,k+j);
+            }
+            v= resid;
+            for (int j=0; j < s-k; j++) v-= c[j]*G[k+j];
+            pc.Apply( A, v, v);
+
+            // Compute new U(:,k) and G(:,k), G(:,k) is in space G_j
+            U[k]= c[0]*U[k] + omega*v;
+            for (int j=1; j < s-k; j++) U[k]+= c[j]*U[k+j];
+            G[k]= A * U[k];
+            // Bi-Orthogonalize the new basis vectors
+            for (int i= 0; i < k; i++) {
+                ElementTyp alpha= dot (P[i], G[k])/M(i,i);
+                G[k]-= alpha*G[i];
+                U[k]-= alpha*U[i];
+            }
+            // compute new column of M (first k-1 entries are zero)
+            for (int j=0; j < s-k; j++) M(k+j,k)= dot (P[k+j], G[k]);
+            if ( M(k,k) == 0 )
+            {
+                throw DROPSErrCL( "IDR(s): M(k,k) ==0");
+            }
+
+            //    make  R orthogonal to  G
+            ElementTyp beta = f[k] / M(k,k);
+            resid-= beta*G[k];
+            x+= beta*U[k];
+            normres= norm(resid);
+            it++;
+            if ( normres/normb <= tol)   break;
+            if ( k+1 < s ) {
+                for (int j=1; j < s-k; j++) f[k+j]-= beta*M(k+j,k);
+            }
+        }  //  end of  k = 0 .. (s-1)
+
+        if ( normres/normb <= tol)   break;
+        // Entering  G+
+        pc.Apply( A, v, resid);
+        t= A*v;
+        double tn = norm(t), tr = dot(t, resid);
+        omega= tr/(tn*tn);
+        ElementTyp rho= std::abs(tr)/(tn*normres);
+        if ( rho < omega_bound )  omega*= omega_bound/rho;
+        if ( omega == 0 ) {
+            throw DROPSErrCL( "IDR(s): omega ==0");
+        }
+        resid-= omega*t;  x+= omega*v;
+        normres= norm(resid);
+        it++;
+    }
+    if (tol > normres/normb) {
+        max_iter = it;
+        tol = normres;
+        return false;
+    }
+    max_iter = it;
+    tol = normres;
+
+    return true;
+}
+
+
+
 //=============================================================================
 //  Drivers
 //=============================================================================
@@ -1854,6 +1996,44 @@ class GMResRSolverCL : public SolverBaseCL
             *output_ << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
             std::cout << "GmresRSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl;
+    }
+};
+
+// IDR(s)
+template <typename PC>
+class IDRsSolverCL : public SolverBaseCL
+{
+  private:
+    PC&          pc_;
+    const int    s_;
+    const double omega_bound_;
+
+  public:
+    IDRsSolverCL( PC& pc, int maxiter, double tol, bool relative= true, const int s = 4, const double omega_bound = 0.7, std::ostream* output= 0)
+        : SolverBaseCL( maxiter, tol, relative, output), pc_(pc), s_(s), omega_bound_( omega_bound) {}
+
+    PC&       GetPc      ()       { return pc_; }
+    const PC& GetPc      () const { return pc_; }
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        IDRS(A, x, b, pc_, _iter, _res, rel_, s_, omega_bound_);
+        if (output_ != 0)
+            *output_ << "IDRsSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl;
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        IDRS(A, x, b, pc_, _iter, _res, rel_, s_, omega_bound_);
+        if (output_ != 0)
+            *output_ << "IDRsSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
     }
 };
