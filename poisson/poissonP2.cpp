@@ -1,4 +1,4 @@
-/// \file drops_statP2.cpp
+/// \file poissonP2.cpp
 /// \brief Solver for Poisson problem with P2 functions
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 /// \todo: rename this to poissonP2.cpp as soon as repository has moved to git
