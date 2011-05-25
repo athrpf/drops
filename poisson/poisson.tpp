@@ -374,7 +374,15 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-  Quad2CL<Point3DCL> u;
+  
+  LocalP1CL<double> phi[4];
+  for (int i =0; i < 4; i++){
+    phi[i][i]=1;
+  }
+  Quad3CL<> phiq3[4] = {
+      phi[0], phi[1], phi[2] ,phi[3]
+  };
+      
   for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl); sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
@@ -383,22 +391,22 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
     for(int i=0; i<4; ++i)
     {
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
-      u[i]= Coeff_.Vel( sit->GetVertex(i)->GetCoord(), t);
     }
-    u[4]= Coeff_.Vel( GetBaryCenter( *sit), t);
-
+    Quad3CL<Point3DCL> u(*sit,Coeff_.Vel,t);
     if (!adjoint_)
     {
         for(int j=0; j<4;++j)
         {
-          const Quad2CL<> u_Gradj( dot( u, Quad2CL<Point3DCL>( G[j])));
+          const Quad3CL<> u_Gradj( dot( u, Quad3CL<Point3DCL>( G[j])));
 
           if (UnknownIdx[j] != NoIdx) // vertex j is not on a Dirichlet boundary
           {
             for(int i=0; i<4; ++i)    // assemble row i
               if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
               {
-                U( UnknownIdx[i], UnknownIdx[j])+= u_Gradj.quadP1( i, absdet);
+                const Quad3CL<double> resq3( phiq3[i] * u_Gradj);
+                double res = resq3.quad(absdet);                  
+                U( UnknownIdx[i], UnknownIdx[j])+= res;// u_Gradj.quadP1( i, absdet);
               }
           }
           else // coupling with vertex j on right-hand-side
@@ -406,8 +414,12 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
               {
                   const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), t);
                   for(int i=0; i<4; ++i)    // assemble row i
-                  if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
-                      vU->Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval;
+                  if (UnknownIdx[i] != NoIdx){  // vertex i is not on a Dirichlet boundary
+                      const Quad3CL<double> resq3( phiq3[i] * u_Gradj);
+                      double res = resq3.quad(absdet);                  
+                      vU->Data[ UnknownIdx[i]]-= res/*u_Gradj.quadP1( i, absdet) */* bndval;
+                      
+                  }
               }
         }
     }
@@ -969,7 +981,7 @@ inline double Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, int i, double
 }
 
 //Neumann boundary condition for P2 problem
-inline double QuadP2( const TetraCL& sit, Uint face, const BndDataCL<> BndData_, int m)
+inline double QuadP2( const TetraCL& sit, Uint face, const BndDataCL<>& BndData_, int m)
 {
         double NeumannBnd;
         LocalP2CL<>p2[10];
@@ -1083,7 +1095,7 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndD
                         {
                             tmp= j<4 ? BndData_.GetDirBndValue(*sit->GetVertex(j), 0.0)
                                     : BndData_.GetDirBndValue(*sit->GetEdge(j-4), 0.0);
-                            b->Data[Numb[i]]-=          coup[j][i] * tmp;
+                            b->Data[Numb[i]]-= coup[j][i] * tmp;
                         }
                 }
                 if (b!=0)
@@ -1139,7 +1151,7 @@ void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDa
   IdxT Numb[10];
   bool IsOnDirBnd[10];
   
-  Quad3CL<Point3DCL> u;
+ // Quad3CL<Point3DCL> u;
   LocalP1CL<Point3DCL> Grad[10], GradRef[10];
   SMatrixCL<3,3> T;
   double det;
@@ -1156,13 +1168,15 @@ void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDa
   
       P2DiscCL::GetGradientsOnRef(GradRef);
       P2DiscCL::GetGradients(Grad, GradRef, T);
+       
+      Quad3CL<Point3DCL> u(*sit,Coeff_.Vel,tU);
       for(int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= BndData_.IsOnDirBnd( *sit->GetVertex(i))))
                 Numb[i]= sit->GetVertex(i)->Unknowns(idx);
-          u[i]=Coeff_.Vel(sit->GetVertex(i)->GetCoord(),tU);
+         // u[i]=Coeff_.Vel(sit->GetVertex(i)->GetCoord(),tU);
         }
-        u[4]=Coeff_.Vel(GetBaryCenter(*sit),tU);
+        //u[4]=Coeff_.Vel(GetBaryCenter(*sit),tU);
 
         for(int i=0; i<6; ++i)
         {
