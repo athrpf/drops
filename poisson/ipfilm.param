@@ -20,7 +20,7 @@ Poisson {
 
 # domain, bnd/ini conditions
 DomainCond {
-    InitialCond   =       2                     # initial refinement
+    InitialCond   =       3                     # initial refinement
     GeomType      =       1                     # specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder, 2=CavityBuilder, 3=LBuilder, 4=BBuilder)
     InitialFile   =       none                  # file prefix when reading data for initial condition
     MeshFile      =       100x0.3x1@8x2x2       # mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
