@@ -26,6 +26,7 @@
 #include "num/accumulator.h"
 #include "num/quadrature.h"
 #include "num/lattice-eval.h"
+#include "geom/multigridgraph.h"
 
 namespace DROPS
 {
@@ -127,6 +128,8 @@ class System2Accumulator_P2P1XCL : public TetraAccumulatorCL
     void finalize_accumulation();
 
     void visit (const TetraCL& tet);
+    
+    TetraAccumulatorCL* clone (){ return new System2Accumulator_P2P1XCL ( *this); };
 };
 
 System2Accumulator_P2P1XCL::System2Accumulator_P2P1XCL (const LocalSystem2_sharedDataCL& loc_p1, const TwoPhaseFlowCoeffCL& coeff, const StokesBndDataCL& BndData, const LevelsetP2CL& lset, const IdxDescCL& RowIdx, double t)
@@ -1359,6 +1362,8 @@ class System1Accumulator_P2CL : public TetraAccumulatorCL
     System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff, const StokesBndDataCL& BndData_,
         const LevelsetP2CL& ls, IdxDescCL& RowIdx_, MatrixCL& A_, MatrixCL& M_,
         VecDescCL* b_, VecDescCL* cplA_, VecDescCL* cplM_, double t);
+  	
+    //System1Accumulator_P2CL (const System1Accumulator_P2CL &old);	
 
     ///\brief Initializes matrix-builders and load-vectors
     void begin_accumulation ();
@@ -1366,6 +1371,8 @@ class System1Accumulator_P2CL : public TetraAccumulatorCL
     void finalize_accumulation();
 
     void visit (const TetraCL& sit);
+    
+    TetraAccumulatorCL* clone (){ return new System1Accumulator_P2CL ( *this); };
 };
 
 System1Accumulator_P2CL::System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_,
@@ -1375,6 +1382,14 @@ System1Accumulator_P2CL::System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coe
       RowIdx( RowIdx_), A( A_), M( M_), cplA( cplA_), cplM( cplM_), b( b_),
       local_twophase( Coeff.mu( 1.0), Coeff.mu( -1.0), Coeff.rho( 1.0), Coeff.rho( -1.0))
 {}
+/*
+System1Accumulator_P2CL::System1Accumulator_P2CL ( const System1Accumulator_P2CL &old)
+    : Coeff(old.Coeff), BndData(old.BndData), lset(old.lset), t( old.t),
+      RowIdx( old.RowIdx), A( old.A), M( old.M), cplA( old.cplA), cplM( old.cplM), b( old.b),
+      local_twophase( old.Coeff.mu( 1.0), old.Coeff.mu( -1.0), old.Coeff.rho( 1.0), old.Coeff.rho( -1.0))   
+{}
+*/
+
 
 void System1Accumulator_P2CL::begin_accumulation ()
 {
@@ -1466,14 +1481,24 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
                       VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up matrices A, M and rhs b (depending on phase bnd)
 {
+
+    MultiGridGraphCL graph( MG_ );
+
+    graph.create_Graph( RowIdx.TriangLevel());
+    graph.select_graph( RowIdx.TriangLevel());
+    
     // TimerCL time;
     // time.Start();
+    
     System1Accumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, M, b, cplA, cplM, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    
+    //accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    accus(graph);
+    
     // time.Stop();
-    // std::cout << "setup: " << time.GetTime() << std::endl;
+    // std::cout << "setup: " << time.GetTime() << " seconds"<<std::endl;
 }
 
 

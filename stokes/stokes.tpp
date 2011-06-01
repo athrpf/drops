@@ -278,6 +278,8 @@ class StokesSystem1Accumulator_P2CL : public TetraAccumulatorCL
     void finalize_accumulation();
 
     void visit (const TetraCL& sit);
+    
+    TetraAccumulatorCL* clone (){ return new StokesSystem1Accumulator_P2CL ( *this); };
 };
 
 template< class CoeffT>
@@ -452,6 +454,8 @@ class System2Accumulator_P2P1CL : public TetraAccumulatorCL
     void visit (const TetraCL& sit);
 
     LocalSystem2_sharedDataCL& GetLocalData() { return loc; }
+    
+    TetraAccumulatorCL* clone (){ return new System2Accumulator_P2P1CL ( *this); };
 };
 
 template< class CoeffT>

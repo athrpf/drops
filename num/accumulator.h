@@ -1,6 +1,6 @@
 /// \file accumulator.h
 /// \brief Basic classes to define accumulators, e. g. for the setup of stiffness matrices
-/// \author LNM RWTH Aachen: Joerg Grande; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Nils Gerhard, Joerg Grande; SC RWTH Aachen:
 
 /*
  * This file is part of DROPS.
@@ -28,7 +28,7 @@
 #include <vector>
 #include <functional>
 #include <algorithm>
-
+#include "geom/multigridgraph.h"
 namespace DROPS
 {
 
@@ -47,6 +47,9 @@ class AccumulatorCL
 
     /// \brief Called exactly once for each element of the visited sequence.
     virtual void visit (const VisitedT& t)= 0;
+    
+    /// \brief Returns a pointer to a copy of the actual instantiation of this class
+    virtual AccumulatorCL* clone ()= 0;
 
     virtual ~AccumulatorCL () {}
 };
@@ -76,9 +79,18 @@ class AccumulatorTupleCL
     /// \brief Registers a new accumulator.
     void push_back (AccumulatorCL<VisitedT>* p) { accus_.push_back( p); }
 
+    /// \brief Clones the vector accus_ for every thread, please note the first thread (thread #0) gets no clone, but accus_ instead
+    void clone_accus(std::vector<ContainerT> &cloned);
+    
+    /// \brief Deletes the Clones defined from clone_accus
+    void delete_clones(std::vector<ContainerT> &cloned);
+
     /// \brief Calls the accumulators for each object in [begin, end).
     template <class ExternalIteratorCL>
     void operator() (ExternalIteratorCL begin, ExternalIteratorCL end);
+    
+    /// \brief Calls the accumulators for each object by using a multigridgraph.
+    void operator() (MultiGridGraphCL &graph);      
 };
 
 template <class VisitedT>
@@ -102,6 +114,43 @@ void AccumulatorTupleCL<VisitedT>::operator() (ExternalIteratorCL begin, Externa
         std::for_each( accus_.begin(), accus_.end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *begin));
     finalize_iteration();
 }
+
+template<class VisitedT>
+void AccumulatorTupleCL<VisitedT>::operator() (MultiGridGraphCL& graph)
+{
+    std::vector<ContainerT> clones(omp_get_max_threads());
+    begin_iteration();
+    clone_accus(clones);    
+    
+    for( size_t i = 0 ; i < graph.get_num_colors() ; ++i)
+        #pragma omp parallel for
+        for( size_t j = 0 ; j < graph.get_num_tetras(i); ++j)
+            std::for_each( clones[omp_get_thread_num()].begin(), clones[omp_get_thread_num()].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *graph.get_tetra_pointer(i,j)));
+
+    finalize_iteration();
+    delete_clones(clones);
+}
+
+template<class VisitedT>
+void AccumulatorTupleCL<VisitedT>::clone_accus(std::vector<ContainerT>& cloned)
+{
+    cloned[0]= accus_;  
+    for( size_t i = 1 ; i < cloned.size() ; ++i){ 
+        cloned[i]= accus_;
+        for( size_t j = 0 ; j < accus_.size() ; ++j){
+            cloned[i][j] = accus_[j]->clone();
+        }
+    }
+}
+
+template<class VisitedT>   
+void AccumulatorTupleCL<VisitedT>::delete_clones(std::vector<ContainerT>& cloned)
+{
+    for( size_t i = 1 ; i < cloned.size() ; ++i)  
+        for( size_t j = 0 ; j < cloned[i].size() ; ++j)
+            delete cloned[i][j]; 
+}
+
 
 /// \brief Accumulation over sequences of TetraCL.
 typedef AccumulatorTupleCL<TetraCL> TetraAccumulatorTupleCL;
