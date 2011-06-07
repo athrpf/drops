@@ -1,6 +1,6 @@
 /// \file sdropsP2.cpp
 /// \brief stokes problem
-/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang, Thorolf Schulte; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -37,7 +37,6 @@
 
  // include problem class
 #include "stokes/stokes.h"
-//#include "stokes/params.h"
 #include "num/bndData.h"
 
 //include coefficient class
@@ -67,72 +66,6 @@ void MarkLower( DROPS::MultiGridCL& mg, double tresh)
         if (GetBaryCenter(*It)[2]<=tresh )
             It->SetRegRefMark();
     }
-}
-
-void
-ZeroMean(DROPS::P1EvalCL< double,
-                          const DROPS::StokesPrBndDataCL,
-                          DROPS::VecDescCL>& f)
-{
-    const DROPS::Uint lvl= f.GetLevel();
-    DROPS::MultiGridCL& mg= const_cast<DROPS::MultiGridCL&>( f.GetMG());
-    double MV= 0., vol= 0., sum;
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin( lvl),
-         send= mg.GetTriangTetraEnd( lvl); sit != send; ++sit) {
-        sum= 0.;
-        for(int i=0; i<4; ++i)
-            sum+= f.val( *sit->GetVertex( i));
-        sum/= 120;
-        sum+= 2./15.*f.val( *sit, .25, .25, .25);
-        MV+= sum * sit->GetVolume()*6.;
-        vol+= sit->GetVolume();
-    }
-    const double c= MV/vol;
-    std::cout << "\nconstant pressure offset: " << c << ", volume of domain: " << vol
-              << std::endl;
-    for (DROPS::MultiGridCL::TriangVertexIteratorCL sit= mg.GetTriangVertexBegin( lvl),
-         send= mg.GetTriangVertexEnd( lvl); sit != send; ++sit) {
-        f.SetDoF( *sit, f.val( *sit) - c);
-    }
-}
-
-typedef DROPS::SVectorCL<3> (*fun_ptr)(const DROPS::SVectorCL<3>&, double);
-
-int
-CheckVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
-         const DROPS::StokesVelBndDataCL,
-         DROPS::VelVecDescCL>& fun,
-         fun_ptr f)
-{
-    using namespace DROPS;
-    int ret= 0;
-    const VertexCL* v= 0;
-    const EdgeCL* e= 0;
-    const DROPS::MultiGridCL& mg= fun.GetMG();
-    const double t= fun.GetTime();
-    const DROPS::Uint trilevel= fun.GetLevel();
-    std::cout << "Verts:" << std::endl;
-    double diff, emaxdiff= 0., vmaxdiff= 0.;
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),
-         theend= mg.GetTriangVertexEnd( trilevel); sit!=theend; ++sit) {
-        diff= (fun.val( *sit) - f( sit->GetCoord(), t)).norm();
-        if ( std::abs( diff) > vmaxdiff) { ++ret; vmaxdiff= std::abs( diff); v= &*sit; }
-    }
-    std::cout << "\n\nEdges:" << std::endl;
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=mg.GetTriangEdgeBegin( trilevel),
-         theend= mg.GetTriangEdgeEnd( trilevel); sit!=theend; ++sit) {
-        diff = (fun.val( *sit, .5) - f( (sit->GetVertex( 0)->GetCoord()
-                                        +sit->GetVertex( 1)->GetCoord())*0.5, t)).norm();
-        if (std::abs( diff) > emaxdiff) { ++ret; emaxdiff= std::abs( diff); e= &*sit; }
-    }
-    {
-        std::cout << "maximale Differenz Vertices: " << vmaxdiff << " auf\n";
-        if (v) v->DebugInfo( std::cout);
-        std::cout << "maximale Differenz Edges: " << emaxdiff << " auf\n";
-        if (e) e->DebugInfo( std::cout);
-        std::cout << std::endl;
-    }
-    return ret;
 }
 
 const double radiusorbit= 0.3; // Radius of the drops' orbit.
@@ -190,88 +123,6 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
     return shell_not_ready;
 }
 
-template<class Coeff>
-void
-UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
-                    const signed_dist_fun Dist,
-                    const double t,
-                    const double width,         // Thickness of refined shell on eache side of the interface
-                    const DROPS::Uint c_level,  // Outside the shell, use this level
-                    const DROPS::Uint f_level,  // Inside the shell, use this level
-                    DROPS::VelVecDescCL* v1,
-                    DROPS::VecDescCL* p1)
-{
-    using namespace DROPS;
-    typedef StokesP2P1CL<Coeff> StokesCL;
-    Assert( c_level<=f_level, "UpdateTriangulation: Levels are cheesy.\n", ~0);
-    TimerCL time;
-
-    time.Reset();
-    time.Start();
-    double time_v = v1->t, time_p = p1->t;
-    MultiGridCL& mg= NS.GetMG();
-    IdxDescCL  loc_vidx, loc_pidx;
-    IdxDescCL* vidx1= v1->RowIdx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx1= p1->RowIdx;
-    IdxDescCL* pidx2= &loc_pidx;
-    VelVecDescCL  loc_v;
-    VecDescCL     loc_p;
-    VelVecDescCL* v2= &loc_v;
-    VecDescCL*    p2= &loc_p;
-    vidx2->SetFE( vecP2_FE);
-    pidx2->SetFE( P1_FE);
-    bool shell_not_ready= true;
-    const Uint min_ref_num= f_level - c_level;
-    const StokesBndDataCL& BndData= NS.GetBndData();
-    Uint i;
-    for(i=0; shell_not_ready || i<min_ref_num; ++i) {
-        shell_not_ready= ModifyGridStep( mg, Dist, width, c_level, f_level, t);
-        // Repair velocity
-        std::swap( v2, v1);
-        std::swap( vidx2, vidx1);
-        match_fun match= mg.GetBnd().GetMatchFun();
-        vidx1->CreateNumbering( mg.GetLastLevel(), mg, NS.GetBndData().Vel, match);
-        if ( mg.GetLastLevel() != vidx2->TriangLevel()) {
-            std::cout << "LastLevel: " << mg.GetLastLevel()
-                      << " vidx2->TriangLevel: " << vidx2->TriangLevel() << std::endl;
-            throw DROPSErrCL( "Strategy: Sorry, not yet implemented.");
-        }
-        v1->SetIdx( vidx1);
-        P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
-                  const VelVecDescCL> funv2( v2, &BndData.Vel, &mg);
-        RepairAfterRefineP2( funv2, *v1);
-        v2->Clear( time_v);
-        vidx2->DeleteNumbering( mg);
-//P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
-//          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
-//CheckVel( funv1, &MyPdeCL::LsgVel);
-        // Repair pressure
-        std::swap( p2, p1);
-        std::swap( pidx2, pidx1);
-        pidx1->CreateNumbering( mg.GetLastLevel(), mg, NS.GetBndData().Pr, match);
-        p1->SetIdx( pidx1);
-        typename StokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
-        RepairAfterRefineP1( oldfunpr, *p1);
-        p2->Clear( time_p);
-        pidx2->DeleteNumbering( mg);
-    }
-    // We want the solution to be where v1, p1 point to.
-    if (v1 == &loc_v) {
-        NS.vel_idx.GetFinest().swap( loc_vidx);
-        NS.pr_idx.GetFinest().swap( loc_pidx);
-        NS.v.SetIdx( &NS.vel_idx);
-        NS.p.SetIdx( &NS.pr_idx);
-
-        NS.v.Data= loc_v.Data;
-        NS.p.Data= loc_p.Data;
-    }
-    time.Stop();
-    std::cout << "UpdateTriangulation: " << i
-              << " refinements in " << time.GetTime() << " seconds\n"
-              << "last level: " << mg.GetLastLevel() << '\n';
-    mg.SizeInfo( std::cout);
-}
 
 void
 MakeInitialTriangulation(DROPS::MultiGridCL& mg,
@@ -312,138 +163,19 @@ using ::MyStokesCL;
 template <class StokesProblemT>
 void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 {
-
     TimerCL timer;
     timer.Reset();
 
-    MultiGridCL& MG= Stokes.GetMG();
-    const typename MyStokesCL::BndDataCL::PrBndDataCL& PrBndData= Stokes.GetBndData().Pr;
-    const typename MyStokesCL::BndDataCL::VelBndDataCL& VelBndData= Stokes.GetBndData().Vel;
+    timer.Start();
+    solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
+    timer.Stop();
+    const double duration = timer.GetTime();
+    std::cout << "Solving Stokes took "<<  duration << " sec.\n";
+    std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 
-    MLIdxDescCL  loc_vidx, loc_pidx;
-    MLIdxDescCL* vidx1= &Stokes.vel_idx;
-    MLIdxDescCL* pidx1= &Stokes.pr_idx;
-    MLIdxDescCL* vidx2= &loc_vidx;
-    MLIdxDescCL* pidx2= &loc_pidx;
+    if( P_Stokes.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
+        Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, true);
 
-    VecDescCL     loc_p;
-    VelVecDescCL  loc_v;
-    VelVecDescCL* v1= &Stokes.v;
-    VelVecDescCL* v2= &loc_v;
-    VecDescCL*    p1= &Stokes.p;
-    VecDescCL*    p2= &loc_p;
-    VelVecDescCL* b= &Stokes.b;
-    VelVecDescCL* c= &Stokes.c;
-    MLMatDescCL*  A= &Stokes.A;
-    MLMatDescCL*  B= &Stokes.B;
-
-    int step= 0;
-    StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
-        Estimator(P_Stokes.get<double>("Err.RelReduction"), P_Stokes.get<double>("Err.Threshold"), P_Stokes.get<double>("Err.Meas"), true, &MyStokesCL::ResidualErrEstimator, Stokes);
-    bool new_marks= false;
-
-    vidx1->SetFE( vecP2_FE);
-    vidx2->SetFE( vecP2_FE);
-    pidx1->SetFE( P1_FE);
-    pidx2->SetFE( P1_FE);
-
-    do
-    {
-        if( P_Stokes.get("Misc.MarkLower", 0) != 0) MarkLower(MG, P_Stokes.get("Misc.MarkLower", 0));
-
-        MG.Refine();
-
-        if( StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
-            Stokes.SetNumVelLvl( MG.GetNumLevel());
-        if( StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
-            Stokes.SetNumPrLvl( MG.GetNumLevel());
-
-        Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
-        Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
-        std::cout << "old and new TriangLevel: " << vidx2->TriangLevel() << ", "
-                  << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cout);
-        b->SetIdx(vidx1);
-        c->SetIdx(pidx1);
-        p1->SetIdx(pidx1);
-        v1->SetIdx(vidx1);
-        std::cout << "Number of pressure unknowns: " << p2->Data.size() << ", "
-                  << p1->Data.size() << std::endl;
-        std::cout << "Number of velocity unknowns " << v2->Data.size() << ", "
-	              << v1->Data.size() << std::endl;
-        if (p2->RowIdx)
-        {
-            v1->Clear( Stokes.v.t);
-            p1->Clear( Stokes.v.t);
-            v2->Reset();
-            p2->Reset();
-        }
-
-        A->SetIdx(vidx1, vidx1);
-        B->SetIdx(pidx1, vidx1);
-        timer.Reset();
-        timer.Start();
-        Stokes.SetupSystem(A, b, B, c);
-        timer.Stop();
-        std::cout << "SetupSystem: " << timer.GetTime() << " seconds." << std::endl;
-        timer.Reset();
-
-        if( P_Stokes.get<string>("StokesCoeff.Solution_Vel").compare("None")!=0 )  // check whether solution is given
-            Stokes.GetDiscError( StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::LsgPr);
-        timer.Reset();
-
-        if( StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
-            Stokes.prM.Data.resize(pidx1->size());
-
-        Stokes.prM.SetIdx( pidx1, pidx1);
-        Stokes.SetupPrMass( &Stokes.prM);
-
-        double err0= norm_sq( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data)
-	                 +norm_sq( B->Data*v1->Data - c->Data);
-        std::cout << "000 residual: " << std::sqrt( err0) << std::endl;
-
-        timer.Start();
-        solver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
-        timer.Stop();
-        double err= norm_sq( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data)
-                    +norm_sq( B->Data*v1->Data - c->Data);
-        std::cout << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
-        std::cout << "Solver: "<<timer.GetTime()<<" seconds.\n";
-        if(P_Stokes.get<string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
-          //todo: validate this method!
-          //Stokes.CheckSolution_merge ( v1, p1, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, true);
-
-        if( step==0 && P_Stokes.get<int>("Err.DoErrorEstimate") )
-        {
-            Estimator.Init(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG));
-        }
-        timer.Reset();
-        timer.Start();
-
-        if ( P_Stokes.get<int>("Err.DoErrorEstimate"))
-            new_marks= Estimator.Estimate(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG) );
-        timer.Stop();
-        std::cout << "Estimation: " << timer.GetTime() << " seconds.\n";
-        A->Reset();
-        B->Reset();
-        b->Reset();
-        c->Reset();
-
-        std::swap(v2, v1);
-        std::swap(p2, p1);
-        std::swap(vidx2, vidx1);
-        std::swap(pidx2, pidx1);
-    }while (++step<P_Stokes.get<int>("Err.NumRef"));
-    // we want the solution to be in Stokes.v, Stokes.pr
-    if (v2 == &loc_v)
-    {
-        Stokes.vel_idx.swap( loc_vidx);
-        Stokes.pr_idx.swap( loc_pidx);
-        Stokes.v.SetIdx( &Stokes.vel_idx);
-        Stokes.p.SetIdx( &Stokes.pr_idx);
-        Stokes.v.Data= loc_v.Data;
-        Stokes.p.Data= loc_p.Data;
-    }
 }
 
 template< class StokesProblemT>
@@ -468,26 +200,17 @@ void Strategy( StokesProblemT& Stokes)
     if( P_Stokes.get("Misc.ModifyGrid", 0) == 1)
         MakeInitialTriangulation( MG, &SignedDistToInterface, P_Stokes.get<double>("AdaptRef.Width"), P_Stokes.get<int>("AdaptRef.CoarsestLevel"), P_Stokes.get<int>("AdaptRef.FinestLevel"));
 
-    if( StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
-        Stokes.SetNumVelLvl( MG.GetNumLevel());
-
-    if( StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
+    if( StokesSolverFactoryHelperCL().VelMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
+    	Stokes.SetNumVelLvl( MG.GetNumLevel());
+    if( StokesSolverFactoryHelperCL().PrMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
         Stokes.SetNumPrLvl( MG.GetNumLevel());
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), &Stokes.vel_idx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), &Stokes.pr_idx);
 
-    Stokes.b.SetIdx( &Stokes.vel_idx);
-    Stokes.c.SetIdx( &Stokes.pr_idx);
+    Stokes.SetIdx();
     Stokes.v.SetIdx( &Stokes.vel_idx);
     Stokes.p.SetIdx( &Stokes.pr_idx);
-    Stokes.A.SetIdx( &Stokes.vel_idx, &Stokes.vel_idx);
-    Stokes.B.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
-    Stokes.M.SetIdx( &Stokes.vel_idx, &Stokes.vel_idx);
-    Stokes.prM.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
-    Stokes.SetupPrMass( &Stokes.prM);
-    Stokes.prA.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
-    Stokes.SetupPrStiff( &Stokes.prA);
 
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
@@ -502,8 +225,11 @@ void Strategy( StokesProblemT& Stokes)
     std::cout << line << "Discretize (setup linear equation system) ...\n";
 
     timer.Reset();
-    if( P_Stokes.get<int>("Time.NumSteps") != 0)
-        Stokes.SetupInstatSystem( &Stokes.A, &Stokes.B, &Stokes.M);
+    VelVecDescCL  cplM( &Stokes.vel_idx);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, 0.0);
+    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, 0.0);
+    Stokes.SetupPrMass ( &Stokes.prM);
+    Stokes.SetupPrStiff( &Stokes.prA);
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -512,21 +238,24 @@ void Strategy( StokesProblemT& Stokes)
     std::cout << line << "Solve the linear equation system ...\n";
 
     // type of preconditioner and solver
-    StokesSolverFactoryObsoleteCL< StokesProblemT> factory( Stokes, P_Stokes);
-    StokesSolverBaseCL* stokessolver = factory.CreateStokesSolver();
+    StokesSolverFactoryCL< StokesProblemT>         factory( Stokes, P_Stokes);
+    StokesSolverFactoryObsoleteCL< StokesProblemT> obsoletefactory( Stokes, P_Stokes);
+    StokesSolverBaseCL* stokessolver = (P_Stokes.get<int>("Stokes.StokesMethod")< 500000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
 
-    if( StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
+    if( StokesSolverFactoryHelperCL().VelMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
     {
-        MLMatrixCL* PVel = factory.GetPVel();
+        MLMatrixCL* PVel = ( P_Stokes.get<int>("Stokes.StokesMethod") < 500000) ? factory.GetPVel() : obsoletefactory.GetPVel();
         SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
+
         std::cout << "Check MG-Data..." << std::endl;
         std::cout << "                begin     " << Stokes.vel_idx.GetCoarsest().NumUnknowns() << std::endl;
         std::cout << "                end       " << Stokes.vel_idx.GetFinest().NumUnknowns() << std::endl;
         CheckMGData( Stokes.A.Data, *PVel);
     }
-    if( StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
+
+    if( StokesSolverFactoryHelperCL().PrMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
     {
-        MLMatrixCL* PPr = factory.GetPPr();
+        MLMatrixCL* PPr = ( P_Stokes.get<int>("Stokes.StokesMethod") < 500000) ? factory.GetPPr() : obsoletefactory.GetPPr();
         SetupP1ProlongationMatrix( MG, *PPr, &Stokes.pr_idx, &Stokes.pr_idx);
     }
 
@@ -543,16 +272,30 @@ void Strategy( StokesProblemT& Stokes)
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
 
-    if( P_Stokes.get<int>("Time.NumSteps") != 0){
-        TimeScheme->SetTimeStep( P_Stokes.get<double>("Time.StepSize"));
-    }
+    StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
 
     if (P_Stokes.get<int>("Time.NumSteps") == 0) {
+        if ( P_Stokes.get<int>("Stokes.StokesMethod") < 500000) {
+            factory.SetMatrixA( &Stokes.A.Data.GetFinest());
+            //for Stokes-MGM: coarse level solver uses bbt
+            factory.SetMatrices( &Stokes.A.Data, &Stokes.B.Data,
+                                 &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
+        }
         SolveStatProblem<MyStokesCL>( Stokes, *stokessolver);
-    }
 
-    // Solve the linear equation system
-    Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+    }
+    else {
+        TimeScheme->SetTimeStep( P_Stokes.get<double>("Time.StepSize"));
+        if ( P_Stokes.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)
+            Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+        else
+            Stokes.InitVel( &Stokes.v, ZeroVel);
+        if (P_Stokes.get<int>("Stokes.StokesMethod") < 500000) {
+            factory.SetMatrixA ( &TimeScheme->GetUpperLeftBlock()->GetFinest());
+            factory.SetMatrices( TimeScheme->GetUpperLeftBlock(), &Stokes.B.Data,
+                                 &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
+        }
+    }
 
     Ensight6OutCL  ens(P_Stokes.get<string>("Ensight.EnsCase")+".case", P_Stokes.get<int>("Time.NumSteps")+1, P_Stokes.get<int>("Ensight.Binary"), P_Stokes.get<int>("Ensight.MasterOut"));
     const std::string filename= P_Stokes.get<string>("Ensight.EnsDir") + "/" + P_Stokes.get<string>("Ensight.EnsCase");
@@ -579,16 +322,11 @@ void Strategy( StokesProblemT& Stokes)
           ens.Write( step*P_Stokes.get<double>("Time.StepSize"));
     }
 
-    if(P_Stokes.get<string>("StokesCoeff.Solution_Vel").compare("None")!=0 && P_Stokes.get<int>("Time.NumSteps") != 0)  // check whether solution is given
-    {
-        Stokes.SetupSystem( &Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c, Stokes.v.t);
-        //todo: Validate this method!
-        //Stokes.CheckSolution_merge ( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
-    }
+    if( P_Stokes.get<string>("StokesCoeff.Solution_Vel").compare("None")!=0 && P_Stokes.get<int>("Time.NumSteps") != 0)  // check whether solution is given
+        Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
 
 
     delete stokessolver;
-
 }
 
 } // end of namespace DROPS

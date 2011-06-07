@@ -28,7 +28,7 @@ namespace DROPS
 {
 
 VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
-            const std::string& filename, bool binary)
+            const std::string& filename, bool binary, Uint lvl)
 /** Beside constructing the VTKOutCL, this function computes the number of
     digits, that are used to decode the time steps in the filename.
 \param mg        MultiGridCL that contains the geometry
@@ -40,7 +40,7 @@ VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint nums
     : mg_(mg), timestep_(0), numsteps_(numsteps), descstr_(dataname),
         filename_(filename), binary_(binary), geomwritten_(false),
         vAddrMap_(), eAddrMap_(),
-        coords_(), tetras_(),
+        coords_(), tetras_(), lvl_(lvl),
         numPoints_(0), numTetras_(0)
 {
     decDigits_= 1;
@@ -174,9 +174,9 @@ void VTKOutCL::GatherCoord()
     // Get number of vertices and edges in last triangulation level
     Uint numVertices=0, numEdges=0;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it)
+    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(lvl_); it!=mg_.GetTriangVertexEnd(lvl_); ++it)
         numVertices++;
-    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it)
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(lvl_); it!=mg_.GetTriangEdgeEnd(lvl_); ++it)
         numEdges++;
 
     numPoints_= numLocPoints_= numVertices + numEdges;
@@ -184,7 +184,7 @@ void VTKOutCL::GatherCoord()
 
     ///\todo instead of v/eAddrMap_, one could use a P2 index instead (cf. EnsightOutCL)
     Uint counter=0;
-    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
+    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(lvl_); it!=mg_.GetTriangVertexEnd(lvl_); ++it){
         // store a consecutive number for the vertex
         vAddrMap_[&*it]= counter;
 
@@ -194,7 +194,7 @@ void VTKOutCL::GatherCoord()
         ++counter;
     }
 
-    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(lvl_); it!=mg_.GetTriangEdgeEnd(lvl_); ++it){
         // store a consecutive number for the edge
         eAddrMap_[&*it]= counter;
 
@@ -331,14 +331,14 @@ void VTKOutCL::GatherTetra()
 {
     // Gets number of tetras
     numTetras_=0;
-    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(); it!=mg_.GetTriangTetraEnd(); ++it)
+    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it)
         numTetras_ += 8;                        // each tetra is stored reg-refined
 
     tetras_.resize(4*numTetras_);               // four vertices * numTetras
 
     // Gathers connectivities
     Uint counter=0;
-    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(); it!=mg_.GetTriangTetraEnd(); ++it){
+    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it){
         RefRuleCL RegRef= GetRefRule( RegRefRuleC);                                     // get regular refinement rule
         for (int ch=0; ch<8; ++ch)                                                      // iterate over all children
         {

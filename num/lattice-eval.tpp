@@ -60,14 +60,14 @@ template <class T, class DomainT, class ResultIterT>
   inline ResultIterT
   evaluate_on_vertexes (T (*f)(const Point3DCL&, double), const TetraCL& tet, const DomainT& dom, double t, ResultIterT result_iterator)
 {
-    return std::transform( dom.vertex_begin(), dom.vertex_end(), result_iterator, WorldCoordFunctionAsLocalFECL<T>( tet, t, f));
+    return std::transform( dom.vertex_begin(), dom.vertex_end(), result_iterator, BaryEvalCL<T>( tet, t, f));
 }
 
 template <class T, class DomainT, class ResultIterT>
   inline ResultIterT
   evaluate_on_vertexes (T (*f)(const Point3DCL&, double), const TetraCL& tet, const DomainT& dom, TetraSignEnum s, double t, ResultIterT result_iterator)
 {
-    return std::transform( dom.vertex_begin( s), dom.vertex_end( s), result_iterator, WorldCoordFunctionAsLocalFECL<T>( tet, t, f));
+    return std::transform( dom.vertex_begin( s), dom.vertex_end( s), result_iterator, BaryEvalCL<T>( tet, t, f));
 }
 
 template <class T, class DomainT, class ResultContT>

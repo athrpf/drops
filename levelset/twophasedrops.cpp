@@ -258,14 +258,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     if (P.get<double>("NavStokes.Nonlinear")!=0.0 || P.get<int>("Time.NumSteps") == 0) {
         stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                       &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        stokessolverfactory.SetMatrices( navstokessolver->GetAN(), &Stokes.B.Data,
+                                         &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
     }
     else {
         stokessolverfactory.SetMatrixA( &timedisc->GetUpperLeftBlock()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( &timedisc->GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+        stokessolverfactory.SetMatrices( timedisc->GetUpperLeftBlock(), &Stokes.B.Data,
+                                         &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
     }
 
     UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
@@ -457,7 +457,7 @@ int main (int argc, char** argv)
 
     std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 #ifdef _PAR
-    adap.GetLb().GetLB().SetWeightFnct(3);
+    adap.GetLb().GetLB().SetWeightFnct(1);
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif

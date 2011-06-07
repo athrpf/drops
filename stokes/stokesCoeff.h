@@ -62,12 +62,23 @@ class StokesFlowCoeffCL
         q = scamap[P.get<std::string>("StokesCoeff.Reaction")];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
         f = vecmap[P.get<std::string>("StokesCoeff.Source")];
-        LsgVel = vecmap[P.get<std::string>("StokesCoeff.Solution_Vel")];
+        if( P.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)
+            LsgVel = vecmap[P.get<std::string>("StokesCoeff.Solution_Vel")];
+        else
+            LsgVel = NULL;
         DROPS::InMatMap & matmap = DROPS::InMatMap::getInstance();
-        DLsgVel = matmap[P.get<std::string>("StokesCoeff.Solution_DVel")];
+        if( P.get<std::string>("StokesCoeff.Solution_DVel").compare("None")!=0)
+            DLsgVel = matmap[P.get<std::string>("StokesCoeff.Solution_DVel")];
+        else
+            DLsgVel = NULL;
         DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
-        LsgPr = inscamap[P.get<std::string>("StokesCoeff.Solution_Pr")];
+        if( P.get<std::string>("StokesCoeff.Solution_Pr").compare("None")!=0)
+            LsgPr = inscamap[P.get<std::string>("StokesCoeff.Solution_Pr")];
+        else
+            LsgPr = NULL;
     }
+
+
 
 };
 

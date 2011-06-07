@@ -37,13 +37,13 @@ namespace DROPS {
 
 /// codes for Oseen solvers
 enum OseenSolverE {
-    GCR_OS= 1, iUzawa_OS= 2, MinRes_OS= 3, GMRes_OS= 4, GMResR_OS= 5, StokesMGM_OS= 30
+    GCR_OS= 1, iUzawa_OS= 2, MinRes_OS= 3, GMRes_OS= 4, GMResR_OS= 5, IDRs_OS= 7, StokesMGM_OS= 30
 };
 
 /// codes for velocity preconditioners (also including smoothers for the StokesMGM_OS)
 enum APcE {
     MG_APC= 1, MGsymm_APC= 2, PCG_APC= 3, GMRes_APC= 4, BiCGStab_APC= 5, VankaBlock_APC= 6, AMG_APC= 20, // preconditioners 
-    PVanka_SM= 30, BraessSarazin_SM= 31                                                                  // smoothers, nevertheless listed here
+    PVanka_SM= 30, BraessSarazin_SM= 31, IDRs_APC=7                                                      // smoothers, nevertheless listed here
 };
 
 /// codes for the pressure Schur complement preconditioners
@@ -62,6 +62,7 @@ struct StokesSolverInfoCL
             case GMRes_OS:     return "GMRes";
             case GMResR_OS:    return "GMResR";
             case StokesMGM_OS: return "Stokes MG";
+            case IDRs_OS:      return "IDR(s)";
             default:           return "unknown";
         }
     }
@@ -76,6 +77,7 @@ struct StokesSolverInfoCL
             case VankaBlock_APC:   return "block Vanka";
             case PVanka_SM:        return "Vanka smoother";
             case BraessSarazin_SM: return "Braess-Sarazin smoother";
+            case IDRs_APC:         return "IDR(s) iterations";
             default:               return "unknown";
         }
     }
@@ -114,7 +116,7 @@ struct StokesSolverInfoCL
     <tr><td>  4 </td><td> GMRes             </td><td> GMRes                              </td><td> VankaSchurPreCL              </td></tr>
     <tr><td>  5 </td><td> GMResR            </td><td> BiCGStab                           </td><td> BD^{-1}BT                    </td></tr>
     <tr><td>  6 </td><td>                   </td><td> VankaPre                           </td><td> VankaPre                     </td></tr>
-    <tr><td>  7 </td><td>                   </td><td>                                    </td><td> ISMGPreCL                    </td></tr>
+    <tr><td>  7 </td><td> IDR(s)            </td><td> IDR(s)                             </td><td> ISMGPreCL                    </td></tr>
     <tr><td>  8 </td><td>                   </td><td>                                    </td><td> SIMPLER                      </td></tr>
     <tr><td>  9 </td><td>                   </td><td>                                    </td><td> MSIMPLER                     </td></tr>
     <tr><td> 20 </td><td>                   </td><td> HYPRE-AMG                          </td><td>                              </td></tr>
@@ -142,7 +144,7 @@ class StokesSolverFactoryBaseCL
     /// Set the A-block in the minimal commutator
     virtual void       SetMatrixA ( const MatrixCL*) = 0;
     /// Set all matrices in Schur complement preconditioner
-    virtual void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*, const IdxDescCL* pr_idx) = 0;
+    virtual void       SetMatrices( const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLIdxDescCL* pr_idx) = 0;
     /// Returns pointer to prolongation for velocity
     virtual ProlongationVelT* GetPVel() = 0;
     /// Returns pointer to prolongation for pressure
@@ -236,13 +238,21 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, Prolonga
     typedef SolverAsPreCL<PCGSolverT> PCGPcT;
     PCGPcT PCGPc_;
 
+    //IDR(s)
+    typedef IDRsSolverCL<SSORPcCL> IDRsSolverT;
+    IDRsSolverT IDRsSolver_;
+    typedef SolverAsPreCL<IDRsSolverT> IDRsPcT;
+    IDRsPcT IDRsPc_;
+
 // Block PC for Oseen problem
     typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, DiagSpdBlockPreCL>  DiagBlockPcT;
     typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, LowerBlockPreCL>    LowerBlockPcT;
     typedef BlockPreCL<PreBaseCL, BDinvBTPreCL, SIMPLERBlockPreCL>    SIMPLERBlockPcT;
+    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, UpperBlockPreCL>    UpperBlockPcT;
 
     DiagBlockPcT    *DBlock_;
     LowerBlockPcT   *LBlock_;
+    UpperBlockPcT   *UBlock_;
     SIMPLERBlockPcT *SBlock_;
     VankaPreCL      vankapc_;
 
@@ -278,6 +288,10 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, Prolonga
     typedef PMResSolverCL<LanczosT> MinResT;
     MinResT *MinRes_;
 
+// IDR(s) solver
+    typedef IDRsSolverCL<UpperBlockPcT> IDRs_UBlockT;
+    IDRs_UBlockT *IDRsUBlock_;
+
 // coarse grid solver
     DiagBlockPcT DiagPCGBBTOseenPc_, DiagGMResMinCommPc_;
     LanczosT lanczosPCGBBT_;
@@ -307,7 +321,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, Prolonga
     /// Set the A-block in the minimal commutator
     void       SetMatrixA ( const MatrixCL* A) { mincommispc_.SetMatrixA(A); bdinvbtispc_.SetMatrixA(A); }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
-    void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx);
+    void       SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx);
     /// Returns pointer to prolongation for velocity
     ProlongationVelT* GetPVel();
     /// Returns pointer to prolongation for pressure
@@ -345,6 +359,7 @@ StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>::
         GMResSolver_( JACPc_, P.get<int>("Stokes.PcAIter"), /*restart*/ 100, P.get<double>("Stokes.PcATol"), /*rel*/ true), GMResPc_( GMResSolver_),
         BiCGStabSolver_( JACPc_, P.get<int>("Stokes.PcAIter"), P.get<double>("Stokes.PcATol"), /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),
         PCGSolver_( SSORPc_, P.get<int>("Stokes.PcAIter"), P.get<double>("Stokes.PcATol"), true), PCGPc_( PCGSolver_),
+        IDRsSolver_( SSORPc_, P.get<int>("Stokes.PcAIter"), P.get<double>("Stokes.PcATol"), true), IDRsPc_( IDRsSolver_),
         // block precondtioner
         DBlock_(0), LBlock_(0), SBlock_(0),
         vankapc_( &Stokes.pr_idx),
@@ -357,6 +372,8 @@ StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>::
         lanczos_ (0), 
         // PMinRes solver
         MinRes_(0),
+        // IDRs solver
+        IDRsUBlock_(0),
         // coarse grid/direct solver for StokesMGM
         DiagPCGBBTOseenPc_( PCGPc_, bbtispc_), DiagGMResMinCommPc_( GMResPc_, mincommispc_), lanczosPCGBBT_ (DiagPCGBBTOseenPc_),
         minressolver_( lanczosPCGBBT_, 500, 1e-6, true), coarse_blockminressolver_(minressolver_),
@@ -375,7 +392,7 @@ StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>::
     delete GMResRVanka_; delete GMResRLBlock_;
     delete GMResVanka_; delete GMResLBlock_;
     delete GCRVanka_; delete GCRLBlock_; delete GCRSBlock_;
-    delete SBlock_; delete LBlock_; delete DBlock_;
+    delete SBlock_; delete LBlock_; delete DBlock_; delete IDRsUBlock_;
 }
 
 template <class StokesT, class ProlongationVelT, class ProlongationPT>
@@ -425,6 +442,7 @@ PreBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>::Cre
         case PCG_APC:      return &PCGPc_;
         case GMRes_APC:    return &GMResPc_;
         case BiCGStab_APC: return &BiCGStabPc_;
+        case IDRs_APC:     return &IDRsPc_;
         default:           return 0;
     }
 }
@@ -543,6 +561,23 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
         }
         break;
         
+        case IDRs_OS: {
+//            if (APc_==VankaBlock_APC) {
+//                GCRVanka_= new GCR_VankaT( vankapc_,  C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false);
+//                stokessolver= new BlockMatrixSolverCL<GCR_VankaT> ( *GCRVanka_);
+//            } else if (SPc_==SIMPLER_SPC || SPc_==MSIMPLER_SPC) {
+//                bdinvbtispc_.SetMassLumping( SPc_==MSIMPLER_SPC);
+ //               SBlock_= new SIMPLERBlockPcT( *apc_, bdinvbtispc_);
+  //              GCRSBlock_= new GCR_SBlockT( *SBlock_,  C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false);
+//                stokessolver= new BlockMatrixSolverCL<GCR_SBlockT>( *GCRSBlock_);
+//            } else {
+                UBlock_= new UpperBlockPcT( *apc_, *spc_);
+                IDRsUBlock_= new IDRs_UBlockT( *UBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterTol"), /*rel*/ false);
+                stokessolver= new BlockMatrixSolverCL<IDRs_UBlockT>( *IDRsUBlock_);
+//            }
+        }
+        break;
+
         default: throw DROPSErrCL("StokesSolverFactoryCL: Unknown Oseen solver");
     }
     if (stokessolver==0)
@@ -552,14 +587,18 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
 
 template <class StokesT, class ProlongationVelT, class ProlongationPT>
 void StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>::
-    SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
+    SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx) {
     if ( APc_ == PVanka_SM || APc_ == BraessSarazin_SM) { //  Vanka or Braess Sarazin smoother
-        mincommispc_.SetMatrices(A, B, Mvel, M, pr_idx);
-        bdinvbtispc_.SetMatrices(A, B, Mvel, M, pr_idx);
-        bbtispc_.SetMatrices(B, Mvel, M, pr_idx);
+        bbtispc_.SetMatrices(B->GetCoarsestPtr(), Mvel->GetCoarsestPtr(), M->GetCoarsestPtr(), pr_idx->GetCoarsestPtr());
+        return;
     }
     if ( SPc_ == VankaSchur_SPC) {              // VankaSchur
-        vankaschurpc_.SetAB(A, B);
+        vankaschurpc_.SetAB(A->GetCoarsestPtr(), B->GetCoarsestPtr());
+    }
+    else {
+        mincommispc_.SetMatrices(A->GetFinestPtr(), B->GetFinestPtr(), Mvel->GetFinestPtr(), M->GetFinestPtr(), pr_idx->GetFinestPtr());
+        bdinvbtispc_.SetMatrices(A->GetFinestPtr(), B->GetFinestPtr(), Mvel->GetFinestPtr(), M->GetFinestPtr(), pr_idx->GetFinestPtr());
+        bbtispc_.SetMatrices(B->GetFinestPtr(), Mvel->GetFinestPtr(), M->GetFinestPtr(), pr_idx->GetFinestPtr());
     }
 }
 
@@ -680,7 +719,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, Prolonga
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     void       SetMatrixA ( const MatrixCL*)  {};
     /// Nothing is to be done in parallel, because special preconditioners does not exist
-    void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*, const IdxDescCL*){}
+    void       SetMatrices( const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLMatrixCL*, const MLIdxDescCL*){}
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     ProlongationVelT* GetPVel() { return 0; }
     /// Nothing is to be done in parallel, because special preconditioners does not exist
@@ -891,7 +930,7 @@ class StokesSolverFactoryObsoleteCL : public StokesSolverFactoryBaseCL<StokesT, 
     /// Set the A-block in the minimal commutator
     void       SetMatrixA ( const MatrixCL* /*A*/) { }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
-    void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx);
+    void       SetMatrices( const MLMatrixCL* A, const MLMatrixCL* B, const MLMatrixCL* Mvel, const MLMatrixCL* M, const MLIdxDescCL* pr_idx);
     /// Returns pointer to prolongation for velocity
     ProlongationVelT* GetPVel();
     /// Returns pointer to prolongation for pressure
@@ -976,7 +1015,7 @@ StokesSolverBaseCL* StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, Pro
 
 template <class StokesT, class ProlongationVelT, class ProlongationPT>
 void StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, ProlongationPT>::
-    SetMatrices( const MatrixCL* /*A*/, const MatrixCL* /*B*/, const MatrixCL* /*Mvel*/, const MatrixCL* /*M*/, const IdxDescCL* /*pr_idx*/) {
+    SetMatrices( const MLMatrixCL* /*A*/, const MLMatrixCL* /*B*/, const MLMatrixCL* /*Mvel*/, const MLMatrixCL* /*M*/, const MLIdxDescCL* /*pr_idx*/) {
 }
 
 template <class StokesT, class ProlongationVelT, class ProlongationPT>

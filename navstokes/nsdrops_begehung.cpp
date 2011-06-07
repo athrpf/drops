@@ -44,15 +44,6 @@ DROPS::Point3DCL Source( const DROPS::Point3DCL&, double)
     return ret; 
 }
 
-static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&, double)
-{
-   return DROPS::SVectorCL<3>(0.);
-}
-
-static double LsgPr(const DROPS::Point3DCL&, double)
-{
-    return 0;
-}
 static const double st=0.1;
 static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
 {
@@ -267,6 +258,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 
     MLMatDescCL* A= &Stokes.A;
     MLMatDescCL* B= &Stokes.B;
+    MLMatDescCL* M= &Stokes.M;
     Uint step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
         Estimator(rel_red, markratio, 1., true, &MyStokesCL::ResidualErrEstimator, Stokes );
@@ -276,6 +268,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
     vidx2->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     pidx2->SetFE( P1_FE);
+    VelVecDescCL  cplM( vidx1);
 
 //    MarkLower(MG,0.25);
     TimerCL time;
@@ -291,6 +284,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
+        cplM.SetIdx(vidx1);
         std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
         std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
@@ -307,12 +301,16 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
             p2->Reset();
         }
         A->Reset();
+        M->Reset();
         B->Reset();
         A->SetIdx(vidx1, vidx1);
+        M->SetIdx(vidx1, vidx1);
         B->SetIdx(pidx1, vidx1);
         time.Reset();
         time.Start();
-        Stokes.SetupSystem(A, b, B, c);
+
+        Stokes.SetupSystem1( A, M, b, b, &cplM, v1->t);
+        Stokes.SetupSystem2( B, c, v1->t);
         time.Stop();
         std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
@@ -333,16 +331,15 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 */
         time.Reset();
 
-        MLMatDescCL M;
-        M.SetIdx( pidx1, pidx1);
-        Stokes.SetupPrMass( &M);
+        Stokes.prM.SetIdx( pidx1, pidx1);
+        Stokes.SetupPrMass( &Stokes.prM);
 
         double outer_tol= tol;
 
         if (meth)
         {
 //            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
-            PSchur_GSPCG_CL schurSolver( M.Data.GetFinest(), 200, outer_tol, 200, inner_iter_tol);
+            PSchur_GSPCG_CL schurSolver( Stokes.prM.Data.GetFinest(), 200, outer_tol, 200, inner_iter_tol);
             time.Start();
             schurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -350,7 +347,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         else // Uzawa
         {
 //            Uzawa_PCG_CL uzawaSolver(M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
-            Uzawa_IPCG_CL uzawaSolver(M.Data.GetFinest(), 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
+            Uzawa_IPCG_CL uzawaSolver( Stokes.prM.Data.GetFinest(), 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
             uzawaSolver.Init_A_Pc(A->Data.GetFinest()); // only for Uzawa_IPCG_CL.
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
@@ -417,6 +414,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     VelVecDescCL* c= &NS.c;
 
     MLMatDescCL* A= &NS.A;
+    MLMatDescCL* M= &NS.M;
     MLMatDescCL* B= &NS.B;
     MLMatDescCL* N= &NS.N;
     int step= 0;
@@ -425,6 +423,8 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     vidx2->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     pidx2->SetFE( P1_FE);
+
+    VelVecDescCL cplM( vidx1);
 
     TimerCL time;
     do
@@ -439,6 +439,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
+        cplM.SetIdx( vidx1);
         std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
         std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
@@ -453,11 +454,13 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             p2->Reset();
         }
         A->SetIdx(vidx1, vidx1);
+        M->SetIdx(vidx1, vidx1);
         B->SetIdx(pidx1, vidx1);
         N->SetIdx(vidx1, vidx1);
         time.Reset();
         time.Start();
-        NS.SetupSystem(A, b, B, c);
+        NS.SetupSystem1( A, M, b, b, &cplM, NS.v.t);
+        NS.SetupSystem2( B, c, NS.v.t);
         time.Stop();
         std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
@@ -482,11 +485,10 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         VectorCL d( vidx1->NumUnknowns()), e( pidx1->NumUnknowns()),
                  w( vidx1->NumUnknowns()), q( pidx1->NumUnknowns());
         VelVecDescCL rhsN( vidx1), v_omw( vidx1);
-        MLMatDescCL M;
-        M.SetIdx( pidx1, pidx1);
-        NS.SetupPrMass( &M);
+        NS.prM.SetIdx( pidx1, pidx1);
+        NS.SetupPrMass( &NS.prM);
         double omega= 1, res; // initial value (no damping)
-        Uzawa_IPCG_CL uzawaSolver(M.Data.GetFinest(), 500, -1., poi_maxiter, poi_tol, 1.);
+        Uzawa_IPCG_CL uzawaSolver( NS.prM.Data.GetFinest(), 500, -1., poi_maxiter, poi_tol, 1.);
         for(int fp_step=0; fp_step<fp_maxiter; ++fp_step)
         {
             NS.SetupNonlinear( N, v1, &rhsN);
@@ -536,6 +538,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         std::cout << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
 
         A->Reset();
+        M->Reset();
         B->Reset();
         b->Reset();
         c->Reset();

@@ -763,13 +763,13 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
 
     const MultiGridCL& _MG= old_sol.GetMG();
     const Uint old_level= old_sol.GetLevel();
-    const Uint level= sol.GetLevel();
+    //const Uint level= sol.GetLevel();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     Uint counter1= 0, counter2= 0;
 
 //    Assert( level==old_level || old_level==level-1, DROPSErrCL("Interpolate: successive triangs are expected\n"));
     // Iterate over all edges, interpolate values on new mid vertices
-    for (MultiGridCL::const_EdgeIterator sit= _MG.GetAllEdgeBegin(level), theend= _MG.GetAllEdgeEnd(level);
+    for (MultiGridCL::const_EdgeIterator sit= _MG.GetAllEdgeBegin(old_level), theend= _MG.GetAllEdgeEnd(old_level);
          sit!=theend; ++sit)
         if ( sit->IsRefined() && !_bnd->IsOnDirBnd(*sit->GetMidVertex())  ) // only new non-boundary vertices are interpolated
         {

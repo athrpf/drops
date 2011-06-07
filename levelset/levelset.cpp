@@ -553,7 +553,7 @@ double LevelsetP2CL::GetVolume( double translation, bool fine) const
     double det, absdet, Volume= 0.;
     LocalP2CL<double> ones( 1.);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL it=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(), end=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd();
+    for (MultiGridCL::const_TriangTetraIteratorCL it=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(idx.TriangLevel()), end=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(idx.TriangLevel());
         it!=end; ++it) {
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);

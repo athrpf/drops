@@ -381,7 +381,10 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
             }
             SetMatVecIndices( NS, vidx1, pidx1);
             time.Reset(); time.Start();
-            NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
+        	NS.SetupSystem1( &NS.A, &NS.M, &NS.b, &NS.b, &NS.b, 0.0);
+            NS.SetupSystem2( &NS.B, &NS.c, 0.0);
+            NS.b.Clear(0.0);
+            NS.c.Clear(0.0);
             time.Stop();
             std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();

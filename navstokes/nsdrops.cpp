@@ -146,6 +146,8 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     MLMatDescCL* A= &NS.A;
     MLMatDescCL* B= &NS.B;
     MLMatDescCL* N= &NS.N;
+    MLMatDescCL* M= &NS.M;
+    VelVecDescCL  cplM( vidx1);
     int step= 0;
 
     vidx1->SetFE( vecP2_FE);
@@ -166,6 +168,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
+        cplM.SetIdx(vidx1);
         std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
         std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
@@ -180,11 +183,14 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             p2->Reset();
         }
         A->SetIdx(vidx1, vidx1);
+        M->SetIdx(vidx1, vidx1);
         B->SetIdx(pidx1, vidx1);
         N->SetIdx(vidx1, vidx1);
         time.Reset();
         time.Start();
-        NS.SetupSystem(A, b, B, c);
+
+        NS.SetupSystem1( A, M, b, b, &cplM, NS.v.t);
+        NS.SetupSystem2( B, c, NS.v.t);
         time.Stop();
         std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
@@ -207,12 +213,11 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         //---------------------------------------
         time.Reset();
 
-        MLMatDescCL M;
-        M.SetIdx( pidx1, pidx1);
-        NS.SetupPrMass( &M);
-        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data.GetFinest(), fp_maxiter, fp_tol,
+        NS.prM.SetIdx( pidx1, pidx1);
+        NS.SetupPrMass( &NS.prM);
+        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, NS.prM.Data.GetFinest(), fp_maxiter, fp_tol,
                                                      2000, poi_maxiter, poi_tol, uzawa_red);
-//        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
+//        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, NS.prM.Data, fp_maxiter, fp_tol,
 //                                                  2000, poi_maxiter, poi_tol, uzawa_red);
 //        AFPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
 //                                                   2000, poi_maxiter, poi_tol, uzawa_red);
@@ -285,6 +290,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         MarkAll(MG);
 
         A->Reset();
+        M->Reset();
         B->Reset();
         b->Reset();
         c->Reset();

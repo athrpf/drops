@@ -512,7 +512,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
             {
                 cut.ComputeCutForChild(ch);
                 for (Uint i=0; i<4; ++i)
-                    loc_int[i]+= cut.quad( hat_sq[i], h3, cut.GetSign(i) != 1); // integrate on other part
+                    loc_int[i]+= cut.quad( hat_sq[i], h3, cut.GetSign(i) != 1); // integrate on other part; for sign == 0, the support is in the positive part.
             }
             if (cut.IntersectsInterior())
                 for (Uint i=0; i<4; ++i)
