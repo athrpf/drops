@@ -4,8 +4,14 @@ no release, no warranty, no license
 Autor: Thorolf Schulte (LNM)
 """
 
+from string import replace
+
 #settings
-FILES = ["./poisson/ipfilm", "./poisson/ipdrops"]
+"""FTMP = ["brick_transp", "butanol", "eindhoven", "film", "mzi", "prJump", "risingbutanoldroplet", "risingdroplet", "toluol"]
+FILES = []
+for f in FTMP:
+	FILES.append("./levelset/"+f)"""
+FILES = ["./surfactant/surfactant"]
 SUFFIX_IN = ".param"
 SUFFIX_OUT = ".json"
 DEBUG = False
@@ -22,12 +28,14 @@ comment = ""
 for filename in FILES:
 	try:
 		infile = open(filename + SUFFIX_IN)
+	except:
+		print("Cannot open " + filename + SUFFIX_IN + ". Skipping.")
+		continue
+
+	try:
 		outfile = open(filename + SUFFIX_OUT, 'w')
 	except:
-		if not infile:
-			print("Cannot open " + filename + SUFFIX_IN + ". Skipping.")
-		if not outfile:
-			print("Cannot open " + filename + SUFFIX_OUT + ". Skipping.")
+		print("Cannot open " + filename + SUFFIX_OUT + ". Skipping.")
 		continue
 
 	#start file with first level of hierarchy
@@ -45,6 +53,7 @@ for filename in FILES:
 				continue
 		
 			STARTING_COMMENTS = False
+			comment = replace(comment, '"', "'")
 			outfile.write(level*"\t" + '"_comment":\n"' + comment.rstrip() + '",\n\n')
 			comment = ""
 
@@ -65,6 +74,7 @@ for filename in FILES:
 			#add comments fetched before
 			if (comment != ""):
 				comment.rstrip("\n")
+				comment = replace(comment, '"', "'")
 				outfile.write(level*"\t" + '"_comment":\n"' + comment.rstrip() + '",\n\n')
 				comment = ""
 			VAR_START = ""
@@ -91,8 +101,7 @@ for filename in FILES:
 							vec_try = False
 							break
 					if vec_try:
-						for val in var_vec:
-							var_str = var_str + " " + val
+						var_str = var_vec[0] + ", " + var_vec[1] + ", " + var_vec[2]
 						var_str = '[' + var_str + ' ]'
 			#still empty? String!
 			if var_str == "":
@@ -116,4 +125,9 @@ for filename in FILES:
 	outfile.close()
 	infile.close()
 	STARTING_COMMENTS = True
+	VAR_START = ""
+	LEVEL_START = ""
+	level = 0
+	comment = ""
+	print(filename + " done.")
 		

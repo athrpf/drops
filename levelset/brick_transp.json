@@ -1,17 +1,17 @@
 {
 	"_comment":
 "#=============================================================
-#    DROPS parameter file for twophasedrops
+#    DROPS parameter file
 #    simulation of two-phase flow:
-#    droplet in a cuboid
+#    study effect of pressure jump for different FE spaces
 #=============================================================
 # time stepping",
 
 	"Time":
 	{
-		"NumSteps":		10,
-		"StepSize":		0.125,
-		"Scheme":		1
+		"NumSteps":		20,
+		"StepSize":		5e-2,
+		"Scheme":		2
 	},
 
 	"Stokes":
@@ -19,22 +19,22 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10101,
+		"StokesMethod":		99,
 		"InnerIter":		1000,
-		"OuterIter":		200,
-		"InnerTol":		0.6,
-		"OuterTol":		1e-8,
+		"OuterIter":		100,
+		"InnerTol":		1e-14,
+		"OuterTol":		1e-6,
 		"PcAIter":		2,
-		"PcATol":		1e-99,
+		"PcATol":		1e-2,
 		"PcSTol":		1e-4,
-		"XFEMStab":		0.1,
-		"Theta":		1
+		"XFEMStab":		1.0,
+		"Theta":		1.0
 	},
 
 	"NavStokes":
 	{
-		"Nonlinear":		1,
-		"Tol":		1e-10,
+		"Nonlinear":		0,
+		"Tol":		5e-10,
 		"Iter":		20,
 		"Reduction":		0.1
 	},
@@ -45,18 +45,18 @@
 "# levelset solver",
 
 		"Tol":		1e-14,
-		"Iter":		1000,
-		"SD":		0.1,
-		"CurvDiff":		-1,
-		"VolCorrection":		1,
-		"Theta":		1
+		"Iter":		10000,
+		"SD":		0,
+		"CurvDiff":		-5e-9,
+		"VolCorrection":		0,
+		"Theta":		1.0
 	},
 
 	"Coupling":
 	{
-		"Tol":		1e-10,
-		"Iter":		20,
-		"Stab":		1.0,
+		"Tol":		5e-10,
+		"Iter":		-1,
+		"Stab":		0.0,
 		"Projection":		0
 	},
 
@@ -65,24 +65,11 @@
 		"_comment":
 "# re-initialization of levelset function",
 
-		"Freq":		1,
 		"Method":		03,
+		"Freq":		0,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
 		"NarrowBand":		-1.0
-	},
-
-	"AdaptRef":
-	{
-		"_comment":
-"# adaptive refinement",
-
-		"Freq":		1,
-		"FinestLevel":		2,
-		"CoarsestLevel":		0,
-		"Width":		0.1,
-		"LoadBalStrategy":		1,
-		"Partitioner":		1
 	},
 
 	"Mat":
@@ -91,10 +78,10 @@
 "# material data, all units are SI",
 
 		"DensDrop":		1,
-		"ViscDrop":		10,
-		"DensFluid":		10,
+		"ViscDrop":		1,
+		"DensFluid":		1,
 		"ViscFluid":		1,
-		"SmoothZone":		0.05
+		"SmoothZone":		1e-5
 	},
 
 	"Exp":
@@ -102,14 +89,34 @@
 		"_comment":
 "# experimental conditions",
 
-		"RadDrop":		[0.25, 0.25, 0.25 ],
+		"RadDrop":		[0.3, 0.3, 0.3 ],
 		"PosDrop":		[0.5, 0.5, 0.5 ],
-		"Gravity":		[0, 0, -9.81 ],
-		"FlowDir":		0,
-		"InflowVel":		0,
-		"RadInlet":		1,
+		"Gravity":		[0, 0, 0 ],
+		"FlowDir":		1,
+		"InflowVel":		1,
+		"RadInlet":		0.5,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# Gamma 1
+#  RadDrop = 0 0 0
+#  PosDrop = 0 0 -1
+#  Gamma 2
+#  RadDrop = 0 0 0
+#  PosDrop = 0 -1 -1
+#  static Bubble
+# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		1e-8,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
 	},
 
 	"SurfTens":
@@ -129,7 +136,7 @@
 		"_comment":
 "# mass transport",
 
-		"DoTransp":		0,
+		"DoTransp":		1,
 		"Theta":		0.5,
 		"Iter":		200,
 		"Tol":		1e-10,
@@ -162,9 +169,9 @@
 "# Ensight settings",
 
 		"EnsightOut":		0,
-		"EnsCase":		"risingdroplet",
+		"EnsCase":		"brick_transp",
 		"EnsDir":		"ensight",
-		"Binary":		0,
+		"Binary":		1,
 		"MasterOut":		1,
 		"GeomName":		"Brick"
 	},
@@ -174,21 +181,9 @@
 		"_comment":
 "#VTK output",
 
-		"VTKOut":		1,
+		"VTKOut":		0,
 		"VTKDir":		"vtk",
-		"VTKName":		"risingdroplet",
-		"Binary":		1
-	},
-
-	"Restart":
-	{
-		"_comment":
-"# Write out results, read in for restart",
-
-		"Serialization":		0,
-		"Overwrite":		1,
-		"Inputfile":		"none",
-		"Outputfile":		"mg/data",
+		"VTKName":		"brick_transp",
 		"Binary":		0
 	},
 
@@ -197,12 +192,24 @@
 		"_comment":
 "# domain, bnd/ini conditions",
 
-		"InitialCond":		0,
+		"InitialCond":		1,
 		"GeomType":		1,
-		"InitialFile":		"mg/data",
-		"MeshFile":		"1x1x2@3x3x6",
-		"BoundaryType":		"0!0!0!0!0!0",
-		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+		"InitialFile":		"xxx",
+		"MeshFile":		4,
+		"BoundaryType":		"unused",
+		"BoundaryFncs":		"unused"
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# restart computation",
+
+		"Inputfile":		"none",
+		"Outputfile":		"none",
+		"Overwrite":		1,
+		"Serialization":		0,
+		"Binary":		0
 	}
 
 }

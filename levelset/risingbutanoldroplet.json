@@ -3,14 +3,14 @@
 "#=============================================================
 #    DROPS parameter file for twophasedrops
 #    simulation of two-phase flow:
-#    droplet in a cuboid
+#    butanol droplet in water
 #=============================================================
 # time stepping",
 
 	"Time":
 	{
 		"NumSteps":		10,
-		"StepSize":		0.125,
+		"StepSize":		3e-3,
 		"Scheme":		1
 	},
 
@@ -19,14 +19,14 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10101,
+		"StokesMethod":		20401,
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		0.6,
-		"OuterTol":		1e-8,
-		"PcAIter":		2,
-		"PcATol":		1e-99,
-		"PcSTol":		1e-4,
+		"OuterTol":		1e-10,
+		"PcAIter":		500,
+		"PcATol":		1e-2,
+		"PcSTol":		1e-2,
 		"XFEMStab":		0.1,
 		"Theta":		1
 	},
@@ -44,7 +44,7 @@
 		"_comment":
 "# levelset solver",
 
-		"Tol":		1e-14,
+		"Tol":		1e-10,
 		"Iter":		1000,
 		"SD":		0.1,
 		"CurvDiff":		-1,
@@ -55,7 +55,7 @@
 	"Coupling":
 	{
 		"Tol":		1e-10,
-		"Iter":		20,
+		"Iter":		10,
 		"Stab":		1.0,
 		"Projection":		0
 	},
@@ -78,9 +78,9 @@
 "# adaptive refinement",
 
 		"Freq":		1,
-		"FinestLevel":		2,
+		"FinestLevel":		3,
 		"CoarsestLevel":		0,
-		"Width":		0.1,
+		"Width":		0.4e-3,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -90,11 +90,11 @@
 		"_comment":
 "# material data, all units are SI",
 
-		"DensDrop":		1,
-		"ViscDrop":		10,
-		"DensFluid":		10,
-		"ViscFluid":		1,
-		"SmoothZone":		0.05
+		"DensDrop":		845.442,
+		"ViscDrop":		3.281e-3,
+		"DensFluid":		986.506,
+		"ViscFluid":		1.388e-3,
+		"SmoothZone":		1e-4
 	},
 
 	"Exp":
@@ -102,12 +102,12 @@
 		"_comment":
 "# experimental conditions",
 
-		"RadDrop":		[0.25, 0.25, 0.25 ],
-		"PosDrop":		[0.5, 0.5, 0.5 ],
-		"Gravity":		[0, 0, -9.81 ],
-		"FlowDir":		0,
+		"RadDrop":		[2.0e-3, 2.0e-3, 2.0e-3 ],
+		"PosDrop":		[6.0e-3, 3.0e-3, 6.0e-3 ],
+		"Gravity":		[0, -9.81, 0 ],
+		"FlowDir":		1,
 		"InflowVel":		0,
-		"RadInlet":		1,
+		"RadInlet":		5e-3,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
 	},
@@ -118,7 +118,7 @@
 "# surface tension",
 
 		"VarTension":		0,
-		"SurfTension":		1,
+		"SurfTension":		1.63e-3,
 		"JumpWidth":		5e-4,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
@@ -162,7 +162,7 @@
 "# Ensight settings",
 
 		"EnsightOut":		0,
-		"EnsCase":		"risingdroplet",
+		"EnsCase":		"brick",
 		"EnsDir":		"ensight",
 		"Binary":		0,
 		"MasterOut":		1,
@@ -176,7 +176,7 @@
 
 		"VTKOut":		1,
 		"VTKDir":		"vtk",
-		"VTKName":		"risingdroplet",
+		"VTKName":		"brick",
 		"Binary":		1
 	},
 
@@ -186,9 +186,9 @@
 "# Write out results, read in for restart",
 
 		"Serialization":		0,
-		"Overwrite":		1,
+		"Overwrite":		0,
 		"Inputfile":		"none",
-		"Outputfile":		"mg/data",
+		"Outputfile":		"mg",
 		"Binary":		0
 	},
 
@@ -199,10 +199,10 @@
 
 		"InitialCond":		0,
 		"GeomType":		1,
-		"InitialFile":		"mg/data",
-		"MeshFile":		"1x1x2@3x3x6",
-		"BoundaryType":		"0!0!0!0!0!0",
-		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+		"InitialFile":		"mg/brick",
+		"MeshFile":		"12e-3x30e-3x12e-3@4x10x4",
+		"BoundaryType":		"0!0!23!2!0!0",
+		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!InflowBrick!ZeroVel!ZeroVel"
 	}
 
 }

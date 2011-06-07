@@ -1,16 +1,16 @@
 {
 	"_comment":
 "#=============================================================
-#    DROPS parameter file for twophasedrops
+#    DROPS parameter file
 #    simulation of two-phase flow:
-#    droplet in a cuboid
+#    droplet in measuring cell used for optimal design
 #=============================================================
 # time stepping",
 
 	"Time":
 	{
-		"NumSteps":		10,
-		"StepSize":		0.125,
+		"NumSteps":		500,
+		"StepSize":		1e-4,
 		"Scheme":		1
 	},
 
@@ -19,22 +19,22 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10101,
+		"StokesMethod":		10102,
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		0.6,
-		"OuterTol":		1e-8,
+		"OuterTol":		1e-11,
 		"PcAIter":		2,
 		"PcATol":		1e-99,
 		"PcSTol":		1e-4,
-		"XFEMStab":		0.1,
-		"Theta":		1
+		"XFEMStab":		1e-1,
+		"Theta":		0.5
 	},
 
 	"NavStokes":
 	{
-		"Nonlinear":		1,
-		"Tol":		1e-10,
+		"Nonlinear":		0,
+		"Tol":		5e-10,
 		"Iter":		20,
 		"Reduction":		0.1
 	},
@@ -45,18 +45,18 @@
 "# levelset solver",
 
 		"Tol":		1e-14,
-		"Iter":		1000,
+		"Iter":		10000,
 		"SD":		0.1,
-		"CurvDiff":		-1,
-		"VolCorrection":		1,
+		"CurvDiff":		0,
+		"VolCorrection":		5,
 		"Theta":		1
 	},
 
 	"Coupling":
 	{
-		"Tol":		1e-10,
-		"Iter":		20,
-		"Stab":		1.0,
+		"Tol":		1e-12,
+		"Iter":		-1,
+		"Stab":		0.0,
 		"Projection":		0
 	},
 
@@ -65,7 +65,7 @@
 		"_comment":
 "# re-initialization of levelset function",
 
-		"Freq":		1,
+		"Freq":		0,
 		"Method":		03,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
@@ -77,10 +77,10 @@
 		"_comment":
 "# adaptive refinement",
 
-		"Freq":		1,
+		"Freq":		0,
 		"FinestLevel":		2,
 		"CoarsestLevel":		0,
-		"Width":		0.1,
+		"Width":		1e-3,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -90,11 +90,11 @@
 		"_comment":
 "# material data, all units are SI",
 
-		"DensDrop":		1,
-		"ViscDrop":		10,
-		"DensFluid":		10,
-		"ViscFluid":		1,
-		"SmoothZone":		0.05
+		"DensDrop":		955,
+		"ViscDrop":		2.6e-3,
+		"DensFluid":		1107,
+		"ViscFluid":		1.2e-3,
+		"SmoothZone":		1e-4
 	},
 
 	"Exp":
@@ -102,12 +102,12 @@
 		"_comment":
 "# experimental conditions",
 
-		"RadDrop":		[0.25, 0.25, 0.25 ],
-		"PosDrop":		[0.5, 0.5, 0.5 ],
-		"Gravity":		[0, 0, -9.81 ],
+		"RadDrop":		[1.75e-3, 1.75e-3, 1.75e-3 ],
+		"PosDrop":		[8e-3, 0, 0 ],
+		"Gravity":		[9.81, 0, 0 ],
 		"FlowDir":		0,
-		"InflowVel":		0,
-		"RadInlet":		1,
+		"InflowVel":		0.04,
+		"RadInlet":		2e-2,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
 	},
@@ -129,7 +129,7 @@
 		"_comment":
 "# mass transport",
 
-		"DoTransp":		0,
+		"DoTransp":		1,
 		"Theta":		0.5,
 		"Iter":		200,
 		"Tol":		1e-10,
@@ -162,11 +162,11 @@
 "# Ensight settings",
 
 		"EnsightOut":		0,
-		"EnsCase":		"risingdroplet",
+		"EnsCase":		"mzi",
 		"EnsDir":		"ensight",
-		"Binary":		0,
+		"Binary":		1,
 		"MasterOut":		1,
-		"GeomName":		"Brick"
+		"GeomName":		"Cube"
 	},
 
 	"VTK":
@@ -174,21 +174,9 @@
 		"_comment":
 "#VTK output",
 
-		"VTKOut":		1,
+		"VTKOut":		0,
 		"VTKDir":		"vtk",
-		"VTKName":		"risingdroplet",
-		"Binary":		1
-	},
-
-	"Restart":
-	{
-		"_comment":
-"# Write out results, read in for restart",
-
-		"Serialization":		0,
-		"Overwrite":		1,
-		"Inputfile":		"none",
-		"Outputfile":		"mg/data",
+		"VTKName":		"nsmzi",
 		"Binary":		0
 	},
 
@@ -197,12 +185,24 @@
 		"_comment":
 "# domain, bnd/ini conditions",
 
-		"InitialCond":		0,
-		"GeomType":		1,
-		"InitialFile":		"mg/data",
-		"MeshFile":		"1x1x2@3x3x6",
-		"BoundaryType":		"0!0!0!0!0!0",
-		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+		"InitialCond":		1,
+		"GeomType":		0,
+		"InitialFile":		"xxx",
+		"MeshFile":		"gambit/messzelle.msh",
+		"BoundaryType":		"2!21!0",
+		"BoundaryFncs":		"InflowCell!ZeroVel!ZeroVel"
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# restart computation",
+
+		"Inputfile":		"none",
+		"Outputfile":		"none",
+		"Overwrite":		1,
+		"Serialization":		0,
+		"Binary":		0
 	}
 
 }

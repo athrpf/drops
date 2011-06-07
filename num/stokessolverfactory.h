@@ -468,30 +468,30 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
             if (APc_==MGsymm_APC) // symmetric A preconditionder -> use more efficient version of inexact Uzawa
                 stokessolver= new InexactUzawaCL<PreBaseCL, SchurPreBaseCL, APC_SYM>  ( *apc_, *spc_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.InnerTol"), P_.template get<int>("Stokes.InnerIter"));
             else
-                stokessolver= new InexactUzawaCL<PreBaseCL, SchurPreBaseCL, APC_OTHER>( *apc_, *spc_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), P_.template get<double>("Stokes.InnerTol"), P_.template get<int>("Stokes.InnerIter"));
+                stokessolver= new InexactUzawaCL<PreBaseCL, SchurPreBaseCL, APC_OTHER>( *apc_, *spc_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.InnerTol"), P_.template get<int>("Stokes.InnerIter"));
         }
         break;
         
         case MinRes_OS: { // MinRes requires symmetric block preconditioner, hence we can only use diagonal block preconditioners
             DBlock_= new DiagBlockPcT( *apc_, *spc_);
             lanczos_= new LanczosT( *DBlock_);
-            MinRes_= new MinResT( *lanczos_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), /*relative*/ false);
+            MinRes_= new MinResT( *lanczos_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), /*relative*/ false);
             stokessolver= new BlockMatrixSolverCL<MinResT>( *MinRes_);
         }      
         break;
         
         case GCR_OS: {
             if (APc_==VankaBlock_APC) {
-                GCRVanka_= new GCR_VankaT( vankapc_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), /*rel*/ false);
+                GCRVanka_= new GCR_VankaT( vankapc_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), /*rel*/ false);
                 stokessolver= new BlockMatrixSolverCL<GCR_VankaT> ( *GCRVanka_);
             } else if (SPc_==SIMPLER_SPC || SPc_==MSIMPLER_SPC) {
                 bdinvbtispc_.SetMassLumping( SPc_==MSIMPLER_SPC);
                 SBlock_= new SIMPLERBlockPcT( *apc_, bdinvbtispc_);
-                GCRSBlock_= new GCR_SBlockT( *SBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), /*rel*/ false);
+                GCRSBlock_= new GCR_SBlockT( *SBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), /*rel*/ false);
                 stokessolver= new BlockMatrixSolverCL<GCR_SBlockT>( *GCRSBlock_);      
             } else {
                 LBlock_= new LowerBlockPcT( *apc_, *spc_);
-                GCRLBlock_= new GCR_LBlockT( *LBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), /*rel*/ false);
+                GCRLBlock_= new GCR_LBlockT( *LBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), /*rel*/ false);
                 stokessolver= new BlockMatrixSolverCL<GCR_LBlockT>( *GCRLBlock_);      
             }
         }
@@ -499,11 +499,11 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
         
         case GMRes_OS: {
             if (APc_==VankaBlock_APC) {
-                GMResVanka_= new GMRes_VankaT( vankapc_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), /*rel*/ false, false, RightPreconditioning);
+                GMResVanka_= new GMRes_VankaT( vankapc_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), /*rel*/ false, false, RightPreconditioning);
                 stokessolver= new BlockMatrixSolverCL<GMRes_VankaT> ( *GMResVanka_);
             } else {
                 LBlock_= new LowerBlockPcT( *apc_, *spc_);
-                GMResLBlock_= new GMRes_LBlockT( *LBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), /*rel*/ false, false, RightPreconditioning);
+                GMResLBlock_= new GMRes_LBlockT( *LBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), /*rel*/ false, false, RightPreconditioning);
                 stokessolver= new BlockMatrixSolverCL<GMRes_LBlockT>( *GMResLBlock_);      
             }
         }
@@ -511,11 +511,11 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
         
         case GMResR_OS: {
             if (APc_==VankaBlock_APC) {
-                GMResRVanka_= new GMResR_VankaT( vankapc_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.InnerIter"), P_.template get<double>("Stokes.TOuterol"), P_.template get<double>("Stokes.InnerTol"), /*rel*/ false);
+                GMResRVanka_= new GMResR_VankaT( vankapc_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.InnerIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.InnerTol"), /*rel*/ false);
                 stokessolver= new BlockMatrixSolverCL<GMResR_VankaT> ( *GMResRVanka_);
             } else {
                 LBlock_= new LowerBlockPcT( *apc_, *spc_);
-                GMResRLBlock_= new GMResR_LBlockT( *LBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.InnerIter"), P_.template get<double>("Stokes.TOuterol"), P_.template get<double>("Stokes.InnerTol"), /*rel*/ false);
+                GMResRLBlock_= new GMResR_LBlockT( *LBlock_,  P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.OuterIter"), P_.template get<int>("Stokes.InnerIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.InnerTol"), /*rel*/ false);
                 stokessolver= new BlockMatrixSolverCL<GMResR_LBlockT>( *GMResRLBlock_);      
             }
         }
@@ -525,19 +525,19 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
             if (APc_==PVanka_SM) {
                 if (P_.template get("NavierStokes.Nonlinear", 0.0)==0.0) // Stokes
                     mgvankasolver_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
-                               ( Stokes_.prM.Data, vankasmoother_, coarse_blockminressolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), false, 2);
+                               ( Stokes_.prM.Data, vankasmoother_, coarse_blockminressolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), false, 2);
                 else
                     mgvankasolver_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
-                               ( Stokes_.prM.Data, vankasmoother_, coarse_blockgcrsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), false, 2);
+                               ( Stokes_.prM.Data, vankasmoother_, coarse_blockgcrsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), false, 2);
                 stokessolver = mgvankasolver_;
             }
             else if (APc_==BraessSarazin_SM) {
                 if (P_.template get("NavierStokes.Nonlinear", 0.0) ==0.0) // Stokes
                     mgbssolver_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
-                               ( Stokes_.prM.Data, bssmoother_, coarse_blockminressolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), false, 2);
+                               ( Stokes_.prM.Data, bssmoother_, coarse_blockminressolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), false, 2);
                 else
                     mgbssolver_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
-                               ( Stokes_.prM.Data, bssmoother_, coarse_blockgcrsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), false, 2);
+                               ( Stokes_.prM.Data, bssmoother_, coarse_blockgcrsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), false, 2);
                 stokessolver = mgbssolver_;
             }
         }
@@ -927,32 +927,32 @@ StokesSolverBaseCL* StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, Pro
     switch (P_.template get<int>("Stokes.StokesMethod"))
     {
         case 500000 :
-            stokessolver = new  UzawaSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), P_.template get<double>("Misc.Tau"));
+            stokessolver = new  UzawaSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
             break;
         case 500100 :
             stokessolver = new  UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, Stokes_.prM.Data.GetFinest(),
-                P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), P_.template get<double>("Misc.Tau"));
+                P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
             break;
         case 501101 :
-            stokessolver = new  UzawaSolver2ModifiedCL<ISMGPreCL, MGPCT>( ismgpcp_, MGpc_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"), P_.template get<double>("Misc.Tau"));
+            stokessolver = new  UzawaSolver2ModifiedCL<ISMGPreCL, MGPCT>( ismgpcp_, MGpc_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
             break;
         case 510000 :
-            stokessolver = new  PSchurSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  PSchurSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         case 510100 :
-            stokessolver = new  PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( MGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol") );
+            stokessolver = new  PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( MGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol") );
             break;
         case 510001 :
-            stokessolver = new  PSchurSolverCL<PCG_SgsCL>( PCGsgssolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  PSchurSolverCL<PCG_SgsCL>( PCGsgssolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         case 511102 :
-            stokessolver = new  PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>, PCGSolverCL<ISMGPreCL> >( MGsolver_, PCGMGPresolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>, PCGSolverCL<ISMGPreCL> >( MGsolver_, PCGMGPresolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         case 510003 :
-            stokessolver = new  PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >( PCGsolver_, PCGPresolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >( PCGsolver_, PCGPresolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         case 511004 :
-            stokessolver = new  PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISMGPreCL> >( PCGsolver_, PCGMGPresolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISMGPreCL> >( PCGsolver_, PCGMGPresolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         case 520000 :
             stokessolver = new  BlockMatrixSolverCL<MinresSPT>( minressolver_);
@@ -964,10 +964,10 @@ StokesSolverBaseCL* StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, Pro
             stokessolver = new  BlockMatrixSolverCL<PMinresSP_FullMG>( pminresMGsolver_);
             break;
         case 540000 :
-            stokessolver = new  SchurSolverCL<PCG_SsorCL>( PCGsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  SchurSolverCL<PCG_SsorCL>( PCGsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         case 550000 :
-            stokessolver = new  SchurNoPcSolverCL<CGSolverCL>( CGsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.TOuterol"));
+            stokessolver = new  SchurNoPcSolverCL<CGSolverCL>( CGsolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));
             break;
         default: throw DROPSErrCL("StokesSolverFactoryCL: Unknown Stokes solver");
     }

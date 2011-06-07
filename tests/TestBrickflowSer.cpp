@@ -41,6 +41,7 @@
  // include problem class
 #include "navstokes/instatnavstokes2phase.h"
 #include "levelset/coupling.h"
+#include "misc/params.h"
 
  // include standards
 #include <iostream>
@@ -51,7 +52,7 @@
 #  include <math.h>     // for pi
 #endif
 
-DROPS::ParParamMesszelleNsCL C;
+DROPS::ParamCL P;
 
 const char line[] ="------------------------------------------------------------";
 
@@ -77,10 +78,10 @@ class ZeroFlowCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& C)
-      : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
-        mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
-        SurfTens( C.sigma), g( C.g)    {}
+    ZeroFlowCL( const DROPS::ParamCL& P)
+      : rho( DROPS::JumpCL( P.get<double>("Mat.DensDrop"), P.get<double>("Mat.DensFluid") ), DROPS::H_sm, P.get<double>("Mat.Smoothzone")),
+        mu(  DROPS::JumpCL( P.get<double>("Mat.ViscDrop"),  P.get<double>("Mat.ViscFluid")),   DROPS::H_sm, P.get<double>("Mat.Smoothzone")),
+        SurfTens( P.get<double>("SurfTens.SurfTension")), g( P.get<DROPS::Point3DCL>("Exp.Gravity"))    {}
 };
 
 DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
@@ -89,18 +90,18 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double x = (p[0]/C.r_inlet)*(p[0]/C.r_inlet)-1,
-                 z = (p[2]/C.r_inlet)*(p[2]/C.r_inlet)-1;
+    const double x = (p[0]/P.get<double>("r_inlet"))*(p[0]/P.get<double>("r_inlet"))-1,
+                 z = (p[2]/P.get<double>("r_inlet"))*(p[2]/P.get<double>("r_inlet"))-1;
 
-    ret[1]= x * z * C.Anstroem;// * (1-ampl*std::cos(2*M_PI*freq*t));  // Rohr
+    ret[1]= x * z * P.get<double>("Exp.FlowDir");// * (1-ampl*std::cos(2*M_PI*freq*t));  // Rohr
     return ret;
 }
 
 // droplet
 double DistanceFct1( const DROPS::Point3DCL& p)
 {
-    const DROPS::Point3DCL d= C.Mitte-p;
-    return d.norm()-C.Radius;
+    const DROPS::Point3DCL d= P.get<DROPS::Point3DCL>("Exp.PosDrop")-p;
+    return d.norm()-P.get<DROPS::Point3DCL>("Exp.RadDrop");
 }
 
 // middle
@@ -165,8 +166,7 @@ class EnsightOutCL
 
 } ensight;
 
-template<class Coeff>
-  void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
+void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL& Stokes, LevelsetP2CL& lset,
                           std::ofstream *infofile)
 {
     TimerCL time;
@@ -182,7 +182,7 @@ template<class Coeff>
     lset.GetInfo( maxGradPhi, Volume, bary_drop, min_drop, max_drop);
     (*infofile) << Stokes.t << '\t' << maxGradPhi << '\t' << Volume << '\t' << bary_drop << '\t' << min_drop << '\t' << max_drop << std::endl;
 
-    switch (C.IniCond)
+    switch (P.get<double>("DomainCond.InitialCond"))
     {
       // stationary flow with/without drop
       case 1: case 2:
@@ -197,7 +197,7 @@ template<class Coeff>
         typedef SolverAsPreCL<ASolverT> APcT;
         APcT Apc( Asolver/*, &std::cout*/);
         typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
-        OseenSolverT schurSolver( Apc, ispc, C.outer_iter, C.outer_tol, C.stokes_inner_red, 500);
+        OseenSolverT schurSolver( Apc, ispc, P.get<int>("Stokes.OuterIter"), P.get<double>("Stokes.OuterTol"), P.get<double>("NavStokes.Reduction"), 500);
 
         VelVecDescCL curv(&Stokes.vel_idx),
                     cplN(&Stokes.vel_idx);
@@ -212,7 +212,7 @@ template<class Coeff>
         std::cout << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
 
         //Solve initial problem
-        double theta= C.stat_theta, nl= C.stat_nonlinear;
+        double theta= P.get<double>("Stokes.Theta"), nl= P.get<double>("NavStokes.Nonlinear");
         time.Reset();
         int step=0;
         int iters=0;
@@ -236,16 +236,16 @@ template<class Coeff>
       case 3:
         {
             ReadEnsightP2SolCL reader( Stokes.GetMG(), false);
-            reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-            reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
-            reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+            reader.ReadVector( P.get<std::string>("DomainCond.InitialFile")+".vel", Stokes.v, Stokes.GetBndData().Vel);
+            reader.ReadScalar( P.get<std::string>("DomainCond.InitialFile")+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+            reader.ReadScalar( P.get<std::string>("DomainCond.InitialFile")+".scl", lset.Phi, lset.GetBndData());
             std::cout << "- Initial Conditions successfull read\n";
         } break;
     }
 }
 
-template<typename Coeff>
-  void SolveCoupledNS(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
+
+void SolveCoupledNS(InstatNavierStokes2PhaseP2P1CL& Stokes, LevelsetP2CL& lset,
                       AdapTriangCL& adap, std::ofstream* infofile)
 {
     TimerCL time;
@@ -256,9 +256,9 @@ template<typename Coeff>
     Point3DCL bary_drop, min_drop, max_drop;
 
     // type of the problem
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatNavierStokes2PhaseP2P1CL StokesProblemT;
 
-    const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
+    const double Vol= 4./3.*M_PI*std::pow(P.get<DROPS::Point3DCL>("Exp.RadDrop"),3);
     double relVol = lset.GetVolume()/Vol;
 
     // linear solvers
@@ -443,18 +443,17 @@ int main (int argc, char** argv)
         std::cout << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
 
     DROPS::TimerCL alltime;
 
-    typedef ZeroFlowCL                                    CoeffT;
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL MyStokesCL;
 
     int nx, ny, nz;
     double dx, dy, dz;
-    std::string mesh( C.meshfile), delim("x@");
+    std::string mesh( P.get<std::string>("DomainCond.Meshfile")), delim("x@");
     size_t idx;
     while ((idx= mesh.find_first_of( delim)) != std::string::npos )
         mesh[idx]= ' ';
@@ -466,7 +465,7 @@ int main (int argc, char** argv)
         return 1;
     }
 
-    C.r_inlet= dx/2;
+    P.put("r_inlet", dx/2);
     DROPS::Point3DCL orig, px, py, pz;
     px[0]= dx; py[1]= dy; pz[2]= dz;
 
@@ -486,7 +485,7 @@ int main (int argc, char** argv)
     const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
 
 
-    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun));
+    MyStokesCL prob(mg, ZeroFlowCL(P), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun));
 
     Strategy( prob, mg);    // do all the stuff
 

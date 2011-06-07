@@ -111,17 +111,17 @@ class TransportP1XCL
 
     TransportP1XCL( MultiGridCL& mg, BndDataT& Bnd, BndDataT& Bndt, const VelBndDataT& Bnd_v, LsetBndDataCL& Bnd_ls,
         VecDescCL* v, VecDescCL* oldv, VecDescCL& lset, VecDescCL& oldlset,
-        DROPS::ParamMesszelleNsCL& C, instat_scalar_fun_ptr rhs=0)
+        DROPS::ParamCL& P, instat_scalar_fun_ptr rhs=0)
         : oldt_(v->t), t_( v->t), 
-        idx( P1X_FE, 1, Bndt, 0, C.trp_NitscheXFEMStab), oldidx( P1X_FE, 1, Bndt, 0, C.trp_NitscheXFEMStab), 
+        idx( P1X_FE, 1, Bndt, 0, P.get<double>("Transport.NitscheXFEMStab")), oldidx( P1X_FE, 1, Bndt, 0, P.get<double>("Transport.NitscheXFEMStab")),
         MG_( mg), Bnd_( Bnd), Bndt_( Bndt), Bnd_v_( Bnd_v), Bnd_ls_(Bnd_ls), 
-        theta_( C.trp_Theta), dt_( C.tm_StepSize), 
-        lambda_(C.trp_NitschePenalty), H_( C.trp_HNeg/C.trp_HPos), v_( v), oldv_(oldv), 
+        theta_( P.get<double>("Transport.Theta")), dt_( P.get<double>("Time.StepSize")),
+        lambda_(P.get<double>("Transport.NitschePenalty")), H_( P.get<double>("Transport.HNeg")/P.get<double>("Transport.HPos")), v_( v), oldv_(oldv),
         lset_( lset), oldlset_(oldlset), 
-        gm_( pc_, 20, C.trp_Iter, C.trp_Tol, false, false, RightPreconditioning),
+        gm_( pc_, 20, P.get<int>("Transport.Iter"), P.get<double>("Transport.Tol"), false, false, RightPreconditioning),
         f_(rhs) 
     {
-        double D[2] = {C.trp_DiffPos, C.trp_DiffNeg};
+        double D[2] = {P.get<double>("Transport.DiffPos"), P.get<double>("Transport.DiffNeg")};
         std::memcpy( D_, D, 2*sizeof( double));
         if (theta_!=1.0) std::cerr<< "TransportP1XCL::TransportP1XCL: Sorry. Cannot deal with theta != 1.0. Overwriting: Using implicit Euler now! \n";
     }

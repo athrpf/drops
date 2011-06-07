@@ -200,15 +200,6 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
         }
     }
     
-    //write for ensight-format
-/*    Ensight6OutCL  ens(P.get<std::string>("Ensight.EnsCase")+".case", P.get<int>("Time.NumSteps")+1, P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
-    if ( C.ens_EnsightOut){
-        const std::string filename= P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase");
-        ens.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), C.ens_GeomName,       filename + ".geo"));
-        ens.Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
-        ens.Write();
-    }*/
-    
         Ensight6OutCL  ens(P.get<std::string>("Ensight.EnsCase")+".case", P.get<int>("Time.NumSteps")+1, P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
     if ( P.get<int>("Ensight.EnsightOut")){
         const std::string filename= P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase");

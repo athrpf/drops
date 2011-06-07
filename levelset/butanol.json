@@ -3,14 +3,14 @@
 "#=============================================================
 #    DROPS parameter file for twophasedrops
 #    simulation of two-phase flow:
-#    droplet in a cuboid
+#    droplet in measuring cell used in NMR measurements
 #=============================================================
 # time stepping",
 
 	"Time":
 	{
-		"NumSteps":		10,
-		"StepSize":		0.125,
+		"NumSteps":		10000,
+		"StepSize":		2e-4,
 		"Scheme":		1
 	},
 
@@ -19,11 +19,11 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10101,
+		"StokesMethod":		10102,
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		0.6,
-		"OuterTol":		1e-8,
+		"OuterTol":		1e-10,
 		"PcAIter":		2,
 		"PcATol":		1e-99,
 		"PcSTol":		1e-4,
@@ -34,7 +34,7 @@
 	"NavStokes":
 	{
 		"Nonlinear":		1,
-		"Tol":		1e-10,
+		"Tol":		5e-10,
 		"Iter":		20,
 		"Reduction":		0.1
 	},
@@ -45,7 +45,7 @@
 "# levelset solver",
 
 		"Tol":		1e-14,
-		"Iter":		1000,
+		"Iter":		500,
 		"SD":		0.1,
 		"CurvDiff":		-1,
 		"VolCorrection":		1,
@@ -55,7 +55,7 @@
 	"Coupling":
 	{
 		"Tol":		1e-10,
-		"Iter":		20,
+		"Iter":		10,
 		"Stab":		1.0,
 		"Projection":		0
 	},
@@ -65,7 +65,7 @@
 		"_comment":
 "# re-initialization of levelset function",
 
-		"Freq":		1,
+		"Freq":		10,
 		"Method":		03,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
@@ -77,10 +77,10 @@
 		"_comment":
 "# adaptive refinement",
 
-		"Freq":		1,
-		"FinestLevel":		2,
+		"Freq":		10,
+		"FinestLevel":		3,
 		"CoarsestLevel":		0,
-		"Width":		0.1,
+		"Width":		0.25e-3,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -90,11 +90,11 @@
 		"_comment":
 "# material data, all units are SI",
 
-		"DensDrop":		1,
-		"ViscDrop":		10,
-		"DensFluid":		10,
-		"ViscFluid":		1,
-		"SmoothZone":		0.05
+		"DensDrop":		845.442,
+		"ViscDrop":		3.281e-3,
+		"DensFluid":		986.506,
+		"ViscFluid":		1.388e-3,
+		"SmoothZone":		1e-4
 	},
 
 	"Exp":
@@ -102,12 +102,12 @@
 		"_comment":
 "# experimental conditions",
 
-		"RadDrop":		[0.25, 0.25, 0.25 ],
-		"PosDrop":		[0.5, 0.5, 0.5 ],
-		"Gravity":		[0, 0, -9.81 ],
-		"FlowDir":		0,
-		"InflowVel":		0,
-		"RadInlet":		1,
+		"RadDrop":		[1.0e-3, 1.0e-3, 1.0e-3 ],
+		"PosDrop":		[0, -6.2e-3, 0 ],
+		"Gravity":		[0, -9.81, 0 ],
+		"FlowDir":		1,
+		"InflowVel":		-35e-3,
+		"RadInlet":		3.6e-3,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
 	},
@@ -118,7 +118,7 @@
 "# surface tension",
 
 		"VarTension":		0,
-		"SurfTension":		1,
+		"SurfTension":		1.63e-3,
 		"JumpWidth":		5e-4,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
@@ -162,11 +162,11 @@
 "# Ensight settings",
 
 		"EnsightOut":		0,
-		"EnsCase":		"risingdroplet",
+		"EnsCase":		"nsmzi",
 		"EnsDir":		"ensight",
 		"Binary":		0,
 		"MasterOut":		1,
-		"GeomName":		"Brick"
+		"GeomName":		"nsmzi"
 	},
 
 	"VTK":
@@ -174,9 +174,9 @@
 		"_comment":
 "#VTK output",
 
-		"VTKOut":		1,
+		"VTKOut":		0,
 		"VTKDir":		"vtk",
-		"VTKName":		"risingdroplet",
+		"VTKName":		"nsmzi",
 		"Binary":		1
 	},
 
@@ -185,7 +185,7 @@
 		"_comment":
 "# Write out results, read in for restart",
 
-		"Serialization":		0,
+		"Serialization":		1,
 		"Overwrite":		1,
 		"Inputfile":		"none",
 		"Outputfile":		"mg/data",
@@ -198,11 +198,11 @@
 "# domain, bnd/ini conditions",
 
 		"InitialCond":		0,
-		"GeomType":		1,
-		"InitialFile":		"mg/data",
-		"MeshFile":		"1x1x2@3x3x6",
-		"BoundaryType":		"0!0!0!0!0!0",
-		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+		"GeomType":		0,
+		"InitialFile":		"start/data",
+		"MeshFile":		"gambit/NMR_05.msh",
+		"BoundaryType":		"2!21!0",
+		"BoundaryFncs":		"InflowCell!ZeroVel!ZeroVel"
 	}
 
 }

@@ -26,20 +26,22 @@
 #define DROPS_MISC_PARAMS_H
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/exceptions.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/exceptions.hpp>
 #include "misc/container.h"
 #include <string>
 #include <map>
 #include <fstream>
+
+#define PARAMDEBUG
 
 namespace DROPS
 {
 
 /// \brief Parser and container for JSON parameter files
 /// Usage
-///   - read in a JSON file via open(...) or << ifstream
-///   - get parameters by .get(hierarchy within file + name)
-///     e.g. .get("Poisson.Method")
+///   - see trac
 
 class ParamCL: public boost::property_tree::ptree
 {
@@ -49,6 +51,15 @@ class ParamCL: public boost::property_tree::ptree
     template <typename OutType>
     OutType get(const std::string & pathInPT) const
     {
+#ifdef PARAMDEBUG
+      try {
+          OutType tmp = this->pt.get<OutType>(pathInPT);
+          return tmp;
+      }
+      catch(boost::property_tree::ptree_error & e) {
+        std::cout << "Trying to get '" << pathInPT << "' failed.\n";
+      }
+#endif
       return this->pt.get<OutType>(pathInPT);
     }
 
@@ -67,6 +78,15 @@ class ParamCL: public boost::property_tree::ptree
     template <typename OutType>
     OutType get(const std::string & pathInPT, OutType default_val) const
     {
+#ifdef PARAMDEBUG
+      try {
+          OutType tmp = this->pt.get(pathInPT, default_val);
+          return tmp;
+      }
+      catch(boost::property_tree::ptree_error & e) {
+        std::cout << "Trying to get '" << pathInPT << "' failed.\n";
+      }
+#endif
       return this->pt.get(pathInPT, default_val);
     }
 

@@ -1,6 +1,6 @@
 /// \file filmCoeff.cpp
 /// \brief boundary and source functions for film-type problems
-/// \author LNM RWTH Aachen: Christoph Lehrenfeld
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Thorolf Schulte
 
 /*
  * This file is part of DROPS.
@@ -23,9 +23,9 @@
 */
 
 #include "misc/bndmap.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 
-extern DROPS::ParamFilmCL C;
+extern DROPS::ParamCL P;
 
 //========================================================================
 //                        Functions for the film problem
@@ -35,10 +35,10 @@ namespace filminflow{
     DROPS::Point3DCL FilmInflow( const DROPS::Point3DCL& p, double t)
     {
         DROPS::Point3DCL ret(0.);
-        const double d= p[1]/C.exp_Thickness;
-        static const double u= C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2;
-        ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.exp_PumpAmpl*std::sin(2*M_PI*t*C.exp_PumpFreq))
-                     : (C.mcl_MeshSize[1]-p[1])/(C.mcl_MeshSize[1]-C.exp_Thickness)*u;
+        const double d= p[1]/P.get<double>("Exp.Thickness");
+        static const double u= P.get<double>("Mat.DensFluid")*P.get<DROPS::Point3DCL>("Exp.Gravity")[0]*P.get<double>("Exp.Thickness")*P.get<double>("Exp.Thickness")/P.get<double>("Mat.ViscFluid")/2;
+        ret[0]= d<=1 ? (2*d-d*d)*u * (1 + P.get<double>("Exp.PumpAmpl")*std::sin(2*M_PI*t*P.get<int>("Exp.PumpFreq")))
+                     : (P.get<DROPS::Point3DCL>("MeshSize")[1]-p[1])/(P.get<DROPS::Point3DCL>("MeshSize")[1]-P.get<double>("Exp.Thickness"))*u;
         return ret;
     }
 
@@ -55,12 +55,12 @@ namespace filmdistance{
     double WavyDistanceFct( const DROPS::Point3DCL& p)
     {
         // wave length = 100 x film width
-        const double wave= std::sin(2*M_PI*p[0]/C.mcl_MeshSize[0]),
-            z= p[2]/C.mcl_MeshSize[2]*2; // z \in [-1,1]
-    //    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*wave);
-    //    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*(wave + C.exp_Ampl_zDir*std::cos(z*M_PI)));
-        const double z_fac=  (1 + C.exp_Ampl_zDir/2*std::cos(z*M_PI));  // (z=+-1) 1-C.exp_Ampl_zDir <= z_fac <= 1+C.exp_Ampl_zDir (z=0)
-        return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*wave) * z_fac;
+        const double wave= std::sin(2*M_PI*p[0]/P.get<DROPS::Point3DCL>("MeshSize")[0]),
+            z= p[2]/P.get<DROPS::Point3DCL>("MeshSize")[2]*2; // z \in [-1,1]
+    //    return p[1] - P.get<double>("Exp.Thickness") * (1 + P.get<double>("Exp.PumpAmpl")*wave);
+    //    return p[1] - P.get<double>("Exp.Thickness") * (1 + P.get<double>("Exp.PumpAmpl")*(wave + P.get<double>("Exp.Ampl_zDir")*std::cos(z*M_PI)));
+        const double z_fac=  (1 + P.get<double>("Exp.Ampl_zDir")/2*std::cos(z*M_PI));  // (z=+-1) 1-P.get<double>("Exp.Ampl_zDir") <= z_fac <= 1+P.get<double>("Exp.Ampl_zDir") (z=0)
+        return p[1] - P.get<double>("Exp.Thickness") * (1 + P.get<double>("Exp.PumpAmpl")*wave) * z_fac;
     }
 
     //========================================================================
@@ -79,7 +79,7 @@ namespace filmperiodic{
     bool periodic_2sides( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
     { 
         const DROPS::Point3DCL d= fabs(p-q),
-                               L= fabs(C.mcl_MeshSize);
+                               L= fabs(P.get<DROPS::Point3DCL>("MeshSize"));
         
         const int D = 3 - A - B;
         return (d[B] + d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12)  // dB=dD=0 and dA=LA
@@ -92,7 +92,7 @@ namespace filmperiodic{
     { 
         const int B = (A+1)%2;
         const int D = (B+1)%2;
-        const DROPS::Point3DCL d= fabs(p-q), L= fabs(C.mcl_MeshSize);
+        const DROPS::Point3DCL d= fabs(p-q), L= fabs(P.get<DROPS::Point3DCL>("MeshSize"));
         return (d[B] + d[D] < 1e-12 && std::abs( d[A] - L[A]) < 1e-12);
     }
     

@@ -1,0 +1,125 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    film
+#    simulation of two-phase flow:
+#    film flow
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		10000,
+		"StepSize":		1e-4
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"StokesMethod":		10502,
+		"InnerIter":		1000,
+		"OuterIter":		200,
+		"InnerTol":		1e-10,
+		"OuterTol":		1e-8,
+		"PcAIter":		200,
+		"PcATol":		1e-4,
+		"PcSTol":		1e-4,
+		"XFEMStab":		1,
+		"Theta":		1
+	},
+
+	"NavStokes":
+	{
+		"Nonlinear":		1,
+		"Tol":		5e-10,
+		"Iter":		10,
+		"Reduction":		0.1
+	},
+
+	"Levelset":
+	{
+		"_comment":
+"# levelset solver",
+
+		"Tol":		1e-16,
+		"Iter":		1000,
+		"SD":		1,
+		"CurvDiff":		-1,
+		"VolCorrection":		1,
+		"Theta":		1
+	},
+
+	"Coupling":
+	{
+		"Tol":		1e-10,
+		"Iter":		0
+	},
+
+	"Reparam":
+	{
+		"_comment":
+"# re-initialization of levelset function",
+
+		"Freq":		100,
+		"Method":		03
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		10,
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		5e-4,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI, scaled by rho
+#Mat {
+#  DensGas	=	1			# 'Luft'/Silikonoel
+#  ViscGas	=	1.425e-5	# mu/rho
+#  DensFluid	=	1
+#  ViscFluid	=	5.7e-6	# mu/rho
+#  SmoothZone	=	1e-4
+#  SurfTension	=	0 #5.5e-6 	# 2e-3 # sigma/(0.4 rho_F + 0.6 rho_G)
+#}
+# material data, all units are SI",
+
+		"DensGas":		1.2,
+		"ViscGas":		1.71e-5,
+		"DensFluid":		909.3,
+		"ViscFluid":		5.183e-3,
+		"SmoothZone":		1e-4,
+		"SurfTension":		11e-3
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Gravity":		[8.036, -5.627, 0 ],
+		"PumpAmpl":		0.2,
+		"PumpFreq":		10,
+		"Ampl_zDir":		0.5,
+		"Thickness":		6.35e-4
+	},
+	"MeshResolution":		[20, 6, 2 ],
+	"MeshSize":		[20.9e-3, 4e-3, 4e-3 ],
+	"InitialCond":		1,
+	"InitialFile":		"initial/filmNs40",
+	"BndCond":		"12wo12",
+	"EnsightCase":		"filmNsTau5e-3",
+	"EnsightDir":		"ensight",
+	"SerializationFile":		"filmNs.mg",
+	"DeserializationFile":		"none"
+
+}
