@@ -31,7 +31,7 @@
 #include "out/ensightOut.h"
 #include "out/vtkOut.h"
 #include "levelset/coupling.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
 #include "levelset/surfacetension.h"
@@ -55,7 +55,7 @@
 /// \todo boundary values for concentration should get more elegant (like poisson perhaps?)
 /// \todo solutiononpart-output for ensight AND vtk
 /// \todo surfacetension, varSurfaceTension ... flags, output and cases!
-DROPS::ParamMesszelleNsCL C;
+DROPS::ParamCL P;
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
 //                        -div u = 0
 //                             u = u0, t=t0
@@ -90,7 +90,7 @@ double surf_rhs (const DROPS::Point3DCL& p, double)
 }
 double surf_sol (const DROPS::Point3DCL& p, double)
 {
-    return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));
+    return 1. + std::sin( atan2( p[0] -P.get<DROPS::Point3DCL>("Exp.PosDrop")[0], p[2] -P.get<DROPS::Point3DCL>("Exp.PosDrop")[2]));
 }
 //@}
 
@@ -119,7 +119,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     InVecMap & tdvectormap = InVecMap::getInstance();
     InScaMap & tdscalarmap = InScaMap::getInstance();
     ScaMap & scalarmap = ScaMap::getInstance();
-    instat_vector_fun_ptr Flowfield = tdvectormap[C.trp_FlowField];
+    instat_vector_fun_ptr Flowfield = tdvectormap[P.get<std::string>("Transp.FlowField")];
     instat_scalar_fun_ptr Reaction = tdscalarmap["ReactionFct"];
     instat_scalar_fun_ptr Rhs = tdscalarmap["Rhs"];
     instat_scalar_fun_ptr Initialcneg = tdscalarmap["IniCnegFct"];
@@ -127,7 +127,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     instat_scalar_fun_ptr Dirichlet = tdscalarmap["Dirichlet"];
     instat_scalar_fun_ptr Dirichlett = tdscalarmap["Dirichlett"];
     instat_scalar_fun_ptr Zero = tdscalarmap["ZeroFct"];
-    scalar_fun_ptr distance = scalarmap[C.trp_Levelset];    
+    scalar_fun_ptr distance = scalarmap[P.get<std::string>("Transp.Levelset")];
 
     const c_bnd_val_fun c_bfun[6]= {Zero,Dirichlet,Zero,Zero,Zero,Zero};  
     const c_bnd_val_fun c_bfunt[6]= {Zero,Dirichlett,Zero,Zero,Zero,Zero};  
@@ -717,7 +717,7 @@ int main (int argc, char** argv)
 
     std::cout << "Generated MG of " << mg->GetLastLevel() << " levels." << std::endl;
 
-    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
+    DROPS::EllipsoidCL::Init(P.get<DROPS::Point3DCL>("Exp.PosDrop"), C.exp_RadDrop);
     DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_LoadBalStrategy : -C.ref_LoadBalStrategy), C.ref_Partitioner);
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
