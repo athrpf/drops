@@ -23,7 +23,7 @@
 */
 
 #include "surfactant/ifacetransp.h"
-#include "surfactant/params.h"
+#include "misc/params.h"
 #include "geom/builder.h"
 #include "levelset/levelset.h"
 #include "levelset/adaptriang.h"
