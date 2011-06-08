@@ -1,0 +1,125 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file 
+#    simulation of instationary stokes problem
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		1,
+		"StepSize":		1.0,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"InnerIter":		500,
+		"OuterIter":		100,
+		"InnerTol":		1e-14,
+		"OuterTol":		1e-8,
+		"StokesMethod":		501101,
+		"PcAIter":		0,
+		"PcATol":		0,
+		"PcSTol":		0,
+		"XFEMStab":		0,
+		"Theta":		1
+	},
+
+	"StokesCoeff":
+	{
+		"_comment":
+"# stokes coefficients",
+
+		"Reaction":		"ScaZero",
+		"Source":		"Source_isstokes",
+		"Solution_Vel":		"VelSol_isstokes",
+		"Solution_DVel":		"None",
+		"Solution_Pr":		"PrSol_isstokes"
+	},
+
+	"Misc":
+	{
+		"_comment":
+"# Miscellaneous",
+
+		"Omega":		1.0,
+		"Tau":		1.0,
+		"ModifyGrid":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"Dens":		1,
+		"Visc":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Gravity":		[0, 0, 0 ]
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		0,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"1x1x1@2x2x2",
+		"BoundaryType":		"2!2!2!2!2!2",
+		"BoundaryFncs":		"VelSol_isstokes!VelSol_isstokes!VelSol_isstokes!VelSol_isstokes!VelSol_isstokes!VelSol_isstokes"
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		1,
+		"CoarsestLevel":		0,
+		"Width":		0.1,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"FilmTemp",
+		"EnsDir":		"ensight",
+		"GeomName":		"test",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"# Error estimator",
+
+		"RelReduction":		0,
+		"MinRatio":		0,
+		"Threshold":		0,
+		"Meas":		0,
+		"DoMark":		0,
+		"DoErrorEstimate":		0,
+		"NumRef":		0
+	}
+
+}

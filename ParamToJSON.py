@@ -7,11 +7,22 @@ Autor: Thorolf Schulte (LNM)
 from string import replace
 
 #settings
-"""FTMP = ["brick_transp", "butanol", "eindhoven", "film", "mzi", "prJump", "risingbutanoldroplet", "risingdroplet", "toluol"]
+FROM_FILE = True
+
+
 FILES = []
-for f in FTMP:
-	FILES.append("./levelset/"+f)"""
-FILES = ["./surfactant/surfactant"]
+if FROM_FILE:
+	paramfile = open("params.txt")
+	for line in paramfile:
+		arr = line.split(".param")
+		FILES.append(arr[0])
+	paramfile.close()
+else:
+	FILES = ["./transport/risingbutanoldroplet"]
+
+#print FILE
+#raise SystemExit("bla")
+
 SUFFIX_IN = ".param"
 SUFFIX_OUT = ".json"
 DEBUG = False

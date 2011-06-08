@@ -1,0 +1,92 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestPoissonPar
+#    Testroutines for solving the poisson-equation -nu*u=f
+#    with solution u = xyz (1-x) (1-y) (1-z)
+#=============================================================
+# Coefficients for Poisson",
+
+	"Poisson":
+	{
+		"nu":		1
+	},
+
+	"Brick":
+	{
+		"_comment":
+"# Dimension of the brick",
+
+		"BasicRefX":		5,
+		"BasicRefY":		5,
+		"BasicRefZ":		5,
+		"dim":		[1.0, 1.0, 1.0 ],
+		"orig":		[0.0, 0.0, 0.0 ]
+	},
+
+	"Refining":
+	{
+		"_comment":
+"# refine strategy",
+
+		"RefAll":		3,
+		"MarkDrop":		0,
+		"MarkCorner":		0,
+		"Adpativ":		0
+	},
+
+	"LoadBalancing":
+	{
+		"_comment":
+"# loadbalancing strategy",
+
+		"RefineStrategy":		1,
+		"TransferUnknowns":		1
+	},
+
+	"Solver":
+	{
+		"_comment":
+"# choose one solver of the pool of solvers",
+
+		"Solver":		0,
+		"Precond":		1,
+		"Relax":		1,
+		"PCTol":		0.001,
+		"PCIter":		200,
+		"Iteration":		1000,
+		"Tol":		1e-10,
+		"Restart":		50,
+		"UseMGS":		0,
+		"Relative":		0,
+		"Accur":		1,
+		"Modified":		1,
+		"PreCondMeth":		1
+	},
+
+	"Misc":
+	{
+		"_comment":
+"# miscellaneous",
+
+		"PrintGEO":		0,
+		"PrintMG":		0,
+		"PrintSize":		0,
+		"CheckMG":		0,
+		"PrintUnknowns":		1,
+		"PrintTime":		0
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"#ensight",
+
+		"ensight":		0,
+		"EnsCase":		"Poisson",
+		"EnsDir":		"ensight_par",
+		"GeomName":		"Wuerfel",
+		"VarName":		"Temperatur"
+	}
+
+}

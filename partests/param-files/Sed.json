@@ -9,8 +9,8 @@
 
 	"Time":
 	{
-		"NumSteps":		2000,
-		"StepSize":		5e-4,
+		"NumSteps":		5,
+		"StepSize":		3e-3,
 		"Scheme":		1
 	},
 
@@ -19,7 +19,7 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10101,
+		"StokesMethod":		20401,
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		0.6,
@@ -27,7 +27,7 @@
 		"PcAIter":		500,
 		"PcATol":		1e-2,
 		"PcSTol":		1e-2,
-		"XFEMStab":		0.01,
+		"XFEMStab":		0.1,
 		"Theta":		1
 	},
 
@@ -49,14 +49,14 @@
 		"SD":		0.1,
 		"CurvDiff":		-1,
 		"VolCorrection":		1,
-		"Theta":		1.0
+		"Theta":		1
 	},
 
 	"Coupling":
 	{
 		"Tol":		1e-10,
 		"Iter":		10,
-		"Stab":		0.1,
+		"Stab":		0.,
 		"Projection":		0
 	},
 
@@ -78,10 +78,9 @@
 "# adaptive refinement",
 
 		"Freq":		1,
-		"FinestLevel":		3,
+		"FinestLevel":		2,
 		"CoarsestLevel":		0,
-		"Width":		4.5e-4,
-		"RefineStrategy":		1,
+		"Width":		0.4e-3,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -103,11 +102,11 @@
 		"_comment":
 "# experimental conditions",
 
-		"RadDrop":		[1e-3, 1e-3, 1e-3 ],
-		"PosDrop":		[10e-3, 10e-3, 10e-3 ],
+		"RadDrop":		[0.25, 0.25, 0.25 ],
+		"PosDrop":		[0.5, 0.5, 0.5 ],
 		"Gravity":		[0, -9.81, 0 ],
 		"FlowDir":		1,
-		"InflowVel":		0,
+		"InflowVel":		0.03,
 		"RadInlet":		5e-3,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
@@ -118,9 +117,9 @@
 		"_comment":
 "# surface tension",
 
-		"VarTension":		1,
+		"VarTension":		0,
 		"SurfTension":		1.63e-3,
-		"JumpWidth":		4.5e-4,
+		"JumpWidth":		5e-4,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
 	},
@@ -130,21 +129,17 @@
 		"_comment":
 "# mass transport",
 
-		"DoTransp":		1,
-		"UseNSSol":		1,
-		"Theta":		1,
+		"DoTransp":		0,
+		"Theta":		0.5,
 		"Iter":		200,
-		"Tol":		1e-15,
-		"DiffPos":		0.58345e-4,
-		"DiffNeg":		0.229e-4,
-		"HPos":		1.2143,
-		"HNeg":		1,
-		"IniCPos":		0.01,
-		"IniCNeg":		0,
-		"NitschePenalty":		100,
-		"NitscheXFEMStab":		0.01,
-		"SDStabilization":		1,
-		"Levelset":		"Ellipsoid"
+		"Tol":		1e-10,
+		"DiffPos":		5e-3,
+		"DiffNeg":		1e-2,
+		"H":		0.5,
+		"IniCPos":		0.1,
+		"IniCNeg":		5,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0.1
 	},
 
 	"SurfTransp":
@@ -166,7 +161,7 @@
 "# Ensight settings",
 
 		"EnsightOut":		0,
-		"EnsCase":		"risingbubble_butanol",
+		"EnsCase":		"nsmzi",
 		"EnsDir":		"ensight",
 		"Binary":		0,
 		"MasterOut":		1,
@@ -178,9 +173,9 @@
 		"_comment":
 "#VTK output",
 
-		"VTKOut":		5,
+		"VTKOut":		0,
 		"VTKDir":		"vtk",
-		"VTKName":		"risingbubble_butanol",
+		"VTKName":		"sed",
 		"Binary":		0
 	},
 
@@ -190,7 +185,7 @@
 "# Write out results",
 
 		"Serialization":		0,
-		"Overwrite":		0,
+		"Overwrite":		1,
 		"Inputfile":		"none",
 		"Outputfile":		"./geometry/",
 		"Binary":		0
@@ -203,10 +198,9 @@
 
 		"InitialCond":		0,
 		"GeomType":		1,
-		"InitialFile":		"none",
-		"MeshFile":		"20e-3x40e-3x20e-3@10x20x10",
-		"BoundaryType":		"0!0!0!0!0!0",
-		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+		"InitialFile":		"ensight/nsmzi",
+		"MeshFile":		"1x5x1@4x20x4",
+		"BoundaryType":		3
 	}
 
 }

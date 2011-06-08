@@ -1,0 +1,96 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestNavStokesPar
+#    Testroutines for solving the Stokes Equation
+#=============================================================",
+
+	"Stokes":
+	{
+		"nu":		1.0
+	},
+
+	"ExpData":
+	{
+		"InflowVel":		0.005,
+		"g":		[0, 0, 0 ],
+		"Frequence":		30,
+		"Amplitude":		0.01
+	},
+
+	"Time":
+	{
+		"TimeSteps":		10,
+		"StepSize":		0.1,
+		"Theta":		1
+	},
+
+	"Refining":
+	{
+		"BasicRefX":		2,
+		"BasicRefY":		2,
+		"BasicRefZ":		2,
+		"dx":		1.0,
+		"dy":		1.0,
+		"dz":		1.0,
+		"RefAll":		0
+	},
+
+	"LoadBalancing":
+	{
+		"RefineStrategy":		1
+	},
+
+	"Solver":
+	{
+		"Relax":		1,
+		"InnerIter":		2000,
+		"InnerTol":		1e-12,
+		"OuterIter":		1000,
+		"OuterTol":		1e-2,
+		"Restart":		100,
+		"Relative":		0,
+		"Accur":		1,
+		"PCIter":		100,
+		"PCRelTol":		0.02,
+		"Reduction":		0.1
+	},
+
+	"NavierStokes":
+	{
+		"Reduction":		0.1,
+		"Iter":		50,
+		"Tol":		1e-7,
+		"RefTop":		0
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		1,
+		"EnsCase":		"NavStokes",
+		"EnsDir":		"ensight",
+		"Binary":		0,
+		"MasterOut":		1,
+		"GeomName":		"Brick"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		0,
+		"VTKDir":		"vtk",
+		"VTKName":		"brick_adapt",
+		"Binary":		0
+	},
+
+	"Misc":
+	{
+		"PrintInfo":		0
+	}
+
+}

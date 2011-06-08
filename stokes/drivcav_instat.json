@@ -1,0 +1,125 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for stokesP2.cpp
+#    simulation of stationary driven cavity problem
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		50,
+		"StepSize":		0.01,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"InnerIter":		10,
+		"OuterIter":		200,
+		"InnerTol":		0.6,
+		"OuterTol":		1e-10,
+		"StokesMethod":		30207,
+		"PcAIter":		1,
+		"PcATol":		1e-99,
+		"PcSTol":		1e-2,
+		"XFEMStab":		0,
+		"Theta":		1
+	},
+
+	"StokesCoeff":
+	{
+		"_comment":
+"# stokes coefficients",
+
+		"Reaction":		"ScaZero",
+		"Source":		"VecZero",
+		"Solution_Vel":		"None",
+		"Solution_DVel":		"None",
+		"Solution_Pr":		"None"
+	},
+
+	"Misc":
+	{
+		"_comment":
+"# Miscellaneous",
+
+		"Omega":		1.0,
+		"Tau":		1.0,
+		"MarkLower":		0.25
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"Dens":		1,
+		"Visc":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Gravity":		[0, 0, 0 ]
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		2,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"1x1x1@5x5x5",
+		"BoundaryType":		"0!0!0!0!0!2",
+		"BoundaryFncs":		"VecZero!VecZero!VecZero!VecZero!VecZero!Inflow_drivcav_v2"
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		0,
+		"CoarsestLevel":		0,
+		"Width":		0.1,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		1,
+		"EnsCase":		"cavity",
+		"EnsDir":		"ensight",
+		"GeomName":		"cave",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"# Error estimator",
+
+		"RelReduction":		0.1,
+		"MinRatio":		0,
+		"Threshold":		0.6,
+		"Meas":		1.0,
+		"DoMark":		0,
+		"DoErrorEstimate":		0,
+		"NumRef":		3
+	}
+
+}

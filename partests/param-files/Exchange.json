@@ -1,0 +1,36 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestExchange
+#    Testroutines for sending and recieving of numerical datas
+#=============================================================
+# refine strategy",
+
+	"Refining":
+	{
+		"BasicRefX":		3,
+		"BasicRefY":		3,
+		"BasicRefZ":		3,
+		"dx":		5.0,
+		"dy":		1.0,
+		"dz":		1.0,
+		"RefAll":		2,
+		"RefineStrategy":		1,
+		"MigEveryTime":		1
+	},
+
+	"Misc":
+	{
+		"_comment":
+"# miscellaneous",
+
+		"PrintMG":		1,
+		"PrintEx":		1,
+		"CheckMG":		1,
+		"TimeMeas":		0,
+		"Tests":		100,
+		"MultRuns":		100,
+		"PrintMsgSize":		1
+	}
+
+}

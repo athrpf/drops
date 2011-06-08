@@ -1,15 +1,15 @@
 {
 	"_comment":
 "#=============================================================
-#    DROPS parameter file for twophasedrops
+#    DROPS parameter file for    TestBrickPar
 #    simulation of two-phase flow:
-#    droplet in brick
+#    sedimentation of a droplet
 #=============================================================
 # time stepping",
 
 	"Time":
 	{
-		"NumSteps":		2000,
+		"NumSteps":		1000,
 		"StepSize":		5e-4,
 		"Scheme":		1
 	},
@@ -19,22 +19,25 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10101,
+		"StokesMethod":		20401,
 		"InnerIter":		1000,
 		"OuterIter":		200,
-		"InnerTol":		0.6,
+		"InnerTol":		0.1,
 		"OuterTol":		1e-10,
 		"PcAIter":		500,
-		"PcATol":		1e-2,
-		"PcSTol":		1e-2,
-		"XFEMStab":		0.01,
+		"PcATol":		2e-5,
+		"PcSTol":		1e-4,
+		"XFEMStab":		0.,
 		"Theta":		1
 	},
 
 	"NavStokes":
 	{
+		"_comment":
+"# Navier-Stokes settings",
+
 		"Nonlinear":		1,
-		"Tol":		1e-10,
+		"Tol":		5e-10,
 		"Iter":		20,
 		"Reduction":		0.1
 	},
@@ -49,14 +52,14 @@
 		"SD":		0.1,
 		"CurvDiff":		-1,
 		"VolCorrection":		1,
-		"Theta":		1.0
+		"Theta":		1
 	},
 
 	"Coupling":
 	{
 		"Tol":		1e-10,
 		"Iter":		10,
-		"Stab":		0.1,
+		"Stab":		0.,
 		"Projection":		0
 	},
 
@@ -65,11 +68,11 @@
 		"_comment":
 "# re-initialization of levelset function",
 
-		"Freq":		1,
+		"Freq":		5,
 		"Method":		1,
+		"NarrowBand":		-1.0,
 		"MinGrad":		0.1,
-		"MaxGrad":		10,
-		"NarrowBand":		-1.0
+		"MaxGrad":		10
 	},
 
 	"AdaptRef":
@@ -80,10 +83,8 @@
 		"Freq":		1,
 		"FinestLevel":		3,
 		"CoarsestLevel":		0,
-		"Width":		4.5e-4,
-		"RefineStrategy":		1,
-		"LoadBalStrategy":		1,
-		"Partitioner":		1
+		"Width":		0.4e-3,
+		"RefineStrategy":		1
 	},
 
 	"Mat":
@@ -104,7 +105,7 @@
 "# experimental conditions",
 
 		"RadDrop":		[1e-3, 1e-3, 1e-3 ],
-		"PosDrop":		[10e-3, 10e-3, 10e-3 ],
+		"PosDrop":		[10e-3, 6e-3, 10e-3 ],
 		"Gravity":		[0, -9.81, 0 ],
 		"FlowDir":		1,
 		"InflowVel":		0,
@@ -118,9 +119,9 @@
 		"_comment":
 "# surface tension",
 
-		"VarTension":		1,
+		"VarTension":		0,
 		"SurfTension":		1.63e-3,
-		"JumpWidth":		4.5e-4,
+		"JumpWidth":		5e-4,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
 	},
@@ -130,34 +131,37 @@
 		"_comment":
 "# mass transport",
 
-		"DoTransp":		1,
-		"UseNSSol":		1,
-		"Theta":		1,
-		"Iter":		200,
-		"Tol":		1e-15,
-		"DiffPos":		0.58345e-4,
-		"DiffNeg":		0.229e-4,
-		"HPos":		1.2143,
-		"HNeg":		1,
-		"IniCPos":		0.01,
-		"IniCNeg":		0,
-		"NitschePenalty":		100,
-		"NitscheXFEMStab":		0.01,
-		"SDStabilization":		1,
-		"Levelset":		"Ellipsoid"
-	},
-
-	"SurfTransp":
-	{
-		"_comment":
-"# surfactant transport",
-
 		"DoTransp":		0,
 		"Theta":		0.5,
-		"Iter":		1000,
+		"Iter":		200,
 		"Tol":		1e-10,
-		"OmitBound":		-1.,
-		"Visc":		1e-5
+		"DiffPos":		5e-3,
+		"DiffNeg":		1e-2,
+		"H":		0.5,
+		"IniCPos":		0.1,
+		"IniCNeg":		5,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0.1
+	},
+
+	"LoadBalancing":
+	{
+		"Qualtity":		1.00
+	},
+
+	"QuadrilateralGrid":
+	{
+		"_comment":
+"# Quadrilateral Grid",
+
+		"Quad":		0,
+		"GridX":		16,
+		"GridY":		16,
+		"GridZ":		16,
+		"Stepsize":		[0.0005, 0.0005, 0.0005 ],
+		"Barycenter":		[0, -7.5e-3, 0 ],
+		"Rotation":		[0, 0, 0 ],
+		"FileName":		"./wrapNMR"
 	},
 
 	"Ensight":
@@ -165,8 +169,8 @@
 		"_comment":
 "# Ensight settings",
 
-		"EnsightOut":		0,
-		"EnsCase":		"risingbubble_butanol",
+		"EnsightOut":		1,
+		"EnsCase":		"nsmzi",
 		"EnsDir":		"ensight",
 		"Binary":		0,
 		"MasterOut":		1,
@@ -178,10 +182,20 @@
 		"_comment":
 "#VTK output",
 
-		"VTKOut":		5,
+		"VTKOut":		0,
 		"VTKDir":		"vtk",
-		"VTKName":		"risingbubble_butanol",
+		"VTKName":		"brick_adapt",
 		"Binary":		0
+	},
+
+	"Info":
+	{
+		"_comment":
+"# Info",
+
+		"PrintSize":		1,
+		"PrintNumUnk":		1,
+		"CheckMG":		1
 	},
 
 	"Restart":
@@ -189,11 +203,10 @@
 		"_comment":
 "# Write out results",
 
-		"Serialization":		0,
-		"Overwrite":		0,
+		"Serialization":		2,
+		"Overwrite":		1,
 		"Inputfile":		"none",
-		"Outputfile":		"./geometry/",
-		"Binary":		0
+		"Outputfile":		"./serialization/"
 	},
 
 	"DomainCond":
@@ -203,10 +216,9 @@
 
 		"InitialCond":		0,
 		"GeomType":		1,
-		"InitialFile":		"none",
-		"MeshFile":		"20e-3x40e-3x20e-3@10x20x10",
-		"BoundaryType":		"0!0!0!0!0!0",
-		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+		"InitialFile":		"xxx",
+		"MeshFile":		"20e-3x50e-3x20e-3@8x20x8",
+		"BoundaryType":		3
 	}
 
 }

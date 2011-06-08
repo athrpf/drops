@@ -230,7 +230,7 @@ int main (int argc, char** argv)
     if (argc>1)
         param.open( argv[1]);
     else
-        param.open( "surfTens.param");
+        param.open( "surfTens.json");
     if (!param)
     {
         std::cout << "error while opening parameter file\n";

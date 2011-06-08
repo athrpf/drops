@@ -119,7 +119,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     InVecMap & tdvectormap = InVecMap::getInstance();
     InScaMap & tdscalarmap = InScaMap::getInstance();
     ScaMap & scalarmap = ScaMap::getInstance();
-    instat_vector_fun_ptr Flowfield = tdvectormap[P.get<std::string>("Transp.FlowField")];
+    instat_vector_fun_ptr Flowfield = tdvectormap[P.get("Transp.Flow", std::string("ZeroVel"))];
     instat_scalar_fun_ptr Reaction = tdscalarmap["ReactionFct"];
     instat_scalar_fun_ptr Rhs = tdscalarmap["Rhs"];
     instat_scalar_fun_ptr Initialcneg = tdscalarmap["IniCnegFct"];
@@ -127,7 +127,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     instat_scalar_fun_ptr Dirichlet = tdscalarmap["Dirichlet"];
     instat_scalar_fun_ptr Dirichlett = tdscalarmap["Dirichlett"];
     instat_scalar_fun_ptr Zero = tdscalarmap["ZeroFct"];
-    scalar_fun_ptr distance = scalarmap[P.get<std::string>("Transp.Levelset")];
+    scalar_fun_ptr distance = scalarmap[P.get("Transp.Levelset", std::string("Ellipsoid"))];
 
     const c_bnd_val_fun c_bfun[6]= {Zero,Dirichlet,Zero,Zero,Zero,Zero};  
     const c_bnd_val_fun c_bfunt[6]= {Zero,Dirichlett,Zero,Zero,Zero,Zero};  
@@ -141,9 +141,9 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     DROPS::instat_scalar_fun_ptr sigmap = 0;
     SurfaceTensionCL sf( sigmap, Bnd_c);    
     
-    LevelsetP2CL lset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsetbnddata, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
     // levelset wrt the previous time step:
-    LevelsetP2CL oldlset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff); 
+    LevelsetP2CL oldlset( MG, lsetbnddata, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
     //Prolongate and Restrict solution vector levelset from old mesh to new mesh after mesh adaptation:
     //always act on the same grid with possibly different interface position
     LevelsetRepairCL lsetrepair( lset);
@@ -157,8 +157,8 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     lset.Phi.SetIdx( lidx);
     oldlset.CreateNumbering( MG.GetLastLevel(), oldlidx);
     oldlset.Phi.SetIdx( oldlidx);
-    SetInitialLevelsetConditions( lset, MG, C);
-    SetInitialLevelsetConditions( oldlset, MG, C);
+    SetInitialLevelsetConditions( lset, MG, P);
+    SetInitialLevelsetConditions( oldlset, MG, P);
     lset.Init( distance );
     oldlset.Init( distance);
     DisplayDetailedGeom( MG);
@@ -168,7 +168,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     //VelocityContainer vel(Stokes.v,Stokes.GetBndData().Vel,MG);
     VelocityContainer vel(Flowfield);
     
-    TransportP1XCL massTransp( MG, Bnd_c, Bnd_ct, vel, lsetbnddata, lset.Phi, oldlset.Phi,C,0,Reaction,Rhs);
+    TransportP1XCL massTransp( MG, Bnd_c, Bnd_ct, vel, lsetbnddata, lset.Phi, oldlset.Phi,P,0,Reaction,Rhs);
     TransportXRepairCL transprepair(massTransp, MG.GetLastLevel());
     
     // index of the concentration wrt the interface at actual time step:
@@ -197,10 +197,10 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
         massTransp.oldct.SetIdx( cidx_old);
         std::cout << massTransp.ct.Data.size() << " concentration unknowns,\n";
  
-        if (C.dmc_InitialCond != -1)
+        if (P.get<int>("DomainCond.InitialCond") != -1)
           massTransp.Init( Initialcneg, Initialcpos, 0);
         else
-          ReadFEFromFile( massTransp.ct, MG, C.dmc_InitialFile+"concentrationTransf");
+          ReadFEFromFile( massTransp.ct, MG, P.get<std::string>("DomainCond.InitialFile")+"concentrationTransf");
           
         massTransp.GetSolutionOnPart( c_out, true , false);
         massTransp.GetSolutionOnPart( c_in, false , false);
@@ -208,60 +208,60 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
         std::cout << "START:: Mean concentration in drop: " << std::setprecision(12) << c_mean <<"\n";        
     }
     
-    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
+    LevelsetModifyCL lsetmod( P.get<int>("Reparam.Freq"), P.get<int>("Reparam.Method"), P.get<double>("Reparam.MaxGrad"), P.get<double>("Reparam.MinGrad"), P.get<int>("Levelset.VolCorrection"), Vol);
 
     // for serialization of geometry and numerical data
-    if (C.trp_DoTransp)
+    if (P.get("Transp.DoTransp", 0))
       std::cout << "WARNING: mass transport data is not serialized, yet!" << std::endl;
 
     // Initialize Ensight6 output
     //Update c from ct
     //massTransp.TransformWithScaling(massTransp.ct, massTransp.c, 1.0/massTransp.GetHenry(true), 1.0/massTransp.GetHenry(false));
-    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
 
-    Ensight6OutCL ensight( C.ens_EnsCase + ".case", (C.ens_EnsightOut ? C.tm_NumSteps/C.ens_EnsightOut+1 : 0), C.ens_Binary, C.ens_MasterOut);
-    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.ens_GeomName,     ensf + ".geo", true));
+    Ensight6OutCL ensight( P.get<std::string>("Ensight.EnsCase") + ".case", (P.get("Ensight.EnsightOut", 0) ? P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1 : 0), P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   P.get<std::string>("Ensight.GeomName"),     ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
-    if (C.trp_DoTransp) {
+    if (P.get("Transp.DoTransp", 0)) {
         ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct,true),
                                                                         "TransConc",     ensf + ".ct",  true));
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, massTransp.ct, "XTransConcentration",   ensf + ".xconc", true));
     }
     
     // writer for vtk-format
-    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
-                std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get("VTK.VTKOut", 0) ? P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1 : 0),
+                std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary"));
 
     vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
-    if (C.trp_DoTransp) {
+    if (P.get("Transp.DoTransp", 0)) {
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( massTransp.ct,false), "TransConcentration") );
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( c_out,false), "XConcentrationPos") );
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( c_in,false), "XConcentrationNeg") );
     }
 
-    if (C.ens_EnsightOut)
+    if (P.get("Ensight.EnsightOut", 0))
         ensight.Write(0);
-    if (C.vtk_VTKOut)
+    if (P.get("VTK.VTKOut", 0))
         vtkwriter.Write(0);
         
 //		massTransp.CheckSolution(Solutioncneg,Solutioncpos,0);
     double cmean_old = massTransp.MeanDropConcentration();
 
-    for (int step= 1; step<=C.tm_NumSteps; ++step)
+    for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
     {
-        std::cout << "============================================================ step " << std::setw(8) << step << "  /  " << std::setw(8) << C.tm_NumSteps << std::endl;
+        std::cout << "============================================================ step " << std::setw(8) << step << "  /  " << std::setw(8) << P.get<int>("Time.NumSteps") << std::endl;
         double c_mean = massTransp.MeanDropConcentration();
-        double t= C.tm_StepSize * step;
+        double t= P.get<double>("Time.StepSize") * step;
         std::cout << "Mean concentration in drop: " << c_mean <<"\n";
-        if(step > 5 && std::abs(cmean_old - c_mean)/(std::abs(cmean_old) * C.tm_StepSize) < 1e-5 ){
+        if(step > 5 && std::abs(cmean_old - c_mean)/(std::abs(cmean_old) * P.get<double>("Time.StepSize")) < 1e-5 ){
           std::cout << "I think I found a stationary solution! " << std::endl;
           break;
         }
         cmean_old = c_mean;
 
         // grid modification
-        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
+        bool doGridMod= P.get<int>("AdaptRef.Freq") && step%P.get<int>("AdaptRef.Freq") == 0;
         if (doGridMod) {
             adap.UpdateTriang( lset);
         }
@@ -271,8 +271,8 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
         massTransp.GetSolutionOnPart( c_out, true , false);
         massTransp.GetSolutionOnPart( c_in, false , false);
 
-        bool ensightoutnow = C.ens_EnsightOut && step%C.ens_EnsightOut==0;
-        bool vtkoutnow = C.vtk_VTKOut && (step%C.vtk_VTKOut==0 || step < 20);
+        bool ensightoutnow = P.get("Ensight.EnsightOut", 0) && step%P.get("Ensight.EnsightOut", 0)==0;
+        bool vtkoutnow = P.get("VTK.VTKOut", 0) && (step%P.get("VTK.VTKOut", 0)==0 || step < 20);
         if (ensightoutnow)
             ensight.Write(t);
         if (vtkoutnow)
@@ -302,7 +302,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     instat_scalar_fun_ptr Dirichlet = tdscalarmap["Dirichlet"];
     instat_scalar_fun_ptr Dirichlett = tdscalarmap["Dirichlett"];    
 //    scalar_fun_ptr distance = scalarmap["distance"];
-    scalar_fun_ptr distance = scalarmap[C.trp_Levelset];        
+    scalar_fun_ptr distance = scalarmap[P.get("Transp.Levelset", std::string("Ellipsoid"))];
     InflowLset::Init(distance);
 
     const c_bnd_val_fun c_bfun[6]= {Dirichlet,Dirichlet,Dirichlet,Dirichlet,Dirichlet,Dirichlet};  
@@ -316,9 +316,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     // initialization of surface tension
     sigma= Stokes.GetCoeff().SurfTens;
     //todo: weg oder fallunterscheidung einfuehren
-    eps= C.sft_JumpWidth;    lambda= C.sft_RelPos;    sigma_dirt_fac= C.sft_DirtFactor;
+    eps= P.get<double>("SurfTens.JumpWidth");    lambda= P.get<double>("SurfTens.RelPos");    sigma_dirt_fac= P.get<double>("SurfTens.DirtFactor");
     instat_scalar_fun_ptr sigmap  = 0;
-    if (C.sft_VarTension)
+    if (P.get<int>("SurfTens.VarTension"))
     {
         sigmap  = &sigma_step;
     }
@@ -335,9 +335,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     
     SurfaceTensionCL sf( sigmap, Bnd_c);
     sf.SetCoeff(coeffC, cp);
-    LevelsetP2CL lset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsetbnddata, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
     // levelset wrt the previous time step:
-    LevelsetP2CL oldlset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff); 
+    LevelsetP2CL oldlset( MG, lsetbnddata, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
     //Prolongate and Restrict solution vector levelset from old mesh to new mesh after mesh adaptation:
     //always act on the same grid with possibly different interface position
     LevelsetRepairCL lsetrepair( lset);
@@ -367,18 +367,18 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     oldlset.CreateNumbering( MG.GetLastLevel(), oldlidx);
     oldlset.Phi.SetIdx( oldlidx);
     
-    if (C.sft_VarTension)
+    if (P.get<int>("SurfTens.VarTension"))
         lset.SetSurfaceForce( SF_ImprovedLBVar);
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
 
-    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
+    if ( StokesSolverFactoryHelperCL().VelMGUsed(P))
         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
-    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
+    if ( StokesSolverFactoryHelperCL().PrMGUsed(P))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
 
-    SetInitialLevelsetConditions( lset, MG, C);
-    SetInitialLevelsetConditions( oldlset, MG, C);
+    SetInitialLevelsetConditions( lset, MG, P);
+    SetInitialLevelsetConditions( oldlset, MG, P);
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
     old_vidx.CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
@@ -388,7 +388,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     Stokes.v.SetIdx  ( vidx);
     Stokes.p.SetIdx  ( pidx);
     Stokes.InitVel( &Stokes.v, Flowfield);
-    SetInitialConditions( Stokes, lset, MG, C);
+    SetInitialConditions( Stokes, lset, MG, P);
     InitVel(MG, old_v, Flowfield);
    
     lset.Init( distance);
@@ -407,7 +407,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
    
     VelocityContainer vel(Stokes.v,Stokes.GetBndData().Vel,MG);
     //VelocityContainer vel(Flowfield);   
-    TransportP1XCL massTransp( MG, Bnd_c, Bnd_ct, vel, lsetbnddata, lset.Phi, oldlset.Phi,C,0,Reaction,Rhs);
+    TransportP1XCL massTransp( MG, Bnd_c, Bnd_ct, vel, lsetbnddata, lset.Phi, oldlset.Phi,P,0,Reaction,Rhs);
     TransportXRepairCL transprepair(massTransp, MG.GetLastLevel());
     
     // index of the concentration wrt the interface at actual time step:
@@ -428,20 +428,20 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     c_in.SetIdx( &p1idx);
     c_out.SetIdx( &p1idx);
     
-    if (C.trp_DoTransp) {
+    if (P.get("Transp.DoTransp", 0)) {
         adap.push_back(&transprepair);
         massTransp.CreateNumbering( MG.GetLastLevel(), cidx, cidx_old, lset.Phi, oldlset.Phi);
         massTransp.ct.SetIdx( cidx);
         massTransp.c.SetIdx( cidx);
         massTransp.oldct.SetIdx( cidx_old);
-        if (C.dmc_InitialCond != -1)
+        if (P.get<int>("DomainCond.InitialCond") != -1)
           massTransp.Init( Initialcpos, Initialcpos, true);
         else
-          ReadFEFromFile( massTransp.ct, MG, C.dmc_InitialFile+"concentrationTransf");
+          ReadFEFromFile( massTransp.ct, MG, P.get<std::string>("DomainCond.InitialFile")+"concentrationTransf");
         
         std::cout << massTransp.ct.Data.size() << " concentration unknowns,\n";
  
-        if (C.sft_VarTension){
+        if (P.get<int>("SurfTens.VarTension")){
             massTransp.GetSolutionOnPart( c_out, true , false);
             massTransp.GetSolutionOnPart( c_in, false , false);
 //            P1XtoP1 (*massTransp.c.RowIdx, massTransp.c.Data, p1idx, c_out.Data, c_in.Data, lset.Phi, MG);         
@@ -450,10 +450,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
             sf.SetTime(0.);
         }
 
-        if (C.dmc_InitialCond != -1)
+        if (P.get<int>("DomainCond.InitialCond") != -1)
           massTransp.Init( Initialcneg, Initialcpos, true);
         else
-          ReadFEFromFile( massTransp.ct, MG, C.dmc_InitialFile+"concentrationTransf");
+          ReadFEFromFile( massTransp.ct, MG, P.get<std::string>("DomainCond.InitialFile")+"concentrationTransf");
         massTransp.GetSolutionOnPart( c_out, true , false);
         massTransp.GetSolutionOnPart( c_in, false , false);
 //        P1XtoP1 (*massTransp.c.RowIdx, massTransp.c.Data, p1idx, c_out.Data, c_in.Data, lset.Phi, MG);         
@@ -462,9 +462,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
         std::cout << "START:: Mean concentration in drop: " << std::setprecision(12) << c_mean <<"\n";        
     }
     /// \todo rhs beruecksichtigen
-    SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, lset.GetBndData(), C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, P.get<double>("SurfTransp.Theta"), P.get<double>("SurfTransp.Visc"), &Stokes.v, lset.Phi, lset.GetBndData(), P.get<double>("Time.StepSize"), P.get<int>("SurfTransp.Iter"), P.get<double>("SurfTransp.Tol"), P.get<double>("SurfTransp.OmitBound"));
     InterfaceP1RepairCL surf_repair( MG, lset.Phi, lset.GetBndData(), surfTransp.ic);
-    if (C.surf_DoTransp)
+    if (P.get("SurfTransp.DoTransp", 0))
     {
         adap.push_back( &surf_repair);
         surfTransp.idx.CreateNumbering( MG.GetLastLevel(), MG, &lset.Phi, &lset.GetBndData());
@@ -474,7 +474,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     }
 
     // Stokes-Solver
-    StokesSolverFactoryCL<InstatNavierStokes2PhaseP2P1CL, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
+    StokesSolverFactoryCL<InstatNavierStokes2PhaseP2P1CL> stokessolverfactory(Stokes, P);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
 //     StokesSolverAsPreCL pc (*stokessolver1, 1);
 //     GCRSolverCL<StokesSolverAsPreCL> gcr(pc, C.stk_OuterIter, C.stk_OuterIter, C.stk_OuterTol, /*rel*/ false);
@@ -483,31 +483,31 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 
     // Navier-Stokes-Solver
     NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL>* navstokessolver = 0;
-    if (C.ns_Nonlinear==0.0)
+    if (P.get("NavStokes.Nonlinear", 0.0)==0.0)
         navstokessolver = new NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL>(Stokes, *stokessolver);
     else
-        navstokessolver = new AdaptFixedPtDefectCorrCL<InstatNavierStokes2PhaseP2P1CL>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
+        navstokessolver = new AdaptFixedPtDefectCorrCL<InstatNavierStokes2PhaseP2P1CL>(Stokes, *stokessolver, P.get<int>("NavStokes.Iter"), P.get<double>("NavStokes.Tol"), P.get<double>("NavStokes.Reduction"));
     // Level-Set-Solver
 #ifndef _PAR
     SSORPcCL ssorpc;
-    GMResSolverCL<SSORPcCL>* gm = new GMResSolverCL<SSORPcCL>( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
+    GMResSolverCL<SSORPcCL>* gm = new GMResSolverCL<SSORPcCL>( ssorpc, 100, P.get<int>("Levelset.Iter"), P.get<double>("Levelset.Tol"));
 #else
     ParJac0CL jacparpc( *lidx);
     ParPreGMResSolverCL<ParJac0CL>* gm = new ParPreGMResSolverCL<ParJac0CL>
-           (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+           (/*restart*/100, P.get<int>("Levelset.Iter"), P.get<double>("Levelset.Tol"), *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
 
-    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
+    LevelsetModifyCL lsetmod( P.get<int>("Reparam.Freq"), P.get<int>("Reparam.Method"), P.get<double>("Reparam.MaxGrad"), P.get<double>("Reparam.MinGrad"), P.get<int>("Levelset.VolCorrection"), Vol);
 
     // Time discretisation + coupling
-    TimeDisc2PhaseCL* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
+    TimeDisc2PhaseCL* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, P, lsetmod);
 
-    if (C.tm_NumSteps != 0){
-        timedisc->SetTimeStep( C.tm_StepSize);
+    if (P.get<int>("Time.NumSteps") != 0){
+        timedisc->SetTimeStep( P.get<double>("Time.StepSize"));
         timedisc->SetSchurPrePtr( stokessolverfactory.GetSchurPrePtr() );
     }
 
-    if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
+    if (P.get("NavStokes.Nonlinear", 0.0)!=0.0 || P.get<int>("Time.NumSteps") == 0) {
         stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
             //for Stokes-MGM
         stokessolverfactory.SetMatrices( navstokessolver->GetAN(), &Stokes.B.Data,
@@ -531,38 +531,38 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 
     std::ofstream* infofile = 0;
     IF_MASTER {
-        infofile = new std::ofstream ((C.ens_EnsCase+".info").c_str());
+        infofile = new std::ofstream ((P.get<std::string>("Ensight.EnsCase")+".info").c_str());
     }
     IFInfo.Init(infofile);
     IFInfo.WriteHeader();
 
-    if (C.tm_NumSteps == 0)
+    if (P.get<int>("Time.NumSteps") == 0)
         SolveStatProblem( Stokes, lset, *navstokessolver);
 
     // for serialization of geometry and numerical data
-    if (C.trp_DoTransp)
+    if (P.get("Transp.DoTransp", 0))
       std::cout << "WARNING: mass transport data is not serialized, yet!" << std::endl;
-    TwoPhaseStoreCL<InstatNavierStokes2PhaseP2P1CL> ser(MG, Stokes, lset, 0, C.rst_Outputfile, C.rst_Overwrite, C.rst_Binary);
+    TwoPhaseStoreCL<InstatNavierStokes2PhaseP2P1CL> ser(MG, Stokes, lset, 0, P.get<std::string>("Restart.Outputfile"), P.get<int>("Restart.Overwrite"), P.get<int>("Restart.Binary"));
 
     // Initialize Ensight6 output
     //Update c from ct
     //massTransp.TransformWithScaling(massTransp.ct, massTransp.c, 1.0/massTransp.GetHenry(true), 1.0/massTransp.GetHenry(false));
-    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
 
-    Ensight6OutCL ensight( C.ens_EnsCase + ".case", (C.ens_EnsightOut ? C.tm_NumSteps/C.ens_EnsightOut+1 : 0), C.ens_Binary, C.ens_MasterOut);
-    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.ens_GeomName,     ensf + ".geo", true));
+    Ensight6OutCL ensight( P.get<std::string>("Ensight.EnsCase") + ".case", (P.get("Ensight.EnsightOut", 0) ? P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1 : 0), P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   P.get<std::string>("Ensight.GeomName"),     ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
     ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
     ensight.Register( make_Ensight6Scalar    ( ScalarFunAsP2EvalCL( sigmap, 0., &MG, MG.GetLastLevel()),
                                                                         "Surfaceforce",  ensf + ".sf",  true));
-    if (C.trp_DoTransp) {
+    if (P.get("Transp.DoTransp", 0)) {
 //        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.c,false),"Concentration", ensf + ".c",   true));
         ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct,true),
                                                                         "TransConc",     ensf + ".ct",  true));
 		ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, massTransp.ct, "XTransConcentration",   ensf + ".xconc", true));
     }
-    if (C.surf_DoTransp) {
+    if (P.get("SurfTransp.DoTransp", 0)) {
         ensight.Register( make_Ensight6IfaceScalar( MG, surfTransp.ic,  "InterfaceSol",  ensf + ".sur", true));
     }
 
@@ -572,29 +572,29 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 #endif
 
     // writer for vtk-format
-    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
-                std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get("VTK.VTKOut", 0) ? P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1 : 0),
+                std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary"));
 
     vtkwriter.Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
     vtkwriter.Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
     vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
-    if (C.trp_DoTransp) {
+    if (P.get("Transp.DoTransp", 0)) {
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( massTransp.ct,false), "TransConcentration") );
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( c_out,false), "XConcentrationPos") );
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( c_in,false), "XConcentrationNeg") );
     }
 
-    if (C.surf_DoTransp) {
+    if (P.get("SurfTransp.DoTransp", 0)) {
         vtkwriter.Register( make_VTKIfaceScalar( MG, surfTransp.ic,  "InterfaceSol"));
     }
 
-    if (C.ens_EnsightOut)
+    if (P.get("Ensight.EnsightOut", 0))
         ensight.Write( Stokes.v.t);
-    if (C.vtk_VTKOut)
+    if (P.get("VTK.VTKOut", 0))
         vtkwriter.Write(Stokes.v.t);
 
-    for (int step= 1; step<=C.tm_NumSteps; ++step)
+    for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
     {
         std::cout << "============================================================ step " << step << std::endl;
         double c_mean = massTransp.MeanDropConcentration();
@@ -605,12 +605,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 //         IFInfo.Write(Stokes.t, c_mean);
         IFInfo.Write(Stokes.v.t);
         
-        if (C.surf_DoTransp) surfTransp.InitOld();
-        timedisc->DoStep( C.cpl_Iter);
+        if (P.get("SurfTransp.DoTransp", 0)) surfTransp.InitOld();
+        timedisc->DoStep( P.get<int>("Coupling.Iter"));
         
-//         if (C.trp_DoTransp) massTransp.DoStep( step*C.tm_StepSize);
-        if (C.surf_DoTransp) {
-            surfTransp.DoStep( step*C.tm_StepSize);
+//         if (P.get("Transp.DoTransp", 0)) massTransp.DoStep( step*P.get<double>("Time.StepSize"));
+        if (P.get("SurfTransp.DoTransp", 0)) {
+            surfTransp.DoStep( step*P.get<double>("Time.StepSize"));
             BndDataCL<> ifbnd( 0);
             std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, lset.GetBndData(), make_P1Eval(  MG, ifbnd, surfTransp.ic)) << '\n';
         }
@@ -618,18 +618,18 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
         // WriteMatrices( Stokes, step);
 
         // grid modification
-        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
+        bool doGridMod= P.get<int>("AdaptRef.Freq") && step%P.get<int>("AdaptRef.Freq") == 0;
         if (doGridMod) {
             adap.UpdateTriang( lset);
         }
       
-        if (C.trp_DoTransp) {
+        if (P.get("Transp.DoTransp", 0)) {
             massTransp.DoStep( t);
             old_vrepair.SetTime(t);\
             
         //}
 
-            if (C.sft_VarTension){
+            if (P.get<int>("SurfTens.VarTension")){
                 sf.SetConcentration(&c_out);
                 sf.SetInputMethod(Sigma_C);
                 sf.SetTime(t);
@@ -647,10 +647,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 //        p1idx.CreateNumbering( MG.GetLastLevel(), MG, Bnd_c, 0, &lset.Phi,&lsetbnddata);   
 //        P1XtoP1 (*massTransp.c.RowIdx, massTransp.c.Data, p1idx, c_out.Data, c_in.Data, lset.Phi, MG);         
 
-        bool ensightoutnow = C.ens_EnsightOut && step%C.ens_EnsightOut==0;
-        bool vtkoutnow = C.vtk_VTKOut && step%C.vtk_VTKOut==0;
+        bool ensightoutnow = P.get("Ensight.EnsightOut", 0) && step%P.get("Ensight.EnsightOut", 0)==0;
+        bool vtkoutnow = P.get("VTK.VTKOut", 0) && step%P.get("VTK.VTKOut", 0)==0;
         
-        //if (ensightoutnow || C.vtk_VTKOut && vtkoutnow){ solution on part stuff }
+        //if (ensightoutnow || P.get("VTK.VTKOut", 0) && vtkoutnow){ solution on part stuff }
         
         if (ensightoutnow)
             ensight.Write( Stokes.v.t);
@@ -685,8 +685,8 @@ int main (int argc, char** argv)
     std::ifstream param;
     if (argc!=2)
     {
-        std::cout << "Using default parameter file: risingbutanoldroplet.param\n";
-        param.open( "risingbutanoldroplet.param");
+        std::cout << "Using default parameter file: risingbutanoldroplet.json\n";
+        param.open( "risingbutanoldroplet.json");
     }
     else
         param.open( argv[1]);
@@ -695,16 +695,18 @@ int main (int argc, char** argv)
         std::cerr << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
 
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
     DROPS::LsetBndDataCL* lsetbnddata= 0;
 
-    DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, C.rst_Inputfile, C.exp_RadInlet);
-    DROPS::BuildBoundaryData( mg, bnddata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
+    double RadInlet = P.get<double>("Exp.RadInlet");
+    DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), P.get<std::string>("Restart.Inputfile"), RadInlet);
+    P.put("Exp.RadInlet", RadInlet);
+    DROPS::BuildBoundaryData( mg, bnddata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
 
     // todo: reasonable implementation needed
     std::string lsetbndtype = "98" /*NoBC*/, lsetbndfun = "Zero";
@@ -717,13 +719,13 @@ int main (int argc, char** argv)
 
     std::cout << "Generated MG of " << mg->GetLastLevel() << " levels." << std::endl;
 
-    DROPS::EllipsoidCL::Init(P.get<DROPS::Point3DCL>("Exp.PosDrop"), C.exp_RadDrop);
-    DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_LoadBalStrategy : -C.ref_LoadBalStrategy), C.ref_Partitioner);
+    DROPS::EllipsoidCL::Init(P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"));
+    DROPS::AdapTriangCL adap( *mg, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"), ((P.get<std::string>("Restart.Inputfile") == "none") ? P.get<int>("AdaptRef.LoadBalStrategy") : -P.get<int>("AdaptRef.LoadBalStrategy")), P.get<int>("AdaptRef.Partitioner"));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
-    if (!C.trp_UseNSSol || (C.rst_Inputfile == "none")){
+    if (!P.get<int>("Transp.UseNSSol") || (P.get<std::string>("Restart.Inputfile") == "none")){
         DROPS::ScaMap & scalarmap = DROPS::ScaMap::getInstance();
-        DROPS::scalar_fun_ptr distance = scalarmap[C.trp_Levelset];    
+        DROPS::scalar_fun_ptr distance = scalarmap[P.get("Transp.Levelset", std::string("Ellipsoid"))];
         adap.MakeInitialTriang( distance);
     }
     
@@ -734,8 +736,8 @@ int main (int argc, char** argv)
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
 
-    if (C.trp_UseNSSol){
-      DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
+    if (P.get<int>("Transp.UseNSSol")){
+      DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(P), *bnddata, P.get<double>("Stokes.XFEMStab")<0 ? DROPS::P1_FE : DROPS::P1X_FE, P.get<double>("Stokes.XFEMStab"));
       Strategy( prob, *lsetbnddata, adap);    // do all the stuff
     }
     else

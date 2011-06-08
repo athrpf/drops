@@ -424,7 +424,7 @@ int main (int argc, char** argv)
     if (argc>1)
         param.open( argv[1]);
     else
-        param.open( "prJump.param");
+        param.open( "prJump.json");
     if (!param)
     {
         std::cout << "error while opening parameter file\n";

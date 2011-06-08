@@ -247,7 +247,7 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     for (size_t i=0; i<refVec.size(); ++i)
         std::cout << refVec[i] << ",\t";
 
-    std::cout << "\n\n" << P.get<int>("AdaptRef.FinestLevel")ref_FinestLevel << ",\t";
+    std::cout << "\n\n" << P.get<int>("AdaptRef.FinestLevel") << ",\t";
     for (size_t i=0; i<errVec.size(); ++i)
         std::cout << errVec[i] << ",\t";
     std::cout << "\n\n";
@@ -378,21 +378,21 @@ int main (int argc, char** argv)
     if (argc>1)
         param.open( argv[1]);
     else
-        param.open( "f_Gamma.param");
+        param.open( "f_Gamma.json");
     if (!param)
     {
         std::cout << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
 
     typedef DROPS::InstatStokes2PhaseP2P1CL    MyStokesCL;
 
     int nx, ny, nz;
     double dx, dy, dz;
-    std::string mesh( C.dmc_MeshFile), delim("x@");
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx;
     while ((idx= mesh.find_first_of( delim)) != std::string::npos )
         mesh[idx]= ' ';
@@ -400,7 +400,7 @@ int main (int argc, char** argv)
     brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
     if (!brick_info)
         DROPS::DROPSErrCL("error while reading geometry information: " + mesh);
-    C.exp_RadInlet= dx/2;
+    P.put("Exp.RadInlet", dx/2);
     DROPS::Point3DCL orig, px, py, pz;
     px[0]= dx; py[1]= dy; pz[2]= dz;
     orig= -0.5*(px+py+pz);
@@ -415,7 +415,7 @@ int main (int argc, char** argv)
     const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
     DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
 
-    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
+    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(P), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 

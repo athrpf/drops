@@ -50,7 +50,6 @@ namespace DROPS
 
     RegisterScalarFunction::RegisterScalarFunction(std::string name, instat_scalar_fun_ptr fptr){
         InScaMap::getInstance().insert(std::make_pair(name,fptr));
-        std::cout << "RegisterScalarFunction: " << name << std::endl;
     }
 
     RegisterScalarFunction::RegisterScalarFunction(std::string name, scalar_fun_ptr fptr){

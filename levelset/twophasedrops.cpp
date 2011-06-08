@@ -397,8 +397,8 @@ int main (int argc, char** argv)
     std::ifstream param;
     if (argc!=2)
     {
-        std::cout << "Using default parameter file: risingdroplet.param\n";
-        param.open( "risingdroplet.param");
+        std::cout << "Using default parameter file: risingdroplet.json\n";
+        param.open( "risingdroplet.json");
     }
     else
         param.open( argv[1]);
