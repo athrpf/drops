@@ -91,9 +91,9 @@ void VTKOutCL::NewFile(__UNUSED__ bool writeDistribution)
 /** Each process opens a new file and writes header into it*/
 {
     std::string filename(filename_);
-    const char dir_delim= '/';
-    int length_dirname= filename.rfind( dir_delim);
 #ifdef _PAR
+   const char dir_delim= '/';
+   int length_dirname= filename.rfind( dir_delim);
    ProcCL::AppendProcNum(filename);
    filename+="_";
 #endif
