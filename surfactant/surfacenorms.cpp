@@ -23,7 +23,7 @@
 */
 
 #include "surfactant/ifacetransp.h"
-#include "surfactant/params.h"
+#include "misc/params.h"
 #include "geom/builder.h"
 #include "levelset/levelset.h"
 #include "levelset/adaptriang.h"
@@ -32,25 +32,25 @@
 
 #include <fstream>
 
-DROPS::ParamSurfactantCL C;
+DROPS::ParamCL P;
 
 DROPS::Point3DCL u_func (const DROPS::Point3DCL&, double)
 {
-    return C.exp_Velocity;
+    return P.get<DROPS::Point3DCL>("Exp.Velocity");
 }
 
 double sphere_2 (const DROPS::Point3DCL& p)
 {
-    DROPS::Point3DCL x( p - C.exp_PosDrop);
+    DROPS::Point3DCL x( p - P.get<DROPS::Point3DCL>("Exp.PosDrop"));
 
-    return x.norm() - C.exp_Radius[0];
+    return x.norm() - P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
 }
 
 double sphere_2move (const DROPS::Point3DCL& p, double t)
 {
-    DROPS::Point3DCL x( p - (C.exp_PosDrop + t*u_func(p, t)));
+    DROPS::Point3DCL x( p - (P.get<DROPS::Point3DCL>("Exp.PosDrop") + t*u_func(p, t)));
 
-    return x.norm() - C.exp_Radius[0];
+    return x.norm() - P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
 }
 
 typedef double (*dist_funT) (const DROPS::Point3DCL&, double);
@@ -71,7 +71,7 @@ const double a( -13./8.*std::sqrt( 35./M_PI));
 
 double sol0t (const DROPS::Point3DCL& p, double t)
 {
-    const DROPS::Point3DCL q( p - (C.exp_PosDrop + t*u_func(p, t)));
+    const DROPS::Point3DCL q( p - (P.get<DROPS::Point3DCL>("Exp.PosDrop") + t*u_func(p, t)));
     const double val( a*(3.*q[0]*q[0]*q[1] - q[1]*q[1]*q[1]));
 
     return q.norm_sq()/(12. + q.norm_sq())*val;
@@ -179,18 +179,20 @@ void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
         DV[l][i].t = 1.0;
     }
 
+    std::string ensdir = P.get<std::string>("EnsightDir");
+    std::string enscase = P.get<std::string>("EnsightCase");
     ReadEnsightP2SolCL reader( mg);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur1",   DV[l][0], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur2",   DV[l][1], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur4",   DV[l][2], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur8",   DV[l][3], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur16",  DV[l][4], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur32",  DV[l][5], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur64",  DV[l][6], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur128", DV[l][7], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur256", DV[l][8], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur512", DV[l][9], bnd);
-    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur1024", DV[l][10], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur1",   DV[l][0], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur2",   DV[l][1], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur4",   DV[l][2], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur8",   DV[l][3], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur16",  DV[l][4], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur32",  DV[l][5], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur64",  DV[l][6], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur128", DV[l][7], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur256", DV[l][8], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur512", DV[l][9], bnd);
+    reader.ReadScalar( ensdir + lvlstr[l] + enscase + ".sur1024", DV[l][10], bnd);
 
     if (l == L - 1) continue;
     for (int i= 0; i < N; ++i) {
@@ -253,17 +255,17 @@ int main (int argc, char** argv)
         std::cout << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
     std::cout << "Setting up interface-PDE:\n";
     DROPS::BrickBuilderCL brick( DROPS::MakePoint3D( -2., -2., -2.),
                                  4.*DROPS::std_basis<3>( 1),
                                  4.*DROPS::std_basis<3>( 2),
                                  4.*DROPS::std_basis<3>( 3),
-                                 C.cdiv, C.cdiv, C.cdiv);
+                                 P.get<int>("InitialDivisions"), P.get<int>("InitialDivisions"), P.get<int>("InitialDivisions"));
     DROPS::MultiGridCL mg( brick);
-    DROPS::AdapTriangCL adap( mg, C.ref_Width, 0, C.ref_FinestLevel);
+    DROPS::AdapTriangCL adap( mg, P.get<double>("AdaptRef.Width"), 0, P.get<int>("AdaptRef.FinestLevel"));
     adap.MakeInitialTriang( sphere_2);
 
     const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };

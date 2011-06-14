@@ -1,6 +1,6 @@
 /// \file stokesCoeff.h
 /// \brief  coefficient class for stokes problems
-/// \author LNM RWTH Aachen: Eva Loch, Yuanjun Zhang
+/// \author LNM RWTH Aachen: Eva Loch, Yuanjun Zhang, Thorolf Schulte
 
 /*
  * This file is part of DROPS.
@@ -28,6 +28,7 @@
 #include "misc/bndmap.h"
 #include "misc/container.h"
 #include <sstream>
+#include "misc/params.h"
 
 namespace DROPS{
 
@@ -53,26 +54,26 @@ class StokesFlowCoeffCL
     const double rho, nu;
     const DROPS::Point3DCL g;
 
-    StokesFlowCoeffCL( const DROPS::ParamStokesProblemCL& C)
-      : rho( C.mat_Dens),
-        nu( C.mat_Visc),
-        g( C.exp_Gravity){
+    StokesFlowCoeffCL( const DROPS::ParamCL& P)
+      : rho( P.get<double>("Mat.Dens")),
+        nu( P.get<double>("Mat.Visc")),
+        g( P.get<DROPS::Point3DCL>("Exp.Gravity")){
         DROPS::InScaMap & scamap = DROPS::InScaMap::getInstance();
-        q = scamap[C.stc_Reaction];
+        q = scamap[P.get<std::string>("StokesCoeff.Reaction")];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
-        f = vecmap[C.stc_Source];
-        if( C.stc_Solution_Vel.compare("None")!=0)
-            LsgVel = vecmap[C.stc_Solution_Vel];
+        f = vecmap[P.get<std::string>("StokesCoeff.Source")];
+        if( P.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)
+            LsgVel = vecmap[P.get<std::string>("StokesCoeff.Solution_Vel")];
         else
             LsgVel = NULL;
         DROPS::InMatMap & matmap = DROPS::InMatMap::getInstance();
-        if( C.stc_Solution_DVel.compare("None")!=0)
-            DLsgVel = matmap[C.stc_Solution_DVel];
+        if( P.get<std::string>("StokesCoeff.Solution_DVel").compare("None")!=0)
+            DLsgVel = matmap[P.get<std::string>("StokesCoeff.Solution_DVel")];
         else
             DLsgVel = NULL;
         DROPS::InScaMap & inscamap = DROPS::InScaMap::getInstance();
-        if( C.stc_Solution_Pr.compare("None")!=0)
-            LsgPr = inscamap[C.stc_Solution_Pr];
+        if( P.get<std::string>("StokesCoeff.Solution_Pr").compare("None")!=0)
+            LsgPr = inscamap[P.get<std::string>("StokesCoeff.Solution_Pr")];
         else
             LsgPr = NULL;
     }

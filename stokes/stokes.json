@@ -1,0 +1,124 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for stokesP2.cpp
+#    simulation of stokes problem
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		0,
+		"StepSize":		1,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"InnerIter":		100,
+		"OuterIter":		100,
+		"InnerTol":		1e-10,
+		"OuterTol":		1e-8,
+		"StokesMethod":		530000,
+		"PcAIter":		1,
+		"PcATol":		0,
+		"PcSTol":		0,
+		"XFEMStab":		-1e-1,
+		"Theta":		1.0
+	},
+
+	"StokesCoeff":
+	{
+		"_comment":
+"# stokes coefficients",
+
+		"Reaction":		"ScaZero",
+		"Source":		"Source_stokes",
+		"Solution_Vel":		"VelSol_stokes",
+		"Solution_DVel":		"DVelSol_stokes",
+		"Solution_Pr":		"PrSol_stokes"
+	},
+
+	"Misc":
+	{
+		"_comment":
+"# Miscellaneous",
+
+		"Omega":		1.0,
+		"Tau":		1.0
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"Dens":		1,
+		"Visc":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Gravity":		[ 0, 0, 0 ]
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		0,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"0.78540x0.78540x0.78540@3x3x3",
+		"BoundaryType":		"2!2!2!2!2!2",
+		"BoundaryFncs":		"VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes"
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		0.1,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"FilmTemp",
+		"EnsDir":		"ensight",
+		"GeomName":		"test",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"# Error estimator",
+
+		"RelReduction":		0.1,
+		"MinRatio":		0,
+		"Threshold":		0.6,
+		"Meas":		0.484473073129685,
+		"DoMark":		0,
+		"DoErrorEstimate":		0,
+		"NumRef":		0
+	}
+
+}

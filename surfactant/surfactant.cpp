@@ -23,7 +23,7 @@
 */
 
 #include "surfactant/ifacetransp.h"
-#include "surfactant/params.h"
+#include "misc/params.h"
 #include "geom/builder.h"
 #include "levelset/levelset.h"
 #include "levelset/adaptriang.h"
@@ -34,12 +34,12 @@
 
 using namespace DROPS;
 
-DROPS::ParamSurfactantCL C;
+DROPS::ParamCL P;
 std::string ensf; // basename of the ensight files
 
 DROPS::Point3DCL u_func (const DROPS::Point3DCL&, double)
 {
-    return C.exp_Velocity;
+    return P.get<DROPS::Point3DCL>("Exp.Velocity");
 }
 
 typedef DROPS::Point3DCL (*bnd_val_fun) (const DROPS::Point3DCL&, double);
@@ -56,22 +56,22 @@ bnd_val_fun bf[6]= {
 
 double sphere_2 (const DROPS::Point3DCL& p)
 {
-    DROPS::Point3DCL x( p - C.exp_PosDrop);
+    DROPS::Point3DCL x( p - P.get<DROPS::Point3DCL>("Exp.PosDrop"));
 
-    return x.norm() - C.exp_Radius[0];
+    return x.norm() - P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
 }
 
 typedef double (*dist_funT) (const DROPS::Point3DCL&, double);
 
 double sphere_2move (const DROPS::Point3DCL& p, double t)
 {
-    DROPS::Point3DCL x( p - (C.exp_PosDrop + t*u_func(p, t)));
+    DROPS::Point3DCL x( p - (P.get<DROPS::Point3DCL>("Exp.PosDrop") + t*u_func(p, t)));
 
-    return x.norm() - C.exp_Radius[0];
+    return x.norm() - P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
 }
 
 
-// TestCase == 0: Sphere around 0, radius 1, v == 0
+// TestCase == 0: Sphere around 0, RadDrop 1, v == 0
 // A right hand side from C.J. Heine...
 const double a( -13./8.*std::sqrt( 35./M_PI));
 double rhs0 (const DROPS::Point3DCL& p, double)
@@ -87,7 +87,7 @@ double sol0 (const DROPS::Point3DCL& p, double)
 
 double sol0t (const DROPS::Point3DCL& p, double t)
 {
-    const Point3DCL q( p - (C.exp_PosDrop + t*u_func(p, t)));
+    const Point3DCL q( p - (P.get<DROPS::Point3DCL>("Exp.PosDrop") + t*u_func(p, t)));
     const double val( a*(3.*q[0]*q[0]*q[1] - q[1]*q[1]*q[1]));
 
 //    return q.norm_sq()/(12. + q.norm_sq())*val;
@@ -208,7 +208,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     BndDataCL<> lsetbnd2( 6);
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    DROPS::LevelsetP2CL lset2( mg, lsetbnd2, sf, C.lvs_Theta, C.lvs_SD); // Only for output
+    DROPS::LevelsetP2CL lset2( mg, lsetbnd2, sf, P.get<double>("Levelset.Theta"), P.get<double>("Levelset.SD")); // Only for output
     lset2.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset2.Phi.SetIdx( &lset2.idx);
     LSInit( mg, lset2.Phi, &sphere_2move, 0.);
@@ -222,9 +222,9 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     VecDescCL v( &vidx);
     InitVel( mg, &v, Bnd_v, u_func, 0.);
 
-    lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v), C.tm_StepSize);
+    lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v), P.get<double>("Time.StepSize"));
 
-    SurfactantcGP1CL timedisc( mg, Bnd_v, C.surf_Theta, C.surf_Visc, &v, lset.Phi, lset.GetBndData(), C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    SurfactantcGP1CL timedisc( mg, Bnd_v, P.get<double>("SurfTransp.Theta"), P.get<double>("SurfTransp.Visc"), &v, lset.Phi, lset.GetBndData(), P.get<double>("Time.StepSize"), P.get<int>("SurfTransp.Iter"), P.get<double>("SurfTransp.Tol"), P.get<double>("SurfTransp.OmitBound"));
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -247,30 +247,30 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     ensight.Register( make_Ensight6Scalar( ScalarFunAsP2EvalCL( sol0t, 0., &mg), "TrueSol",      ensf + ".sol", true));
     ensight.Write( 0.);
 
-    // timedisc.SetTimeStep( C.tm_StepSize, C.surf_Theta);
+    // timedisc.SetTimeStep( P.get<double>("Time.StepSize"), P.get<double>("SurfTransp.Theta"));
 //    std::cout << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, 0.)
 //              << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, 0.)
 //              << std::endl;
     BndDataCL<> ifbnd( 0);
     std::cerr << "initial surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic)) << '\n';
 
-    for (int step= 1; step <= C.tm_NumSteps; ++step) {
+    for (int step= 1; step <= P.get<int>("Time.NumSteps"); ++step) {
         std::cout << "======================================================== step " << step << ":\n";
 
         timedisc.InitOld();
-        LSInit( mg, lset.Phi, &sphere_2move, step*C.tm_StepSize);
-        timedisc.DoStep( step*C.tm_StepSize);
+        LSInit( mg, lset.Phi, &sphere_2move, step*P.get<double>("Time.StepSize"));
+        timedisc.DoStep( step*P.get<double>("Time.StepSize"));
         std::cerr << "surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic)) << '\n';
 
         //lset2.DoStep();
 //        VectorCL rhs( lset2.Phi.Data.size());
 //        lset2.ComputeRhs( rhs);
-//        lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*C.tm_StepSize));
-//        lset2.SetTimeStep( C.tm_StepSize);
+//        lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*P.get<double>("Time.StepSize")));
+//        lset2.SetTimeStep( P.get<double>("Time.StepSize"));
 //        lset2.DoStep( rhs);
 
         std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        if (C.lvs_VolCorr) {
+        if (P.get("Levelset.VolCorr", 0)) {
             double dphi= lset.AdjustVolume( Vol, 1e-9);
             std::cout << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
@@ -278,29 +278,29 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
         }
         //if (C.rpm_Freq && step%C.rpm_Freq==0) { // reparam levelset function
             // lset.ReparamFastMarching( C.rpm_Method);
-        if (C.ref_Freq != 0 && step%C.ref_Freq == 0) {
-            if (C.ref_Freq != 0) {
+        if (P.get("AdaptRef.Freq", 0) != 0 && step%P.get("AdaptRef.Freq", 0) == 0) {
+            if (P.get("AdaptRef.Freq", 0) != 0) {
                 adap.UpdateTriang( lset);
                 vidx.DeleteNumbering( mg);
                 vidx.CreateNumbering( mg.GetLastLevel(), mg, Bnd_v);
                 v.SetIdx( &vidx);
-                InitVel( mg, &v, Bnd_v, u_func, step*C.tm_StepSize);
-                LSInit( mg, lset.Phi, &sphere_2move, step*C.tm_StepSize);
+                InitVel( mg, &v, Bnd_v, u_func, step*P.get<double>("Time.StepSize"));
+                LSInit( mg, lset.Phi, &sphere_2move, step*P.get<double>("Time.StepSize"));
                 timedisc.Update();
 
-                lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v), C.tm_StepSize);
+                lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v), P.get<double>("Time.StepSize"));
             }
             std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            if (C.lvs_VolCorr) {
+            if (P.get("Levelset.VolCorr", 0)) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cout << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
                 std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
-        ensight.Write( step*C.tm_StepSize);
-//        std::cout << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, step*C.tm_StepSize)
-//                  << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, step*C.tm_StepSize)
+        ensight.Write( step*P.get<double>("Time.StepSize"));
+//        std::cout << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, step*P.get<double>("Time.StepSize"))
+//                  << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, step*P.get<double>("Time.StepSize"))
 //                  << std::endl;
     }
     std::cout << std::endl;
@@ -312,8 +312,8 @@ int main (int argc, char* argv[])
   try {
     std::ifstream param;
     if (argc!=2) {
-        std::cout << "Using default parameter file: surfactant.param\n";
-        param.open( "surfactant.param");
+        std::cout << "Using default parameter file: surfactant.json\n";
+        param.open( "surfactant.json");
     }
     else
         param.open( argv[1]);
@@ -321,19 +321,19 @@ int main (int argc, char* argv[])
         std::cout << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
-    ensf= C.EnsDir + "/" + C.EnsCase; // basename of the ensight files
+    std::cout << P << std::endl;
+    ensf= P.get<std::string>("EnsightDir") + "/" + P.get<std::string>("EnsightCase"); // basename of the ensight files
 
     std::cout << "Setting up interface-PDE:\n";
     DROPS::BrickBuilderCL brick( DROPS::MakePoint3D( -2., -2., -2.),
                                  4.*DROPS::std_basis<3>( 1),
                                  4.*DROPS::std_basis<3>( 2),
                                  4.*DROPS::std_basis<3>( 3),
-                                 C.cdiv, C.cdiv, C.cdiv);
+                                 P.get<int>("InitialDivisions"), P.get<int>("InitialDivisions"), P.get<int>("InitialDivisions"));
     DROPS::MultiGridCL mg( brick);
-    DROPS::AdapTriangCL adap( mg, C.ref_Width, 0, C.ref_FinestLevel);
+    DROPS::AdapTriangCL adap( mg, P.get<double>("AdaptRef.Width"), 0, P.get<int>("AdaptRef.FinestLevel"));
     adap.MakeInitialTriang( sphere_2);
 
     instat_scalar_fun_ptr sigma (0);
@@ -349,19 +349,19 @@ int main (int argc, char* argv[])
 //    lset.Init( &sphere_2);
 
     // Initialize Ensight6 output
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.tm_NumSteps + 1);
+    std::string ensf( P.get<std::string>("EnsightDir") + "/" + P.get<std::string>("EnsightCase"));
+    Ensight6OutCL ensight( P.get<std::string>("EnsightCase") + ".case", P.get<int>("Time.NumSteps") + 1);
     // ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "Geometrie",     ensf + ".geo", true));
     ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "Geometrie",     ensf + ".geo", false));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
 
-    if (C.TestCase > 0) { // Time dependent tests in Strategy
+    if (P.get("TestCase", 0) > 0) { // Time dependent tests in Strategy
         Strategy( mg, adap, lset, ensight);
         return 0;
     }
 
     DROPS::IdxDescCL ifaceidx( P1IF_FE);
-    ifaceidx.GetXidx().SetBound( C.surf_OmitBound);
+    ifaceidx.GetXidx().SetBound( P.get<double>("SurfTransp.OmitBound"));
     ifaceidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
@@ -369,7 +369,7 @@ int main (int argc, char* argv[])
     DROPS::SetupInterfaceMassP1( mg, &M, lset.Phi, lset.GetBndData());
     std::cout << "M is set up.\n";
     DROPS::MatDescCL A( &ifaceidx, &ifaceidx);
-    DROPS::SetupLBP1( mg, &A, lset.Phi, lset.GetBndData(), C.surf_Visc);
+    DROPS::SetupLBP1( mg, &A, lset.Phi, lset.GetBndData(), P.get<double>("SurfTransp.Visc"));
     DROPS::MatrixCL L;
     L.LinComb( 1.0, A.Data, 1.0, M.Data);
     DROPS::VecDescCL b( &ifaceidx);
@@ -382,7 +382,7 @@ int main (int argc, char* argv[])
     typedef DROPS::SSORPcCL SurfPcT;
     SurfPcT surfpc;
     typedef DROPS::PCGSolverCL<SurfPcT> SurfSolverT;
-    SurfSolverT surfsolver( surfpc, C.surf_Iter, C.surf_Tol, true);
+    SurfSolverT surfsolver( surfpc, P.get<int>("SurfTransp.Iter"), P.get<double>("SurfTransp.Tol"), true);
 
     DROPS::VecDescCL x( &ifaceidx);
     surfsolver.Solve( L, x.Data, b.Data);

@@ -23,18 +23,18 @@
 */
 
 #include "misc/bndmap.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 
 double Initialcneg (const DROPS::Point3DCL& , double )
 {
-    extern DROPS::ParamMesszelleNsCL C;
-    return C.trp_IniCNeg;
+    extern DROPS::ParamCL P;
+    return P.get<double>("Transp.IniCNeg");
 }
 
 double Initialcpos (const DROPS::Point3DCL& , double )
 {
-    extern DROPS::ParamMesszelleNsCL C;
-    return C.trp_IniCPos;
+    extern DROPS::ParamCL P;
+    return P.get<double>("Transp.IniCPos");
 }
 
 double Reaction (const DROPS::Point3DCL& , double )
@@ -59,9 +59,9 @@ double Rhs (const DROPS::Point3DCL& ,  double )
 
 double Dirichlet (const DROPS::Point3DCL& p, double )
 {
-/*  static double x0 = C.exp_PosDrop[0];
-  static double y0 = C.exp_PosDrop[1];
-  static double R = C.exp_RadDrop[0];  */
+/*  static double x0 = P.get<DROPS::Point3DCL>("Exp.PosDrop")[0];
+  static double y0 = P.get<DROPS::Point3DCL>("Exp.PosDrop")[1];
+  static double R = P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];  */
 //  double x = p[0];
   double y = p[1];  
   
@@ -83,38 +83,38 @@ double Dirichlet (const DROPS::Point3DCL& p, double )
 
 double DirichletConst (const DROPS::Point3DCL& p, double )
 {
-  extern DROPS::ParamMesszelleNsCL C;
-  double y=p[1]-C.exp_PosDrop[1];
+  extern DROPS::ParamCL P;
+  double y=p[1]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[1];
   if (y>0)
-    return C.trp_IniCPos;    
+    return P.get<double>("Transp.IniCPos");
   else
-    return C.trp_IniCNeg;    
+    return P.get<double>("Transp.IniCNeg");
 }
 
 double DirichletPos (const DROPS::Point3DCL&, double )
 {
-  extern DROPS::ParamMesszelleNsCL C;
-  return C.trp_IniCPos;  
+  extern DROPS::ParamCL P;
+  return P.get<double>("Transp.IniCPos");
 }
 
 double DirichletConstt (const DROPS::Point3DCL& p, double )
 {
-  extern DROPS::ParamMesszelleNsCL C;
-  double y=p[1]-C.exp_PosDrop[1];
+  extern DROPS::ParamCL P;
+  double y=p[1]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[1];
   if (y>0)
-    return C.trp_IniCPos;    
+    return P.get<double>("Transp.IniCPos");
   else
-    return C.trp_IniCNeg * C.trp_HNeg / C.trp_HPos;    
+    return P.get<double>("Transp.IniCNeg") * P.get<double>("Transp.HNeg") / P.get<double>("Transp.HPos");
 }
 
 DROPS::SVectorCL<3> PotentialFlowfield (const DROPS::Point3DCL& p, double )
 {  
-    extern DROPS::ParamMesszelleNsCL C;  
+    extern DROPS::ParamCL P;
     DROPS::SVectorCL<3> ret(0.);
-    double x=p[0]-C.exp_PosDrop[0]; double y=p[1]-C.exp_PosDrop[1];
+    double x=p[0]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[0]; double y=p[1]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[1];
     double r2 = x*x+y*y;
     double r4 = r2*r2;
-    double R=C.exp_RadDrop[0];
+    double R=P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
     static bool test=true;
     if(test) { std::cout << "R = " << R << std::endl; test=false;}
     double R2 = R*R;
@@ -139,9 +139,9 @@ DROPS::SVectorCL<3> StraightFlowfield (const DROPS::Point3DCL&, double )
 
 double cylinderdistance( const DROPS::Point3DCL& p)
 {
-    extern DROPS::ParamMesszelleNsCL C;
-    double x=p[0]-C.exp_PosDrop[0]; double y=p[1]-C.exp_PosDrop[1];
-    double R=C.exp_RadDrop[0];
+    extern DROPS::ParamCL P;
+    double x=p[0]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[0]; double y=p[1]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[1];
+    double R=P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
     static bool test=true;
     if(test) { std::cout << "R = " << R << std::endl; test=false;}
     return std::sqrt(std::abs(x*x+y*y)) - R;
@@ -150,8 +150,8 @@ double cylinderdistance( const DROPS::Point3DCL& p)
 template<int i>
 double planedistance( const DROPS::Point3DCL& p)
 {
-    extern DROPS::ParamMesszelleNsCL C;
-    double x=p[i]-C.exp_PosDrop[i]; 
+    extern DROPS::ParamCL P;
+    double x=p[i]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[i];
     return x;
 }
 

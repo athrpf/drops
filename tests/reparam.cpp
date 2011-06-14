@@ -26,11 +26,13 @@
 #include "levelset/levelset.h"
 #include "levelset/fastmarch.h"
 #include "levelset/adaptriang.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 #include "levelset/surfacetension.h"
 #include "out/ensightOut.h"
 #include "out/vtkOut.h"
 #include "misc/problem.h"
+
+DROPS::ParamCL P;
 
 namespace DROPS{
 
@@ -112,25 +114,6 @@ public:
 };
 double TorusCL::r_=0.1;
 double TorusCL::R_=0.3;
-
-class MyParamCL: public ParamBrickCL,    public ParamReparamCL,
-                 public ParamAdaptRefCL, public ParamExperimentalDataCL,
-                 public ParamVTKCL
-{
-  protected:
-    void RegisterParams() {}
-  public:
-    MyParamCL() { RegisterParams(); }
-    MyParamCL( const std::string& filename) {
-        std::ifstream file(filename.c_str());
-        rp_.ReadParams( file);
-        ParamBrickCL::rp_.ReadParams( file);
-        ParamReparamCL::rp_.ReadParams( file);
-        ParamAdaptRefCL::rp_.ReadParams( file);
-        ParamExperimentalDataCL::rp_.ReadParams( file);
-        ParamVTKCL::rp_.ReadParams( file);
-    }
-} C;
 
 double sigmaf (const Point3DCL&, double) { return 0.; }
 Point3DCL gsigma (const Point3DCL&, double) { return Point3DCL(); }
@@ -268,8 +251,8 @@ void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
     LevelsetP2CL lset( adap.GetMG(), lsbnd, sf);
 
     // writer for vtk-format
-    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (C.vtk_VTKOut ? 3 : 0),
-                std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get<int>("VTK.VTKOut") ? 3 : 0),
+                std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary"));
     vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
     // Create numbering and assign given distance function
@@ -283,21 +266,21 @@ void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
 #endif
     std::cout << numLsetUnk << " (accumulated) levelset unknowns.\n\n";
 
-    switch ( C.rpm_Freq){
+    switch ( P.get<int>("Reparam.Freq")){
         case -1 : 
-            std::cout << "Taking torus of radi (" << C.exp_RadDrop[0] << ',' << C.exp_RadDrop[1] << ") as level set function\n" << std::endl;
+            std::cout << "Taking torus of radi (" << P.get<DROPS::Point3DCL>("Exp.RadDrop")[0] << ',' << P.get<DROPS::Point3DCL>("Exp.RadDrop")[1] << ") as level set function\n" << std::endl;
             lset.Init( TorusCL::DistanceFct); 
             break;
         case  0 : 
-            std::cout << "Taking ellipsoid at " << C.exp_PosDrop << " and radi " << C.exp_RadDrop << " as level set function\n" << std::endl;
+            std::cout << "Taking ellipsoid at " << P.get<DROPS::Point3DCL>("Exp.PosDrop") << " and radi " << P.get<DROPS::Point3DCL>("Exp.RadDrop") << " as level set function\n" << std::endl;
             lset.Init( EllipsoidCL::DistanceFct); 
             break;
         default:  
-            std::cout << "Taking " << C.rpm_Freq << " horizontal sclices as level set function" << std::endl;
+            std::cout << "Taking " << P.get<int>("Reparam.Freq") << " horizontal sclices as level set function" << std::endl;
             lset.Init( HorizontalSlicesCL::DistanceFct);
     }
 
-    if (C.vtk_VTKOut){
+    if (P.get<int>("VTK.VTKOut")){
         vtkwriter.Write(0.0, true);
     }
 
@@ -308,13 +291,13 @@ void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
     Disturb( lset.Phi.Data);
 
     // Perform re-parametrization
-    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( adap.GetMG(), lset.Phi, C.rpm_Method, /*periodic*/ false, &lset.GetBndData());
+    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( adap.GetMG(), lset.Phi, P.get<int>("Reparam.Method"), /*periodic*/ false, &lset.GetBndData());
     reparam->Perform();
 
 //    FastMarchCL fmm( adap.GetMG(), lset.Phi);
 //    fmm.Reparam( true, 1);
 
-    if (C.vtk_VTKOut){
+    if (P.get<int>("VTK.VTKOut")){
         vtkwriter.Write(1.0, true);
     }
 
@@ -323,7 +306,7 @@ void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
 
     // Write difference as output
     VectorCL phiDiff( lset.Phi.Data-phiEx);
-    if (C.vtk_VTKOut){
+    if (P.get<int>("VTK.VTKOut")){
         std::swap( lset.Phi.Data, phiDiff);
         vtkwriter.Write(0.0, true);
         std::swap( lset.Phi.Data, phiDiff);
@@ -343,11 +326,10 @@ int main( int argc, char **argv)
         DROPS::ParMultiGridInitCL pmginit;
 #endif
 
-        using DROPS::C;
         std::ifstream param;
         if (argc != 2) {
-            std::cout << "Using default parameter file: reparam.param\n";
-            param.open("reparam.param");
+            std::cout << "Using default parameter file: reparam.json\n";
+            param.open("reparam.json");
         }
         else{
             std::cout << "Opening file " << argv[1] << std::endl;
@@ -357,31 +339,31 @@ int main( int argc, char **argv)
             std::cerr << "error while opening parameter file\n";
             return 1;
         }
-        param >> C;
+        param >> P;
         param.close();
-        std::cout << DROPS::C << std::endl;
+        std::cout << P << std::endl;
 
         DROPS::MultiGridCL* mg= 0;
         DROPS::BrickBuilderCL *mgb = 0;
         DROPS::Point3DCL a,b,c;
-        a[0]= C.brk_dim[0];
-        b[1]= C.brk_dim[1];
-        c[2]= C.brk_dim[2];
+        a[0]= P.get<DROPS::Point3DCL>("Brick.dim")[0];
+        b[1]= P.get<DROPS::Point3DCL>("Brick.dim")[1];
+        c[2]= P.get<DROPS::Point3DCL>("Brick.dim")[2];
         IF_MASTER
-            mgb = new DROPS::BrickBuilderCL( C.brk_orig, a, b, c, C.brk_BasicRefX, C.brk_BasicRefY, C.brk_BasicRefZ);
+            mgb = new DROPS::BrickBuilderCL( P.get<DROPS::Point3DCL>("Brick.orig"), a, b, c, P.get<double>("Brick.BasicRefX"), P.get<double>("Brick.BasicRefY"), P.get<double>("Brick.BasicRefZ"));
         IF_NOT_MASTER
-            mgb = new DROPS::EmptyBrickBuilderCL(C.brk_orig, a, b, c);
+            mgb = new DROPS::EmptyBrickBuilderCL(P.get<DROPS::Point3DCL>("Brick.orig"), a, b, c);
 
         mg= new DROPS::MultiGridCL( *mgb);
         delete mgb;
 
-        DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, -1);
+        DROPS::AdapTriangCL adap( *mg, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"), -1);
 
-        DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
-        DROPS::HorizontalSlicesCL::Init( C.rpm_Freq, C.brk_orig[1], C.brk_orig[1]+C.brk_dim[1] );
-        DROPS::TorusCL::Init( C.exp_RadDrop[0], C.exp_RadDrop[1]);
+        DROPS::EllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"));
+        DROPS::HorizontalSlicesCL::Init( P.get<int>("Reparam.Freq"), P.get<DROPS::Point3DCL>("Brick.orig")[1], P.get<DROPS::Point3DCL>("Brick.orig")[1]+P.get<DROPS::Point3DCL>("Brick.dim")[1] );
+        DROPS::TorusCL::Init( P.get<DROPS::Point3DCL>("Exp.RadDrop")[0], P.get<DROPS::Point3DCL>("Exp.RadDrop")[1]);
         typedef double (*distance_fct)(const DROPS::Point3DCL&);
-        distance_fct distance= C.rpm_Freq>0 ? DROPS::HorizontalSlicesCL::DistanceFct : DROPS::EllipsoidCL::DistanceFct;
+        distance_fct distance= P.get<int>("Reparam.Freq")>0 ? DROPS::HorizontalSlicesCL::DistanceFct : DROPS::EllipsoidCL::DistanceFct;
         adap.MakeInitialTriang( distance);
 
         const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };

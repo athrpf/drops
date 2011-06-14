@@ -30,7 +30,7 @@
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
 #include "levelset/mgobserve.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 #include "num/MGsolver.h"
 #include "misc/bndmap.h"
 
@@ -88,6 +88,12 @@ void SetupLumpedMass (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowId
 class TwoPhaseFlowCoeffCL
 {
 // \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
+
+  private:
+    bool film;
+    double surfTens;
+    double rho_koeff1, rho_koeff2, mu_koeff1, mu_koeff2;
+
   public:
     static Point3DCL f(const Point3DCL&, double)
         { Point3DCL ret(0.0); return ret; }
@@ -96,25 +102,24 @@ class TwoPhaseFlowCoeffCL
     const double SurfTens;
     const Point3DCL g;
 
-    TwoPhaseFlowCoeffCL( const ParamMesszelleNsCL& C, bool dimless = false)
-      : rho( dimless ? JumpCL( 1., C.mat_DensFluid/C.mat_DensDrop)
-                     : JumpCL( C.mat_DensDrop, C.mat_DensFluid), H_sm, C.mat_SmoothZone),
-        mu(  dimless ? JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop)
-                     : JumpCL( C.mat_ViscDrop, C.mat_ViscFluid), H_sm, C.mat_SmoothZone),
-        SurfTens( dimless ? C.sft_SurfTension/C.mat_DensDrop : C.sft_SurfTension),
-        g( C.exp_Gravity)    {
-          volforce = InVecMap::getInstance()[C.exp_VolForce];
-        }
-        
-    TwoPhaseFlowCoeffCL( const ParamFilmCL& C, bool dimless = false)
-      : rho( dimless ? JumpCL( 1., C.mat_DensGas/C.mat_DensFluid)
-                     : JumpCL( C.mat_DensFluid, C.mat_DensGas), H_sm, C.mat_SmoothZone),
-        mu(  dimless ? JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid)
-                     : JumpCL( C.mat_ViscFluid, C.mat_ViscGas), H_sm, C.mat_SmoothZone),
-        SurfTens( dimless ? C.mat_SurfTension/C.mat_DensFluid : C.mat_SurfTension),
-        g( C.exp_Gravity)    {
-          volforce = InVecMap::getInstance()[C.exp_VolForce];
-        }
+    TwoPhaseFlowCoeffCL( const ParamCL& P, bool dimless = false)
+      //big question: film or measurecell? 1: measure, 2: film
+      : film( (P.get("Mat.DensDrop", 0.0) == 0.0) ),
+        surfTens( film ? P.get<double>("Mat.SurfTension") : P.get<double>("SurfTens.SurfTension")),
+        rho_koeff1( film ? P.get<double>("Mat.DensGas") : P.get<double>("Mat.DensFluid")),
+        rho_koeff2( film ? P.get<double>("Mat.DensFluid") : P.get<double>("Mat.DensDrop")),
+        mu_koeff1( film ? P.get<double>("Mat.ViscGas") : P.get<double>("Mat.ViscFluid")),
+        mu_koeff2( film ? P.get<double>("Mat.ViscFluid") : P.get<double>("Mat.ViscDrop")),
+
+        rho( dimless ? JumpCL( 1., rho_koeff1/rho_koeff2)
+          : JumpCL( rho_koeff2, rho_koeff1), H_sm, P.get<double>("Mat.SmoothZone")),
+        mu( dimless ? JumpCL( 1., mu_koeff1/mu_koeff2)
+          : JumpCL( mu_koeff2, mu_koeff1), H_sm, P.get<double>("Mat.SmoothZone")),
+        SurfTens (dimless ? surfTens/rho_koeff2 : surfTens),
+        g( P.get<DROPS::Point3DCL>("Exp.Gravity"))
+        {
+        volforce = InVecMap::getInstance()[P.get("Exp.VolForce", std::string("ZeroVel"))];
+    }
 
     TwoPhaseFlowCoeffCL( double rho1, double rho2, double mu1, double mu2, double surftension, Point3DCL gravity, bool dimless = false)
       : rho( dimless ? JumpCL( 1., rho2/rho1)
