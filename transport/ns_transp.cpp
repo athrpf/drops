@@ -723,7 +723,7 @@ int main (int argc, char** argv)
     DROPS::AdapTriangCL adap( *mg, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"), ((P.get<std::string>("Restart.Inputfile") == "none") ? P.get<int>("AdaptRef.LoadBalStrategy") : -P.get<int>("AdaptRef.LoadBalStrategy")), P.get<int>("AdaptRef.Partitioner"));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
-    if (!P.get<int>("Transp.UseNSSol") || (P.get<std::string>("Restart.Inputfile") == "none")){
+    if (!P.get<int>("Transp.UseNSSol",1) || (P.get<std::string>("Restart.Inputfile") == "none")){
         DROPS::ScaMap & scalarmap = DROPS::ScaMap::getInstance();
         DROPS::scalar_fun_ptr distance = scalarmap[P.get("Transp.Levelset", std::string("Ellipsoid"))];
         adap.MakeInitialTriang( distance);
@@ -736,7 +736,7 @@ int main (int argc, char** argv)
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
 
-    if (P.get<int>("Transp.UseNSSol")){
+    if (P.get<int>("Transp.UseNSSol",1)){
       DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(P), *bnddata, P.get<double>("Stokes.XFEMStab")<0 ? DROPS::P1_FE : DROPS::P1X_FE, P.get<double>("Stokes.XFEMStab"));
       Strategy( prob, *lsetbnddata, adap);    // do all the stuff
     }
