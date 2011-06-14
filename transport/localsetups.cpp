@@ -347,7 +347,8 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, double M_n[4][4], 
 }
 
 /// compute the mass matrix for the case that the tetrahedron is cut for the old and new time. \n
-/// computes \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
+/// computes \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain (at new time) \n
+/// note that \f$ \phi_k \f$  are basis function for the transformed unknowns H*u.
 /// \f$ M_{2,1}[i,j] = \int h \phi_i^{old} \phi_j^{new} \f$ \n
 /// \f$ M_{2,2}[i,j] = \int h \phi_i^{old} \phi_j^{old} \f$ \n
 void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL& oldcut, 
@@ -371,6 +372,7 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
 
     for (Uint k=0; k< NumTets; ++k){
         bool Tk= (k>=cut.GetNumNegTetra());    // Tk in Omega_new_+?
+        double h = Tk ? 1. : 1./H;
         const SArrayCL<BaryCoordCL,4>& T =  cut.GetTetra(k);
         if (!IsRegBaryCoord(T)) continue;
         
@@ -385,7 +387,6 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
         Uint NumOldTets= suboldcut.GetNumTetra();
         if (nocut){  
             bool pPart = (suboldcut.GetSign( 0) == 1);
-            double h = pPart ? 1. : 1./H;
 
             bool irreg=false;
             for(int i= 0; i < 4; ++i) {
@@ -426,7 +427,6 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
            
         for (Uint m=0; m< NumOldTets; ++m){
             bool Tkm= (m>=suboldcut.GetNumNegTetra());  // Tkm in Omega_old_+?
-            double h = Tkm ? 1. : 1./H;
             const SArrayCL<BaryCoordCL,4>& Tc =  suboldcut.GetTetra(m);
             if (!IsRegBaryCoord(Tc)) continue;
             
