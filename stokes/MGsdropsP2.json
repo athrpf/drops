@@ -27,7 +27,6 @@
 		"PcAIter":		100,
 		"PcATol":		1e-2,
 		"PcSTol":		1e-4,
-		"XFEMStab":		0,
 		"Theta":		1
 	},
 
