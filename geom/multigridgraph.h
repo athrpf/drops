@@ -1,6 +1,6 @@
 /// \file multigridgraph.h
 /// \brief classes that constitute the multigridgraph
-/// \author LNM RWTH Aachen: Patrick Esser, Nils Gerhard; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Patrick Esser, Nils Gerhard, Joerg Grande; SC RWTH Aachen:
 
 /*
  * This file is part of DROPS.

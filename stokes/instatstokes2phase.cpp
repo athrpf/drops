@@ -1362,8 +1362,6 @@ class System1Accumulator_P2CL : public TetraAccumulatorCL
     System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff, const StokesBndDataCL& BndData_,
         const LevelsetP2CL& ls, IdxDescCL& RowIdx_, MatrixCL& A_, MatrixCL& M_,
         VecDescCL* b_, VecDescCL* cplA_, VecDescCL* cplM_, double t);
-  	
-    //System1Accumulator_P2CL (const System1Accumulator_P2CL &old);	
 
     ///\brief Initializes matrix-builders and load-vectors
     void begin_accumulation ();
@@ -1382,14 +1380,6 @@ System1Accumulator_P2CL::System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coe
       RowIdx( RowIdx_), A( A_), M( M_), cplA( cplA_), cplM( cplM_), b( b_),
       local_twophase( Coeff.mu( 1.0), Coeff.mu( -1.0), Coeff.rho( 1.0), Coeff.rho( -1.0))
 {}
-/*
-System1Accumulator_P2CL::System1Accumulator_P2CL ( const System1Accumulator_P2CL &old)
-    : Coeff(old.Coeff), BndData(old.BndData), lset(old.lset), t( old.t),
-      RowIdx( old.RowIdx), A( old.A), M( old.M), cplA( old.cplA), cplM( old.cplM), b( old.b),
-      local_twophase( old.Coeff.mu( 1.0), old.Coeff.mu( -1.0), old.Coeff.rho( 1.0), old.Coeff.rho( -1.0))   
-{}
-*/
-
 
 void System1Accumulator_P2CL::begin_accumulation ()
 {
@@ -1484,7 +1474,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
 
     MultiGridGraphCL graph( MG_ );
 
-    graph.create_Graph( RowIdx.TriangLevel());
+    graph.create_graph( RowIdx.TriangLevel());
     graph.select_graph( RowIdx.TriangLevel());
     
     // TimerCL time;
@@ -1498,7 +1488,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
     accus(graph);
     
     // time.Stop();
-    // std::cout << "setup: " << time.GetTime() << " seconds"<<std::endl;
+    // std::cout << "setup: " << time.GetTime() << " seconds" << std::endl;
 }
 
 
