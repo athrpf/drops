@@ -32,7 +32,7 @@ namespace DROPS
 {
 /// \brief class for storage of the colored graph for the OpenMP parallelization 
 ///
-/// class stores a reference to the multigrid an Vectors for parallel iteration over the multigird
+/// class stores a reference to the multigrid an Vectors for parallel iteration over the multigrid
 /// it stores the colored graph for different levels if needed
 class MultiGridGraphCL{
   private:
