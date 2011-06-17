@@ -1,0 +1,55 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestFilmPar
+#    Solving of a convection-diffusion-problem
+#=============================================================
+# Describing the pde",
+
+	"Material":
+	{
+		"KineticViscosity":		1.004e-6,
+		"HeatConductivity":		1,
+		"InflowTemperature":		300.,
+		"WallTemperature":		350.,
+		"g":		[0, 9.81, 0 ]
+	},
+
+	"Geometry":
+	{
+		"_comment":
+"#  HeatConductivity  = 0.1434e-6    # [m^2/s] heat conductivity
+# Geometry information",
+
+		"Dim":		[100e-3, 0.25e-3, 30e-3 ],
+		"nx":		100,
+		"ny":		3,
+		"nz":		30,
+		"Refine":		0
+	},
+
+	"Solver":
+	{
+		"_comment":
+"# choose one solver of the pool of solvers",
+
+		"Relax":		1,
+		"Iter":		1000,
+		"Tol":		1e-12,
+		"Restart":		50,
+		"UseMGS":		1
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"#ensight",
+
+		"Ensight":		0,
+		"EnsCase":		"film",
+		"EnsDir":		"ensight",
+		"GeomName":		"brick",
+		"VarName":		"Temperatur"
+	}
+
+}

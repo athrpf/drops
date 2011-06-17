@@ -1,0 +1,208 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file
+#    simulation of two-phase flow:
+#    droplet in measuring cell used for optimal design
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		500,
+		"StepSize":		1e-4,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"StokesMethod":		10102,
+		"InnerIter":		1000,
+		"OuterIter":		200,
+		"InnerTol":		0.6,
+		"OuterTol":		1e-11,
+		"PcAIter":		2,
+		"PcATol":		1e-99,
+		"PcSTol":		1e-4,
+		"XFEMStab":		1e-1,
+		"Theta":		0.5
+	},
+
+	"NavStokes":
+	{
+		"Nonlinear":		0,
+		"Tol":		5e-10,
+		"Iter":		20,
+		"Reduction":		0.1
+	},
+
+	"Levelset":
+	{
+		"_comment":
+"# levelset solver",
+
+		"Tol":		1e-14,
+		"Iter":		10000,
+		"SD":		0.1,
+		"CurvDiff":		0,
+		"VolCorrection":		5,
+		"Theta":		1
+	},
+
+	"Coupling":
+	{
+		"Tol":		1e-12,
+		"Iter":		-1,
+		"Stab":		0.0,
+		"Projection":		0
+	},
+
+	"Reparam":
+	{
+		"_comment":
+"# re-initialization of levelset function",
+
+		"Freq":		0,
+		"Method":		03,
+		"MinGrad":		0.1,
+		"MaxGrad":		10,
+		"NarrowBand":		-1.0
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		1e-3,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"DensDrop":		955,
+		"ViscDrop":		2.6e-3,
+		"DensFluid":		1107,
+		"ViscFluid":		1.2e-3,
+		"SmoothZone":		1e-4
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"RadDrop":		[1.75e-3, 1.75e-3, 1.75e-3 ],
+		"PosDrop":		[8e-3, 0, 0 ],
+		"Gravity":		[9.81, 0, 0 ],
+		"FlowDir":		0,
+		"InflowVel":		0.04,
+		"RadInlet":		2e-2,
+		"InflowFreq":		0,
+		"InflowAmpl":		0
+	},
+
+	"SurfTens":
+	{
+		"_comment":
+"# surface tension",
+
+		"VarTension":		0,
+		"SurfTension":		1,
+		"JumpWidth":		5e-4,
+		"RelPos":		1.5,
+		"DirtFactor":		0.8
+	},
+
+	"Transp":
+	{
+		"_comment":
+"# mass transport",
+
+		"DoTransp":		1,
+		"Theta":		0.5,
+		"Iter":		200,
+		"Tol":		1e-10,
+		"DiffPos":		5e-3,
+		"DiffNeg":		1e-2,
+		"HPos":		1,
+		"HNeg":		0.5,
+		"IniCPos":		0.1,
+		"IniCNeg":		5,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0.1
+	},
+
+	"SurfTransp":
+	{
+		"_comment":
+"# surfactant transport",
+
+		"DoTransp":		0,
+		"Theta":		0.5,
+		"Iter":		1000,
+		"Tol":		1e-10,
+		"OmitBound":		-1.,
+		"Visc":		1e-5
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"mzi",
+		"EnsDir":		"ensight",
+		"Binary":		1,
+		"MasterOut":		1,
+		"GeomName":		"Cube"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		0,
+		"VTKDir":		"vtk",
+		"VTKName":		"nsmzi",
+		"Binary":		0
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		1,
+		"GeomType":		0,
+		"InitialFile":		"xxx",
+		"MeshFile":		"gambit/messzelle.msh",
+		"BoundaryType":		"2!21!0",
+		"BoundaryFncs":		"InflowCell!ZeroVel!ZeroVel"
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# restart computation",
+
+		"Inputfile":		"none",
+		"Outputfile":		"none",
+		"Overwrite":		1,
+		"Serialization":		0,
+		"Binary":		0
+	}
+
+}

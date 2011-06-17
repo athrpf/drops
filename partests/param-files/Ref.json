@@ -1,0 +1,54 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestParRef
+#    Testroutines for refinement
+#=============================================================",
+
+	"Brick":
+	{
+		"BasicRefX":		4,
+		"BasicRefY":		4,
+		"BasicRefZ":		4,
+		"dim":		[1, 1, 1 ],
+		"orig":		[0, 0, 0 ]
+	},
+
+	"Refining":
+	{
+		"InitCond":		0,
+		"Refined":		0,
+		"MarkAll":		1,
+		"MarkDrop":		1,
+		"MarkCorner":		1,
+		"MarkingProc":		-1,
+		"Strategy":		0
+	},
+
+	"Coarsening":
+	{
+		"CoarseDrop":		1,
+		"CoarseAll":		2,
+		"UnMarkingProc":		-1
+	},
+
+	"LoadBalancing":
+	{
+		"RefineStrategy":		1,
+		"CoarseStrategy":		2,
+		"MiddleMig":		0
+	},
+
+	"Misc":
+	{
+		"PrintSize":		1,
+		"PrintPMG":		0,
+		"PrintGEO":		0,
+		"PrintTime":		0,
+		"CheckAfterRef":		1,
+		"CheckAfterMig":		1,
+		"CheckDDD":		0,
+		"InitPrefix":		"./geometry/"
+	}
+
+}

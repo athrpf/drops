@@ -1,6 +1,6 @@
 /// \file poissonP2.cpp
 /// \brief Solver for Poisson problem with P2 functions
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang, Thorolf Schulte; SC RWTH Aachen: Oliver Fortmeier
 /// \todo: rename this to poissonP2.cpp as soon as repository has moved to git
 /*
  * This file is part of DROPS.
@@ -59,7 +59,7 @@
 #include "num/poissonsolverfactory.h"
 
  // include problem class
-#include "poisson/params.h"
+#include "misc/params.h"
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
 #include "num/bndData.h"
@@ -76,12 +76,11 @@ using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
 
-DROPS::ParamPoissonProblemCL C;
+DROPS::ParamCL P;
 
 namespace DROPS
 {
 
-typedef ParamPoissonProblemCL Params;
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
 template<class CoeffCL>
@@ -103,7 +102,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     timer.Reset();
 
     Poisson.idx.SetFE( P2_FE);                                  // set quadratic finite elements
-    if ( PoissonSolverFactoryHelperCL<Params>().MGUsed(C))
+    if ( PoissonSolverFactoryHelperCL().MGUsed(P))
         Poisson.SetNumLvl ( mg.GetNumLevel());
     Poisson.CreateNumbering( mg.GetLastLevel(), &Poisson.idx);  // number vertices and edges
     Poisson.b.SetIdx( &Poisson.idx);                            // tell b about numbering
@@ -141,12 +140,12 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 
     timer.Reset();
     
-    if(C.tm_NumSteps !=0)
+    if(P.get<int>("Time.NumSteps") !=0)
         Poisson.SetupInstatSystem(Poisson.A, Poisson.M);    //IntationarySystem
     else
     {
         Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem
-        if(C.tm_Convection)
+        if(P.get<int>("Time.Convection"))
           {
             Poisson.vU.SetIdx( &Poisson.idx); 
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);                 //Setupconvection
@@ -164,21 +163,21 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     std::cout << line << "Solve the linear equation system ...\n";
 
     // type of preconditioner and solver
-    PoissonSolverFactoryCL< Params> factory( C, Poisson.idx);
+    PoissonSolverFactoryCL<> factory( P, Poisson.idx);
     PoissonSolverBaseCL* solver = factory.CreatePoissonSolver();
 
     timer.Reset();
     if ( factory.GetProlongation() != 0)
         SetupP2ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
     
-    if(C.tm_NumSteps !=0)
+    if(P.get<int>("Time.NumSteps") !=0)
          Poisson.Init(Poisson.x, CoeffCL::InitialCondition, 0.0);
          
    
  
 
    //Solve stationary problem
-   if(C.tm_NumSteps ==0)
+   if(P.get<int>("Time.NumSteps") ==0)
     {          
         timer.Reset();
         solver->Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
@@ -195,43 +194,34 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
               << "   - iterations    " << solver->GetIter()  << '\n'
               << "   - residuum      " << solver->GetResid() << '\n'
               << "   - real residuum " << realresid          << std::endl;
-        if (C.pos_SolutionIsKnown) {
+        if (P.get<int>("Poisson.SolutionIsKnown")) {
         std::cout << line << "Check result against known solution ...\n";
         Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
         }
     }
     
-    //write for ensight-format
-/*    Ensight6OutCL  ens(C.ens_EnsCase+".case", C.tm_NumSteps+1, C.ens_Binary, C.ens_MasterOut);
-    if ( C.ens_EnsightOut){
-        const std::string filename= C.ens_EnsDir + "/" + C.ens_EnsCase;
-        ens.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), C.ens_GeomName,       filename + ".geo"));
-        ens.Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
-        ens.Write();
-    }*/
-    
-        Ensight6OutCL  ens(C.ens_EnsCase+".case", C.tm_NumSteps+1, C.ens_Binary, C.ens_MasterOut);
-    if ( C.ens_EnsightOut){
-        const std::string filename= C.ens_EnsDir + "/" + C.ens_EnsCase;
-        ens.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), C.ens_GeomName,       filename + ".geo"));
+        Ensight6OutCL  ens(P.get<std::string>("Ensight.EnsCase")+".case", P.get<int>("Time.NumSteps")+1, P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
+    if ( P.get<int>("Ensight.EnsightOut")){
+        const std::string filename= P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase");
+        ens.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), P.get<std::string>("Ensight.GeomName"),       filename + ".geo"));
         ens.Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
         ens.Write();
     }
     
               
     //write for vtk-format
-    VTKOutCL vtkwriter(mg, "DROPS data", C.tm_NumSteps+1, std:: string(C.vtk_VTKDir+"/"+C.vtk_VTKName), C.vtk_Binary );//??
-    if (C.vtk_VTKOut){
+    VTKOutCL vtkwriter(mg, "DROPS data", P.get<int>("Time.NumSteps")+1, std:: string(P.get<std::string>("VTK.VTKDir")+"/"+P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary") );//??
+    if (P.get<int>("VTK.VTKOut")){
         vtkwriter.Register( make_VTKScalar( Poisson.GetSolution(), "ConcenT"));
         vtkwriter.Write( Poisson.x.t);
     }
    
-    if (C.tm_NumSteps != 0){
+    if (P.get<int>("Time.NumSteps") != 0){
         InstatPoissonThetaSchemeCL<PoissonP2CL<CoeffCL>, PoissonSolverBaseCL>
-           ThetaScheme(Poisson, *solver, C.tm_Theta, C.tm_Convection);
-        ThetaScheme.SetTimeStep(C.tm_StepSize);
+           ThetaScheme(Poisson, *solver, P.get<double>("Time.Theta"), P.get<double>("Time.Convection"));
+        ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize"));
    
-        for ( int step = 1; step <= C.tm_NumSteps; ++step) 
+        for ( int step = 1; step <= P.get<int>("Time.NumSteps"); ++step)
         {
             timer.Reset();
 
@@ -246,12 +236,12 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 
             // check the result
             // -------------------------------------------------------------------------
-            if (C.pos_SolutionIsKnown) {
+            if (P.get("Poisson.SolutionIsKnown", 0)) {
                 std::cout << line << "Check result against known solution ...\n";
                 Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
             }
 
-            if ( C.vtk_VTKOut && step%C.vtk_VTKOut==0)
+            if ( P.get<int>("VTK.VTKOut") && step%P.get<int>("VTK.VTKOut")==0)
                 vtkwriter.Write( Poisson.x.t);
         }
     }
@@ -268,22 +258,21 @@ int main (int argc, char** argv)
 #endif
     try
     {
+
         std::ifstream param;
-        if (argc!=2)
-        {
-           std::cout << "Using default parameter file: poissonex1.param\n";
-           param.open( "poissonex1.param");
+        if (argc!=2){
+            std::cout << "Using default parameter file: poissonex1.json\n";
+            param.open( "poissonex1.json");
         }
         else
-           param.open( argv[1]);
-        if (!param)
-        {
-           std::cerr << "error while opening parameter file\n";
-           return 1;
+            param.open( argv[1]);
+        if (!param){
+            std::cerr << "error while opening parameter file\n";
+            return 1;
         }
-        param >> C;
+        param >> P;
         param.close();
-        std::cout << C << std::endl;
+        std::cout << P << std::endl;
 
         // time measurement
 #ifndef _PAR
@@ -305,14 +294,14 @@ int main (int argc, char** argv)
         double r = 1;
         std::string serfile = "none";
 
-        DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, serfile, r);
-        DROPS::BuildBoundaryData( mg, bdata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
+        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+        DROPS::BuildBoundaryData( mg, bdata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
         std::cout << line << "Set up load balancing ...\n";
         // Setup the problem
-        DROPS::PoissonP2CL<DROPS::PoissonCoeffCL<DROPS::Params> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::Params>(C), *bdata);
+        DROPS::PoissonP2CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
         timer.Reset();
 #ifdef _PAR
         // Set parallel data structures
@@ -327,11 +316,11 @@ int main (int argc, char** argv)
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << C.dmc_InitialCond << " times regulary ...\n";
+        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
         timer.Reset();
 
         // Create new tetrahedra
-        for ( int ref=1; ref<=C.dmc_InitialCond; ++ref){
+        for ( int ref=1; ref<=P.get<int>("DomainCond.RefineSteps"); ++ref){
             std::cout << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();

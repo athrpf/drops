@@ -1,0 +1,73 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestStokesPar
+#    Testroutines for solving the Stokes Equation
+#=============================================================",
+
+	"Stokes":
+	{
+		"nu":		1.0
+	},
+
+	"Refining":
+	{
+		"BasicRefX":		4,
+		"BasicRefY":		4,
+		"BasicRefZ":		4,
+		"dx":		10.0,
+		"dy":		2.0,
+		"dz":		0.1,
+		"RefAll":		1
+	},
+
+	"LoadBalancing":
+	{
+		"RefineStrategy":		1
+	},
+
+	"Solver":
+	{
+		"Relax":		1,
+		"PCIter":		200,
+		"PCRelTol":		0.01,
+		"InnerIter":		1000,
+		"InnerTol":		1e-14,
+		"OuterIter":		100,
+		"OuterTol":		1e-12,
+		"Reduction":		0.01,
+		"Restart":		60,
+		"Relative":		0,
+		"Accur":		1
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"nsmzi",
+		"EnsDir":		"ensight",
+		"Binary":		1,
+		"MasterOut":		1,
+		"GeomName":		"Brick"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		0,
+		"VTKDir":		"vtk",
+		"VTKName":		"stokes",
+		"Binary":		0
+	},
+
+	"Misc":
+	{
+		"PrintInfo":		0
+	}
+
+}

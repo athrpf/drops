@@ -26,7 +26,7 @@
 #include "geom/builder.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 #include "levelset/mzelle_hdr.h"
 #include "levelset/surfacetension.h"
 #include "num/bndData.h"
@@ -34,7 +34,7 @@
 #include "misc/bndmap.h"
 #include <fstream>
 
-DROPS::ParamMesszelleNsCL C;
+DROPS::ParamCL P;
 
 double Initialcneg (const DROPS::Point3DCL&, double)
 {
@@ -83,7 +83,7 @@ typedef P2EvalCL<SVectorCL<3>, const VelBndDataCL, const VecDescCL> const_DiscVe
 void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
 {
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsbnd, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
     IdxDescCL* lidx= &lset.idx;
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
@@ -98,7 +98,7 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
 
     TransportP1CL c( MG, Bnd_c, Bnd_v, /*theta*/ 0.5, D, H, &v, lset,
-        C.tm_StepSize, C.stk_OuterIter, C.stk_OuterTol);
+        P.get<double>("Time.StepSize"), P.get<int>("Stokes.OuterIter"), P.get<double>("Stokes.OuterTol"));
     MLIdxDescCL* cidx= &c.idx;
     c.CreateNumbering( MG.GetLastLevel(), cidx);
     c.ct.SetIdx( cidx);
@@ -106,8 +106,8 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
     c.Update();
 
     // Initialize Ensight6 output
-    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
-    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps + 1);
+    std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
+    Ensight6OutCL ensight( P.get<std::string>("Ensight.EnsCase") + ".case", P.get<int>("Time.NumSteps") + 1);
     ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Vector( const_DiscVelSolCL( &v, &Bnd_v, &MG),
@@ -123,15 +123,15 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
     const double Vol= EllipsoidCL::GetVolume();
     std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    if (C.ens_EnsightOut)
+    if (P.get<int>("Ensight.EnsightOut"))
         ensight.Write();
 
-    c.SetTimeStep( C.tm_StepSize);
-    for (int step= 1; step <= C.tm_NumSteps; ++step) {
+    c.SetTimeStep( P.get<double>("Time.StepSize"));
+    for (int step= 1; step <= P.get<int>("Time.NumSteps"); ++step) {
         std::cout << "======================================================== Schritt " << step << ":\n";
-        c.DoStep( step*C.tm_StepSize);
-        if (C.ens_EnsightOut)
-            ensight.Write( step*C.tm_StepSize);
+        c.DoStep( step*P.get<double>("Time.StepSize"));
+        if (P.get<int>("Ensight.EnsightOut"))
+            ensight.Write( step*P.get<double>("Time.StepSize"));
     }
     std::cout << std::endl;
 }
@@ -152,12 +152,12 @@ int main (int argc, char** argv)
         std::cout << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
 
     DROPS::Point3DCL e1(0.), e2(0.), e3(0.), orig;
-    e1[0]=2*C.exp_RadInlet; e2[1]=1.0; e3[2]= 2*C.exp_RadInlet;
+    e1[0]=2*P.get<double>("Exp.RadInlet"); e2[1]=1.0; e3[2]= 2*P.get<double>("Exp.RadInlet");
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, 20, 20, 20);
     DROPS::MultiGridCL mg( builder);
 
@@ -166,7 +166,7 @@ int main (int argc, char** argv)
     DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
 
     std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
-    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
+    DROPS::EllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"));
 
     Strategy( mg, lsbnd);    // do all the stuff
 

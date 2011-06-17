@@ -54,12 +54,12 @@
 #include <fstream>
 #include <sstream>
 
-DROPS::ParamFilmCL C;
+DROPS::ParamCL P;
 
 bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
 { // matching y-z- or x-y-coords, resp.
     const DROPS::Point3DCL d= fabs(p-q),
-                           L= fabs(C.mcl_MeshSize);
+                           L= fabs(P.get<DROPS::Point3DCL>("MeshSize"));
     return (d[1] + d[2] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12)  // dy=dz=0 and dx=Lx
       ||   (d[0] + d[1] < 1e-12 && std::abs( d[2] - L[2]) < 1e-12)  // dx=dy=0 and dz=Lz
       ||   (d[1] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12 && std::abs( d[2] - L[2]) < 1e-12);  // dy=0 and dx=Lx and dz=Lz
@@ -98,7 +98,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 // flow control
 {
   
-    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[C.exp_PerMatching];
+    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[P.get("Exp.PerMatching", std::string("periodicxz"))];
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL* lidx= &lset.idx;
@@ -117,11 +117,11 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 
     lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_match);
     lset.Phi.SetIdx( lidx);
-    DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[C.exp_InitialLSet];
+    DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[P.get("Exp.InitialLSet", std::string("WavyFilm"))];
     lset.Init( DistanceFct);
-    if ( StokesSolverFactoryHelperCL<ParamFilmCL>().VelMGUsed(C))
+    if ( StokesSolverFactoryHelperCL().VelMGUsed(P))
         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
-    if ( StokesSolverFactoryHelperCL<ParamFilmCL>().PrMGUsed(C))
+    if ( StokesSolverFactoryHelperCL().PrMGUsed(P))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_match);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_match, &lset);
@@ -146,14 +146,14 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
     DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = vecmap["ZeroVel"];
     DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = vecmap["FilmInflow"];
 
-    switch (C.mcl_InitialCond)
+    switch (P.get<int>("InitialCond"))
     {
       case 1: // stationary flow
       {
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
-        Stokes.SetupPrMass(  &Stokes.prM, lset/*, C.mat_ViscFluid, C.mat_ViscGas*/);
+        Stokes.SetupPrMass(  &Stokes.prM, lset/*, P.get<double>("Mat.ViscFluid"), C.mat_ViscGas*/);
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.v.t);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.v.t);
         curv.Clear( Stokes.v.t);
@@ -163,8 +163,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 
         time.Reset();
         SSORPcCL ssorpc;
-        PCG_SsorCL PCGsolver( ssorpc, C.stk_InnerIter, C.stk_InnerTol);
-        PSchurSolverCL<PCG_SsorCL> schurSolver( PCGsolver, Stokes.prM.Data, C.stk_OuterIter, C.stk_OuterTol);
+        PCG_SsorCL PCGsolver( ssorpc, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol"));
+        PSchurSolverCL<PCG_SsorCL> schurSolver( PCGsolver, Stokes.prM.Data, P.get<int>("Stokes.OuterIter"), P.get<double>("Stokes.OuterTol"));
 
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
@@ -180,23 +180,23 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
       case -1: // read from file
       {
         ReadEnsightP2SolCL reader( MG);
-        reader.ReadVector( C.mcl_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        reader.ReadScalar( C.mcl_InitialFile+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( P.get<std::string>("InitialFile")+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        reader.ReadScalar( P.get<std::string>("InitialFile")+".scl", lset.Phi, lset.GetBndData());
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx); // Zero-vector for now.
-        reader.ReadScalar( C.mcl_InitialFile+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
+        reader.ReadScalar( P.get<std::string>("InitialFile")+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
       } break;
 
       default:
         Stokes.InitVel( &Stokes.v, ZeroVel);
     }
 
-    const double Vol= lset.GetVolume(); // approx. C.exp_Thickness * C.mcl_MeshSize[0] * C.mcl_MeshSize[2];
+    const double Vol= lset.GetVolume(); // approx. P.get<double>("Exp.Thickness") * P.get<DROPS::Point3DCL>("MeshSize")[0] * P.get<DROPS::Point3DCL>("MeshSize")[2];
     std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     // Initialize Ensight6 output
-    std::string ensf( C.mcl_EnsightDir + "/" + C.mcl_EnsightCase);
-    Ensight6OutCL ensight( C.mcl_EnsightCase + ".case", C.tm_NumSteps + 1);
+    std::string ensf( P.get<std::string>("EnsightDir") + "/" + P.get<std::string>("EnsightCase"));
+    Ensight6OutCL ensight( P.get<std::string>("EnsightCase") + ".case", P.get<int>("Time.NumSteps") + 1);
     ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),   "falling film", ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "Levelset",     ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure",     ensf + ".pr",  true));
@@ -208,35 +208,35 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 
     // Stokes-Solver
-    StokesSolverFactoryCL<StokesProblemT, ParamFilmCL> stokessolverfactory(Stokes, C);
+    StokesSolverFactoryCL<StokesProblemT> stokessolverfactory(Stokes, P);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
 
     // Navier-Stokes-Solver
     typedef NSSolverBaseCL<StokesProblemT> SolverT;
     SolverT * navstokessolver = 0;
-    if (C.ns_Nonlinear==0.0)
+    if (P.get("NavierStokes.Nonlinear", 0.0)==0.0)
         navstokessolver = new NSSolverBaseCL<StokesProblemT>(Stokes, *stokessolver);
     else
-        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
+        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, P.get<int>("NavierStokes.Iter"), P.get<double>("NavierStokes.Tol"), P.get<double>("NavierStokes.Reduction"));
 
     // Level-Set-Solver
 #ifndef _PAR
     typedef GMResSolverCL<SSORPcCL> LsetSolverT;
     SSORPcCL ssorpc;
-    LsetSolverT* gm = new LsetSolverT( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
+    LsetSolverT* gm = new LsetSolverT( ssorpc, 100, P.get<int>("Levelset.Iter"), P.get<double>("Levelset.Tol"));
 #else
     typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
     ParJac0CL jacparpc( *lidx);
     LsetSolverT *gm = new LsetSolverT
-           (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+           (/*restart*/100, P.get<int>("Levelset.Iter"), P.get<double>("Levelset.Tol"), *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
-    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 1.0, /*rpm_MinGrad*/ 1.0, C.lvs_VolCorrection, Vol, /*periodic*/ is_periodic);
+    LevelsetModifyCL lsetmod( P.get<int>("Reparam.Freq"), P.get<int>("Reparam.Method"), /*rpm_MaxGrad*/ 1.0, /*rpm_MinGrad*/ 1.0, P.get<double>("Levelset.VolCorrection"), Vol, /*periodic*/ is_periodic);
 
     LinThetaScheme2PhaseCL<LsetSolverT>
-        cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, /*implicitCurv*/ true);
+        cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get("NavierStokes.Nonlinear", 0.0), /*implicitCurv*/ true);
 
-    cpl.SetTimeStep( C.tm_StepSize);
-    if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
+    cpl.SetTimeStep( P.get<double>("Time.StepSize"));
+    if (P.get("NavierStokes.Nonlinear", 0.0)!=0.0 || P.get<int>("Time.NumSteps") == 0) {
         stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
             //for Stokes-MGM
         stokessolverfactory.SetMatrices( navstokessolver->GetAN(), &Stokes.B.Data,
@@ -258,34 +258,34 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 //    stokessolverfactory.GetVankaSmoother().SetRelaxation( 0.8);
 
     bool secondSerial= false;
-    for (int step= 1; step<=C.tm_NumSteps; ++step)
+    for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
     {
         std::cout << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.cpl_Iter);
+        cpl.DoStep( P.get<int>("Coupling.Iter"));
         std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
+        bool doGridMod= P.get<int>("AdaptRef.Freq") && step%P.get<int>("AdaptRef.Freq") == 0;
 
         // grid modification
         if (doGridMod) {
             adap.UpdateTriang( lset);
             cpl.Update();
-            if (C.mcl_SerializationFile != "none") {
+            if (P.get<std::string>("SerializationFile") != "none") {
                 std::stringstream filename;
-                filename << C.mcl_SerializationFile;
+                filename << P.get<std::string>("SerializationFile");
                 if (secondSerial) filename << "0";
                 secondSerial = !secondSerial;
                 MGSerializationCL ser( MG, filename.str().c_str());
                 ser.WriteMG();
                 filename << ".time";
                 std::ofstream serTime( filename.str().c_str());
-                serTime << "Serialization info:\ntime step = " << step << "\t\tt = " << step*C.tm_StepSize << "\n";
+                serTime << "Serialization info:\ntime step = " << step << "\t\tt = " << step*P.get<double>("Time.StepSize") << "\n";
                 serTime.close();
             }
         }
 
         if (step%10==0)
-            ensight.Write( step*C.tm_StepSize);
+            ensight.Write( step*P.get<double>("Time.StepSize"));
     }
 
     std::cout << std::endl;
@@ -347,30 +347,31 @@ int main (int argc, char** argv)
         std::cerr << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
 
-    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[C.exp_PerMatching];
+    //DIDNT FIND A PARAM WITH PerMatching, so I didnt know the type
+    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[P.get("Exp.PerMatching", std::string("periodicxz"))];
     
     typedef DROPS::TwoPhaseFlowCoeffCL            CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;
-    orig[2]= -C.mcl_MeshSize[2]/2;
-    e1[0]= C.mcl_MeshSize[0];
-    e2[1]= C.mcl_MeshSize[1];
-    e3[2]= C.mcl_MeshSize[2];
-    DROPS::BrickBuilderCL builder( orig, e1, e2, e3, int( C.mcl_MeshResolution[0]), int( C.mcl_MeshResolution[1]), int( C.mcl_MeshResolution[2]) );
+    orig[2]= -P.get<DROPS::Point3DCL>("MeshSize")[2]/2;
+    e1[0]= P.get<DROPS::Point3DCL>("MeshSize")[0];
+    e2[1]= P.get<DROPS::Point3DCL>("MeshSize")[1];
+    e3[2]= P.get<DROPS::Point3DCL>("MeshSize")[2];
+    DROPS::BrickBuilderCL builder( orig, e1, e2, e3, int( P.get<DROPS::Point3DCL>("MeshResolution")[0]), int( P.get<DROPS::Point3DCL>("MeshResolution")[1]), int( P.get<DROPS::Point3DCL>("MeshResolution")[2]) );
     DROPS::MultiGridCL* mgp;
-    if (C.mcl_DeserializationFile == "none")
+    if (P.get<std::string>("DeserializationFile") == "none")
         mgp= new DROPS::MultiGridCL( builder);
     else {
-        DROPS::FileBuilderCL filebuilder( C.mcl_DeserializationFile, &builder);
+        DROPS::FileBuilderCL filebuilder( P.get<std::string>("DeserializationFile"), &builder);
         mgp= new DROPS::MultiGridCL( filebuilder);
     }
 
-    if (C.mcl_BndCond.size()!=6)
+    if (P.get<std::string>("BndCond").size()!=6)
     {
         std::cerr << "too many/few bnd conditions!\n"; return 1;
     }
@@ -385,7 +386,7 @@ int main (int argc, char** argv)
     for (int i=0; i<6; ++i)
     {
         bc_ls[i]= DROPS::Nat0BC;
-        switch(C.mcl_BndCond[i])
+        switch(P.get<std::string>("BndCond")[i])
         {
             case 'w': case 'W':
                 bc[i]= DROPS::WallBC;    bnd_fun[i]= ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
@@ -400,12 +401,12 @@ int main (int argc, char** argv)
                 is_periodic= true;
                 bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
-                std::cerr << "Unknown bnd condition \"" << C.mcl_BndCond[i] << "\"\n";
+                std::cerr << "Unknown bnd condition \"" << P.get<std::string>("BndCond")[i] << "\"\n";
                 return 1;
         }
     }
 
-    MyStokesCL prob( *mgp, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, C.stk_XFEMStab);
+    MyStokesCL prob( *mgp, P, DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, P.get<double>("Stokes.XFEMStab"));
 
     const DROPS::BoundaryCL& bnd= mgp->GetBnd();
     bnd.SetPeriodicBnd( bndType, periodic_match);
@@ -413,27 +414,27 @@ int main (int argc, char** argv)
     sigma= prob.GetCoeff().SurfTens;
     DROPS::SurfaceTensionCL sf( sigmaf, 0);
     DROPS::LevelsetP2CL lset( *mgp, DROPS::LsetBndDataCL( 6, bc_ls),
-        sf, C.lvs_SD, C.lvs_CurvDiff);
+        sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
         std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
     }
 
-    DROPS::AdapTriangCL adap( *mgp, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel);
+    DROPS::AdapTriangCL adap( *mgp, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
-    if (C.mcl_DeserializationFile == "none"){
-        DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[C.exp_InitialLSet];      
+    if (P.get<std::string>("DeserializationFile") == "none"){
+        DROPS::scalar_fun_ptr DistanceFct = DROPS::ScaMap::getInstance()[P.get("Exp.InitialLSet", std::string("WavyFilm"))];
         adap.MakeInitialTriang( DistanceFct);
     }
 
     std::cout << DROPS::SanityMGOutCL(*mgp) << std::endl;
     mgp->SizeInfo( std::cout);
     std::cout << "Film Reynolds number Re_f = "
-              << C.mat_DensFluid*C.mat_DensFluid*C.exp_Gravity[0]*std::pow(C.exp_Thickness,3)/C.mat_ViscFluid/C.mat_ViscFluid/3 << std::endl;
+              << P.get<double>("Mat.DensFluid")*P.get<double>("Mat.DensFluid")*P.get<DROPS::Point3DCL>("Exp.Gravity")[0]*std::pow(P.get<double>("Exp.Thickness"),3)/P.get<double>("Mat.ViscFluid")/P.get<double>("Mat.ViscFluid")/3 << std::endl;
     std::cout << "max. inflow velocity at film surface = "
-              << C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2 << std::endl;
+              << P.get<double>("Mat.DensFluid")*P.get<DROPS::Point3DCL>("Exp.Gravity")[0]*P.get<double>("Exp.Thickness")*P.get<double>("Exp.Thickness")/P.get<double>("Mat.ViscFluid")/2 << std::endl;
     Strategy( prob, lset, adap, is_periodic);  // do all the stuff
 
     double min= prob.p.Data.min(),

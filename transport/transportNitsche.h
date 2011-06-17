@@ -161,17 +161,17 @@ class TransportP1XCL
 */
     TransportP1XCL( MultiGridCL& mg, BndDataT& Bnd, BndDataT& Bndt, VelocityContainer& v, LsetBndDataCL& Bnd_ls,
         VecDescCL& lset, VecDescCL& oldlset,
-        DROPS::ParamMesszelleNsCL& C, double initialtime=0, instat_scalar_fun_ptr reac=0, instat_scalar_fun_ptr rhs=0)
+        DROPS::ParamCL& P, double initialtime=0, instat_scalar_fun_ptr reac=0, instat_scalar_fun_ptr rhs=0)
         : oldt_(initialtime), t_( initialtime), 
-        idx( P1X_FE, 1, Bndt, mg.GetBnd().GetMatchFun(), C.trp_NitscheXFEMStab), oldidx( P1X_FE, 1, Bndt, mg.GetBnd().GetMatchFun(), C.trp_NitscheXFEMStab), 
+        idx( P1X_FE, 1, Bndt, mg.GetBnd().GetMatchFun(), P.get<double>("Transp.NitscheXFEMStab")), oldidx( P1X_FE, 1, Bndt, mg.GetBnd().GetMatchFun(), P.get<double>("Transp.NitscheXFEMStab")),
         MG_( mg), Bnd_( Bnd), Bndt_( Bndt), v_ (v), Bnd_ls_(Bnd_ls), 
-        theta_( C.trp_Theta), dt_( C.tm_StepSize), 
-        lambda_(C.trp_NitschePenalty), H_( C.trp_HNeg/C.trp_HPos),
+        theta_( P.get<double>("Transp.Theta")), dt_( P.get<double>("Time.StepSize")),
+        lambda_(P.get<double>("Transp.NitschePenalty")), H_( P.get<double>("Transp.HNeg")/P.get<double>("Transp.HPos")),
         lset_( lset), oldlset_(oldlset), 
-        gm_( pc_, 20, C.trp_Iter, C.trp_Tol, false, false, RightPreconditioning),
-        f_(rhs), c_(reac), omit_bound_( C.trp_NitscheXFEMStab), sdstab_(C.trp_SDStabilization)
+        gm_( pc_, 20, P.get<int>("Transp.Iter"), P.get<double>("Transp.Tol"), false, false, RightPreconditioning),
+        f_(rhs), c_(reac), omit_bound_( P.get<double>("Transp.NitscheXFEMStab")), sdstab_(P.get<double>("Transp.SDStabilization"))
     {
-        double D[2] = {C.trp_DiffPos, C.trp_DiffNeg};
+        double D[2] = {P.get<double>("Transp.DiffPos"), P.get<double>("Transp.DiffNeg")};
         std::memcpy( D_, D, 2*sizeof( double));
         if (theta_!=1.0) std::cerr<< "TransportP1XCL::TransportP1XCL: Sorry. Cannot deal with theta != 1.0. Overwriting: Using implicit Euler now! \n";
     }

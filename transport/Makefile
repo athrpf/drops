@@ -31,12 +31,12 @@ ns_transp: \
     ../transport/transportCoeff.o \
     ../transport/ns_transp.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
-    ../navstokes/instatnavstokes2phase.o ../misc/xfem.o ../geom/bndScalarFunctions.o \
-    ../geom/bndVelFunctions.o ../misc/bndmap.o \
-    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
+    ../misc/utils.o ../out/output.o ../num/discretize.o \
+    ../navstokes/instatnavstokes2phase.o ../geom/bndScalarFunctions.o \
+    ../geom/bndVelFunctions.o ../misc/bndmap.o ../misc/params.o \
+    ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../transport/transportNitsche.o \
-    ../num/interfacePatch.o  ../misc/params.o ../levelset/fastmarch.o ../num/fe.o ../misc/xfem.o\
+    ../num/interfacePatch.o ../levelset/fastmarch.o ../num/fe.o \
     ../out/vtkOut.o ../levelset/surfacetension.o ../geom/simplex.o ../surfactant/ifacetransp.o\
     ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o ../levelset/coupling.o \
     ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o \

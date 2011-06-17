@@ -1,0 +1,94 @@
+{
+	"_comment":
+"#blabla
+#blablabla",
+
+	"Poisson":
+	{
+	
+		"_comment":
+		
+"#blalblablal
+#awdawdawdawd
+#omg omgomg omgomgomg",
+
+	    "PcIter":			1,
+	    "PcTol":			0.1,
+	    "Iter":             200,
+	    "Restart":          100,
+	    "RelativeErr":      0,
+	    "Tol":              1.0e-10,
+	    "Method":           103,
+	    "SmoothingSteps":   1,
+	    "NumLvl":           -1,
+	    "Relax":            1.0, 
+	    "SolutionIsKnown":  1
+	},
+
+	"PoissonCoeff":
+	{
+		  "Diffusion":       1.0,
+		  "Reaction":        "Example1_Reaction",
+		  "Solution":        "Example1_Solution", 
+		  "Source":          "Example1_Source", 
+		  "Flowfield":       "Example1_Flowfield", 
+		  "InitialVal":      "Example1_InitialValue" 
+	},
+
+	"DomainCond":
+	{
+	  	  "RefineSteps":   2,
+	  	  "GeomType":      1,
+		  "InitialFile":   "none",
+		  "MeshFile":      "1x1x1@4x4x4",
+		  "BoundaryType":  "2!2!2!2!2!2",
+		  "BoundaryFncs":  "One!One!One!One!One!One" 
+	},
+
+	"Time":
+	{
+    	"StepSize":      1,
+    	"NumSteps":      0,
+    	"Scheme":        1,
+    	"Theta":         1,
+    	"Convection":    0
+	},
+
+	"Exp":
+	{
+    	"Heat":          5960,
+    	"Rho":           866,
+    	"Mu":            1.732e-3,
+    	"Cp":            1500,
+    	"Lambda":        0.26
+	},
+
+	"Ensight":
+	{
+    	"EnsightOut":  0,
+    	"EnsCase":     "FilmTemp",
+    	"EnsDir":      "ensight",
+    	"GeomName":    "test",
+    	"MasterOut":   1,
+    	"Binary":      1
+	},
+
+	"Err":
+	{
+    	"DoErrorEstimate":     0,
+    	"RelReduction":        0.1,
+    	"DoMark":              1,
+    	"MinRatio":            0.0, 
+    	"Threshold":           0.6, 
+    	"Meas":                0.875,               
+    	"NumRef":              2
+	},
+
+	"VTK":
+	{
+	    "VTKOut":        1,
+	    "VTKDir":        "vtk",
+	    "VTKName":       "poisson_ex1_",
+	    "Binary":        0
+	}
+}

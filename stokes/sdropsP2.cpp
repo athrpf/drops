@@ -37,7 +37,6 @@
 
  // include problem class
 #include "stokes/stokes.h"
-#include "stokes/params.h"
 #include "num/bndData.h"
 
 //include coefficient class
@@ -51,6 +50,7 @@
 #include <string>
 #include <sstream>
 
+#include "misc/params.h"
 #include "out/ensightOut.h"
 #include "misc/bndmap.h"
 
@@ -153,15 +153,14 @@ typedef DROPS::StokesP2P1CL<DROPS::StokesFlowCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
-typedef DROPS::ParamStokesProblemCL Params;
-Params C_Stokes;
+DROPS::ParamCL P_Stokes;
 
 namespace DROPS // for Strategy
 {
 
 using ::MyStokesCL;
 
-template <class StokesProblemT, class ParamsT>
+template <class StokesProblemT>
 void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
 {
     TimerCL timer;
@@ -174,7 +173,7 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver)
     std::cout << "Solving Stokes took "<<  duration << " sec.\n";
     std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 
-    if( C_Stokes.stc_Solution_Vel.compare("None")!=0)  // check whether solution is given
+    if( P_Stokes.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
         Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, true);
 
 }
@@ -198,12 +197,12 @@ void Strategy( StokesProblemT& Stokes)
     Stokes.pr_idx.SetFE( P1_FE);
 
     //Modify Triangulation
-    if( C_Stokes.misc_ModifyGrid == 1)
-        MakeInitialTriangulation( MG, &SignedDistToInterface, C_Stokes.ref_Width, C_Stokes.ref_CoarsestLevel, C_Stokes.ref_FinestLevel);
+    if( P_Stokes.get("Misc.ModifyGrid", 0) == 1)
+        MakeInitialTriangulation( MG, &SignedDistToInterface, P_Stokes.get<double>("AdaptRef.Width"), P_Stokes.get<int>("AdaptRef.CoarsestLevel"), P_Stokes.get<int>("AdaptRef.FinestLevel"));
 
-    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL().VelMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
     	Stokes.SetNumVelLvl( MG.GetNumLevel());
-    if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL().PrMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
         Stokes.SetNumPrLvl( MG.GetNumLevel());
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), &Stokes.vel_idx);
@@ -239,13 +238,13 @@ void Strategy( StokesProblemT& Stokes)
     std::cout << line << "Solve the linear equation system ...\n";
 
     // type of preconditioner and solver
-    StokesSolverFactoryCL< StokesProblemT,Params>         factory( Stokes, C_Stokes);
-    StokesSolverFactoryObsoleteCL< StokesProblemT,Params> obsoletefactory( Stokes, C_Stokes);
-    StokesSolverBaseCL* stokessolver = (C_Stokes.stk_StokesMethod < 500000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
+    StokesSolverFactoryCL< StokesProblemT>         factory( Stokes, P_Stokes);
+    StokesSolverFactoryObsoleteCL< StokesProblemT> obsoletefactory( Stokes, P_Stokes);
+    StokesSolverBaseCL* stokessolver = (P_Stokes.get<int>("Stokes.StokesMethod")< 500000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
 
-    if( StokesSolverFactoryHelperCL<Params>().VelMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().VelMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL().VelMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
     {
-        MLMatrixCL* PVel = (C_Stokes.stk_StokesMethod < 500000) ? factory.GetPVel() : obsoletefactory.GetPVel();
+        MLMatrixCL* PVel = ( P_Stokes.get<int>("Stokes.StokesMethod") < 500000) ? factory.GetPVel() : obsoletefactory.GetPVel();
         SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
 
         std::cout << "Check MG-Data..." << std::endl;
@@ -254,18 +253,18 @@ void Strategy( StokesProblemT& Stokes)
         CheckMGData( Stokes.A.Data, *PVel);
     }
 
-    if( StokesSolverFactoryHelperCL<Params>().PrMGUsed(C_Stokes) || StokesSolverFactoryObsoleteHelperCL<Params>().PrMGUsed(C_Stokes))
+    if( StokesSolverFactoryHelperCL().PrMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
     {
-        MLMatrixCL* PPr = (C_Stokes.stk_StokesMethod < 500000) ? factory.GetPPr() : obsoletefactory.GetPPr();
+        MLMatrixCL* PPr = ( P_Stokes.get<int>("Stokes.StokesMethod") < 500000) ? factory.GetPPr() : obsoletefactory.GetPPr();
         SetupP1ProlongationMatrix( MG, *PPr, &Stokes.pr_idx, &Stokes.pr_idx);
     }
 
     // choose time discretization scheme
     TimeDiscStokesCL< StokesProblemT,  StokesSolverBaseCL>* TimeScheme;
-    switch ( C_Stokes.tm_Scheme)
+    switch ( P_Stokes.get<int>("Time.Scheme"))
     {
         case 1 :
-            TimeScheme = new InstatStokesThetaSchemeCL<StokesProblemT, StokesSolverBaseCL>( Stokes, *stokessolver, C_Stokes.stk_Theta);
+            TimeScheme = new InstatStokesThetaSchemeCL<StokesProblemT, StokesSolverBaseCL>( Stokes, *stokessolver, P_Stokes.get<double>("Stokes.Theta"));
             break;
         case 2 :
             TimeScheme = new StokesFracStepSchemeCL<InstatStokesThetaSchemeCL, StokesProblemT, StokesSolverBaseCL> ( Stokes, *stokessolver);
@@ -275,39 +274,39 @@ void Strategy( StokesProblemT& Stokes)
 
     StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
 
-    if (C_Stokes.tm_NumSteps == 0) {
-        if (C_Stokes.stk_StokesMethod < 500000) {
+    if (P_Stokes.get<int>("Time.NumSteps") == 0) {
+        if ( P_Stokes.get<int>("Stokes.StokesMethod") < 500000) {
             factory.SetMatrixA( &Stokes.A.Data.GetFinest());
             //for Stokes-MGM: coarse level solver uses bbt
             factory.SetMatrices( &Stokes.A.Data, &Stokes.B.Data,
                                  &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
         }
-    	SolveStatProblem<MyStokesCL, Params>( Stokes, *stokessolver);
+        SolveStatProblem<MyStokesCL>( Stokes, *stokessolver);
 
     }
     else {
-        TimeScheme->SetTimeStep( C_Stokes.tm_StepSize);
-        if (C_Stokes.stc_Solution_Vel.compare("None")!=0)
-        	Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
+        TimeScheme->SetTimeStep( P_Stokes.get<double>("Time.StepSize"));
+        if ( P_Stokes.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)
+            Stokes.InitVel( &Stokes.v, StokesFlowCoeffCL::LsgVel);
         else
-        	Stokes.InitVel( &Stokes.v, ZeroVel);
-        if (C_Stokes.stk_StokesMethod < 500000) {
-        	factory.SetMatrixA ( &TimeScheme->GetUpperLeftBlock()->GetFinest());
-        	factory.SetMatrices( TimeScheme->GetUpperLeftBlock(), &Stokes.B.Data,
-        	                     &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
+            Stokes.InitVel( &Stokes.v, ZeroVel);
+        if (P_Stokes.get<int>("Stokes.StokesMethod") < 500000) {
+            factory.SetMatrixA ( &TimeScheme->GetUpperLeftBlock()->GetFinest());
+            factory.SetMatrices( TimeScheme->GetUpperLeftBlock(), &Stokes.B.Data,
+                                 &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
         }
     }
 
-    Ensight6OutCL  ens(C_Stokes.ens_EnsCase+".case", C_Stokes.tm_NumSteps+1, C_Stokes.ens_Binary, C_Stokes.ens_MasterOut);
-    const std::string filename= C_Stokes.ens_EnsDir + "/" + C_Stokes.ens_EnsCase;
-    ens.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), C_Stokes.ens_GeomName,       filename + ".geo"));
+    Ensight6OutCL  ens(P_Stokes.get<string>("Ensight.EnsCase")+".case", P_Stokes.get<int>("Time.NumSteps")+1, P_Stokes.get<int>("Ensight.Binary"), P_Stokes.get<int>("Ensight.MasterOut"));
+    const std::string filename= P_Stokes.get<string>("Ensight.EnsDir") + "/" + P_Stokes.get<string>("Ensight.EnsCase");
+    ens.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), P_Stokes.get<string>("Ensight.GeomName"),       filename + ".geo"));
     ens.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure", filename + ".pr",  true));
     ens.Register( make_Ensight6Vector( Stokes.GetVelSolution(), "Velocity", filename + ".vel", true));
 
-    if(C_Stokes.ens_EnsightOut)
+    if(P_Stokes.get<int>("Ensight.EnsightOut"))
        ens.Write();
 
-    for ( int step = 1; step <= C_Stokes.tm_NumSteps; ++step) {
+    for ( int step = 1; step <= P_Stokes.get<int>("Time.NumSteps"); ++step) {
         timer.Reset();
 
         std::cout << line << "Step: " << step << std::endl;
@@ -319,12 +318,13 @@ void Strategy( StokesProblemT& Stokes)
                   << "   - time          " << timer.GetTime()    << " s\n";
 
         // check the result
-        if(C_Stokes.ens_EnsightOut)
-          ens.Write( step*C_Stokes.tm_StepSize);
+        if(P_Stokes.get<int>("Ensight.EnsightOut"))
+          ens.Write( step*P_Stokes.get<double>("Time.StepSize"));
     }
 
-    if(C_Stokes.stc_Solution_Vel.compare("None")!=0 && C_Stokes.tm_NumSteps != 0)  // check whether solution is given
+    if( P_Stokes.get<string>("StokesCoeff.Solution_Vel").compare("None")!=0 && P_Stokes.get<int>("Time.NumSteps") != 0)  // check whether solution is given
         Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
+
 
     delete stokessolver;
 }
@@ -338,8 +338,8 @@ int main ( int argc, char** argv)
         std::ifstream param;
         if (argc!=2)
         {
-            std::cout << "Using default parameter file: stokes.param\n";
-            param.open( "stokes.param");
+            std::cout << "Using default parameter file: stokes.json\n";
+            param.open( "stokes.json");
         }
         else
             param.open( argv[1]);
@@ -348,23 +348,22 @@ int main ( int argc, char** argv)
             std::cerr << "error while opening parameter file\n";
             return 1;
         }
-        C_Stokes.ns_Nonlinear = 0.0;
-        param >> C_Stokes;
+        param >> P_Stokes;
         param.close();
-        std::cout << C_Stokes << std::endl;
+        std::cout << P_Stokes << std::endl;
 
         // Check MarkLower value
-        if( C_Stokes.dmc_GeomType == 0) C_Stokes.misc_MarkLower = 0;
+        if( P_Stokes.get<int>("DomainCond.GeomType") == 0) P_Stokes.put("Misc.MarkLower", 0);
         else {
           int nx, ny, nz;
           double dx, dy, dz;
-          std::string mesh( C_Stokes.dmc_MeshFile), delim("x@");
+          std::string mesh( P_Stokes.get<string>("DomainCond.MeshFile")), delim("x@");
           size_t idx;
           while ((idx= mesh.find_first_of( delim)) != std::string::npos )
             mesh[idx]= ' ';
           std::istringstream brick_info( mesh);
           brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
-          if (C_Stokes.misc_MarkLower<0 || C_Stokes.misc_MarkLower > dy)
+          if (P_Stokes.get("Misc.MarkLower", 0)<0 || P_Stokes.get("Misc.MarkLower", 0) > dy)
           {
         	  std::cerr << "Wrong value of MarkLower\n";
         	  return 1;
@@ -387,22 +386,22 @@ int main ( int argc, char** argv)
         double r = 1;
         std::string serfile = "none";
 
-        DROPS::BuildDomain( mg, C_Stokes.dmc_MeshFile, C_Stokes.dmc_GeomType, serfile, r);
-        DROPS::BuildBoundaryData( mg, bdata, C_Stokes.dmc_BoundaryType, C_Stokes.dmc_BoundaryFncs);
+        DROPS::BuildDomain( mg, P_Stokes.get<string>("DomainCond.MeshFile"), P_Stokes.get<int>("DomainCond.GeomType"), serfile, r);
+        DROPS::BuildBoundaryData( mg, bdata, P_Stokes.get<string>("DomainCond.BoundaryType"), P_Stokes.get<string>("DomainCond.BoundaryFncs"));
 
         // Setup the problem
-        StokesOnBrickCL prob(*mg, DROPS::StokesFlowCoeffCL( C_Stokes), *bdata);
-
+        DROPS::StokesFlowCoeffCL tmp = DROPS::StokesFlowCoeffCL( P_Stokes);
+        StokesOnBrickCL prob(*mg, tmp, *bdata);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << C_Stokes.dmc_InitialCond << " times regulary ...\n";
+        std::cout << "Refine the grid " << P_Stokes.get<int>("DomainCond.InitialCond") << " times regulary ...\n";
         timer.Reset();
 
         // Create new tetrahedra
-        for ( int ref=1; ref<=C_Stokes.dmc_InitialCond; ++ref){
+        for ( int ref=1; ref<=P_Stokes.get<int>("DomainCond.InitialCond"); ++ref){
             std::cout << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();
