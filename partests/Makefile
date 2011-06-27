@@ -37,8 +37,7 @@ TestRefPar: \
    $(PAR_OBJ) \
    ../partests/TestRefPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
-   ../num/fe.o ../num/interfacePatch.o ../num/unknowns.o ../out/output.o \
-    ../partests/params.o ../levelset/lsetparams.o
+   ../num/fe.o ../num/interfacePatch.o ../num/unknowns.o ../out/output.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestExchangePar: \
@@ -46,7 +45,7 @@ TestExchangePar: \
    ../partests/TestExchangePar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/fe.o ../num/interfacePatch.o ../levelset/fastmarch.o \
-   ../partests/params.o ../levelset/levelset.o ../num/discretize.o ../levelset/surfacetension.o
+   ../levelset/levelset.o ../num/discretize.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestPoissonPar: \
@@ -60,10 +59,10 @@ TestPoissonPar: \
 TestInterpolPar: \
     $(PAR_OBJ) \
     ../partests/TestInterpolPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
-    ../geom/builder.o ../misc/utils.o ../levelset/levelset.o ../levelset/lsetparams.o \
+    ../geom/builder.o ../misc/utils.o ../levelset/levelset.o \
     ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
     ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../partests/params.o ../levelset/fastmarch.o ../levelset/surfacetension.o
+    ../levelset/fastmarch.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestSedPar: \

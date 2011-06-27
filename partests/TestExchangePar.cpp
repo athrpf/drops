@@ -1,6 +1,6 @@
 /// \file TestExchangePar.cpp
 /// \brief testing the parallel exchange of numerical data for accumulations
-/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Thorolf Schulte; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -28,7 +28,7 @@
 #include "parallel/loadbal.h"
 #include "parallel/partime.h"
 #include "parallel/exchange.h"
-#include "partests/params.h"
+#include "misc/params.h"
 
  // include geometric computing
 #include "geom/multigrid.h"
@@ -51,7 +51,7 @@ using namespace std;
 ****************************************************************************/
 DROPS::NoBndDataCL<double> Bnd;                     // Keine Randdaten
 const int REF=0, MIG=1;                             // Unterscheidung, welche Datei geschrieben wird
-DROPS::ParamParExchangeCL C;                        // Parameter aus dem Parameterfile
+DROPS::ParamCL P;                        // Parameter aus dem Parameterfile
 DROPS::TimeStoreCL Times(10);                       // Klasse zum Speichern der Zeiten
 enum TimePart{                                      // Aufzaehlung, welche Zeiten gemessen werden
     Refine,
@@ -115,18 +115,18 @@ void DoRefinement(DROPS::ParMultiGridCL &pmg)
 {
     DROPS::ParTimerCL time;
     if (DROPS::ProcCL::IamMaster())
-        std::cout <<line<<std::endl<< " * Verteile Multigrid und verfeinere " <<C.refall<< " Mal regulaer" << std::endl;
+        std::cout <<line<<std::endl<< " * Verteile Multigrid und verfeinere " << P.get<int>("Refining.RefAll") << " Mal regulaer" << std::endl;
     DROPS::MultiGridCL &mg =pmg.GetMG();
     DROPS::LoadBalHandlerCL lb(mg, DROPS::metis);
     lb.DoInitDistribution(DROPS::ProcCL::Master());
     ::Times.IncCounter(lb.GetMovedMultiNodes());
-    switch (C.refineStrategy){
+    switch (P.get<int>("Refining.RefineStrategy")){
         case 0 : lb.SetStrategy(DROPS::NoMig);     break;
         case 1 : lb.SetStrategy(DROPS::Adaptive);  break;
         case 2 : lb.SetStrategy(DROPS::Recursive); break;
     }
 
-    for (int ref=0; ref<C.refall; ++ref)
+    for (int ref=0; ref<P.get<int>("Refining.RefAll"); ++ref)
     {
         DROPS::MarkAll(mg);
         time.Reset();
@@ -135,7 +135,7 @@ void DoRefinement(DROPS::ParMultiGridCL &pmg)
         lb.DoMigration();
         ::Times.IncCounter(lb.GetMovedMultiNodes());
     }
-    if (C.checkMG)
+    if (P.get<int>("Misc.CheckMG"))
         CheckParMultiGrid(pmg,std::cout);
     time.Stop(); Times.AddTime(Refine, time.GetMaxTime());
 }
@@ -543,18 +543,18 @@ bool CheckIdxMapping(const DROPS::MultiGridCL& mg, DROPS::MLIdxDescCL* idxDesc, 
 /// \brief Create lists for ExchangeCL and do (if wished) time meassurements
 void CreateExchangeCL(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
-    if (C.tests){
+    if (P.get<int>("Misc.Tests")){
         ParTimerCL time;
         if (ProcCL::IamMaster())
             std::cout << "   - Timemeasurement for creating Exchange lists (and create numbering) for Index 1..."<<'\n';
         // pure
         time.Reset();
-        for (int i=0; i<C.tests; ++i){
+        for (int i=0; i<P.get<int>("Misc.Tests"); ++i){
             time.Start();
             idx1->GetFinest().CreateNumbering(mg.GetLastLevel(), mg);
             time.Stop();
         }
-        ::Times.AddTime(Ex_Create, time.GetMaxTime()*100./(double)C.tests);
+        ::Times.AddTime(Ex_Create, time.GetMaxTime()*100./(double)P.get<int>("Misc.Tests"));
     }
 
     if (ProcCL::IamMaster())
@@ -567,13 +567,13 @@ void CreateExchangeCL(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLI
         std::cout <<  "     + 2. Exchange-Listen ... " << std::endl;
     idx1->GetFinest().CreateNumbering(mg.GetLastLevel(), mg);
 
-    if (C.printEx){
+    if (P.get<int>("Misc.PrintEx")){
         PrintExchange(idx1->GetEx());
         PrintExchange(idx2->GetEx());
         PrintExchange(xidx->GetEx());
     }
 
-    if (C.printMsgSize)
+    if (P.get<int>("Misc.PrintMsgSize"))
     {
         if (ProcCL::IamMaster()) std::cout << "  Groesse der Nachrichten zwischen den Prozessoren\n  Fuer Index 1:\n";
         idx1->GetEx().SizeInfo(std::cout);
@@ -823,27 +823,27 @@ void MakeTimeMeassurments( const ExchangeCL& ex, MLIdxDescCL* idx)
                   << "    + ParDotAcc (old and new interface)"<<'\n'
                   << "    + AccParDot (old and new interface)"<<std::endl;
     time.Reset();
-    for (int i=0; i<C.tests; ++i){
+    for (int i=0; i<P.get<int>("Misc.Tests"); ++i){
         ex.ParDotAcc(x_acc,x);
     }
-    time.Stop(); Times.AddTime(Ex_Acc,time.GetMaxTime()*100./(double)C.tests);
+    time.Stop(); Times.AddTime(Ex_Acc,time.GetMaxTime()*100./(double)P.get<int>("Misc.Tests"));
 
     time.Reset();
-    for (int i=0; i<C.tests; ++i){
+    for (int i=0; i<P.get<int>("Misc.Tests"); ++i){
         ex.ParDot(x,false,x, false, false, &x_acc);
     }
-    time.Stop(); Times.AddTime(Ex_Acc_newInterface,time.GetMaxTime()*100./(double)C.tests);
+    time.Stop(); Times.AddTime(Ex_Acc_newInterface,time.GetMaxTime()*100./(double)P.get<int>("Misc.Tests"));
 
     x_acc=x;
     time.Reset();
-    for (int i=0; i<C.tests; ++i)
+    for (int i=0; i<P.get<int>("Misc.Tests"); ++i)
         ex.AccParDot(x,x_acc, tmp1, tmp2);
-    time.Stop(); Times.AddTime(Ex_Acc_new,time.GetMaxTime()*100./(double)C.tests);
+    time.Stop(); Times.AddTime(Ex_Acc_new,time.GetMaxTime()*100./(double)P.get<int>("Misc.Tests"));
 
     time.Reset();
-    for (int i=0; i<C.tests; ++i)
+    for (int i=0; i<P.get<int>("Misc.Tests"); ++i)
         ex.ParDot(x,false, x_acc, false, true, &tmp1, &tmp2);
-    time.Stop(); Times.AddTime(Ex_Acc_new_newInterface,time.GetMaxTime()*100./(double)C.tests);
+    time.Stop(); Times.AddTime(Ex_Acc_new_newInterface,time.GetMaxTime()*100./(double)P.get<int>("Misc.Tests"));
 
 }
 
@@ -922,10 +922,10 @@ void Strategy(ParMultiGridCL &pmg, const LsetBndDataCL& lsetbnd)
 
     TestInnerProducts( idx1.GetEx(), idx2.GetEx(), ExBlock);
 
-    if (C.timeMeas)
+    if (P.get<int>("Misc.TimeMeas"))
     {
         if (ProcCL::IamMaster())
-            std::cout << line << std::endl << " * Mache eine Zeitmessungen (" <<C.tests<<" Laeufe) fuer Innere Produkte ... " << std::endl;
+            std::cout << line << std::endl << " * Mache eine Zeitmessungen (" <<P.get<int>("Misc.Tests")<<" Laeufe) fuer Innere Produkte ... " << std::endl;
         MakeTimeMeassurments( idx1.GetEx(), &idx1);
     }
 }
@@ -947,10 +947,10 @@ int main (int argc, char** argv)
         if (!param){
             std::cout << "error while opening parameter file\n"; return 1;
         }
-        param >> C;
+        param >> P;
         param.close();
         if (DROPS::ProcCL::IamMaster())
-            std::cout << C << std::endl;
+            std::cout << P << std::endl;
 
         DROPS::ParTimerCL time, alltime;
 
@@ -960,19 +960,19 @@ int main (int argc, char** argv)
 
         DROPS::Point3DCL orig(0.);
         DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
-        e1[0]=C.dx; e2[1]=C.dy; e3[2]= C.dz;
+        e1[0]=P.get<double>("Refining.dx"); e2[1]=P.get<double>("Refining.dy"); e3[2]= P.get<double>("Refining.dz");
 
         if (DROPS::ProcCL::IamMaster())
             std::cout << line << std::endl << " * Erstelle das initiale Gitter ... \n";
 
         if (DROPS::ProcCL::IamMaster())
         {
-            DROPS::BrickBuilderCL brick(orig, e1, e2, e3, C.basicref_x, C.basicref_y, C.basicref_z);
+            DROPS::BrickBuilderCL brick(orig, e1, e2, e3, P.get<int>("Refining.BasicRefX"), P.get<int>("Refining.BasicRefY"), P.get<int>("Refining.BasicRefZ"));
             mg = new DROPS::MultiGridCL(brick);
         }
         else
         {
-            DROPS::EmptyBrickBuilderCL emptyBrick( orig, e1, e2, e3, C.basicref_x);
+            DROPS::EmptyBrickBuilderCL emptyBrick( orig, e1, e2, e3, P.get<int>("Refining.BasicRefX"));
             mg = new DROPS::MultiGridCL(emptyBrick);
         }
 
@@ -985,7 +985,7 @@ int main (int argc, char** argv)
         if (DROPS::ProcCL::IamMaster())
             std::cout << "     Der Balancierungsquotient lautet: "<<balratio<<std::endl<< line << std::endl;
 
-        if (C.printMG)
+        if (P.get<int>("Misc.PrintMG"))
             PrintMG(pmg);
 
         const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
@@ -999,7 +999,7 @@ int main (int argc, char** argv)
 
         alltime.Stop();
         Times.SetOverall(alltime.GetMaxTime());
-        if (C.timeMeas)
+        if (P.get<int>("Misc.TimeMeas"))
             Times.Print(cout);
         return 0;
     }
