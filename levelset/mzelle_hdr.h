@@ -316,7 +316,7 @@ void SolveStatProblem( StokesT& Stokes, const LevelsetP2CL& lset,
     std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 }
 
-void SetInitialLevelsetConditions( LevelsetP2CL& lset, MultiGridCL& MG, const ParamCL& P)
+void SetInitialLevelsetConditions( LevelsetP2CL& lset, MultiGridCL& MG, ParamCL& P)
 {
     switch (P.get<int>("DomainCond.InitialCond"))
     {

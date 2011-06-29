@@ -34,7 +34,7 @@
 #include <map>
 #include <fstream>
 
-#define PARAMDEBUG
+//#define PARAMDEBUG
 
 namespace DROPS
 {
@@ -54,7 +54,6 @@ class ParamCL: public boost::property_tree::ptree
 #ifdef PARAMDEBUG
       try {
           OutType tmp = this->pt.get<OutType>(pathInPT);
-          return tmp;
       }
       catch(boost::property_tree::ptree_error & e) {
         std::cout << "Trying to get '" << pathInPT << "' failed.\n";
@@ -76,18 +75,23 @@ class ParamCL: public boost::property_tree::ptree
     }
 
     template <typename OutType>
-    OutType get(const std::string & pathInPT, OutType default_val) const
+    OutType get(const std::string & pathInPT, OutType default_val)
     {
 #ifdef PARAMDEBUG
       try {
           OutType tmp = this->pt.get(pathInPT, default_val);
-          return tmp;
       }
       catch(boost::property_tree::ptree_error & e) {
         std::cout << "Trying to get '" << pathInPT << "' failed.\n";
       }
 #endif
-      return this->pt.get(pathInPT, default_val);
+
+      OutType val = this->pt.get(pathInPT, default_val);
+      //using default_val? then add it to tree for next use.
+      //Currently this is a bad implementation due to far more put's than necessary.
+      if (val == default_val)
+        this->pt.put(pathInPT, val);
+      return val;
     }
 
 //    DROPS::Point3DCL get(const std::string pathInPT) const;

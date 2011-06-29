@@ -88,12 +88,12 @@ libs: DDD ParMetis
 clean_libs: clean_DDD clean_ParMetis
 
 DDD:
-	cd $(DDD_HOME) && ./install && gmake clean && \
-	gmake -j ARCH_CFLAGS="$(OPTFLAGS)" ARCH_TYPE="__PC__" ARCH_CC="$(ARCH_CC)" ARCH_LINK="$(ARCH_CC)"
+	cd $(DDD_HOME) && ./install && make clean && \
+	make -j ARCH_CFLAGS="$(OPTFLAGS)" ARCH_TYPE="__PC__" ARCH_CC="$(ARCH_CC)" ARCH_LINK="$(ARCH_CC)"
 
 ParMetis:
-	cd $(PARMETIS_HOME) && gmake clean && \
-	gmake COPTIONS="$(OPTFLAGS)" CC="$(ARCH_CC)" LD="$(ARCH_CC)"
+	cd $(PARMETIS_HOME) && make clean && \
+	make COPTIONS="$(OPTFLAGS)" CC="$(ARCH_CC)" LD="$(ARCH_CC)"
 
 HYPRE:	
 	cd $(HYPRE_HOME) && gmake install
