@@ -5,8 +5,8 @@
 # variables:
 
 DIR = partests
-EXEC = TestRefPar TestExchangePar TestPoissonPar TestInterpolPar TestSedPar
-#       TestStokesPar TestInstatStokesPar \
+EXEC = TestRefPar TestExchangePar TestInterpolPar
+#       TestStokesPar TestInstatStokesPar TestPoissonPar TestSedPar\
 #       TestMzellePar TestMzelleAdaptPar MzelleNMRParamEst TestBrickflowPar \
 #       TestFilmPar
        
