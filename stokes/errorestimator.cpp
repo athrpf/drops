@@ -300,7 +300,7 @@ typedef DROPS::StokesP2P1CL<DROPS::StokesFlowCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
-DROPS::ParamCL P_Stokes;
+DROPS::ParamCL P;
 
 namespace DROPS // for Strategy
 {
@@ -328,17 +328,17 @@ void Strategy( StokesProblemT& Stokes)
     Stokes.pr_idx.SetFE( P1_FE);
 
     //Modify Triangulation
-    if( P_Stokes.get("Misc.ModifyGrid", 0) == 1)
-        MakeInitialTriangulation( MG, &SignedDistToInterface, P_Stokes.get<double>("AdaptRef.Width"), P_Stokes.get<int>("AdaptRef.CoarsestLevel"), P_Stokes.get<int>("AdaptRef.FinestLevel"));
+    if( P.get("Misc.ModifyGrid", 0) == 1)
+        MakeInitialTriangulation( MG, &SignedDistToInterface, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"));
 
     // solve the linear equation system
     // -------------------------------------------------------------------------
     std::cout << line << "Solve the linear equation system ...\n";
 
     // type of preconditioner and solver
-    StokesSolverFactoryCL<StokesProblemT>         factory( Stokes, P_Stokes);
-    StokesSolverFactoryObsoleteCL<StokesProblemT> obsoletefactory( Stokes, P_Stokes);
-    StokesSolverBaseCL* solver = (P_Stokes.get<int>("Stokes.StokesMethod")< 500000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
+    StokesSolverFactoryCL<StokesProblemT>         factory( Stokes, P);
+    StokesSolverFactoryObsoleteCL<StokesProblemT> obsoletefactory( Stokes, P);
+    StokesSolverBaseCL* solver = (P.get<int>("Stokes.StokesMethod")< 500000) ? factory.CreateStokesSolver() : obsoletefactory.CreateStokesSolver();
 
     MLIdxDescCL  loc_vidx, loc_pidx;
     MLIdxDescCL* vidx1= &Stokes.vel_idx;
@@ -359,21 +359,21 @@ void Strategy( StokesProblemT& Stokes)
 
     int step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
-        Estimator( P_Stokes.get<double>("Error.RelReduction"), P_Stokes.get<double>("Error.Threshold"), P_Stokes.get<double>("Error.Meas"), true, &MyStokesCL::ResidualErrEstimator, Stokes);
+        Estimator( P.get<double>("Error.RelReduction"), P.get<double>("Error.Threshold"), P.get<double>("Error.Meas"), true, &MyStokesCL::ResidualErrEstimator, Stokes);
     bool new_marks= false;
 
     do
     {
-        if( P_Stokes.get<double>("Misc.MarkLower") != 0)
-        	MarkLower( MG, P_Stokes.get<double>("Misc.MarkLower"));
+        if( P.get<double>("Misc.MarkLower") != 0)
+        	MarkLower( MG, P.get<double>("Misc.MarkLower"));
 
         MG.Refine();
 
-        if( StokesSolverFactoryHelperCL().VelMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes)){
+        if( StokesSolverFactoryHelperCL().VelMGUsed(P) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P)){
             Stokes.SetNumVelLvl( MG.GetNumLevel());
             vidx1->resize( MG.GetNumLevel(), vecP2_FE);
         }
-        if( StokesSolverFactoryHelperCL().PrMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes)){
+        if( StokesSolverFactoryHelperCL().PrMGUsed(P) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P)){
             Stokes.SetNumPrLvl( MG.GetNumLevel());
             pidx1->resize( MG.GetNumLevel(), P1_FE);
         }
@@ -391,9 +391,9 @@ void Strategy( StokesProblemT& Stokes)
         std::cout << "Number of velocity unknowns " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
 
-        if( StokesSolverFactoryHelperCL().VelMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P_Stokes))
+        if( StokesSolverFactoryHelperCL().VelMGUsed(P) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P))
         {
-            MLMatrixCL* PVel = (P_Stokes.get<int>("Stokes.StokesMethod")< 500000) ? factory.GetPVel() : obsoletefactory.GetPVel();
+            MLMatrixCL* PVel = (P.get<int>("Stokes.StokesMethod")< 500000) ? factory.GetPVel() : obsoletefactory.GetPVel();
             vidx1->resize( MG.GetNumLevel(), vecP2_FE);
             Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
             SetupP2ProlongationMatrix( MG, *PVel, vidx1, vidx1);
@@ -406,13 +406,13 @@ void Strategy( StokesProblemT& Stokes)
             CheckMGData( Stokes.A.Data, *PVel);
         }
 
-        if( StokesSolverFactoryHelperCL().PrMGUsed(P_Stokes) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P_Stokes))
+        if( StokesSolverFactoryHelperCL().PrMGUsed(P) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P))
         {
-            MLMatrixCL* PPr = (P_Stokes.get<int>("Stokes.StokesMethod") < 500000) ? factory.GetPPr() : obsoletefactory.GetPPr();
+            MLMatrixCL* PPr = (P.get<int>("Stokes.StokesMethod") < 500000) ? factory.GetPPr() : obsoletefactory.GetPPr();
             SetupP1ProlongationMatrix( MG, *PPr, pidx1, pidx1);
         }
 
-        if (P_Stokes.get<int>("Stokes.StokesMethod") < 500000) {
+        if (P.get<int>("Stokes.StokesMethod") < 500000) {
             factory.SetMatrixA( &Stokes.A.Data.GetFinest());
             factory.SetMatrices( &Stokes.A.Data, &Stokes.B.Data, &Stokes.M.Data, &Stokes.prM.Data, &Stokes.pr_idx);
         }
@@ -473,7 +473,7 @@ void Strategy( StokesProblemT& Stokes)
         std::cout << "SetupSystem: " << timer.GetTime() << " seconds." << std::endl;
         timer.Reset();
 
-        if( P_Stokes.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
+        if( P.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
             Stokes.GetDiscError( StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::LsgPr);
         timer.Reset();
 
@@ -490,16 +490,16 @@ void Strategy( StokesProblemT& Stokes)
         std::cout << "iter: " << solver->GetIter() << "\tresid: " << solver->GetResid() << std::endl;
         std::cout << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
 
-        if( P_Stokes.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
+        if( P.get<std::string>("StokesCoeff.Solution_Vel").compare("None")!=0)  // check whether solution is given
           Stokes.CheckSolution( v1, p1, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, true);
 
-        if( step==0 && P_Stokes.get<int>("Error.DoErrorEstimate"))
+        if( step==0 && P.get<int>("Error.DoErrorEstimate"))
             Estimator.Init(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG));
 
         timer.Reset();
         timer.Start();
 
-        if ( P_Stokes.get<int>("Error.DoErrorEstimate"))
+        if ( P.get<int>("Error.DoErrorEstimate"))
             new_marks= Estimator.Estimate(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG) );
         timer.Stop();
         std::cout << "Estimation: " << timer.GetTime() << " seconds.\n";
@@ -515,7 +515,7 @@ void Strategy( StokesProblemT& Stokes)
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-    } while (++step< P_Stokes.get<int>("Error.NumRef"));
+    } while (++step< P.get<int>("Error.NumRef"));
 
     // we want the solution to be in Stokes.v, Stokes.pr
     if (v2 == &loc_v)
@@ -550,22 +550,22 @@ int main ( int argc, char** argv)
             std::cerr << "error while opening parameter file\n";
             return 1;
         }
-        param >> P_Stokes;
+        param >> P;
         param.close();
-        std::cout << P_Stokes << std::endl;
+        std::cout << P << std::endl;
 
         // Check MarkLower value
-        if( P_Stokes.get<int>("DomainCond.GeomType") == 0) P_Stokes.put("Misc.MarkLower", 0);
+        if( P.get<int>("DomainCond.GeomType") == 0) P.put("Misc.MarkLower", 0);
         else {
           int nx, ny, nz;
           double dx, dy, dz;
-          std::string mesh( P_Stokes.get<string>("DomainCond.MeshFile")), delim("x@");
+          std::string mesh( P.get<string>("DomainCond.MeshFile")), delim("x@");
           size_t idx;
           while ((idx= mesh.find_first_of( delim)) != std::string::npos )
             mesh[idx]= ' ';
           std::istringstream brick_info( mesh);
           brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
-          if (P_Stokes.get("Misc.MarkLower", 0)<0 || P_Stokes.get("Misc.MarkLower", 0) > dy)
+          if (P.get("Misc.MarkLower", 0)<0 || P.get("Misc.MarkLower", 0) > dy)
           {
         	  std::cerr << "Wrong value of MarkLower\n";
         	  return 1;
@@ -588,22 +588,22 @@ int main ( int argc, char** argv)
         double r = 1;
         std::string serfile = "none";
 
-        DROPS::BuildDomain( mg, P_Stokes.get<string>("DomainCond.MeshFile"), P_Stokes.get<int>("DomainCond.GeomType"), serfile, r);
-        DROPS::BuildBoundaryData( mg, bdata, P_Stokes.get<string>("DomainCond.BoundaryType"), P_Stokes.get<string>("DomainCond.BoundaryFncs"));
+        DROPS::BuildDomain( mg, P.get<string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+        DROPS::BuildBoundaryData( mg, bdata, P.get<string>("DomainCond.BoundaryType"), P.get<string>("DomainCond.BoundaryFncs"));
 
         // Setup the problem
-        DROPS::StokesFlowCoeffCL tmp = DROPS::StokesFlowCoeffCL( P_Stokes);
+        DROPS::StokesFlowCoeffCL tmp = DROPS::StokesFlowCoeffCL( P);
         StokesOnBrickCL prob(*mg, tmp, *bdata);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << P_Stokes.get<int>("DomainCond.InitialCond") << " times regulary ...\n";
+        std::cout << "Refine the grid " << P.get<int>("DomainCond.InitialCond") << " times regulary ...\n";
         timer.Reset();
 
         // Create new tetrahedra
-        for ( int ref=1; ref<=P_Stokes.get<int>("DomainCond.InitialCond"); ++ref){
+        for ( int ref=1; ref<=P.get<int>("DomainCond.InitialCond"); ++ref){
             std::cout << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();
