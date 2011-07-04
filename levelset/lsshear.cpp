@@ -188,8 +188,7 @@ void Strategy( StokesProblemT& Stokes, const BndDataCL<>& lsbnd, double inner_it
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, StokesSolver);
         LinThetaScheme2PhaseCL<LSetSolver>
-            cpl( Stokes, lset, dummyFP, gm, lsetmod, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
-        cpl.SetTimeStep( delta_t);
+            cpl( Stokes, lset, dummyFP, gm, lsetmod, delta_t, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
 
         for (Uint step= 1; step<=num_steps; ++step)
         {

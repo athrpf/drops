@@ -173,8 +173,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     LevelsetModifyCL lsetmod( 0, 0, 0, 0, 0, 0);
 
     LinThetaScheme2PhaseCL<LsetSolverT>
-        cpl( Stokes, lset, navstokessolver, gm, lsetmod, P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), 0.);
-    cpl.SetTimeStep( P.get<double>("Time.StepSize"));
+        cpl( Stokes, lset, navstokessolver, gm, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), 0.);
 
     for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
     {
