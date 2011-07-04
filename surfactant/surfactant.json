@@ -10,7 +10,7 @@
 	"Time":
 	{
 		"NumSteps":		1,
-		"StepSize":		1.0
+		"StepSize":		1
 	},
 
 	"Levelset":
@@ -20,7 +20,7 @@
 
 		"Tol":		1e-10,
 		"Iter":		500,
-		"Theta":		1.0,
+		"Theta":		1,
 		"SD":		0.1,
 		"CurvDiff":		-1,
 		"VolCorrection":		0
@@ -63,8 +63,8 @@
 		"Theta":		0.5,
 		"Iter":		1000,
 		"Tol":		1e-10,
-		"OmitBound":		-1.,
-		"Visc":		5e-2
+		"OmitBound":		-1,
+		"Visc":		0.05
 	},
 	"TestCase":		1,
 	"InitialDivisions":		2,

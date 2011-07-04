@@ -7,7 +7,7 @@
 
 	"Stokes":
 	{
-		"nu":		1.0
+		"nu":		1
 	},
 
 	"Refining":
@@ -15,8 +15,8 @@
 		"BasicRefX":		4,
 		"BasicRefY":		4,
 		"BasicRefZ":		4,
-		"dx":		10.0,
-		"dy":		2.0,
+		"dx":		10,
+		"dy":		2,
 		"dz":		0.1,
 		"RefAll":		1
 	},

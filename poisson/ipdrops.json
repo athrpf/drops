@@ -9,8 +9,6 @@
 #=============================================================
 #poisson solver",
 
-,
-
 	"Poisson":
 	{
 		"PcIter":		1,
@@ -18,11 +16,11 @@
 		"Iter":		100,
 		"Restart":		100,
 		"RelativeErr":		0,
-		"Tol":		1.0e-7,
+		"Tol":		1e-07,
 		"Method":		203,
 		"SmoothingSteps":		1,
 		"NumLvl":		-1,
-		"Relax":		1.0,
+		"Relax":		1,
 		"SolutionIsKnown":		1
 	},
 
@@ -58,7 +56,7 @@
 
 		"Heat":		5960,
 		"Rho":		866,
-		"Mu":		1.732e-3,
+		"Mu":		0.001732,
 		"Cp":		1500,
 		"Lambda":		0.26
 	},
@@ -82,7 +80,7 @@
 "# Error estimator",
 
 		"RelReduction":		0.1,
-		"MinRatio":		0.0,
+		"MinRatio":		0,
 		"Threshold":		0.6,
 		"Meas":		0.875,
 		"DoMark":		0,

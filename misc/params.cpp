@@ -1,6 +1,6 @@
 /// \file params.cpp
 /// \brief read parameters from file.
-/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt, Thorolf Schulte (update to JSON); SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt, Thorolf Schulte ; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.

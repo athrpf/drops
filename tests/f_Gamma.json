@@ -10,7 +10,7 @@
 	"Time":
 	{
 		"NumSteps":		10,
-		"StepSize":		1.0,
+		"StepSize":		1,
 		"Scheme":		1
 	},
 
@@ -26,9 +26,9 @@
 		"OuterTol":		1e-12,
 		"StokesMethod":		-1,
 		"PcAIter":		2,
-		"PcATol":		1e-2,
-		"PcSTol":		1e-4,
-		"XFEMStab":		1e-1,
+		"PcATol":		0.01,
+		"PcSTol":		0.0001,
+		"XFEMStab":		0.1,
 		"Theta":		1
 	},
 
@@ -48,7 +48,7 @@
 		"Tol":		1e-14,
 		"Iter":		10000,
 		"SD":		0,
-		"CurvDiff":		-5e-9,
+		"CurvDiff":		-5e-09,
 		"VolCorrection":		0,
 		"Theta":		1
 	},
@@ -70,7 +70,7 @@
 		"Freq":		0,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
-		"NarrowBand":		-1.0
+		"NarrowBand":		-1
 	},
 
 	"Mat":
@@ -78,11 +78,11 @@
 		"_comment":
 "# material data, all units are SI",
 
-		"DensDrop":		1e3,
-		"ViscDrop":		1e-3,
-		"DensFluid":		1e3,
-		"ViscFluid":		1e-3,
-		"SmoothZone":		1e-5
+		"DensDrop":		1000,
+		"ViscDrop":		0.001,
+		"DensFluid":		1000,
+		"ViscFluid":		0.001,
+		"SmoothZone":		1e-05
 	},
 
 	"Exp":
@@ -95,7 +95,7 @@
 		"Gravity":		[0, 0, 0 ],
 		"FlowDir":		1,
 		"InflowVel":		-0.14,
-		"RadInlet":		3.5e-3,
+		"RadInlet":		0.0035,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
 	},
@@ -109,7 +109,7 @@
 		"Freq":		0,
 		"FinestLevel":		2,
 		"CoarsestLevel":		0,
-		"Width":		4.9e-4,
+		"Width":		0.00049,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -121,7 +121,7 @@
 
 		"VarTension":		0,
 		"SurfTension":		1,
-		"JumpWidth":		5e-4,
+		"JumpWidth":		0.0005,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
 	},
@@ -135,8 +135,8 @@
 		"Theta":		0.5,
 		"Iter":		200,
 		"Tol":		1e-10,
-		"DiffPos":		5e-3,
-		"DiffNeg":		1e-2,
+		"DiffPos":		0.005,
+		"DiffNeg":		0.01,
 		"HPos":		0.5,
 		"HNeg":		0.5,
 		"IniCPos":		0.1,
@@ -154,8 +154,8 @@
 		"Theta":		0.5,
 		"Iter":		1000,
 		"Tol":		1e-10,
-		"OmitBound":		-1.,
-		"Visc":		1e-5
+		"OmitBound":		-1,
+		"Visc":		1e-05
 	},
 
 	"Ensight":

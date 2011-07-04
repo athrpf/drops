@@ -9,10 +9,10 @@
 	"Reparam":
 	{
 		"Freq":		-1,
-		"Method":		03,
+		"Method":		3,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
-		"NarrowBand":		-1.0
+		"NarrowBand":		-1
 	},
 
 	"AdaptRef":
@@ -23,7 +23,7 @@
 		"Freq":		0,
 		"FinestLevel":		4,
 		"CoarsestLevel":		2,
-		"Width":		0.25e-3,
+		"Width":		0.00025,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -37,10 +37,10 @@
 		"PosDrop":		[0.5, 0.5, 0.5 ],
 		"Gravity":		[0, -9.81, 0 ],
 		"FlowDir":		1,
-		"InflowVel":		-35e-3,
+		"InflowVel":		-0.035,
 		"InflowFreq":		0,
 		"InflowAmpl":		0,
-		"RadInlet":		3.6e-3
+		"RadInlet":		0.0036
 	},
 
 	"Brick":

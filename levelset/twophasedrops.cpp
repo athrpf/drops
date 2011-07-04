@@ -395,6 +395,9 @@ int main (int argc, char** argv)
     DROPS::ParMultiGridInitCL pmginit;
 #endif
     std::ifstream param;
+
+    std::cout << "Boost version: " << BOOST_LIB_VERSION << std::endl;
+
     if (argc!=2)
     {
         std::cout << "Using default parameter file: risingdroplet.json\n";

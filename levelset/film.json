@@ -10,7 +10,7 @@
 	"Time":
 	{
 		"NumSteps":		10000,
-		"StepSize":		1e-4
+		"StepSize":		0.0001
 	},
 
 	"Stokes":
@@ -22,10 +22,10 @@
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		1e-10,
-		"OuterTol":		1e-8,
+		"OuterTol":		1e-08,
 		"PcAIter":		200,
-		"PcATol":		1e-4,
-		"PcSTol":		1e-4,
+		"PcATol":		0.0001,
+		"PcSTol":		0.0001,
 		"XFEMStab":		1,
 		"Theta":		1
 	},
@@ -63,7 +63,7 @@
 "# re-initialization of levelset function",
 
 		"Freq":		100,
-		"Method":		03
+		"Method":		3
 	},
 
 	"AdaptRef":
@@ -74,7 +74,7 @@
 		"Freq":		10,
 		"FinestLevel":		2,
 		"CoarsestLevel":		0,
-		"Width":		5e-4,
+		"Width":		0.0005,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -94,11 +94,11 @@
 # material data, all units are SI",
 
 		"DensGas":		1.2,
-		"ViscGas":		1.71e-5,
+		"ViscGas":		1.71e-05,
 		"DensFluid":		909.3,
-		"ViscFluid":		5.183e-3,
-		"SmoothZone":		1e-4,
-		"SurfTension":		11e-3
+		"ViscFluid":		0.005183,
+		"SmoothZone":		0.0001,
+		"SurfTension":		0.011
 	},
 
 	"Exp":
@@ -110,7 +110,7 @@
 		"PumpAmpl":		0.2,
 		"PumpFreq":		10,
 		"Ampl_zDir":		0.5,
-		"Thickness":		6.35e-4
+		"Thickness":		0.000635
 	},
 	"MeshResolution":		[20, 6, 2 ],
 	"MeshSize":		[20.9e-3, 4e-3, 4e-3 ],

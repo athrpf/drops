@@ -2,13 +2,18 @@
 ParamToJSON - crappy script to translate old param-files to JSON-format
 no release, no warranty, no license
 Autor: Thorolf Schulte (LNM)
+
+Easy method for writing params.txt on linux (ubuntu):
+find . -name *.param > params.txt
 """
 
 from string import replace
 
 #settings
 FROM_FILE = True
-
+DEBUG = False
+SUFFIX_IN = ".param"
+SUFFIX_OUT = ".json"
 
 FILES = []
 if FROM_FILE:
@@ -20,12 +25,6 @@ if FROM_FILE:
 else:
 	FILES = ["./transport/risingbutanoldroplet"]
 
-#print FILE
-#raise SystemExit("bla")
-
-SUFFIX_IN = ".param"
-SUFFIX_OUT = ".json"
-DEBUG = False
 #/settings
 
 
@@ -98,8 +97,11 @@ for filename in FILES:
 			#what type the variable is? string needs "...", vector [...]
 			try:
 				#try number
-				float(var_line[2])
-				var_str = (var_line[2]).strip()
+				var_str = float(var_line[2])
+				if ((var_str%1) == 0.0):
+					var_str = int(var_str)
+				var_str = str(var_str)
+				#var_str = (var_line[2]).strip()
 			except ValueError:
 				#try vector
 				var_vec = (var_line[2]).split()
