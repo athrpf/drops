@@ -65,6 +65,8 @@
 double cbrt(double arg);
 #endif
 
+#include <cstddef>
+
 namespace DROPS
 {
 /// \name Basic types
