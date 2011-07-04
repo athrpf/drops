@@ -63,7 +63,7 @@
 "# re-initialization of levelset function",
 
 		"Freq":		100,
-		"Method":		03
+		"Method":		3
 	},
 
 	"AdaptRef":

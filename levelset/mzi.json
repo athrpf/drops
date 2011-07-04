@@ -66,7 +66,7 @@
 "# re-initialization of levelset function",
 
 		"Freq":		0,
-		"Method":		03,
+		"Method":		3,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
 		"NarrowBand":		-1.0
@@ -152,7 +152,7 @@
 		"Theta":		0.5,
 		"Iter":		1000,
 		"Tol":		1e-10,
-		"OmitBound":		-1.,
+		"OmitBound":		-1.0,
 		"Visc":		1e-5
 	},
 
