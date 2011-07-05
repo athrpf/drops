@@ -10,7 +10,7 @@
 	"Time":
 	{
 		"NumSteps":		10000,
-		"StepSize":		2e-4,
+		"StepSize":		0.0002,
 		"Scheme":		1
 	},
 
@@ -26,7 +26,7 @@
 		"OuterTol":		1e-10,
 		"PcAIter":		2,
 		"PcATol":		1e-99,
-		"PcSTol":		1e-4,
+		"PcSTol":		0.0001,
 		"XFEMStab":		0.1,
 		"Theta":		1
 	},
@@ -56,7 +56,7 @@
 	{
 		"Tol":		1e-10,
 		"Iter":		10,
-		"Stab":		1.0,
+		"Stab":		1,
 		"Projection":		0
 	},
 
@@ -69,7 +69,7 @@
 		"Method":		3,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
-		"NarrowBand":		-1.0
+		"NarrowBand":		-1
 	},
 
 	"AdaptRef":
@@ -80,7 +80,7 @@
 		"Freq":		10,
 		"FinestLevel":		3,
 		"CoarsestLevel":		0,
-		"Width":		0.25e-3,
+		"Width":		0.00025,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -91,10 +91,10 @@
 "# material data, all units are SI",
 
 		"DensDrop":		845.442,
-		"ViscDrop":		3.281e-3,
+		"ViscDrop":		0.003281,
 		"DensFluid":		986.506,
-		"ViscFluid":		1.388e-3,
-		"SmoothZone":		1e-4
+		"ViscFluid":		0.001388,
+		"SmoothZone":		0.0001
 	},
 
 	"Exp":
@@ -106,8 +106,8 @@
 		"PosDrop":		[0, -6.2e-3, 0 ],
 		"Gravity":		[0, -9.81, 0 ],
 		"FlowDir":		1,
-		"InflowVel":		-35e-3,
-		"RadInlet":		3.6e-3,
+		"InflowVel":		-0.035,
+		"RadInlet":		0.0036,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
 	},
@@ -118,8 +118,8 @@
 "# surface tension",
 
 		"VarTension":		0,
-		"SurfTension":		1.63e-3,
-		"JumpWidth":		5e-4,
+		"SurfTension":		0.00163,
+		"JumpWidth":		0.0005,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
 	},
@@ -133,8 +133,8 @@
 		"Theta":		0.5,
 		"Iter":		200,
 		"Tol":		1e-10,
-		"DiffPos":		5e-3,
-		"DiffNeg":		1e-2,
+		"DiffPos":		0.005,
+		"DiffNeg":		0.01,
 		"HPos":		1,
 		"HNeg":		0.5,
 		"IniCPos":		0.1,

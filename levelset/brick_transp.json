@@ -65,7 +65,7 @@
 		"_comment":
 "# re-initialization of levelset function",
 
-		"Method":		03,
+		"Method":		3,
 		"Freq":		0,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
@@ -159,7 +159,7 @@
 		"Theta":		0.5,
 		"Iter":		1000,
 		"Tol":		1e-10,
-		"OmitBound":		-1.,
+		"OmitBound":		-1.0,
 		"Visc":		1e-5
 	},
 

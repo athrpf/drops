@@ -23,10 +23,10 @@
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		0.6,
-		"OuterTol":		1e-8,
+		"OuterTol":		1e-08,
 		"PcAIter":		2,
 		"PcATol":		1e-99,
-		"PcSTol":		1e-4,
+		"PcSTol":		0.0001,
 		"XFEMStab":		0.1,
 		"Theta":		1
 	},
@@ -56,7 +56,7 @@
 	{
 		"Tol":		1e-10,
 		"Iter":		20,
-		"Stab":		1.0,
+		"Stab":		1,
 		"Projection":		0
 	},
 
@@ -69,7 +69,7 @@
 		"Method":		3,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
-		"NarrowBand":		-1.0
+		"NarrowBand":		-1
 	},
 
 	"AdaptRef":
@@ -119,7 +119,7 @@
 
 		"VarTension":		0,
 		"SurfTension":		1,
-		"JumpWidth":		5e-4,
+		"JumpWidth":		0.0005,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
 	},
@@ -133,8 +133,8 @@
 		"Theta":		0.5,
 		"Iter":		200,
 		"Tol":		1e-10,
-		"DiffPos":		5e-3,
-		"DiffNeg":		1e-2,
+		"DiffPos":		0.005,
+		"DiffNeg":		0.01,
 		"HPos":		1,
 		"HNeg":		0.5,
 		"IniCPos":		0.1,

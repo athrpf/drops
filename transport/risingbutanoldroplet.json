@@ -10,7 +10,7 @@
 	"Time":
 	{
 		"NumSteps":		2000,
-		"StepSize":		5e-4,
+		"StepSize":		0.0005,
 		"Scheme":		1
 	},
 
@@ -25,8 +25,8 @@
 		"InnerTol":		0.6,
 		"OuterTol":		1e-10,
 		"PcAIter":		500,
-		"PcATol":		1e-2,
-		"PcSTol":		1e-2,
+		"PcATol":		0.01,
+		"PcSTol":		0.01,
 		"XFEMStab":		0.01,
 		"Theta":		1
 	},
@@ -49,7 +49,7 @@
 		"SD":		0.1,
 		"CurvDiff":		-1,
 		"VolCorrection":		1,
-		"Theta":		1.0
+		"Theta":		1
 	},
 
 	"Coupling":
@@ -69,7 +69,7 @@
 		"Method":		1,
 		"MinGrad":		0.1,
 		"MaxGrad":		10,
-		"NarrowBand":		-1.0
+		"NarrowBand":		-1
 	},
 
 	"AdaptRef":
@@ -80,7 +80,7 @@
 		"Freq":		1,
 		"FinestLevel":		3,
 		"CoarsestLevel":		0,
-		"Width":		4.5e-4,
+		"Width":		0.00045,
 		"RefineStrategy":		1,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
@@ -92,10 +92,10 @@
 "# material data, all units are SI",
 
 		"DensDrop":		845.442,
-		"ViscDrop":		3.281e-3,
+		"ViscDrop":		0.003281,
 		"DensFluid":		986.506,
-		"ViscFluid":		1.388e-3,
-		"SmoothZone":		1e-4
+		"ViscFluid":		0.001388,
+		"SmoothZone":		0.0001
 	},
 
 	"Exp":
@@ -108,7 +108,7 @@
 		"Gravity":		[0, -9.81, 0 ],
 		"FlowDir":		1,
 		"InflowVel":		0,
-		"RadInlet":		5e-3,
+		"RadInlet":		0.005,
 		"InflowFreq":		0,
 		"InflowAmpl":		0
 	},
@@ -119,8 +119,8 @@
 "# surface tension",
 
 		"VarTension":		1,
-		"SurfTension":		1.63e-3,
-		"JumpWidth":		4.5e-4,
+		"SurfTension":		0.00163,
+		"JumpWidth":		0.00045,
 		"RelPos":		1.5,
 		"DirtFactor":		0.8
 	},
@@ -131,20 +131,17 @@
 "# mass transport",
 
 		"DoTransp":		1,
-		"UseNSSol":		1,
 		"Theta":		1,
 		"Iter":		200,
 		"Tol":		1e-15,
-		"DiffPos":		0.58345e-4,
-		"DiffNeg":		0.229e-4,
+		"DiffPos":		5.8345e-05,
+		"DiffNeg":		2.29e-05,
 		"HPos":		1.2143,
 		"HNeg":		1,
 		"IniCPos":		0.01,
 		"IniCNeg":		0,
 		"NitschePenalty":		100,
-		"NitscheXFEMStab":		0.01,
-		"SDStabilization":		1,
-		"Levelset":		"Ellipsoid"
+		"NitscheXFEMStab":		0.01
 	},
 
 	"SurfTransp":
@@ -152,12 +149,13 @@
 		"_comment":
 "# surfactant transport",
 
+		"SDStabilization":	0,
 		"DoTransp":		0,
 		"Theta":		0.5,
 		"Iter":		1000,
 		"Tol":		1e-10,
-		"OmitBound":		-1.,
-		"Visc":		1e-5
+		"OmitBound":		-1,
+		"Visc":		1e-05
 	},
 
 	"Ensight":
@@ -205,7 +203,7 @@
 		"GeomType":		1,
 		"InitialFile":		"none",
 		"MeshFile":		"20e-3x40e-3x20e-3@10x20x10",
-		"BoundaryType":		"0!0!0!0!0!0",
+		"BoundaryType":		"2!2!2!2!2!2!",
 		"BoundaryFncs":		"ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
 	}
 

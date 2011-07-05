@@ -23,10 +23,10 @@
 		"InnerIter":		1000,
 		"OuterIter":		100,
 		"InnerTol":		0.6,
-		"OuterTol":		1e-6,
+		"OuterTol":		1e-06,
 		"PcAIter":		100,
-		"PcATol":		1e-2,
-		"PcSTol":		1e-2,
+		"PcATol":		0.01,
+		"PcSTol":		0.01,
 		"XFEMStab":		0.1,
 		"Theta":		1
 	},
@@ -80,7 +80,7 @@
 		"Freq":		0,
 		"FinestLevel":		2,
 		"CoarsestLevel":		0,
-		"Width":		1.0e-8,
+		"Width":		1e-08,
 		"LoadBalStrategy":		1,
 		"Partitioner":		1
 	},
@@ -94,7 +94,7 @@
 		"ViscDrop":		1,
 		"DensFluid":		1,
 		"ViscFluid":		1,
-		"SmoothZone":		1e-5
+		"SmoothZone":		1e-05
 	},
 
 	"Exp":

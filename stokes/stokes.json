@@ -21,12 +21,13 @@
 		"InnerIter":		100,
 		"OuterIter":		100,
 		"InnerTol":		1e-10,
-		"OuterTol":		1e-8,
-		"StokesMethod":		530000,
+		"OuterTol":		1e-08,
+		"StokesMethod":		30207,
 		"PcAIter":		1,
-		"PcATol":		0,
-		"PcSTol":		0,
-		"Theta":		1.0
+		"PcATol":		999999999999999967336168804116691273849533185806555472917961779471295845921727862608739868455469056,
+		"PcSTol":		0.01,
+		"XFEMStab":		-0.1,
+		"Theta":		1
 	},
 
 	"StokesCoeff":
@@ -46,8 +47,8 @@
 		"_comment":
 "# Miscellaneous",
 
-		"Omega":		1.0,
-		"Tau":		1.0
+		"Omega":		1,
+		"Tau":		1
 	},
 
 	"Mat":
@@ -64,7 +65,7 @@
 		"_comment":
 "# experimental conditions",
 
-		"Gravity":		[ 0, 0, 0 ]
+		"Gravity":		[0, 0, 0 ]
 	},
 
 	"DomainCond":
@@ -72,7 +73,7 @@
 		"_comment":
 "# domain, bnd/ini conditions",
 
-		"InitialCond":		0,
+		"InitialCond":		2,
 		"GeomType":		1,
 		"InitialFile":		"none",
 		"MeshFile":		"0.78540x0.78540x0.78540@3x3x3",
@@ -114,7 +115,7 @@
 		"RelReduction":		0.1,
 		"MinRatio":		0,
 		"Threshold":		0.6,
-		"Meas":		0.484473073129685,
+		"Meas":		0.48447307313,
 		"DoMark":		0,
 		"DoErrorEstimate":		0,
 		"NumRef":		0
