@@ -684,7 +684,7 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
 {
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
-    double det, absdet;
+    double det;
     InterfacePatchCL patch;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
@@ -697,16 +697,14 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
     DROPS_FOR_TRIANG_TETRA( MG_, MG_.GetLastLevel(), it)
     {
         GetTrafoTr( T, det, *it);
-        absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
         patch.Init( *it, Phi, BndData_);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;
         for (int v=0; v<10; ++v) // init gradPhi, Coord
-        {
             gradPhi+= patch.GetPhi(v)*Grad[v];
-        }
+
         VectorCL normGrad( 5);
         for (int v=0; v<5; ++v) // init normGrad
             normGrad[v]= norm( gradPhi[v]);

@@ -1810,7 +1810,6 @@ void SetupRhs1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, co
     double det, absdet, intHat_p, intHat_n;
     Point3DCL tmp;
 
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     InterfaceTetraCL tetra;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
@@ -2035,9 +2034,8 @@ void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, cons
     SMatrixCL<3,3> T;
 
     double coupA[10][10];
-    double det, absdet;
+    double det;
     Point3DCL tmp;
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     LocalP2CL<> aij;
 
     P2DiscCL::GetGradientsOnRef( GradRefLP1);
@@ -2053,7 +2051,6 @@ void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, cons
         if (triangle.Intersects()) { // We are at the phase boundary.
             n.assign( *sit, RowIdx, BndData_.Vel);
             GetTrafoTr( T, det, *sit);
-            absdet= std::fabs( det);
             P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
             std::memset( coupA, 0, 10*10*sizeof( double));
             for (int i= 0; i < 10; ++i)
