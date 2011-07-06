@@ -1,0 +1,208 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for twophasedrops
+#    simulation of two-phase flow:
+#    droplet in measuring cell used in NMR measurements
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		10000,
+		"StepSize":		0.0002,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"StokesMethod":		10102,
+		"InnerIter":		1000,
+		"OuterIter":		200,
+		"InnerTol":		0.6,
+		"OuterTol":		1e-10,
+		"PcAIter":		2,
+		"PcATol":		1e-99,
+		"PcSTol":		0.0001,
+		"XFEMStab":		0.1,
+		"Theta":		1
+	},
+
+	"NavStokes":
+	{
+		"Nonlinear":		1,
+		"Tol":		5e-10,
+		"Iter":		20,
+		"Reduction":		0.1
+	},
+
+	"Levelset":
+	{
+		"_comment":
+"# levelset solver",
+
+		"Tol":		1e-14,
+		"Iter":		500,
+		"SD":		0.1,
+		"CurvDiff":		-1,
+		"VolCorrection":		1,
+		"Theta":		1
+	},
+
+	"Coupling":
+	{
+		"Tol":		1e-10,
+		"Iter":		10,
+		"Stab":		1,
+		"Projection":		0
+	},
+
+	"Reparam":
+	{
+		"_comment":
+"# re-initialization of levelset function",
+
+		"Freq":		10,
+		"Method":		3,
+		"MinGrad":		0.1,
+		"MaxGrad":		10,
+		"NarrowBand":		-1
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		10,
+		"FinestLevel":		3,
+		"CoarsestLevel":		0,
+		"Width":		0.00025,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"DensDrop":		867.493,
+		"ViscDrop":		0.000596,
+		"DensFluid":		998.781,
+		"ViscFluid":		0.001029,
+		"SmoothZone":		0.0001
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"RadDrop":		[1.0e-3, 1.0e-3, 1.0e-3 ],
+		"PosDrop":		[0, -10.0e-3, 0 ],
+		"Gravity":		[0, -9.81, 0 ],
+		"FlowDir":		1,
+		"InflowVel":		-0.04,
+		"RadInlet":		0.0036,
+		"InflowFreq":		0,
+		"InflowAmpl":		0
+	},
+
+	"SurfTens":
+	{
+		"_comment":
+"# surface tension",
+
+		"VarTension":		0,
+		"SurfTension":		0.0343,
+		"JumpWidth":		0.0005,
+		"RelPos":		1.5,
+		"DirtFactor":		0.8
+	},
+
+	"Transp":
+	{
+		"_comment":
+"# mass transport",
+
+		"DoTransp":		0,
+		"Theta":		0.5,
+		"Iter":		200,
+		"Tol":		1e-10,
+		"DiffPos":		0.005,
+		"DiffNeg":		0.01,
+		"HPos":		1,
+		"HNeg":		0.5,
+		"IniCPos":		0.1,
+		"IniCNeg":		5,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0.1
+	},
+
+	"SurfTransp":
+	{
+		"_comment":
+"# surfactant transport",
+
+		"DoTransp":		0,
+		"Theta":		0.5,
+		"Iter":		1000,
+		"Tol":		1e-10,
+		"OmitBound":		-1.0,
+		"Visc":		1e-5
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"nsmzi",
+		"EnsDir":		"ensight",
+		"Binary":		0,
+		"MasterOut":		1,
+		"GeomName":		"nsmzi"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		1,
+		"VTKDir":		"vtk",
+		"VTKName":		"nsmzi",
+		"Binary":		1
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# Write out results, read in for restart",
+
+		"Serialization":		1,
+		"Overwrite":		1,
+		"Inputfile":		"start/data",
+		"Outputfile":		"mg/data",
+		"Binary":		0
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		-1,
+		"GeomType":		0,
+		"InitialFile":		"start/data",
+		"MeshFile":		"gambit/NMR_05.msh",
+		"BoundaryType":		"2!21!0",
+		"BoundaryFncs":		"InflowCell!ZeroVel!ZeroVel"
+	}
+
+}

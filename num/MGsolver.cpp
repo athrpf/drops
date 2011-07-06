@@ -31,8 +31,8 @@ void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P)
 {
     Uint lvl= 0;
     MLMatrixCL::const_iterator coarse = A.begin(), fine = ++A.begin();
-    MLMatrixCL::const_iterator coarseP = P.begin(), fineP = ++P.begin();
-    for(; fine!=A.end(); ++coarse, ++fine, ++lvl)
+    MLMatrixCL::const_iterator fineP = ++P.begin();
+    for(; fine!=A.end(); ++coarse, ++fine, ++fineP, ++lvl)
     {
 //        if (lvl==1) std::cout << fine->A.Data << std::endl;
         const Uint nu= coarse->num_cols();

@@ -29,13 +29,13 @@
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
 #include "levelset/coupling.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 #include "levelset/surfacetension.h"
 #include <fstream>
 #include <sstream>
 
 
-DROPS::ParamMesszelleNsCL C;
+DROPS::ParamCL P;
 
 int FctCode=9;
 
@@ -48,9 +48,9 @@ class ZeroFlowCL
     const DROPS::SmoothedJumpCL rho, mu;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleNsCL& c)
-      : rho( DROPS::JumpCL( 1, 1), DROPS::H_sm, c.mat_SmoothZone),
-         mu( DROPS::JumpCL( 1, 1),   DROPS::H_sm, c.mat_SmoothZone),
+    ZeroFlowCL( const DROPS::ParamCL& P)
+      : rho( DROPS::JumpCL( 1, 1), DROPS::H_sm, P.get<double>("Mat.SmoothZone")),
+         mu( DROPS::JumpCL( 1, 1),   DROPS::H_sm, P.get<double>("Mat.SmoothZone")),
         g()    {}
 };
 
@@ -80,9 +80,9 @@ double DistanceFct( const DROPS::Point3DCL& p)
 
 double DistanceFct( const DROPS::Point3DCL& p)
 { // ball
-    const DROPS::Point3DCL d= C.exp_PosDrop-p;
+    const DROPS::Point3DCL d= P.get<DROPS::Point3DCL>("Exp.PosDrop")-p;
 //    return d.norm_sq()-C.Radius*C.Radius; // exakte Darstellung mit P2-FE, aber keine Abstandsfunktion
-    return d.norm()-C.exp_RadDrop[0];
+    return d.norm()-P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
 }
 
 DROPS::Point3DCL Null( const DROPS::Point3DCL&, double)
@@ -171,9 +171,9 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     typedef InstatStokes2PhaseP2P1CL StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    const double curv= 2/C.exp_RadDrop[0];
+    const double curv= 2/P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, /*CurvDiff*/ -1.);
+    LevelsetP2CL lset( MG, lsbnd, sf, P.get<double>("Levelset.SD"), /*CurvDiff*/ -1.);
 //    lset.SetSurfaceForce( SF_Const);
 
     IdxDescCL* lidx= &lset.idx;
@@ -199,7 +199,7 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
 
-    const double Vol= 4./3*M_PI*std::pow( C.exp_RadDrop[0], 3);
+    const double Vol= 4./3*M_PI*std::pow( P.get<DROPS::Point3DCL>("Exp.RadDrop")[0], 3);
     std::cout << "Volumen = " << Vol << "\tKruemmung = " << curv << "\n\n";
     typedef std::map<int,double> LsgMapT;
     LsgMapT reflsg;
@@ -215,9 +215,9 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
 //    reflsg[31]= 0;
 //    reflsg[32]= 0;
     reflsg[33]= curv*Vol;
-    reflsg[111]= curv*2*Vol*C.exp_PosDrop[0];
-    reflsg[121]= curv*Vol*C.exp_PosDrop[1];
-    reflsg[131]= curv*Vol*C.exp_PosDrop[2];
+    reflsg[111]= curv*2*Vol*P.get<DROPS::Point3DCL>("Exp.PosDrop")[0];
+    reflsg[121]= curv*Vol*P.get<DROPS::Point3DCL>("Exp.PosDrop")[1];
+    reflsg[131]= curv*Vol*P.get<DROPS::Point3DCL>("Exp.PosDrop")[2];
 //    reflsg[231]= 0;
 //    reflsg[221]= 0;
 //    reflsg[331]= 0;
@@ -247,7 +247,7 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     for (size_t i=0; i<refVec.size(); ++i)
         std::cout << refVec[i] << ",\t";
 
-    std::cout << "\n\n" << C.ref_FinestLevel << ",\t";
+    std::cout << "\n\n" << P.get<int>("AdaptRef.FinestLevel") << ",\t";
     for (size_t i=0; i<errVec.size(); ++i)
         std::cout << errVec[i] << ",\t";
     std::cout << "\n\n";
@@ -263,9 +263,9 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes, const Lse
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
-    const double curv= 2/C.exp_RadDrop[0];
+    const double curv= 2/P.get<DROPS::Point3DCL>("Exp.RadDrop")[0];
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, /*CurvDiff*/ -1.);
+    LevelsetP2CL lset( MG, lsbnd, sf, P.get<double>("Levelset.SD"), /*CurvDiff*/ -1.);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -292,7 +292,7 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes, const Lse
     std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
 
-    const double Vol= 4./3*M_PI*std::pow( C.exp_RadDrop[0], 3);
+    const double Vol= 4./3*M_PI*std::pow( P.get<DROPS::Point3DCL>("Exp.RadDrop")[0], 3);
     std::cout << "Volumen = " << Vol << "\tKruemmung = " << curv << "\n\n";
 
     Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &Stokes.b, lset, 0.);
@@ -378,21 +378,21 @@ int main (int argc, char** argv)
     if (argc>1)
         param.open( argv[1]);
     else
-        param.open( "f_Gamma.param");
+        param.open( "f_Gamma.json");
     if (!param)
     {
         std::cout << "error while opening parameter file\n";
         return 1;
     }
-    param >> C;
+    param >> P;
     param.close();
-    std::cout << C << std::endl;
+    std::cout << P << std::endl;
 
     typedef DROPS::InstatStokes2PhaseP2P1CL    MyStokesCL;
 
     int nx, ny, nz;
     double dx, dy, dz;
-    std::string mesh( C.dmc_MeshFile), delim("x@");
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx;
     while ((idx= mesh.find_first_of( delim)) != std::string::npos )
         mesh[idx]= ' ';
@@ -400,7 +400,7 @@ int main (int argc, char** argv)
     brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
     if (!brick_info)
         DROPS::DROPSErrCL("error while reading geometry information: " + mesh);
-    C.exp_RadInlet= dx/2;
+    P.put("Exp.RadInlet", dx/2);
     DROPS::Point3DCL orig, px, py, pz;
     px[0]= dx; py[1]= dy; pz[2]= dz;
     orig= -0.5*(px+py+pz);
@@ -415,11 +415,11 @@ int main (int argc, char** argv)
     const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
     DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
 
-    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
+    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(P), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 
-    for (int i=0; i<C.ref_FinestLevel; ++i)
+    for (int i=0; i<P.get<int>("AdaptRef.FinestLevel"); ++i)
     {
         MarkDrop( mg);
         mg.Refine();

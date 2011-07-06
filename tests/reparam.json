@@ -1,0 +1,66 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for reparam.cpp
+#    Testing reparametrization strategies
+#=============================================================
+# re-initialization of levelset function",
+
+	"Reparam":
+	{
+		"Freq":		-1,
+		"Method":		3,
+		"MinGrad":		0.1,
+		"MaxGrad":		10,
+		"NarrowBand":		-1
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		4,
+		"CoarsestLevel":		2,
+		"Width":		0.00025,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"RadDrop":		[0.1, 0.3, 0.4 ],
+		"PosDrop":		[0.5, 0.5, 0.5 ],
+		"Gravity":		[0, -9.81, 0 ],
+		"FlowDir":		1,
+		"InflowVel":		-0.035,
+		"InflowFreq":		0,
+		"InflowAmpl":		0,
+		"RadInlet":		0.0036
+	},
+
+	"Brick":
+	{
+		"BasicRefX":		2,
+		"BasicRefY":		2,
+		"BasicRefZ":		2,
+		"dim":		[1, 1, 1 ],
+		"orig":		[-0.5, -0.5, -0.5 ]
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		0,
+		"VTKDir":		"vtk",
+		"VTKName":		"reparam",
+		"Binary":		0
+	}
+
+}

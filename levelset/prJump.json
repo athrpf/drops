@@ -1,0 +1,208 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for prJump
+#    simulation of two-phase flow:
+#    study effect of pressure jump for different FE spaces
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		0,
+		"StepSize":		0,
+		"Scheme":		0
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"StokesMethod":		20303,
+		"InnerIter":		1000,
+		"OuterIter":		100,
+		"InnerTol":		0.6,
+		"OuterTol":		1e-06,
+		"PcAIter":		100,
+		"PcATol":		0.01,
+		"PcSTol":		0.01,
+		"XFEMStab":		0.1,
+		"Theta":		1
+	},
+
+	"NavStokes":
+	{
+		"Nonlinear":		0,
+		"Tol":		0,
+		"Iter":		0,
+		"Reduction":		0
+	},
+
+	"Levelset":
+	{
+		"_comment":
+"# levelset solver",
+
+		"Tol":		0,
+		"Iter":		0,
+		"SD":		0,
+		"CurvDiff":		0,
+		"VolCorrection":		0,
+		"Theta":		0
+	},
+
+	"Coupling":
+	{
+		"Tol":		0,
+		"Iter":		0,
+		"Stab":		0,
+		"Projection":		0
+	},
+
+	"Reparam":
+	{
+		"_comment":
+"# re-initialization of levelset function",
+
+		"Freq":		0,
+		"Method":		0,
+		"MinGrad":		0,
+		"MaxGrad":		0,
+		"NarrowBand":		0
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		1e-08,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"DensDrop":		1,
+		"ViscDrop":		1,
+		"DensFluid":		1,
+		"ViscFluid":		1,
+		"SmoothZone":		1e-05
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"RadDrop":		[0.6666666, 0.6666666, 0.6666666 ],
+		"PosDrop":		[0, 0, 0 ],
+		"Gravity":		[0, 0, 0 ],
+		"FlowDir":		0,
+		"InflowVel":		0,
+		"RadInlet":		0,
+		"InflowFreq":		0,
+		"InflowAmpl":		0
+	},
+
+	"SurfTens":
+	{
+		"_comment":
+"# surface tension",
+
+		"VarTension":		0,
+		"SurfTension":		1,
+		"JumpWidth":		0,
+		"RelPos":		0,
+		"DirtFactor":		0
+	},
+
+	"Transp":
+	{
+		"_comment":
+"# mass transport",
+
+		"DoTransp":		0,
+		"Theta":		0,
+		"Iter":		0,
+		"Tol":		0,
+		"DiffPos":		0,
+		"DiffNeg":		0,
+		"HPos":		0,
+		"HNeg":		0,
+		"IniCPos":		0,
+		"IniCNeg":		0,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0
+	},
+
+	"SurfTransp":
+	{
+		"_comment":
+"# surfactant transport",
+
+		"DoTransp":		0,
+		"Theta":		0,
+		"Iter":		0,
+		"Tol":		0,
+		"OmitBound":		0,
+		"Visc":		0
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		1,
+		"EnsCase":		"prJump",
+		"EnsDir":		"ensight",
+		"Binary":		0,
+		"MasterOut":		1,
+		"GeomName":		"Cube"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		0,
+		"VTKDir":		0,
+		"VTKName":		0,
+		"Binary":		0
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# Write out results, read in for restart",
+
+		"Serialization":		0,
+		"Overwrite":		0,
+		"Inputfile":		0,
+		"Outputfile":		0,
+		"Binary":		0
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		1,
+		"GeomType":		0,
+		"InitialFile":		0,
+		"MeshFile":		4,
+		"BoundaryType":		0,
+		"BoundaryFncs":		0
+	}
+
+}

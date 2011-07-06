@@ -576,7 +576,6 @@ is called if MarkEqRule(). It safes all sub simplices from removement.
 
     for (Uint ch=0; ch<myRule.ChildNum; ++ch)
     {
-        const ChildDataCL childdat= GetChildData(myRule.Children[ch]);
         TetraCL* const child= (*_Children)[ch];
 
         for (VertexPIterator vertPIt(child->_Vertices.begin()); vertPIt!=child->_Vertices.end(); ++vertPIt)

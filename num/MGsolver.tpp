@@ -66,7 +66,7 @@ void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL
     MLMatrixCL::const_iterator finest= MGData.GetFinestIter();
     typename ProlongationT::const_iterator finestProlong= Prolong.GetFinestIter();
     double resid= -1;
-    double old_resid;
+//    double old_resid;
     VectorCL tmp;
     if (residerr == true) {
         resid= norm( b - *finest * x);
@@ -83,7 +83,7 @@ void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL
         else tmp= x;
         MGM( MGData.begin(), finest, finestProlong, x, b, smoother, sm, solver, lvl, -1);
         if (residerr == true) {
-            old_resid= resid;
+//            old_resid= resid;
             resid= norm( b - *finest * x);
 //            std::cout << "iteration: " << it  << "\tresidual: " << resid;
 //            std::cout << "\treduction: " << resid/old_resid;

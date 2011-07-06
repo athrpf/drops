@@ -135,23 +135,19 @@ const BaryCoordCL bary( 0.25);
 const Point3DCL bary3d( 0.25);
 
 
-double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
+double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& /*vd0*/, VecDescCL& /*vd1*/,
     VecDescCL& vd2)
 {
     std::cout << "\n-----------------------------------------------------------------"
                  "\nOld Setup:\n";
 //    const IdxT num_unks_vel= vd0.RowIdx->NumUnknowns;
 //    const Uint lvl         = vd0.GetLevel();
-    const Uint vidx        = vd0.RowIdx->GetIdx();
 
-    IdxT Numb[10];
-    bool IsOnDirBnd[10];
     double ret= 0.;
     Quad2CL<double> rho, mu, Phi, kreuzterm;
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     P2FuncT ls( &vd2, &theBnd, &mg);
     SMatrixCL<3,3> T;
-    double coupA[10][10], coupM[10][10];
     double det, absdet;
 
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(),
@@ -163,14 +159,8 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for (int i=0; i<4; ++i) {
-            if(!(IsOnDirBnd[i]= theBnd.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
             rhs[i]= Point3DCL (h( sit->GetVertex(i)->GetCoord()));
             Phi[i]= ls.val( *sit->GetVertex(i));
-        }
-        for (int i=0; i<6; ++i) {
-            if (!(IsOnDirBnd[i+4]= theBnd.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
         rhs[4]= Point3DCL (h( GetBaryCenter( *sit)));
         Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
@@ -186,12 +176,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
             for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
                 const double cA= Quad2CL<>(dot( Grad[i], Grad[j]) * mu).quad( absdet);
-                coupA[i][j]= cA;
-                coupA[j][i]= cA;
-
                 const double cM= rho.quadP2(i,j, absdet);
-                coupM[i][j]= cM;
-                coupM[j][i]= cM;
                 ret+= cM - cA;
             }
     }
@@ -199,22 +184,18 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
 }
 
 
-double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
+double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& /*vd0*/, VecDescCL& /*vd1*/,
     VecDescCL& vd2)
 {
     std::cout << "\n-----------------------------------------------------------------"
                  "\nNew Setup:\n";
 //    const IdxT num_unks_vel= vd0.RowIdx->NumUnknowns;
 //    const Uint lvl         = vd0.GetLevel();
-      const Uint vidx        = vd0.RowIdx->GetIdx();
 
-    IdxT Numb[10];
-    bool IsOnDirBnd[10];
     double ret= 0.;
     Quad2CL<double> rho, mu, Phi, kreuzterm;
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     SMatrixCL<3,3> T;
-    double coupA[10][10], coupM[10][10];
     double det, absdet;
     LocalP2CL<> ls;
 
@@ -227,14 +208,8 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for (int i=0; i<4; ++i) {
-            if(!(IsOnDirBnd[i]= theBnd.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
             rhs[i]= Point3DCL (h( sit->GetVertex(i)->GetCoord()));
             Phi[i]= ls[i];
-        }
-        for (int i=0; i<6; ++i) {
-            if (!(IsOnDirBnd[i+4]= theBnd.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
         rhs[4]= Point3DCL (h( GetBaryCenter( *sit)));
         Phi[4]= ls( bary);
@@ -250,12 +225,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
             for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
                 const double cA= Quad2CL<>(dot( Grad[i], Grad[j]) * mu).quad( absdet);
-                coupA[i][j]= cA;
-                coupA[j][i]= cA;
-
                 const double cM= rho.quadP2(i,j, absdet);
-                coupM[i][j]= cM;
-                coupM[j][i]= cM;
                 ret+= cM - cA;
             }
     }

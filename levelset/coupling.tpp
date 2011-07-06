@@ -35,8 +35,8 @@ namespace DROPS
 template <class LsetSolverT>
 LinThetaScheme2PhaseCL<LsetSolverT>::LinThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                double stk_theta, double ls_theta, double nonlinear, bool implicitCurv)
-  : base_( Stokes, ls, lsetmod, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
+                double dt, double stk_theta, double ls_theta, double nonlinear, bool implicitCurv)
+  : base_( Stokes, ls, lsetmod, dt, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
   stk_theta_( stk_theta), ls_theta_( ls_theta), cplA_(new VelVecDescCL), implCurv_( implicitCurv)
 {
     Update();
@@ -229,9 +229,10 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::Update()
 
 template <class LsetSolverT>
 OperatorSplitting2PhaseCL<LsetSolverT>::OperatorSplitting2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear)
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double dt,
+    		int gm_iter, double gm_tol, double nonlinear)
 
-  : base_( Stokes, ls, lsetmod, nonlinear), solver_(solver), lsetsolver_( lsetsolver),
+  : base_( Stokes, ls, lsetmod, dt, nonlinear), solver_(solver), lsetsolver_( lsetsolver),
     gm_( pc_, 100, gm_iter, gm_tol, false /*test absolute resid*/),
     stk_theta_( 1.0 - std::sqrt( 2.)/2.), ls_theta_( 1.0 - std::sqrt( 2.)/2.),
     cplA_( new VelVecDescCL), old_cplA_( new VelVecDescCL),
@@ -477,9 +478,9 @@ void OperatorSplitting2PhaseCL<LsetSolverT>::Update()
 
 template <class LsetSolverT, class RelaxationPolicyT>
 CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::CoupledTimeDisc2PhaseBaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol,
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double dt, double tol,
             double nonlinear, bool withProjection, double stab)
-  : base_( Stokes, ls, lsetmod, nonlinear),
+  : base_( Stokes, ls, lsetmod, dt, nonlinear),
     solver_( solver), lsetsolver_( lsetsolver), tol_(tol), withProj_( withProjection), stab_( stab), alpha_( nonlinear_)
 {
     Update();
@@ -692,8 +693,8 @@ void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::Update()
 template <class LsetSolverT, class RelaxationPolicyT>
 MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::MidPointTimeDisc2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-            double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
+    		double dt, double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, nonlinear, withProjection, stab),
     implicitpressure_( implicitpressure)
 {
     if (nonlinear != 0.0)
@@ -798,8 +799,8 @@ void MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSyste
 template <class LsetSolverT, class RelaxationPolicyT>
 SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::SpaceTimeDiscTheta2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-            double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool implicitpressure)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),  stk_theta_( stk_theta), ls_theta_( ls_theta),
+    		double dt, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool implicitpressure)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, nonlinear, withProjection, stab),  stk_theta_( stk_theta), ls_theta_( ls_theta),
     implicitpressure_( implicitpressure), Mold_( 0), Eold_( 0)
 {
     stab_ *= stk_theta_;
@@ -931,8 +932,8 @@ void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSys
 template <class LsetSolverT, class RelaxationPolicyT>
 EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::EulerBackwardScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-            double tol, double nonlinear, bool withProjection, double stab)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab)
+    		double dt, double tol, double nonlinear, bool withProjection, double stab)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, nonlinear, withProjection, stab)
 {
     Update();
 }
@@ -1008,8 +1009,8 @@ void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSy
 template <class LsetSolverT, class RelaxationPolicyT>
 RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-            double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
+    		double dt, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, nonlinear, withProjection, stab),
     stk_theta_( stk_theta), ls_theta_( ls_theta),
 #ifndef _PAR
     ssorpc_(), Msolver_( ssorpc_, 200, 1e-10, true),

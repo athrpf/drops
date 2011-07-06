@@ -1,0 +1,224 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for    TestBrickPar
+#    simulation of two-phase flow:
+#    sedimentation of a droplet
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		5,
+		"StepSize":		0.0001,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"StokesMethod":		20401,
+		"InnerIter":		1000,
+		"OuterIter":		200,
+		"InnerTol":		0.1,
+		"OuterTol":		1e-10,
+		"PcAIter":		500,
+		"PcATol":		2e-05,
+		"PcSTol":		0.0001,
+		"XFEMStab":		0,
+		"Theta":		1
+	},
+
+	"NavStokes":
+	{
+		"_comment":
+"# Navier-Stokes settings",
+
+		"Nonlinear":		1,
+		"Tol":		1e-07,
+		"Iter":		20,
+		"Reduction":		0.1
+	},
+
+	"Levelset":
+	{
+		"_comment":
+"# levelset solver",
+
+		"Tol":		1e-10,
+		"Iter":		1000,
+		"SD":		0.1,
+		"CurvDiff":		-1,
+		"VolCorrection":		1,
+		"Theta":		1
+	},
+
+	"Coupling":
+	{
+		"Tol":		1e-10,
+		"Iter":		10,
+		"Stab":		0,
+		"Projection":		0
+	},
+
+	"Reparam":
+	{
+		"_comment":
+"# re-initialization of levelset function",
+
+		"Freq":		5,
+		"Method":		1,
+		"NarrowBand":		-1,
+		"MinGrad":		0.1,
+		"MaxGrad":		10
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		1,
+		"FinestLevel":		1,
+		"CoarsestLevel":		0,
+		"Width":		0.0004,
+		"RefineStrategy":		1
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"DensDrop":		845.442,
+		"ViscDrop":		0.003281,
+		"DensFluid":		986.506,
+		"ViscFluid":		0.001388,
+		"SmoothZone":		0.0001
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"RadDrop":		[1.75e-3, 1.75e-3, 1.75e-3 ],
+		"PosDrop":		[0, -10e-3, 0 ],
+		"Gravity":		[0, -9.81, 0 ],
+		"FlowDir":		1,
+		"InflowVel":		-0.025,
+		"RadInlet":		0.0036,
+		"InflowFreq":		0,
+		"InflowAmpl":		0
+	},
+
+	"SurfTens":
+	{
+		"_comment":
+"# surface tension",
+
+		"VarTension":		1,
+		"SurfTension":		0.00163,
+		"JumpWidth":		0.0005,
+		"RelPos":		0.5,
+		"DirtFactor":		0.8
+	},
+
+	"Transp":
+	{
+		"_comment":
+"# mass transport",
+
+		"DoTransp":		0,
+		"Theta":		0.5,
+		"Iter":		200,
+		"Tol":		1e-10,
+		"DiffPos":		0.005,
+		"DiffNeg":		0.01,
+		"H":		0.5,
+		"IniCPos":		0.1,
+		"IniCNeg":		5,
+		"NitschePenalty":		0,
+		"NitscheXFEMStab":		0.1
+	},
+
+	"LoadBalancing":
+	{
+		"Qualtity":		1
+	},
+
+	"QuadrilateralGrid":
+	{
+		"_comment":
+"# Quadrilateral Grid",
+
+		"Quad":		1,
+		"GridX":		64,
+		"GridY":		64,
+		"GridZ":		64,
+		"Stepsize":		[15e-5, 15e-5, 15e-5 ],
+		"Barycenter":		[0, -7.5e-3, 0 ],
+		"Rotation":		[0, 0, 0 ],
+		"FileName":		"./wrapNMR"
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"nsmzi",
+		"EnsDir":		"ensight",
+		"Binary":		0,
+		"MasterOut":		1,
+		"GeomName":		"messzelle"
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		0,
+		"VTKDir":		"vtk",
+		"VTKName":		"brick_adapt",
+		"Binary":		0
+	},
+
+	"Info":
+	{
+		"_comment":
+"# Info",
+
+		"PrintSize":		1,
+		"PrintNumUnk":		1,
+		"CheckMG":		1
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		1,
+		"GeomType":		0,
+		"InitialFile":		"ensight/nsmzi",
+		"MeshFile":		"../levelset/gambit/NMR_05.msh",
+		"BoundaryType":		0
+	},
+
+	"Restart":
+	{
+		"_comment":
+"# restart computation",
+
+		"Inputfile":		"none",
+		"Outputfile":		"./geometry/",
+		"Overwrite":		1,
+		"Serialization":		0
+	}
+
+}

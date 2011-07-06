@@ -1,0 +1,91 @@
+{
+	"_comment":
+"##
+## only for use with ipdropsAD
+##
+#=============================================================
+#    DROPS parameter file for ipdrops.cpp
+#    simulation of poisson problem
+#=============================================================
+#poisson solver",
+
+	"Poisson":
+	{
+		"PcIter":		1,
+		"PcTol":		0.1,
+		"Iter":		100,
+		"Restart":		100,
+		"RelativeErr":		0,
+		"Tol":		1e-07,
+		"Method":		203,
+		"SmoothingSteps":		1,
+		"NumLvl":		-1,
+		"Relax":		1,
+		"SolutionIsKnown":		1
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"RefineSteps":		2,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"1x1x1@2x2x2",
+		"BoundaryType":		2
+	},
+
+	"Time":
+	{
+		"_comment":
+"# time stepping",
+
+		"StepSize":		0.1,
+		"NumSteps":		5,
+		"Theta":		0.5,
+		"Scheme":		1,
+		"Convection":		1,
+		"Nu":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Heat":		5960,
+		"Rho":		866,
+		"Mu":		0.001732,
+		"Cp":		1500,
+		"Lambda":		0.26
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		1,
+		"EnsCase":		"FilmTemp",
+		"EnsDir":		"ensight",
+		"GeomName":		"test",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"# Error estimator",
+
+		"RelReduction":		0.1,
+		"MinRatio":		0,
+		"Threshold":		0.6,
+		"Meas":		0.875,
+		"DoMark":		0,
+		"DoErrorEstimate":		0,
+		"NumRef":		6
+	}
+
+}

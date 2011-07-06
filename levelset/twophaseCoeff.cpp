@@ -23,9 +23,9 @@
 */
 
 #include "misc/bndmap.h"
-#include "levelset/params.h"
+#include "misc/params.h"
 
-extern DROPS::ParamMesszelleNsCL C;
+extern DROPS::ParamCL P;
 
 //========================================================================
 //          Functions for twophasedrops-executable (inflow)
@@ -35,10 +35,10 @@ namespace tpd_inflow{
     DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
     {
         DROPS::SVectorCL<3> ret(0.);
-        const double x = p[0]*(2* C.exp_RadInlet -p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
-                     z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
+        const double x = p[0]*(2* P.get<double>("Exp.RadInlet") -p[0]) / (P.get<double>("Exp.RadInlet")*P.get<double>("Exp.RadInlet")),
+                     z = p[2]*(2*P.get<double>("Exp.RadInlet")-p[2]) / (P.get<double>("Exp.RadInlet")*P.get<double>("Exp.RadInlet"));
 
-        ret[1]= x * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
+        ret[1]= x * z * P.get<double>("Exp.InflowVel") * (1-P.get<double>("Exp.InflowAmpl")*std::cos(2*M_PI*P.get<double>("Exp.InflowFreq")*t));
 
         return ret;
     }
@@ -51,7 +51,7 @@ namespace tpd_inflow{
         const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
                      z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
 
-        ret[0]= y * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
+        ret[0]= y * z * P.get<double>("Exp.InflowVel") * (1-P.get<double>("Exp.InflowAmpl")*std::cos(2*M_PI*P.get<double>("Exp.InflowFreq")*t));
 
         return ret;
     }
@@ -60,9 +60,9 @@ namespace tpd_inflow{
     DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret(0.);
-        const double s2= C.exp_RadInlet*C.exp_RadInlet,
-                     r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
-        ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
+        const double s2= P.get<double>("Exp.RadInlet")*P.get<double>("Exp.RadInlet"),
+                     r2= p.norm_sq() - p[P.get<int>("Exp.FlowDir")]*p[P.get<int>("Exp.FlowDir")];
+        ret[P.get<int>("Exp.FlowDir")]= -(r2-s2)/s2*P.get<double>("Exp.InflowVel");
 
         return ret;
     }
@@ -75,9 +75,9 @@ namespace tpd_inflow{
     DROPS::SVectorCL<3> InflowBrickTransp (const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret(0.);
-        const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
-                     z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
-        ret[1]= x * z * C.exp_InflowVel;
+        const double x = p[0]*(2*P.get<double>("Exp.RadInlet")-p[0]) / (P.get<double>("Exp.RadInlet")*P.get<double>("Exp.RadInlet")),
+                     z = p[2]*(2*P.get<double>("Exp.RadInlet")-p[2]) / (P.get<double>("Exp.RadInlet")*P.get<double>("Exp.RadInlet"));
+        ret[1]= x * z * P.get<double>("Exp.InflowVel");
         return ret;
     }
 
@@ -100,13 +100,13 @@ namespace tpd_volforce{
     DROPS::SVectorCL<3> PeriodicDropletPressure( const DROPS::Point3DCL& , double )
     {
         DROPS::SVectorCL<3> ret(0.);
-        ret[D] = -C.exp_Gravity[D];
+        ret[D] = -P.get<DROPS::Point3DCL>("Exp.Gravity")[D];
         
         static bool first = true;
         static DROPS::Point3DCL dx;
         //dirty hack
         if (first){
-            std::string mesh( C.dmc_MeshFile), delim("x@");
+            std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
             size_t idx_;
             while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
                 mesh[idx_]= ' ';
@@ -115,9 +115,9 @@ namespace tpd_volforce{
             first = false;
         }      
         
-        static double voldrop = 4./3.*M_PI* C.exp_RadDrop[0]*C.exp_RadDrop[1]*C.exp_RadDrop[2] ;
+        static double voldrop = 4./3.*M_PI* P.get<DROPS::Point3DCL>("Exp.RadDrop")[0]*P.get<DROPS::Point3DCL>("Exp.RadDrop")[1]*P.get<DROPS::Point3DCL>("Exp.RadDrop")[2] ;
         static double brickvol = dx[0]* dx[1]* dx[2];
-        static double volforce = C.mat_DensFluid * brickvol - (C.mat_DensFluid - C.mat_DensDrop) * voldrop;
+        static double volforce = P.get<double>("Mat.DensFluid") * brickvol - (P.get<double>("Mat.DensFluid") - P.get<double>("Mat.DensDrop")) * voldrop;
         ret[D] *= volforce/brickvol;
         return ret;
     }
@@ -139,9 +139,9 @@ namespace levelsetdistance{
     ///mzelle_ns_adap.cpp + mzelle_instat.cpp
     double CubeDistance( const DROPS::Point3DCL& p)
     {
-        double maxd = - C.exp_RadDrop[0] - C.exp_RadDrop[1]- C.exp_RadDrop[2];
+        double maxd = - P.get<DROPS::Point3DCL>("Exp.RadDrop")[0] - P.get<DROPS::Point3DCL>("Exp.RadDrop")[1]- P.get<DROPS::Point3DCL>("Exp.RadDrop")[2];
         for (int i=0;i<3;i++){
-          double x = std::abs(p[i] - C.exp_PosDrop[i]) - C.exp_RadDrop[i];
+          double x = std::abs(p[i] - P.get<DROPS::Point3DCL>("Exp.PosDrop")[i]) - P.get<DROPS::Point3DCL>("Exp.RadDrop")[i];
           if (x>maxd) maxd=x;
         }
         return maxd;
@@ -157,7 +157,7 @@ namespace levelsetdistance{
         static DROPS::Point3DCL dx;
         //dirty hack
         if (first){
-            std::string mesh( C.dmc_MeshFile), delim("x@");
+            std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
             size_t idx_;
             while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
                 mesh[idx_]= ' ';
@@ -168,13 +168,15 @@ namespace levelsetdistance{
               
         DROPS::Point3DCL dp;
         dp[i] = dx[i];
-        DROPS::Point3DCL d= p - C.exp_PosDrop;
-        DROPS::Point3DCL d1= p + dp - C.exp_PosDrop;
-        DROPS::Point3DCL d2= p - dp - C.exp_PosDrop;
-        const double avgRad= cbrt(C.exp_RadDrop[0]*C.exp_RadDrop[1]*C.exp_RadDrop[2]);
-        d/= C.exp_RadDrop;
-        d1/= C.exp_RadDrop;
-        d2/= C.exp_RadDrop;
+        DROPS::Point3DCL ExpRadDrop = P.get<DROPS::Point3DCL>("Exp.RadDrop");
+        DROPS::Point3DCL ExpPosDrop = P.get<DROPS::Point3DCL>("Exp.PosDrop");
+        DROPS::Point3DCL d= p - ExpPosDrop;
+        DROPS::Point3DCL d1= p + dp - ExpPosDrop;
+        DROPS::Point3DCL d2= p - dp - ExpPosDrop;
+        const double avgRad= cbrt(ExpRadDrop[0]*ExpRadDrop[1]*ExpRadDrop[2]);
+        d/= ExpRadDrop;
+        d1/= ExpRadDrop;
+        d2/= ExpRadDrop;
         double dd = std::min(std::min(d.norm(),d1.norm()),d2.norm());
         return std::abs( avgRad)*dd - avgRad;        
     }
@@ -182,7 +184,7 @@ namespace levelsetdistance{
     template<int i>
     double planedistance( const DROPS::Point3DCL& p)
     {
-        double x=p[i]-C.exp_PosDrop[i]; 
+        double x=p[i]-P.get<DROPS::Point3DCL>("Exp.PosDrop")[i];
         return x;
     }
 
@@ -201,14 +203,14 @@ namespace levelsetdistance{
 namespace transpfunctions{
     double tInitialcneg (const DROPS::Point3DCL& , double)
     {
-        return C.trp_IniCNeg;
+        return P.get<double>("Transport.IniCNeg");
     }
 
     double tInitialcpos (const DROPS::Point3DCL& , double)
     {
-        return C.trp_IniCPos;
+        return P.get<double>("Transport.IniCPos");
     }
-    static DROPS::RegisterScalarFunction regscainineg("Initialcpos", tInitialcneg);
+    static DROPS::RegisterScalarFunction regscainineg("Initialcneg", tInitialcneg);
     static DROPS::RegisterScalarFunction regscainipos("Initialcpos", tInitialcpos);
 }
 
@@ -225,7 +227,7 @@ namespace surffunctions{
     }
     double surf_sol (const DROPS::Point3DCL& p, double)
     {
-        return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));  
+        return 1. + std::sin( atan2( p[0] - P.get<DROPS::Point3DCL>("Exp.PosDrop")[0], p[2] - P.get<DROPS::Point3DCL>("Exp.PosDrop")[2]));
     }
     //@}
     static DROPS::RegisterScalarFunction regscasurfrhs("surf_rhs", surf_rhs);
@@ -245,7 +247,7 @@ namespace filmperiodic{
         static DROPS::Point3DCL dx;
         //dirty hack
         if (first){
-            std::string mesh( C.dmc_MeshFile), delim("x@");
+            std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
             size_t idx_;
             while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
                 mesh[idx_]= ' ';
@@ -271,7 +273,7 @@ namespace filmperiodic{
         static DROPS::Point3DCL dx;
         //dirty hack
         if (first){
-            std::string mesh( C.dmc_MeshFile), delim("x@");
+            std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
             size_t idx_;
             while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
                 mesh[idx_]= ' ';

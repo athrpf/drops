@@ -64,7 +64,7 @@ class TimeDisc2PhaseCL
     SchurPreBaseCL* ispc_;             // pointer to preconditioner for the schur complement
 
   public:
-    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double nonlinear=1.);
+    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double dt, double nonlinear=1.);
     virtual ~TimeDisc2PhaseCL();
 
     double GetTime()           const { return Stokes_.v.t; }
@@ -108,7 +108,7 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL
   public:
     LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                 StokesSolverT& solver, LsetSolverT& lsetsolver,
-                                LevelsetModifyCL& lsetmod, double stk_theta= 0.5, double ls_theta = 0.5,
+                                LevelsetModifyCL& lsetmod, double dt, double stk_theta= 0.5, double ls_theta = 0.5,
                                 double nonlinear= 1., bool implicitCurv= false);
     ~LinThetaScheme2PhaseCL();
 
@@ -155,7 +155,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL
 
   public:
     OperatorSplitting2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                                StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear= 1);
+                                StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double dt, int gm_iter, double gm_tol, double nonlinear= 1);
     ~OperatorSplitting2PhaseCL();
 
     void SetTimeStep( double dt) { base_::SetTimeStep(dt); }
@@ -206,7 +206,7 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL
 
   public:
     CoupledTimeDisc2PhaseBaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver,
-                                 LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol,
+                                 LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double dt, double tol,
                                  double nonlinear= 1., bool withProjection= false, double stab= 0.0);
     ~CoupledTimeDisc2PhaseBaseCL();
 
@@ -252,7 +252,7 @@ class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT, 
 
   public:
     MidPointTimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
-                              LevelsetModifyCL& lsetmod, double tol, double nonlinear = 1.0,
+                              LevelsetModifyCL& lsetmod, double dt, double tol, double nonlinear = 1.0,
                               bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
     ~MidPointTimeDisc2PhaseCL() {}
 
@@ -306,7 +306,7 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT
 
   public:
     SpaceTimeDiscTheta2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
-                              LevelsetModifyCL& lsetmod, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
+                              LevelsetModifyCL& lsetmod, double dt, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
                               bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
     ~SpaceTimeDiscTheta2PhaseCL();
 
@@ -359,7 +359,7 @@ class EulerBackwardScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolver
   public:
     EulerBackwardScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                         double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
+                         double dt, double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
     ~EulerBackwardScheme2PhaseCL();
 
     void Update();
@@ -428,7 +428,7 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT, Re
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                              StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                             double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
+                             double dt, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
                              bool withProjection= false, double stab= 0.0);
     ~RecThetaScheme2PhaseCL();
 
@@ -460,8 +460,8 @@ class CrankNicolsonScheme2PhaseCL: public BaseMethod<LsetSolverT, RelaxationPoli
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                              NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
+                             double dt, double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, 1.0, 1.0, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
 
     ~CrankNicolsonScheme2PhaseCL() {};
 
@@ -515,8 +515,8 @@ class FracStepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT>
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
+                               double dt, double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -544,7 +544,7 @@ class FracStepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT>
         DoSubStep( maxFPiter);
     }
 
-    void Update() { base_::Update(); }
+    void Update() { base_::SetTimeStep( GetSubTimeStep(), GetSubTheta()); base_::Update(); }
 };
 
 template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
@@ -579,8 +579,8 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT
   public:
     Frac2StepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
+                               double dt, double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt2_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -615,7 +615,7 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT
         DoSubStep( maxFPiter);
     }
 
-    void Update() { base_::Update(); }
+    void Update() { base_::SetTimeStep( GetSubTimeStep(), GetSubTheta()); base_::Update(); }
 };
 
 template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>

@@ -1,6 +1,6 @@
 /// \file poissonCoeff.cpp
 /// \brief boundary and source functions for the poisson-type problems
-/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande, Thorolf Schulte
 
 /*
  * This file is part of DROPS.
@@ -23,7 +23,7 @@
 */
 
 #include "misc/bndmap.h"
-#include "poisson/params.h"
+#include "misc/params.h"
 
 //========================================================================
 //          Functions for poissonP1.cpp and drops_statP2.cpp
@@ -31,8 +31,8 @@
 
 double Heat(const DROPS::Point3DCL&, double)
 {
-    extern DROPS::ParamPoissonProblemCL C;
-    return C.exp_Heat/C.exp_Lambda*1e-3;
+    extern DROPS::ParamCL P;
+    return P.get<double>("Exp.Heat")/P.get<double>("Exp.Lambda")*1e-3;
 }
 
 /// boundary description of a neumann problem
@@ -52,13 +52,13 @@ double NeuPoly( const DROPS::Point3DCL& p, double ){return -64.0*p[0]*p[1]*(1.0-
 
 DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 {
-    extern DROPS::ParamPoissonProblemCL C;
+    extern DROPS::ParamCL P;
 
     static bool first = true;
     static double dx, dy;
     //dirty hack
     if (first){
-        std::string mesh( C.dmc_MeshFile), delim("x@");
+        std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
         size_t idx_;
         while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
             mesh[idx_]= ' ';
@@ -69,7 +69,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
-        u= C.exp_Rho*9.81*dy*dy/2/C.exp_Mu*1e-3;
+        u= P.get<double>("Exp.Rho")*9.81*dy*dy/2/P.get<double>("Exp.Mu")*1e-3;
     ret[0]= u*(2-d)*d; // Nusselt
     return ret;
 }

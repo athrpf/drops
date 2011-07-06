@@ -1,0 +1,126 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for stokesP2.cpp
+#    simulation of stokes problem
+#    Inherited from isdrops.cpp (old file before merging)
+#=============================================================
+# time stepping",
+
+	"Time":
+	{
+		"NumSteps":		0,
+		"StepSize":		0,
+		"Scheme":		1
+	},
+
+	"Stokes":
+	{
+		"_comment":
+"# flow solver",
+
+		"InnerIter":		200,
+		"OuterIter":		200,
+		"InnerTol":		1e-10,
+		"OuterTol":		1e-08,
+		"StokesMethod":		510100,
+		"PcAIter":		100,
+		"PcATol":		0.01,
+		"PcSTol":		0.0001,
+		"XFEMStab":		0,
+		"Theta":		1
+	},
+
+	"StokesCoeff":
+	{
+		"_comment":
+"# stokes coefficients",
+
+		"Reaction":		"ScaZero",
+		"Source":		"Source_MGsdropsP2",
+		"Solution_Vel":		"VelSol_MGsdropsP2",
+		"Solution_DVel":		"DVelSol_MGsdropsP2",
+		"Solution_Pr":		"PrSol_MGsdropsP2"
+	},
+
+	"Misc":
+	{
+		"_comment":
+"# Miscellaneous",
+
+		"Omega":		1,
+		"Tau":		1,
+		"ModifyGrid":		0
+	},
+
+	"Mat":
+	{
+		"_comment":
+"# material data, all units are SI",
+
+		"Dens":		1,
+		"Visc":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Gravity":		[0, 0, 0 ]
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"InitialCond":		2,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"0.78540x0.78540x0.78540@3x3x3",
+		"BoundaryType":		"2!2!2!2!2!2",
+		"BoundaryFncs":		"VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2"
+	},
+
+	"AdaptRef":
+	{
+		"_comment":
+"# adaptive refinement",
+
+		"Freq":		0,
+		"FinestLevel":		1,
+		"CoarsestLevel":		0,
+		"Width":		0,
+		"LoadBalStrategy":		1,
+		"Partitioner":		1
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		0,
+		"EnsCase":		"FilmTemp",
+		"EnsDir":		"ensight",
+		"GeomName":		"test",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"# Error estimator",
+
+		"RelReduction":		0.1,
+		"MinRatio":		0,
+		"Threshold":		0.6,
+		"Meas":		0.48447307313,
+		"DoMark":		0,
+		"DoErrorEstimate":		1,
+		"NumRef":		2
+	}
+
+}

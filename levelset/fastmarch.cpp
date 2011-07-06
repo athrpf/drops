@@ -584,7 +584,6 @@ void InitZeroExactCL::BuildDistTriang()
     of close triangles in distTriang_. */
 void InitZeroExactCL::AssociateTriangles()
 {
-    const RefRuleCL     RegRef= GetRefRule( RegRefRuleC);  // determine regular children
     InterfaceTriangleCL patch;
     dofToDistTriang_.resize( data_.phi.Data.size());
 

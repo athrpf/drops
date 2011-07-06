@@ -26,7 +26,7 @@
 
 namespace DROPS {
 
-std::vector<const PrincipalLatticeCL*> PrincipalLatticeCL::cache_;
+PrincipalLatticeCL::PrincipalLatticeCacheCL PrincipalLatticeCL::cache_;
 
 PrincipalLatticeCL::TetraContT PrincipalLatticeCL::tetra_;
 

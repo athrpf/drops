@@ -1,0 +1,146 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for drops.cpp
+#    simulation of poisson problem
+#=============================================================
+#poisson solver
+# Options for the iterative Solver
+########################################",
+
+	"Poisson":
+	{
+		"PcIter":		1,
+		"PcTol":		0.1,
+		"Iter":		200,
+		"Restart":		100,
+		"RelativeErr":		0,
+		"Tol":		1e-10,
+		"Method":		302,
+		"SmoothingSteps":		1,
+		"NumLvl":		-1,
+		"Relax":		1,
+		"SolutionIsKnown":		1
+	},
+
+	"PoissonCoeff":
+	{
+		"_comment":
+"########################################
+# Functions and Coefficients that define the continuous problem:
+# du/dt - a laplace u + b grad u + q u = f 
+# on Domain (s. DomainCond) + bound. cond. (s. DomainCond)
+# the coefficients are set with strings which correspond to 
+# functions of a container. The given ones used here are 
+# defined in poissonCoeff.cpp
+# In this concrete example we are only interested in an unsteady 
+# solution, we have no convection, no reaction and a given solution.
+#############################################",
+
+		"Diffusion":		1,
+		"Reaction":		"Example2_Reaction",
+		"Solution":		"Example2_Solution",
+		"Source":		"Example2_Source",
+		"Flowfield":		"Example2_Flowfield",
+		"InitialVal":		"Example2_Solution"
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"#############################################
+# Description of Geometry and mesh parameters
+# and Boundary conditions
+####################################################",
+
+		"RefineSteps":		4,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"1x1x1@1x1x1",
+		"BoundaryType":		"2!2!2!2!2!2",
+		"BoundaryFncs":		"Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution"
+	},
+
+	"Time":
+	{
+		"_comment":
+"####################################################
+# Time Discretization
+#################################################",
+
+		"StepSize":		0.01,
+		"NumSteps":		100,
+		"Scheme":		1,
+		"Theta":		1,
+		"Convection":		0
+	},
+
+	"Exp":
+	{
+		"_comment":
+"#################################################
+# experimental conditions
+# coefficients which are used by some
+# function for the description of the
+# pde. 
+# -> Here: not active
+################################",
+
+		"Heat":		5960,
+		"Rho":		866,
+		"Mu":		0.001732,
+		"Cp":		1500,
+		"Lambda":		0.26
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"################################
+# Ensight output parameters
+# for visualization with ensight
+##################################",
+
+		"EnsightOut":		0,
+		"EnsCase":		"FilmTemp",
+		"EnsDir":		"ensight",
+		"GeomName":		"test",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"##################################
+# Error estimator     
+# For stationary cases poissonP1
+# is also able to estimate the 
+# error and refine adaptively
+##################################",
+
+		"DoErrorEstimate":		0,
+		"RelReduction":		0.1,
+		"DoMark":		1,
+		"MinRatio":		0,
+		"Threshold":		0.6,
+		"Meas":		0.875,
+		"NumRef":		2
+	},
+
+	"VTK":
+	{
+		"_comment":
+"##################################
+# VTK output parameters
+# for visualization with 
+# VTK/Paraview
+##################################",
+
+		"VTKOut":		1,
+		"VTKDir":		"vtk",
+		"VTKName":		"poisson_ex2_",
+		"Binary":		0
+	}
+
+}

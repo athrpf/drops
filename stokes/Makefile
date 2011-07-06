@@ -6,7 +6,7 @@
 
 DIR = stokes
 
-EXEC = sdrops sdropsP2
+EXEC = sdrops sdropsP2 errorestimator
 
 DELETE = $(EXEC)
 
@@ -26,13 +26,19 @@ sdrops: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 sdropsP2: \
-    ../stokes/stokesCoeff.o \
-    ../geom/boundary.o ../geom/builder.o ../stokes/sdropsP2.o ../geom/simplex.o ../geom/multigrid.o \
+    ../stokes/sdropsP2.o ../geom/boundary.o ../geom/builder.o  ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../num/MGsolver.o ../misc/params.o \
-    ../levelset/lsetparams.o ../stokes/stokesparams.o  ../out/ensightOut.o ../stokes/integrTime.o \
-    ../out/vtkOut.o ../geom/geomselect.o ../poisson/poissonparams.o \
-    ../misc/bndmap.o ../geom/bndVelFunctions.o 
+    ../out/ensightOut.o ../stokes/integrTime.o ../geom/geomselect.o \
+    ../misc/bndmap.o ../geom/bndVelFunctions.o ../stokes/stokesCoeff.o 
+	$(CXX) -o $@ $^ $(LFLAGS)
+	
+errorestimator: \
+    ../stokes/errorestimator.o ../geom/boundary.o ../geom/builder.o  ../geom/simplex.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o  ../num/interfacePatch.o \
+    ../misc/utils.o ../num/discretize.o ../num/MGsolver.o ../misc/params.o \
+    ../stokes/integrTime.o  ../geom/geomselect.o ../out/output.o \
+    ../misc/bndmap.o ../geom/bndVelFunctions.o  ../stokes/stokesCoeff.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:

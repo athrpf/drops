@@ -947,17 +947,16 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 	 L2_div = std::sqrt(std::fabs(L2_div));
      }
      L2_vel = std::sqrt(L2_vel);               //L2_vel is the true value.  
-     
-     IF_MASTER
-        if( DLsgVel != NULL)
-            std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << H1_vel
-                      << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << Frob_Dvel
-                      << ", || p_h - p ||_L2 = " << L2_pr
-                      << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
-	else
-	    std::cout << ", || u_h - u ||_L2 = " <<  L2_vel 
-                      << ", || p_h - p ||_L2 = " << L2_pr << '\n' << std::endl;
 
+
+     if( DLsgVel != NULL)
+         std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << H1_vel
+                   << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << Frob_Dvel
+                   << ", || p_h - p ||_L2 = " << L2_pr
+                   << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
+     else
+         std::cout << ", || u_h - u ||_L2 = " <<  L2_vel 
+                   << ", || p_h - p ||_L2 = " << L2_pr << '\n' << std::endl;
 }
 
 

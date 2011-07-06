@@ -1,0 +1,109 @@
+{
+	"_comment":
+"#=============================================================
+#    DROPS parameter file for ipfilm.cpp
+#    simulation of poisson problem
+#=============================================================
+#poisson solver",
+
+	"Poisson":
+	{
+		"PcIter":		1,
+		"PcTol":		0.1,
+		"Iter":		100,
+		"Restart":		50,
+		"RelativeErr":		1,
+		"Tol":		1e-10,
+		"Method":		303,
+		"SmoothingSteps":		1,
+		"NumLvl":		-1,
+		"Relax":		1,
+		"SolutionIsKnown":		0
+	},
+
+	"DomainCond":
+	{
+		"_comment":
+"# domain, bnd/ini conditions",
+
+		"RefineSteps":		2,
+		"GeomType":		1,
+		"InitialFile":		"none",
+		"MeshFile":		"100x0.3x1@8x2x2",
+		"BoundaryType":		"0!21!23!21!21!21",
+		"BoundaryFncs":		"Zero!Zero!Heat!Zero!Zero!Zero"
+	},
+
+	"PoissonCoeff":
+	{
+		"Diffusion":		0.200154,
+		"Reaction":		"Zero",
+		"Solution":		"Zero",
+		"Source":		"Zero",
+		"Flowfield":		"Nusselt",
+		"InitialVal":		"Zero"
+	},
+
+	"Time":
+	{
+		"_comment":
+"# time stepping",
+
+		"StepSize":		0.1,
+		"NumSteps":		5,
+		"Theta":		1,
+		"Scheme":		1,
+		"Convection":		1
+	},
+
+	"Exp":
+	{
+		"_comment":
+"# experimental conditions",
+
+		"Heat":		5960,
+		"Rho":		866,
+		"Mu":		0.001732,
+		"Cp":		1500,
+		"Lambda":		0.26
+	},
+
+	"Ensight":
+	{
+		"_comment":
+"# Ensight settings",
+
+		"EnsightOut":		1,
+		"EnsCase":		"FilmTemp",
+		"EnsDir":		"ensight",
+		"GeomName":		"test",
+		"MasterOut":		1,
+		"Binary":		1
+	},
+
+	"Err":
+	{
+		"_comment":
+"# Error estimator",
+
+		"RelReduction":		0.1,
+		"MinRatio":		0,
+		"Threshold":		0.6,
+		"Meas":		0.875,
+		"DoMark":		0,
+		"DoErrorEstimate":		0,
+		"NumRef":		6
+	},
+
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		1,
+		"VTKDir":		"vtk",
+		"VTKName":		"brick",
+		"Binary":		0
+	}
+
+}
