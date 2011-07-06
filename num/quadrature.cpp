@@ -59,8 +59,7 @@ make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
     pos_tetra_bary.reserve( p.tetra_size( PosTetraC));
 
     const TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
-    QRDecompCL<4,4> qr;
-    SMatrixCL<4,4>& T= qr.GetMatrix();
+    SMatrixCL<4,4> T;
     for (TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end(); ++it) {
         for (Uint i= 0; i < NumVertsC; ++i)
             T.col( i, partition_vertexes[(*it)[i]]);
@@ -69,8 +68,7 @@ make_CompositeQuad2Domain (QuadDomainCL& q, const TetraPartitionCL& p)
         double* w= Addr( q.weights_) + (is_neg ? 0 : q.pos_weights_begin_);
         const Uint vertex_weight_begin= is_neg ? p.tetra_size( NegTetraC) : 0;
         const Uint vertex_beg= is_neg ? 0 : p.vertex_begin( PosTetraC) - p.vertex_begin();
-        qr.prepare_solve();
-        const double absdet= std::fabs( qr.Determinant_R());
+        const double absdet= std::fabs( VolFrac( T));
         for (int i= 0; i < 4; ++i)
             w[(*it)[i] - vertex_beg + vertex_weight_begin]+= absdet*Quad2DataCL::Wght[0];
         const Uint tetra_weight_begin= is_neg ? 0 : p.vertex_size( PosTetraC);
@@ -105,7 +103,7 @@ copy_weights (const std::vector<CompositeQuadratureTypesNS::WeightContT>& w_vec,
     weights.resize( s);
 
     Uint neg_it= 0, pos_it= s_neg;
-    for (Uint i= w_vec.size() - 1; i < w_vec.size(); --i) {
+    for (Uint i= 0 ; i < w_vec.size(); ++i) {
         const Uint j= w_vec.size() - 1 - i; // To access the extrapolation-weights, which are ordered from coarse to fine level
         weights[std::slice( neg_it, w_pos_begin[i], 1)]= w_factor[j]*w_vec[i][std::slice( 0, w_pos_begin[i], 1)];
         weights[std::slice( pos_it, w_vec[i].size() - w_pos_begin[i], 1)]
@@ -137,7 +135,8 @@ copy_weights_surface (const std::vector<CompositeQuadratureTypesNS::WeightContT>
 
     Uint it= 0;
     for (Uint i= 0; i < w_vec.size(); ++i) {
-        weights[std::slice( it, w_vec[i].size(), 1)]= w_factor[i]*w_vec[i];
+        const Uint j= w_vec.size() - 1 - i; // To access the extrapolation-weights, which are ordered from coarse to fine level
+        weights[std::slice( it, w_vec[i].size(), 1)]= w_factor[j]*w_vec[i];
         it+= w_vec[i].size();
     }
 }
