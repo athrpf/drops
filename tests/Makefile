@@ -162,7 +162,8 @@ mass: \
 quad5: \
     ../tests/quad5.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
-    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o
+    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o\
+    ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 downwind: \
