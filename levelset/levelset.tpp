@@ -124,7 +124,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
 }
 
 template<class DiscVelSolT>
-void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
+void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, __UNUSED__ const double dt)
 /**Sets up the stiffness matrices: <br>
    E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i ) <br>
    H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i ) <br>
