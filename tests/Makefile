@@ -141,7 +141,8 @@ triang: \
 quadCut: \
     ../tests/quadCut.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
-    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o ../levelset/surfacetension.o
+    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o ../levelset/surfacetension.o \
+    ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 bicgstab: \
@@ -179,7 +180,8 @@ quad5_2D: \
 interfaceP1FE: \
     ../tests/interfaceP1FE.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
-    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o ../levelset/surfacetension.o
+    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o ../levelset/surfacetension.o \
+    ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 xfem: \
@@ -219,7 +221,8 @@ reparam_init: \
     ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o \
     ../misc/problem.o ../levelset/levelset.o ../num/fe.o \
     ../misc/utils.o ../num/discretize.o ../num/interfacePatch.o \
-    ../levelset/fastmarch.o ../levelset/surfacetension.o ../out/ensightOut.o
+    ../levelset/fastmarch.o ../levelset/surfacetension.o ../out/ensightOut.o \
+    ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 reparam: \
@@ -227,7 +230,8 @@ reparam: \
     ../geom/simplex.o ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o \
     ../num/fe.o ../out/ensightOut.o ../num/interfacePatch.o ../levelset/surfacetension.o \
-    ../misc/params.o ../out/vtkOut.o $(PAR_OBJ)
+    ../misc/params.o ../out/vtkOut.o ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o \
+    ../num/quadrature.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 principallattice: \

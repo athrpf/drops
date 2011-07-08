@@ -33,7 +33,8 @@ reparam: \
     ../levelset/reparam.o ../levelset/fastmarch.o ../levelset/levelset.o \
     ../geom/simplex.o ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o \
-    ../num/fe.o ../out/ensightOut.o ../num/interfacePatch.o ../levelset/surfacetension.o
+    ../num/fe.o ../out/ensightOut.o ../num/interfacePatch.o ../levelset/surfacetension.o \
+    ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 lsshear: \

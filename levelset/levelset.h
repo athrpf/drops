@@ -85,8 +85,10 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     SurfaceForceT       SF_;
 
     SurfaceTensionCL&   sf_;      ///< data for surface tension
-    void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
-    void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
+    void SetupSmoothSystem ( MatrixCL&, MatrixCL&)               const;
+    void SmoothPhi( VectorCL& SmPhi, double diff)                const;
+    double GetVolume_Composite( double translation, int l)    const;
+    double GetVolume_Extrapolation( double translation, int l) const;
     perDirSetT* perDirections;    ///< periodic directions
 
   public:
@@ -123,10 +125,12 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& vel_sol, Point3DCL& minCoord, Point3DCL& maxCoord, double& surfArea) const;
     /// returns the maximum and minimum of the gradient of phi
     void   GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) const;
-    /// returns approximate volume of domain where level set function is negative. For fine == true the tetrahedra are (implicitly) regularly refined and the integral is computed on the children.
-    double GetVolume( double translation= 0, bool fine= true) const;
-    /// volume correction to ensure no loss or gain of mass.
-    double AdjustVolume( double vol, double tol, double surf= 0) const;
+    /// returns approximate volume of domain where level set function is negative. For l > 0 the level set function is evaluated as a linear FE-function on the principal lattice of order l. 
+    /// l = 1 : integration on the tetra itself. l = 2 integration on the regular refinement.
+    /// l < 0 : extrapolation from current level lvl to lvl - l - 1   
+    double GetVolume( double translation= 0, int l= 2) const;
+    /// volume correction to ensure no loss or gain of mass. The parameter l is passed to GetVolume().
+    double AdjustVolume( double vol, double tol, double surf= 0., int l= 2) const;
     /// Set type of surface force.
     void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
     /// Get type of surface force.
