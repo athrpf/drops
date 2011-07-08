@@ -23,8 +23,8 @@
 */
 
 
-#ifndef PoissonSOLVERFACTORY_H_
-#define PoissonSOLVERFACTORY_H_
+#ifndef POISSONSOLVERFACTORY_H_
+#define POISSONSOLVERFACTORY_H_
 
 #include "num/solver.h"
 #include "misc/params.h"
