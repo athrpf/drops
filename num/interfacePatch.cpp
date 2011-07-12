@@ -239,18 +239,34 @@ bool InterfaceTetraCL::ComputeCutForChild( Uint ch)
 	return ComputeVerticesOfCut( ch);
 }
 
-void InterfaceTetraCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child)
+void InterfaceTetraCL::InsertSubTetra(const SubTetraT& BaryCoords, bool pos, Uint child)
 {
-    // if Init for SubTetraT has been used, coordinates must be transformed
     if (barysubtetra_ == true)
-        BaryCoords= TransformToSubTetra(BaryCoords);
-
-    if (pos) {
-        posTetras.push_back(BaryCoords);
-        posChildIdx.push_back(child);
-    } else {
-        negTetras.push_back(BaryCoords);
-        negChildIdx.push_back(child);
+    {  
+        SubTetraT TransformedBaryCoords = TransformToSubTetra(BaryCoords);
+        if (pos) 
+        {
+            posTetras.push_back(TransformedBaryCoords);
+            posChildIdx.push_back(child);
+        } 
+        else 
+        {
+            negTetras.push_back(TransformedBaryCoords);
+            negChildIdx.push_back(child);
+        }
+    }
+    else
+    {
+        if (pos) 
+        {
+            posTetras.push_back(BaryCoords);
+            posChildIdx.push_back(child);
+        } 
+        else 
+        {
+            negTetras.push_back(BaryCoords);
+            negChildIdx.push_back(child);
+        }
     }
 }
 
@@ -407,7 +423,7 @@ void InterfaceTetraCL::ComputeSubTets( Uint ch, bool clearTetras)
     } //intersec_==4 Ende
 }
 
-void InterfaceTetraCL::ComputeSubTets()
+void InterfaceTetraCL::ComputeSubTets(bool subdivide_first)
 {
     posTetras.clear();
     negTetras.clear();
@@ -421,9 +437,16 @@ void InterfaceTetraCL::ComputeSubTets()
         return;
     }
 
-    // Schleife ueber die Kinder
-    for (Uint ch= 0; ch < 8; ++ch)
-        ComputeSubTets( ch, /*clearTetras=*/ false);
+    if (subdivide_first)
+    {
+        // Schleife ueber die Kinder
+        for (Uint ch= 0; ch < 8; ++ch){
+            ComputeSubTets( ch, /*clearTetras=*/ false);
+        }
+    }
+    else
+        // just add own subtet.. 
+        ComputeSubTets( 8, /*clearTetras=*/ false);
 }
 
 BaryCoordCL InterfaceTriangleCL::TransformToSubTetra(const BaryCoordCL& b)
