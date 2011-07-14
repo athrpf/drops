@@ -380,7 +380,7 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
         suboldcut.Init(T, lp2_oldlset,0.);
         double VolT = transfp1fel.GetAbsDeterminant()*VolFrac(T);
         bool nocut= !suboldcut.Intersects();
-        suboldcut.ComputeSubTets();
+        suboldcut.ComputeSubTets(/*subdivide_first*/ false);
         Uint NumOldTets= suboldcut.GetNumTetra();
         if (nocut){ 
             bool pPart_old = (suboldcut.GetSign( 0) == 1);
