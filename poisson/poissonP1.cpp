@@ -328,9 +328,6 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
             if ( P.get<int>("VTK.VTKOut") && step%P.get<int>("VTK.VTKOut")==0)
                 vtkwriter.Write( Poisson.x.t);
         }
-
-        if ( P.get<int>("VTK.VTKOut") && step%P.get<int>("VTK.VTKOut")==0)
-            vtkwriter.Write( Poisson.x.t);
     }
 
     delete solver;

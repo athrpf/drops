@@ -426,11 +426,6 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
       }
   }
 }
-      
-      }
-  }
-}
-
 template<class Coeff>
 void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat, 
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool SUPG)
