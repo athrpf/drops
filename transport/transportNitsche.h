@@ -387,7 +387,8 @@ class TransformedP1FiniteElement{
     }
 
     void SetSubTetra(const SArrayCL<BaryCoordCL,4>& cutT){
-      vol = VolFrac(cutT) * absdet * 1.0/6.0;
+      
+      vol = VolFrac(cutT) * GetAbsDeterminant() * 1.0/6.0;
       if (nodes) delete nodes;
       nodes = Quad3CL<>::TransformNodes(cutT);
       oninterface = true;
