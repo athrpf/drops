@@ -1,6 +1,6 @@
 /// \file poissonCoeff.cpp
 /// \brief boundary and source functions for the poisson-type problems
-/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande, Thorolf Schulte
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld, Joerg Grande, Thorolf Schulte, Liang Zhang
 
 /*
  * This file is part of DROPS.
@@ -35,6 +35,18 @@ double Heat(const DROPS::Point3DCL&, double)
     return P.get<double>("Exp.Heat")/P.get<double>("Exp.Lambda")*1e-3;
 }
 
+/// \brief Interface condition for one phase film
+double Interface(const DROPS::Point3DCL&, double)
+{
+    return 1.0e-5;    
+}
+
+double InitFilm(const DROPS::Point3DCL&, double)
+{
+    return 1.0e-3;    
+}
+
+
 /// boundary description of a neumann problem
 // uses constant function f = (-1)^seg *4.0
 template<int sel>
@@ -49,13 +61,14 @@ double NeuExp( const DROPS::Point3DCL& p, double t){return std::pow(-1.,sel)*std
 // uses polynomial function
 double NeuPoly( const DROPS::Point3DCL& p, double ){return -64.0*p[0]*p[1]*(1.0-p[0])*(1.0-p[1]);}
 
-
+/// \brief Nusselt velocity profile for flat film
 DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 {
     extern DROPS::ParamCL P;
 
     static bool first = true;
     static double dx, dy;
+    static double Rho, Mu;   //density, viscosity
     //dirty hack
     if (first){
         std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
@@ -64,17 +77,24 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
             mesh[idx_]= ' ';
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy;
+        Rho = P.get<double>("Exp.Rho");
+        Mu  = P.get<double>("Exp.Mu");
         first = false;
     }
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
-        u= P.get<double>("Exp.Rho")*9.81*dy*dy/2/P.get<double>("Exp.Mu")*1e-3;
-    ret[0]= u*(2-d)*d; // Nusselt
+        U= Rho*9.81*dy*dy/2/Mu*1e-3;  //U=gh^2/(2*nu)      
+    ret[0]= U*(2-d)*d;                       
+    ret[1]=0.;
+    ret[2]=0.;
+
     return ret;
 }
 
 static DROPS::RegisterScalarFunction regscaheat("Heat", Heat);
+static DROPS::RegisterScalarFunction regscainterf("Interface", Interface);
+static DROPS::RegisterScalarFunction regscainitf("InitFilm", InitFilm);
 static DROPS::RegisterScalarFunction regscaconstpos("NeuConstPos", NeuConst<0>);
 static DROPS::RegisterScalarFunction regscaconstneg("NeuConstNeg", NeuConst<1>);
 static DROPS::RegisterScalarFunction regscaexppos("NeuExpPos", NeuExp<0>);
