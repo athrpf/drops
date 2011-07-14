@@ -1,6 +1,6 @@
 /// \file poisson.h
 /// \brief classes that constitute the poisson-problem
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Marcus Soemers, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Marcus Soemers, Volker Reichelt, Liang Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -100,10 +100,9 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
-    void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
-
+    void SetupSystem         (MLMatDescCL&, VecDescCL&, bool SUPG=false) const;
     ///  \brief set up matrices (M is time independent)
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
     /// \brief set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
 
@@ -112,7 +111,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     /// couplings with bnd unknowns, coefficient f(t)
     /// If the function is called with the same vector for some arguments,
     /// the vector will contain the sum of the results after the call
-    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG=false) const;
     /// \brief Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t= 0.) const;
 
@@ -178,12 +177,12 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
-    void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
+    void SetupSystem         ( MLMatDescCL&, VecDescCL&, bool SUPG=false) const;
     
-        ///  \brief set up matrices for instatProblem
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M) const;
+    ///  \brief set up matrices for instatProblem
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
     
-    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG=false) const;
     
     //Set up convection
     void SetupConvection( MLMatDescCL&, VecDescCL&, double) const; 
