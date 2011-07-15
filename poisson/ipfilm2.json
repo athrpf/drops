@@ -26,22 +26,22 @@
 		"_comment":
 "# domain, bnd/ini conditions",
 
-		"RefineSteps":		3,
+		"RefineSteps":		4,
 		"GeomType":		    1,
 		"InitialFile":		"none",
-		"MeshFile":		"   100x0.2x0.2@5x1x1",
+		"MeshFile":		    "50x0.2x0.2@5x1x1",
 		"BoundaryType":		"0!21!21!2!21!21",
-		"BoundaryFncs":		"InitFilm!Zero!Zero!Interface!Zero!Zero"
+		"BoundaryFncs":		"Zero!Zero!Zero!Interface!Zero!Zero"
 	},
 
 	"PoissonCoeff":
 	{
-		"Diffusion":		 2.1e-3,
+		"Diffusion":		 2.1e-2,
 		"Reaction":		    "Zero",
 		"Solution":		    "Zero",
 		"Source":	 	    "Zero",
 		"Flowfield":		"Nusselt",
-		"InitialVal":		"InitFilm",
+		"InitialVal":		"Zero",
         "Stabilization":      1
 	},
 
@@ -50,8 +50,8 @@
 		"_comment":
 "# time stepping",
 
-		"StepSize":		0.01,
-		"NumSteps":		10,
+		"StepSize":		0.05,
+		"NumSteps":		20,
 		"Theta":		1,
 		"Scheme":		1,
 		"Convection":   1
@@ -63,7 +63,7 @@
 "# experimental conditions",
 
 		"Heat":		5960,
-		"Rho":		866,
+		"Rho":		998,
 		"Mu":		1.00412,
 		"Cp":		1500,
 		"Lambda":	0.26

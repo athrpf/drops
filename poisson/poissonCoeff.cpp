@@ -38,7 +38,7 @@ double Heat(const DROPS::Point3DCL&, double)
 /// \brief Interface condition for one phase film
 double Interface(const DROPS::Point3DCL&, double)
 {
-    return 1.0e-5;    
+    return 0.02;    
 }
 
 double InitFilm(const DROPS::Point3DCL&, double)
@@ -84,7 +84,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
-        U= Rho*9.81*dy*dy/2/Mu*1e-3;  //U=gh^2/(2*nu)      
+        U= Rho*9.81*dy*dy/2/Mu;  //U=gh^2/(2*nu)      
     ret[0]= U*(2-d)*d;                       
     ret[1]=0.;
     ret[2]=0.;

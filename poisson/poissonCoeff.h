@@ -112,7 +112,6 @@ class PoissonCoeffCL
         double U=9.81*1.e3*dy_*dy_/(2*C_.get<double>("Exp.Mu"));
       
         const char line[] ="----------------------------------------------------------------------------------\n";
-        std::cout<<line<<U<<std::endl;
         std::cout<<line<<"The estimate of Peclet number is: "<<U*h_Value()/(2.*C_.get<double>("PoissonCoeff.Diffusion"))<<std::endl;
     }    
 };

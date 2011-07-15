@@ -331,8 +331,6 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     }
 
     delete solver;
-
-
 }
 
 } // end of namespace DROPS

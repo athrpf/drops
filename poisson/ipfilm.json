@@ -41,7 +41,8 @@
 		"Solution":		"Zero",
 		"Source":		"Zero",
 		"Flowfield":		"Nusselt",
-		"InitialVal":		"Zero"
+		"InitialVal":		"Zero",
+        "Stabilization":      0
 	},
 
 	"Time":
