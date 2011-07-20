@@ -168,6 +168,10 @@ class InterfaceTriangleCL : public InterfacePatchCL
     Point3DCL ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
 };
 
+
+LocalP2CL<double> ProjectIsoP2ChildToParentP1 (LocalP2CL<double> lpin, Uint child);
+
+
 } // end of namespace DROPS
 
 #include "num/interfacePatch.tpp"

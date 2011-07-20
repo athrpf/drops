@@ -57,7 +57,7 @@ void ComputeRhsElementVector( double locf[4], LocalConvDiffReacCoefficients& loc
 }
 
 void SetupLocalTwoPhaseRhs(TransformedP1FiniteElement& transformedfel, InterfaceTetraCL& cut, 
-    ConvDiffElementVectors& elvecs, LocalConvDiffReacCoefficients& local_coefs) 
+                           ConvDiffElementVectors& elvecs, LocalConvDiffReacCoefficients& local_coefs) 
 {
     cut.ComputeSubTets();
     
@@ -101,10 +101,17 @@ void SetupLocalTwoPhaseRhs(TransformedP1FiniteElement& transformedfel, Interface
 }
 
 
-/// compute the following element matrices for an element which is completely in one phase only: \n
-/// \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
-/// \f$ A(u,v) = \int d \nabla u \nabla v \f$ with d the diffusion coefficient times the inverse of the henry coefficient of the domain \n
-/// \f$ C(u,v) = \int (b \cdot \nabla u) v \f$ with b the local velocity times the inverse of the henry coefficient of the domain \n
+/** compute the following element matrices for an element which is completely in one phase only: \n
+ *  non stabilized version: \n
+ *  \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
+ *  \f$ A(u,v) = \int d \nabla u \nabla v \f$ with d the diffusion coefficient times the inverse of the henry coefficient of the domain \n
+ *  \f$ C(u,v) = - \int u (b \cdot \nabla v)  \f$ with b the local velocity times the inverse of the henry coefficient of the domain \n
+ *  stabilized version: \n
+ *  \f$ M(u,v) = \int h u (v + \delta_t b \cdot \nabla v) \f$ with h inverse of the henry coefficient of the domain \n
+ *  \f$ A(u,v) = \int d \nabla u \nabla v + \delta_t (b \cdot \nabla u) (b \cdot \nabla v) \f$ with d the diffusion coefficient times the inverse of the henry coefficient of the domain \n
+ *  \f$ C(u,v) = - \int u (b \cdot \nabla v)  \f$ with b the local velocity times the inverse of the henry coefficient of the domain \n
+ *  results are 3 element matrices, the matrices for A,C and M
+ */
 void SetupLocalOnePhaseSystem(TransformedP1FiniteElement& transformedfel, ConvDiffElementMatrices & elmats, LocalConvDiffReacCoefficients& local_coefs,	bool pPart)
 {
     const SMatrixCL<3,4> G = transformedfel.GetDShape();
@@ -125,10 +132,9 @@ void SetupLocalOnePhaseSystem(TransformedP1FiniteElement& transformedfel, ConvDi
               Quad3CL<> & phi_j = stabfe.GetBaseShapeAsQuad3CL(j);
               Quad3CL<> & beta_j = stabfe.GetStabTestShapeAsQuad3CL(j);
               elmats.M[i][j] = hw*Quad3CL<>( phi_plus_beta_i*phi_j).quad( absdet);
-              //elmats.Mr[i][j]= hw*Quad3CL<>( phi_plus_beta_i*phi_j*local_coefs.GetReactionAsQuad3()).quad( absdet);
               elmats.A[i][j] = d*GTG( i, j)/6.0*absdet;
               elmats.A[i][j]+= hw*Quad3CL<>( beta_i*beta_j).quad( absdet)*stabfe.GetStabilizationParameter();
-              elmats.C[i][j] = hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( j)))*phi_i).quad( absdet);
+              elmats.C[i][j] = -hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*phi_j).quad( absdet);
           }
       }
     }
@@ -141,18 +147,28 @@ void SetupLocalOnePhaseSystem(TransformedP1FiniteElement& transformedfel, ConvDi
               elmats.M[i][j]= elmats.M[j][i];
               elmats.A[j][i]= d*GTG( i, j)/6.0*absdet;
               elmats.A[i][j]= elmats.A[j][i];
-              elmats.C[i][j]= hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( j)))*phi_i).quad( absdet);
-              elmats.C[j][i]= hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*phi_j).quad( absdet);
+              elmats.C[i][j]= -hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*phi_j).quad( absdet);
+              elmats.C[j][i]= -hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( j)))*phi_i).quad( absdet);
           }
           elmats.M[i][i]= hw*P1DiscCL::GetMass( i, i)*absdet;
           elmats.A[i][i]= d*GTG( i, i)/6.0*absdet;
-          elmats.C[i][i]= hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*phi_i).quad( absdet);
+          elmats.C[i][i]= -hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*phi_i).quad( absdet);
       }
     }
 
 }
 
-// Couplings between the XFEM basis functions (at the same time step or different time steps) when the tetra is cut by only one interface.
+/** compute the following element matrices for an element which is two phases: \n
+ *  non stabilized version: \n
+ *  \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
+ *  \f$ A(u,v) = \int d \nabla u \nabla v \f$ with d the diffusion coefficient times the inverse of the henry coefficient of the domain \n
+ *  \f$ C(u,v) = - \int u (b \cdot \nabla v)  \f$ with b the local velocity times the inverse of the henry coefficient of the domain \n
+ *  stabilized version: \n
+ *  \f$ M(u,v) = \int h u (v + \delta_t b \cdot \nabla v) \f$ with h inverse of the henry coefficient of the domain \n
+ *  \f$ A(u,v) = \int d \nabla u \nabla v + \delta_t (b \cdot \nabla u) (b \cdot \nabla v) \f$ with d the diffusion coefficient times the inverse of the henry coefficient of the domain \n
+ *  \f$ C(u,v) = - \int u (b \cdot \nabla v)  \f$ with b the local velocity times the inverse of the henry coefficient of the domain \n
+ *  results are 6 element matrices, the matrices for A,C and M for the positive and the negative side
+ */
 void SetupLocalOneInterfaceSystem( TransformedP1FiniteElement& transformedfel, InterfaceTetraCL& cut, 
       ConvDiffElementMatrices & elmats, LocalConvDiffReacCoefficients& local_coefs)
 {
@@ -192,13 +208,12 @@ void SetupLocalOneInterfaceSystem( TransformedP1FiniteElement& transformedfel, I
         bool irreg = false; 
 
         for(int i= 0; i < 4; ++i) {
-            Quad3CL<> qp1(transformedfel.GetGridfunctions().GetShapeAsLocalP1(i), transformedfel.GetNodes());
             for(int j= 0; j < 4; ++j) {
               
                 double iM = 0;
-                
-                Quad3CL<> qC(dot( q3_u, Quad3CL<Point3DCL>(G.col( j)))*qp1); // G is constant in t
-                double iC = qC.quad(Vol) * hw; 
+                Quad3CL<>& qp1 = transformedfel.GetBaseShapeAsQuad3CL(j);
+                Quad3CL<> qC(dot( q3_u, Quad3CL<Point3DCL>(G.col( i)))*qp1); // G is constant in t
+                double iC = - qC.quad(Vol) * hw; 
                 double iA = Vol* GTG( j, i)/6. * d; 
                 
                 if (stabfe){
@@ -217,8 +232,6 @@ void SetupLocalOneInterfaceSystem( TransformedP1FiniteElement& transformedfel, I
                     irreg = true;
                     break;
                 }
-       
-              
        
                 // D and H are piecewise constants in T. When
                 // - Compute the integrals between XFEM basis functions at the same time step
@@ -241,9 +254,16 @@ void SetupLocalOneInterfaceSystem( TransformedP1FiniteElement& transformedfel, I
     }
 }
 
+
+/// non-stabilized version of mass matrix in one phase 
+/// \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
+/// stabilized version of mass matrix in one phase 
+/// \f$ M(u,v) = \int h u (v + \delta_t b \cdot \nabla v) \f$ with h inverse of the henry coefficient of the domain \n
 void SetupLocalOnePhaseMassMatrix( double locM[4][4], TransformedP1FiniteElement & transfp1fel, const double H, bool pPart)
 {
-    const double h = pPart ? 1. : 1./H;
+    const double invHPos = 1.0;
+    const double invHNeg = 1.0/H;
+    const double h = pPart ? invHPos : invHNeg;
     
     if (transfp1fel.stabilized()){
       StabilizedTransformedP1FiniteElement* stabfe = static_cast<StabilizedTransformedP1FiniteElement*>(&transfp1fel);
@@ -265,21 +285,27 @@ void SetupLocalOnePhaseMassMatrix( double locM[4][4], TransformedP1FiniteElement
 }
 
 /// compute the mass matrix for the case that the tetrahedron is cut ONLY for the old OR new time. \n
-/// computes the off-diagonal block of \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
-/// \f$ M_{1,2}[i,j] = \int h \phi_i^{new} \phi_j^{old} \f$ \n
-/// or
-/// \f$ M_{2,1}[i,j] = \int h \phi_i^{old} \phi_j^{new} \f$ \n
-void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, bool cut_is_newcut,
-				       double M_n[4][4], double M_p[4][4], 
-				       TransformedP1FiniteElement & transfp1fel, 
-				       bool sign[4],
-				       const double H,
-				       bool pPart_new = true)
+/// computes \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n 
+/// w.r.t. the old interface position \n
+/// non-stabilized version of mass matrix
+/// \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain \n
+/// stabilized version of mass matrix
+/// \f$ M(u,v) = \int h u (v + \delta_t b \cdot \nabla v) \f$ with h inverse of the henry coefficient of the domain \n
+void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut,                    // cut-description
+                                       bool cut_is_newcut,                       // cut lives at new time step
+                                       double M_n[4][4],                         // elmat on neg. part
+                                       double M_p[4][4],                         // elmat on pos. part
+                                       TransformedP1FiniteElement & transfp1fel, // trafo and fel. information
+                                       bool sign[4],                             // signs of fel. nodes are
+                                                                                 // are set w.r.t. cut
+                                       const double H,                           // Henry coeff
+                                       bool pPart_noncut = true)                 // are we in pos. part 
+                                                                                 // at time step w.o. cut?
 {
     cut.ComputeSubTets();
     Uint NumTets=cut.GetNumTetra(); /// # of subtetras
     // D, H are constant if T \cap Gamma_old is empty
-    // double h = take_pPart_coef ? 1. : 1./H;
+
     const double invHPos = 1.0;
     const double invHNeg = 1.0/H;
     std::memset( M_n,0, 4*4*sizeof(double));
@@ -297,7 +323,7 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, bool cut_is_newcut
         bool pPart = (k>=cut.GetNumNegTetra());
         const SArrayCL<BaryCoordCL,4>& T =cut.GetTetra(k);
         transfp1fel.SetSubTetra(T);
-        if (stabfe) stabfe->CalcStabilization(cut_is_newcut? pPart : pPart_new);
+        if (stabfe) stabfe->CalcStabilization(cut_is_newcut? pPart : pPart_noncut);
         if (!IsRegBaryCoord(T)) continue;
         
         double Vol = transfp1fel.GetAbsDeterminant()*VolFrac(T);
@@ -306,6 +332,9 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, bool cut_is_newcut
             std::cout<<" Support of XFEM is too small.\t";
             continue;
         }
+
+        const double invH = ((cut_is_newcut && pPart_noncut) || (!cut_is_newcut && pPart)) ? invHPos : invHNeg;
+
         bool irreg=false;
         for(int i= 0; i < 4; ++i) {
             for(int j= 0; j < 4; ++j) {
@@ -316,7 +345,6 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, bool cut_is_newcut
                 }
                 else{
                     Quad3CL<> qM(transfp1fel.GetBaseShapeAsQuad3CL(j)*transfp1fel.GetBaseShapeAsQuad3CL(i));
-                    //Quad3CL<> qM(transfp1fel.GetGridfunctions().GetProductShapeAsLocalP2(i,j),transfp1fel.GetNodes());
                     iM = qM.quad(Vol);
                 }
                 if (isnan(iM)|| isinf(iM)) {
@@ -325,10 +353,10 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, bool cut_is_newcut
                     irreg=true;
                     break; //leave the j-loop 
                 }
-                if ((cut_is_newcut && pPart) || (!cut_is_newcut && pPart_new))
-                    M_p[i][j]+= iM*invHPos;
+                if (pPart) 
+                    M_p[i][j]+= iM*invH; 
                 else
-                    M_n[i][j]+= iM*invHNeg;
+                    M_n[i][j]+= iM*invH; 
             }
             if (irreg) break;  //leave the i-loop
         }
@@ -336,10 +364,8 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, bool cut_is_newcut
 }
 
 /// compute the mass matrix for the case that the tetrahedron is cut for the old and new time. \n
-/// computes \f$ M(u,v) = \int h u v \f$ with h inverse of the henry coefficient of the domain (at new time) \n
+/// computes \f$ M(u,v) = \int h u (v+stab(v)) \f$ with h inverse of the henry coefficient of the domain (at old time) \n
 /// note that \f$ \phi_k \f$  are basis function for the transformed unknowns H*u.
-/// \f$ M_{2,1}[i,j] = \int h \phi_i^{old} \phi_j^{new} \f$ \n
-/// \f$ M_{2,2}[i,j] = \int h \phi_i^{old} \phi_j^{old} \f$ \n
 void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL& oldcut, 
 					double M11[4][4], double M12[4][4],                                        
 					double M21[4][4], double M22[4][4], 
@@ -351,7 +377,10 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
     std::memset( M21, 0, 4*4*sizeof(double));
     std::memset( M11, 0, 4*4*sizeof(double));
     std::memset( M12, 0, 4*4*sizeof(double));
-    
+
+    const double invHPos = 1.0;
+    const double invHNeg = 1.0/H;
+
     for(int i= 0; i < 4; ++i) {
         sign[i]= (cut.GetSign(i) == 1);
         oldsign[i]= (oldcut.GetSign(i) == 1);
@@ -366,7 +395,7 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
 
     for (Uint k=0; k< NumTets; ++k){
         bool pPart_new = (k>=cut.GetNumNegTetra());    // Tk in Omega_new_+?
-        double hinv_new = pPart_new ? 1. : 1./H;
+        double hinv_new = pPart_new ? invHPos : invHNeg;
         const SArrayCL<BaryCoordCL,4>& T =  cut.GetTetra(k);
         
         if (!IsRegBaryCoord(T)){
@@ -377,26 +406,27 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
         if (stabfe) stabfe->CalcStabilization(pPart_new);
         
         InterfaceTetraCL suboldcut;
-        suboldcut.Init(T, lp2_oldlset,0.);
+        Uint child = cut.GetChildIdx(k);
+        suboldcut.Init( T, ProjectIsoP2ChildToParentP1(lp2_oldlset,child), 0.0);
         double VolT = transfp1fel.GetAbsDeterminant()*VolFrac(T);
+        
         bool nocut= !suboldcut.Intersects();
         suboldcut.ComputeSubTets(/*subdivide_first*/ false);
         Uint NumOldTets= suboldcut.GetNumTetra();
         if (nocut){ 
             bool pPart_old = (suboldcut.GetSign( 0) == 1);
-
+            double hinv_old = pPart_old ? invHPos : invHNeg;
             bool irreg=false;
             for(int i= 0; i < 4; ++i) {
                 for(int j= 0; j < 4; ++j) {
                     double iM = 0;
                     if (stabfe){
                         Quad3CL<> qM(stabfe->GetBaseShapeAsQuad3CL(j)*stabfe->GetTestShapeAsQuad3CL(i));
-                        iM = qM.quad(VolT)*hinv_new;
+                        iM = qM.quad(VolT)*hinv_old;
                     }
                     else{
                         Quad3CL<> qM(transfp1fel.GetBaseShapeAsQuad3CL(i)*transfp1fel.GetBaseShapeAsQuad3CL(j));
-                        //Quad3CL<> qM(transfp1fel.GetGridfunctions().GetProductShapeAsLocalP2(i,j),transfp1fel.GetNodes());
-                        iM = qM.quad(VolT)*hinv_new;
+                        iM = qM.quad(VolT)*hinv_old;
                     }                  
                   
                     if (isnan(iM)|| isinf(iM)) {
@@ -409,7 +439,6 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
                         irreg=true;
                         break; //leave the j-loop 
                     }
-                    // int_(Phi_i_Gamma_new * Phi_j) in Tk
                     
                     M11[i][j]+= iM;
                     if (pPart_old != oldsign[j]) // supp(Phi_j^{Gamma_old}) \cap Tk is not empty
@@ -429,7 +458,7 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
 
         for (Uint m=0; m< NumOldTets; ++m){
             bool pPart_old= (m>=suboldcut.GetNumNegTetra());  // Tkm in Omega_old_+?
-            //double hinv_old = pPart_old ? 1. : 1./H;            
+            double hinv_old = pPart_old ? 1. : 1./H;            
             const SArrayCL<BaryCoordCL,4>& Tc =  suboldcut.GetTetra(m);
             if (!IsRegBaryCoord(T)){
               std::cout << "WARNING: !IsRegBaryCoord " << std::endl;
@@ -447,12 +476,11 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
                     double iM = 0;
                     if (stabfe){
                       Quad3CL<> qM(stabfe->GetBaseShapeAsQuad3CL(j)*stabfe->GetTestShapeAsQuad3CL(i));
-                      iM = qM.quad(Vol)*hinv_new;
+                      iM = qM.quad(Vol)*hinv_old;
                     }
                     else{
                       Quad3CL<> qM(transfp1fel.GetBaseShapeAsQuad3CL(i)*transfp1fel.GetBaseShapeAsQuad3CL(j));
-//                    Quad3CL<> qM(transfp1fel.GetGridfunctions().GetProductShapeAsLocalP2(i,j),transfp1fel.GetNodes());
-                      iM = qM.quad(Vol)*hinv_new;
+                      iM = qM.quad(Vol)*hinv_old;
                     }                          
                   
                     if (isnan(iM)|| isinf(iM)) {

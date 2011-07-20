@@ -544,7 +544,7 @@ void TransportP1XCL::SetupNitscheSystem( MatrixCL& matA, IdxDescCL& RowIdx/*, bo
             sign[i]= patch.GetSign(i);
         ln.assign( *it, RowIdx, Bndt_);
         GetTrafoTr( T, det, *it);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
+        P2DiscCL::GetGradients( Grad, GradRef, T); //TODO CL: kann weg!
         Point3DCL G[4];
         P1DiscCL::GetGradients( G, det, *it);
         const double h3= it->GetVolume()*6;
@@ -596,7 +596,8 @@ void TransportP1XCL::SetupNitscheSystem (MLMatDescCL& matA) const
 /// Couplings between basis functions wrt old and new interfaces, s.t. Bilinearform-Applications
 /// M(uold,v) make sense also for the new time step (and the functions therein (like v))
 // This is only used as a matrix application. So actually there is no need to setting up the matrix!
-void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM, IdxDescCL& RowIdx, IdxDescCL& ColIdx,
+void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM, 
+                                                 IdxDescCL& RowIdx, IdxDescCL& ColIdx,
                                                  const double time) const
 {
     if (cplM!=0) cplM->Data= 0.;
@@ -628,7 +629,7 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
         no_oldcut=!oldcut.Intersects();
         
         LocalConvDiffReacCoefficients local_cdcoef(global_cdcoef,*sit);
-        // bool pPart_old= (oldcut.GetSign( 0) == 1);
+        bool pPart_old= (oldcut.GetSign( 0) == 1);
         bool pPart_new= (cut.GetSign( 0) == 1);
         transfp1fel.SetLocal(*sit,local_cdcoef,pPart_new);
         
@@ -641,19 +642,18 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
         std::memset( M_XNEW_XOLD  , 0, 4*4*sizeof(double));
         std::memset( M_XNEW_P1OLD , 0, 4*4*sizeof(double));
         std::memset( M_P1NEW_XOLD , 0, 4*4*sizeof(double));
-
-/*
-  for debug purposes you should use this variant instead of the active one, s.t. only the method SetupLocalTwoInterfacesMassMatrix is 
-  involved in the setup of cutted elements and not SetupLocalOneInterfaceMassMatrix (...) as well...
-
-        if(!no_oldcut||!no_newcut){ //new or old interface does not cut 
-          LocalP2CL<> lp2_oldlset(*sit, oldlset_, Bndlset);
-          // couplings between XFEM basis functions wrt old and new interfaces
-          SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M_P1NEW_P1OLD, M_P1NEW_XOLD, M_XNEW_P1OLD, M_XNEW_XOLD, transfp1fel, H_, lp2_oldlset);
-        }
-        else
-          SetupLocalOnePhaseMassMatrix ( M_P1NEW_P1OLD, transfp1fel, H_, pPart_new);
-*/
+        
+        //  for debug purposes you should use this variant instead of the active one, s.t. only the method
+        //  SetupLocalTwoInterfacesMassMatrix is 
+        //  involved in the setup of cutted elements and not SetupLocalOneInterfaceMassMatrix (...) as well...
+        //  if(!no_oldcut||!no_newcut){ //new or old interface does not cut 
+        //    LocalP2CL<> lp2_oldlset(*sit, oldlset_, Bndlset);
+        //    // couplings between XFEM basis functions wrt old and new interfaces
+        //    SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M_P1NEW_P1OLD, M_P1NEW_XOLD, 
+        //                                       M_XNEW_P1OLD, M_XNEW_XOLD, transfp1fel, H_, lp2_oldlset);
+        //  }
+        //  else
+        //    SetupLocalOnePhaseMassMatrix ( M_P1NEW_P1OLD, transfp1fel, H_, pPart_new);
           
         if(no_oldcut){ //old interface does not cut 
             if (no_newcut){ //new and old interface do not cut 
@@ -664,7 +664,9 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
                 Elmat4x4 M_XNEW_P1OLD_n, M_XNEW_P1OLD_p;
                 std::memset( M_XNEW_P1OLD_n,0, 4*4*sizeof(double));
                 std::memset( M_XNEW_P1OLD_p,0, 4*4*sizeof(double));
-                SetupLocalOneInterfaceMassMatrix( cut, true, M_XNEW_P1OLD_n, M_XNEW_P1OLD_p, transfp1fel, sign, H_);
+                SetupLocalOneInterfaceMassMatrix( cut, /*cut_is_new_cut*/ true, 
+                                                  M_XNEW_P1OLD_n, M_XNEW_P1OLD_p, 
+                                                  transfp1fel, sign, H_, /*pPart_nocut*/ pPart_old);
                 for(int i= 0; i < 4; ++i){
                     for(int j= 0; j < 4; ++j){
                         M_XNEW_P1OLD[i][j]= sign[i]? -M_XNEW_P1OLD_n[i][j] : M_XNEW_P1OLD_p[i][j];
@@ -681,7 +683,9 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
             std::memset( M_P1NEW_XOLD_p,0, 4*4*sizeof(double));          
             // couplings between standard basis functions and XFEM basis functions wrt old interface
             if (no_newcut){
-                SetupLocalOneInterfaceMassMatrix( oldcut, false, M_P1NEW_XOLD_n,  M_P1NEW_XOLD_p, transfp1fel,oldsign, H_, pPart_new);
+                SetupLocalOneInterfaceMassMatrix( oldcut, /*cut_is_new_cut*/ false, 
+                                                  M_P1NEW_XOLD_n,  M_P1NEW_XOLD_p, 
+                                                  transfp1fel,oldsign, H_, /*pPart_nocut*/ pPart_new);
                 for(int i= 0; i < 4; ++i){
                     for(int j= 0; j < 4; ++j){
                         M_P1NEW_P1OLD[i][j]= M_P1NEW_XOLD_n[i][j] +  M_P1NEW_XOLD_p[i][j];
@@ -693,7 +697,9 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
             else {
                 LocalP2CL<> lp2_oldlset(*sit, oldlset_, Bndlset);
                 // couplings between XFEM basis functions wrt old and new interfaces
-                SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M_P1NEW_P1OLD, M_P1NEW_XOLD, M_XNEW_P1OLD, M_XNEW_XOLD, transfp1fel, H_, lp2_oldlset);
+                SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M_P1NEW_P1OLD, M_P1NEW_XOLD, 
+                                                   M_XNEW_P1OLD, M_XNEW_XOLD, transfp1fel, 
+                                                   H_, lp2_oldlset);
             }
         }
         

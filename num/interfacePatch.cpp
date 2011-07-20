@@ -103,7 +103,8 @@ bool InterfacePatchCL::IntersectsChild( Uint ch) const
 
 // Init for SubtetraT
 // Wird nur von masstransport P1X verwendet
-void InterfacePatchCL::Init( const SubTetraT& st, const LocalP2CL<double>& ls, double translation)
+void InterfacePatchCL::Init( const SubTetraT& st, const LocalP2CL<double>& ls, 
+                             double translation)
 {
     static Point3DCL zero;
     st_ = st;
@@ -174,6 +175,27 @@ bool InterfacePatchCL::ComputeVerticesOfCut( Uint ch, bool compute_PQRS)
             Edge_[intersec_++]= edge;
             innersec_++;
         }
+    }
+    
+    bool cut_point_on_face[4][4];
+    const double eps = 1e-9;
+    
+    for (int i = 0; i<intersec_; ++i){
+        for (int face = 0; face <4; ++face){
+            if (Bary_[i][face] < eps) 
+                cut_point_on_face[i][face] = true;
+            else
+                cut_point_on_face[i][face] = false;
+        }
+    }
+
+    //cut is lying on an interface?
+    for (int face = 0; face <4; ++face){
+        int on_face_cnt = 0;
+        for (int i = 0; i<intersec_; ++i)
+            if (cut_point_on_face[i][face]) on_face_cnt ++;
+        if (on_face_cnt == intersec_) 
+            return false;
     }
 
     // zero-level of measure 0.
@@ -515,6 +537,88 @@ Point3DCL InterfaceTriangleCL::GetNormal() const
     const Point3DCL n( p1grad*ls);
     return n/n.norm();
 }
+
+LocalP2CL<double> ProjectIsoP2ChildToParentP1 (LocalP2CL<double> lpin, Uint child){
+    const double vertices[][3]=
+        {
+            { 0.0, 0.0, 0.0},
+            { 1.0, 0.0, 0.0},
+            { 0.0, 1.0, 0.0},
+            { 0.0, 0.0, 1.0},
+            { 0.5, 0.0, 0.0},
+            { 0.0, 0.5, 0.0},
+            { 0.5, 0.5, 0.0},
+            { 0.0, 0.0, 0.5},
+            { 0.5, 0.0, 0.5},
+            { 0.0, 0.5, 0.5},
+        };
+    const ChildDataCL& cdata= GetChildData ( child);
+    double M[3][3];
+    double b[3];
+    double b2[3];
+    LocalP2CL<double> res(0.);
+    int v0 = cdata.Vertices[0];
+    // for (int i=0; i<10; i++){
+    //     std::cout << " lpin[ " << i << "] = " << lpin[i] << std::endl;
+    // }
+    // std::cout << "v0 = " << v0 << std::endl;
+
+    for (int i=0; i<3; i++){
+        int vi = cdata.Vertices[i+1];
+        // std::cout << "vi = " << vi << std::endl;
+        Point3DCL diff;
+        for (int d=0; d<3; d++){
+            diff[d]= vertices[vi][d] - vertices[v0][d];
+        }
+        for (int j=0; j<3; j++){
+            M[i][j]= diff[j];
+        }
+        b[i] = lpin[vi]-lpin[v0];
+        // std::cout << " diff[ " << i << "] = " << diff << std::endl;
+        // std::cout << " b[ " << i << "] = " << b[i] << std::endl;
+    }
+
+
+    double T[3][3];
+    double det=   M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+         - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+         + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]);
+
+    T[0][0]= (M[1][1]*M[2][2] - M[1][2]*M[2][1])/det;
+    T[1][0]= (M[2][0]*M[1][2] - M[1][0]*M[2][2])/det;
+    T[2][0]= (M[1][0]*M[2][1] - M[2][0]*M[1][1])/det;
+    T[0][1]= (M[2][1]*M[0][2] - M[0][1]*M[2][2])/det;
+    T[1][1]= (M[0][0]*M[2][2] - M[2][0]*M[0][2])/det;
+    T[2][1]= (M[2][0]*M[0][1] - M[0][0]*M[2][1])/det;
+    T[0][2]= (M[0][1]*M[1][2] - M[1][1]*M[0][2])/det;
+    T[1][2]= (M[1][0]*M[0][2] - M[0][0]*M[1][2])/det;
+    T[2][2]= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
+
+    double G[3];
+    for (int i = 0; i < 3; i++){
+        G[i] = 0.0;
+        for (int j = 0; j < 3; j++){
+            G[i] += T[i][j] * b[j];
+        }
+        // std::cout << "g(" << i << ") = " << G[i] << std::endl;
+    }
+
+    for (int i = 0; i < 4; i++){
+        res[i] = lpin[v0];
+        for (int d=0; d<3; d++){
+            res[i] +=  G[d]* (vertices[i][d]-vertices[v0][d]);
+        }
+    }
+        
+    for (int i=0; i<6; i++){
+        res[i+4] = 0.5 * res[VertOfEdge(i,0)] + 0.5 * res[VertOfEdge(i,1)];
+    }
+    return res;
+}
+
+
+
+
 
 } // end of namespace DROPS
 
