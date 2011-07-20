@@ -59,6 +59,12 @@ ip1test: \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
+interfacepatch_doublecut: \
+    ../tests/interfacepatch_doublecut.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o \
+    ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
+    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
 ip1check: ip1test
 	@ ./ip1test > /dev/null 2>&1 || echo "WARNING: P1-repair failed."
 
