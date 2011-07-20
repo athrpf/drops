@@ -555,7 +555,6 @@ LocalP2CL<double> ProjectIsoP2ChildToParentP1 (LocalP2CL<double> lpin, Uint chil
     const ChildDataCL& cdata= GetChildData ( child);
     double M[3][3];
     double b[3];
-    double b2[3];
     LocalP2CL<double> res(0.);
     int v0 = cdata.Vertices[0];
     // for (int i=0; i<10; i++){

@@ -125,7 +125,6 @@ void SetupLocalOnePhaseSystem(TransformedP1FiniteElement& transformedfel, ConvDi
     if (transformedfel.stabilized()){
       StabilizedTransformedP1FiniteElement& stabfe = static_cast<StabilizedTransformedP1FiniteElement&>(transformedfel);      
       for(int i= 0; i < 4; ++i) {
-          Quad3CL<> & phi_i = stabfe.GetBaseShapeAsQuad3CL(i);
           Quad3CL<> & beta_i = stabfe.GetStabTestShapeAsQuad3CL(i);
           Quad3CL<> & phi_plus_beta_i = stabfe.GetTestShapeAsQuad3CL(i);
           for(int j= 0; j < 4; ++j) {
@@ -395,7 +394,7 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
 
     for (Uint k=0; k< NumTets; ++k){
         bool pPart_new = (k>=cut.GetNumNegTetra());    // Tk in Omega_new_+?
-        double hinv_new = pPart_new ? invHPos : invHNeg;
+        //double hinv_new = pPart_new ? invHPos : invHNeg;
         const SArrayCL<BaryCoordCL,4>& T =  cut.GetTetra(k);
         
         if (!IsRegBaryCoord(T)){
