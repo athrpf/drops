@@ -797,7 +797,11 @@ inline byte sign (double d)
 #    include <HYPRE_IJ_mv.h>
 #    include <HYPRE_parcsr_ls.h>
 #  endif
-
 #endif
+
+#pragma GCC system_header // Suppress warnings from boost
+# include <boost/property_tree/ptree.hpp>
+# include <boost/property_tree/exceptions.hpp>
+# include <boost/property_tree/json_parser.hpp>
 
 #endif

@@ -25,10 +25,8 @@
 #ifndef DROPS_MISC_PARAMS_H
 #define DROPS_MISC_PARAMS_H
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/exceptions.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include "misc/container.h"
+#include "misc/utils.h"
 #include <string>
 #include <map>
 #include <fstream>

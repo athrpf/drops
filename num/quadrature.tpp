@@ -24,6 +24,7 @@
 
 #include <memory>
 #include "num/discretize.h"
+#include "num/lattice-eval.h"
 
 namespace DROPS {
 
@@ -140,16 +141,16 @@ template <class QuadDataT>
     const typename TetraPartitionCL::const_vertex_iterator partition_vertexes= p.vertex_begin();
     const typename QuadDomainCL::WeightContT tetra_weights( QuadDataT::Weight, num_nodes);
     Uint w_begin= 0;
-    QRDecompCL<4,4> qr;
-    SMatrixCL<4,4>& T= qr.GetMatrix();
+    SMatrixCL<4,4> T;
+    double absdet;
     for (typename TetraPartitionCL::const_tetra_iterator it= p.tetra_begin(); it != p.tetra_end();
         ++it, w_begin+= num_nodes) {
         for (int i= 0; i < 4; ++i)
             T.col( i, partition_vertexes[(*it)[i]]);
         for (Uint i= 0; i < num_nodes; ++i)
             q.vertexes_.push_back( T*QuadDataT::Node[i]);
-        qr.prepare_solve();
-        q.weights_[std::slice( w_begin, num_nodes, 1)]= std::fabs( qr.Determinant_R())*tetra_weights;
+        absdet= std::fabs( VolFrac(T));
+        q.weights_[std::slice( w_begin, num_nodes, 1)]= absdet*tetra_weights;
     }
     return q;
 }
@@ -185,10 +186,10 @@ template <class SubdivisionT>
     VecT der0( num_level);
     evaluate_newton_polynomial_and_derivative( x, f, 0., f0_, der0);
     eliminate_linear_term( x, f0_, der0);
-
-    // for (Uint i= 0; i < num_level; ++i)
-    //     std::cerr << weights()[i] << ' ';
-    // std::cerr << std::endl;
+//    std::cerr.precision(12);
+//    for (Uint i= 0; i < num_level; ++i)
+//        std::cerr << weights()[i] << ' ';
+//    std::cerr << std::endl;
 }
 
 /// \brief Multiply the weight for each level with the extrapolation factor and copy it to weights.
@@ -269,7 +270,7 @@ template <class QuadDataT>
             tri[i]= GetWorldCoord( t, tri_bary[i]);
         }
         QuadDataT::SetInterface( tri_bary, q.vertexes_.begin() + beg);
-        const double absdet= FuncDet2D( tri[1] - tri[0], tri[2] - tri[0]);
+        const double absdet= (p.is_boundary_triangle (it) ? 0.5 : 1.)*FuncDet2D( tri[1] - tri[0], tri[2] - tri[0]);
         q.weights_[std::slice( beg, num_nodes, 1)]= absdet*triangle_weights;
     }
 
@@ -300,7 +301,7 @@ template <class QuadDataT, class LocalFET>
     QuadDomain2DCL qdom;
     std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
     // Accumulate quadrature-points and weights for each level
-    for (Uint i= 0; i < extra.num_level(); ++i) {
+    for (Uint i= extra.num_level()-1; i < extra.num_level(); --i) {
         const Uint num_intervals= extra.num_intervals( i);
         const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
         resize_and_evaluate_on_vertexes( ls, lat, ls_val);

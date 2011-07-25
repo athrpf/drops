@@ -45,8 +45,10 @@ template<class ParamsT>
 class PoissonCoeffCL
 {
   private:
-    static ParamsT C_;
+    static ParamCL C_;
     static double dx_, dy_;
+    static int    nx_, ny_;
+    static int    Ref_;   //Times of refinements
 
   public:
     //reaction
@@ -64,7 +66,8 @@ class PoissonCoeffCL
     static instat_vector_fun_ptr Vel;
   
     PoissonCoeffCL( ParamCL& P){
-        int nx_,ny_,nz_;
+        C_=P;
+        int nz_;
         double dz_;
         std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
         size_t idx_;
@@ -80,18 +83,53 @@ class PoissonCoeffCL
         InitialCondition = scamap[P.get<std::string>("PoissonCoeff.InitialVal")];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
         Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
+        Ref_=P.get<int>("DomainCond.RefineSteps");
     }
-    
+    //Only used for flat film case
+    static double h_Value()
+    {//mesh size in flow direction
+        double h=dx_/(nx_*std::pow(2, Ref_));
+        return h;
+    }
+    static double PecNum(const DROPS::Point3DCL& p, double t)
+    {//Peclet Number
+        double Pec=0.;        
+        Pec=Vel(p, t)[0]*h_Value()/(2.*alpha);        
+        return Pec;
+    }
+    static double Sta_Coeff(const DROPS::Point3DCL& p, double t) 
+    {//Stabilization coefficient
+       double h=dx_/(nx_*std::pow(2, Ref_));
+        double Pec=Vel(p, t)[0]*h/(2.*alpha); 
+        //if (PecNum(p,t)<=1)
+        if (Pec<=1)
+            return 0.0;
+        else
+            return h/(2.*Vel(p, t)[0])*(1.-1./Pec);
+    }
+    static void Show_Pec()
+    {
+        double U=9.81*1.e3*dy_*dy_/(2*C_.get<double>("Exp.Mu"));
+      
+        const char line[] ="----------------------------------------------------------------------------------\n";
+        std::cout<<line<<"The estimate of Peclet number is: "<<U*h_Value()/(2.*C_.get<double>("PoissonCoeff.Diffusion"))<<std::endl;
+    }    
 };
 
 template<class ParamsT>
-ParamsT PoissonCoeffCL<ParamsT>::C_;
+ParamCL PoissonCoeffCL<ParamsT>::C_;
 
 template<class ParamsT>
 double PoissonCoeffCL<ParamsT>::dx_;
 
 template<class ParamsT>
 double PoissonCoeffCL<ParamsT>::dy_;
+template<class ParamsT>
+int PoissonCoeffCL<ParamsT>::nx_;
+template<class ParamsT>
+int PoissonCoeffCL<ParamsT>::ny_;
+template<class ParamsT>
+int PoissonCoeffCL<ParamsT>::Ref_;
 
 template<class ParamsT>
 instat_scalar_fun_ptr PoissonCoeffCL<ParamsT>::q;

@@ -45,7 +45,7 @@ SignPatternTraitCL::compute_cuts ()
         cut_simplex_rep_[i]+= NumVertsC;
 
     if (is_3d())
-        throw DROPSErrCL( "InterfacePatchCL::assign: found 3-dim. zero level set, grid is too coarse!");
+        throw DROPSErrCL( "SignPatternTraitCL::compute_cuts: found 3-dim. zero level set, grid is too coarse!");
 }
 
 void

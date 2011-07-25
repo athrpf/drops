@@ -43,7 +43,8 @@
 		"Solution":		"Example3_Solution",
 		"Source":		"Example3_Source",
 		"Flowfield":		"Example3_Flowfield",
-		"InitialVal":		"Example3_InitialValue"
+		"InitialVal":		"Example3_InitialValue",
+        "Stabilization":        0
 	},
 
 	"DomainCond":

@@ -515,7 +515,7 @@ void Strategy( StokesProblemT& Stokes)
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-    } while (++step< P.get<int>("Error.NumRef"));
+    } while (++step< P.get<int>("Error.NumRef") && new_marks);
 
     // we want the solution to be in Stokes.v, Stokes.pr
     if (v2 == &loc_v)

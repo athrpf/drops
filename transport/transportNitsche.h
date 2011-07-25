@@ -169,7 +169,7 @@ class TransportP1XCL
         lambda_(P.get<double>("Transp.NitschePenalty")), H_( P.get<double>("Transp.HNeg")/P.get<double>("Transp.HPos")),
         lset_( lset), oldlset_(oldlset), 
         gm_( pc_, 20, P.get<int>("Transp.Iter"), P.get<double>("Transp.Tol"), false, false, RightPreconditioning),
-        f_(rhs), c_(reac), omit_bound_( P.get<double>("Transp.NitscheXFEMStab")), sdstab_(P.get<double>("SurfTransp.SDStabilization"))
+        f_(rhs), c_(reac), omit_bound_( P.get<double>("Transp.NitscheXFEMStab")), sdstab_(P.get<double>("Transp.SDStabilization"))
     {
         double D[2] = {P.get<double>("Transp.DiffPos"), P.get<double>("Transp.DiffNeg")};
         std::memcpy( D_, D, 2*sizeof( double));
@@ -387,7 +387,8 @@ class TransformedP1FiniteElement{
     }
 
     void SetSubTetra(const SArrayCL<BaryCoordCL,4>& cutT){
-      vol = VolFrac(cutT) * absdet * 1.0/6.0;
+      
+      vol = VolFrac(cutT) * GetAbsDeterminant() * 1.0/6.0;
       if (nodes) delete nodes;
       nodes = Quad3CL<>::TransformNodes(cutT);
       oninterface = true;

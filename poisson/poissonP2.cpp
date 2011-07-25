@@ -1,7 +1,6 @@
 /// \file poissonP2.cpp
 /// \brief Solver for Poisson problem with P2 functions
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang, Thorolf Schulte; SC RWTH Aachen: Oliver Fortmeier
-/// \todo: rename this to poissonP2.cpp as soon as repository has moved to git
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang, Thorolf Schulte, Liang Zhang; SC RWTH Aachen: Oliver Fortmeier
 /*
  * This file is part of DROPS.
  *
@@ -141,7 +140,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     timer.Reset();
     
     if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.SetupInstatSystem(Poisson.A, Poisson.M);    //IntationarySystem
+        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0., P.get<int>("PoissonCoeff.Stabilization"));    //IntationarySystem
     else
     {
         Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem

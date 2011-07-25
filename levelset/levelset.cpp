@@ -24,6 +24,8 @@
 
 #include "levelset/levelset.h"
 #include "levelset/fastmarch.h"
+#include "num/lattice-eval.h"
+#include "num/quadrature.h"
 #include <fstream>
 
 namespace DROPS
@@ -546,53 +548,72 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     }
 }
 
-double LevelsetP2CL::GetVolume( double translation, bool fine) const
+double LevelsetP2CL::GetVolume( double translation, int l) const
 {
-    SMatrixCL<3,3> T;
-    InterfaceTetraCL tetra;
-    double det, absdet, Volume= 0.;
-    LocalP2CL<double> ones( 1.);
+    if (l==0)
+        ++l;
+    double Volume= l > 0 ? GetVolume_Composite( translation, l) 
+                         : GetVolume_Extrapolation( translation, -l);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL it=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(idx.TriangLevel()), end=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(idx.TriangLevel());
-        it!=end; ++it) {
-        GetTrafoTr( T, det, *it);
-        absdet= std::abs( det);
-        tetra.Init( *it, Phi, BndData_, translation);
-        if (fine)
-            for (int ch= 0; ch < 8; ++ch) {
-                // compute volume
-                tetra.ComputeCutForChild( ch);
-                Volume+= tetra.quad( ones, absdet, false);
-            }
-        else {
-            // compute volume
-            tetra.ComputeCutForChild( 8);
-            Volume+= tetra.quad( ones, absdet, false);
-        }
-    }
 #ifdef _PAR
     Volume = ProcCL::GlobalSum(Volume);
 #endif
     return Volume;
 }
 
-double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
+double LevelsetP2CL::GetVolume_Extrapolation( double translation, int l) const
+{
+    double vol = 0.; 
+    QuadDomainCL qdom;
+    DROPS::ExtrapolationToZeroCL extra( l, DROPS::RombergSubdivisionCL());
+    // DROPS::ExtrapolationToZeroCL extra( l, DROPS::HarmonicSubdivisionCL());
+    LocalP2CL<> loc_phi;
+    DROPS_FOR_TRIANG_TETRA( MG_, idx.TriangLevel(), it) {
+        loc_phi.assign(*it,Phi,GetBndData());
+        loc_phi+= translation;
+        make_ExtrapolatedQuad5Domain( qdom, loc_phi, extra);
+        DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
+        vol+=quad( integrand, it->GetVolume()*6., qdom, NegTetraC);
+    }
+    return vol;
+}
+
+double LevelsetP2CL::GetVolume_Composite( double translation, int l) const
+{
+    double vol = 0.; 
+    std::valarray<double> ls_values (PrincipalLatticeCL::instance (l).vertex_size());
+    QuadDomainCL qdom;
+    LocalP2CL<> loc_phi;
+    TetraPartitionCL partition;
+    DROPS_FOR_TRIANG_TETRA( MG_, idx.TriangLevel(), it) {
+        loc_phi.assign(*it,Phi,GetBndData());
+        loc_phi+= translation;
+        evaluate_on_vertexes (loc_phi, PrincipalLatticeCL::instance (l), Addr(ls_values));
+        partition.make_partition< SortedVertexPolicyCL,MergeCutPolicyCL>(l, ls_values);
+        make_CompositeQuad5Domain( qdom, partition);
+        DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
+        vol+=quad( integrand, it->GetVolume()*6., qdom, NegTetraC);
+    }
+    return vol;
+}
+
+double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface, int l) const
 {
     tol*=vol;
 
-    double v0=GetVolume()-vol;
+    double v0=GetVolume(0., l)-vol;
     if (std::abs(v0)<=tol) return 0;
 
-    double d0=0, d1=v0*(surface ? 1.1/surface : 0.23/std::pow(vol,2./3.));
+    double d0=0, d1=v0*(surface != 0. ? 1.1/surface : 0.23/std::pow(vol,2./3.));
     // Hinweis: surf(Kugel) = [3/4/pi*vol(Kugel)]^(2/3) * 4pi
-    double v1=GetVolume(d1)-vol;
+    double v1=GetVolume(d1, l)-vol;
     if (std::abs(v1)<=tol) return d1;
 
     // Sekantenverfahren fuer Startwert
     while (v1*v0 > 0) // gleiches Vorzeichen
     {
         const double d2=d1-1.2*v1*(d1-d0)/(v1-v0);
-        d0=d1; d1=d2; v0=v1; v1=GetVolume(d1)-vol;
+        d0=d1; d1=d2; v0=v1; v1=GetVolume(d1, l)-vol;
         if (std::abs(v1)<=tol) return d1;
     }
 
@@ -600,7 +621,7 @@ double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
     while (true)
     {
         const double d2=(v1*d0-v0*d1)/(v1-v0),
-                     v2=GetVolume(d2)-vol;
+                     v2=GetVolume(d2,l)-vol;
         if (std::abs(v2)<=tol) return d2;
 
         if (v2*v1 < 0) // ungleiches Vorzeichen
@@ -684,7 +705,7 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
 {
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
-    double det, absdet;
+    double det;
     InterfacePatchCL patch;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
@@ -697,16 +718,14 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
     DROPS_FOR_TRIANG_TETRA( MG_, MG_.GetLastLevel(), it)
     {
         GetTrafoTr( T, det, *it);
-        absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
         patch.Init( *it, Phi, BndData_);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;
         for (int v=0; v<10; ++v) // init gradPhi, Coord
-        {
             gradPhi+= patch.GetPhi(v)*Grad[v];
-        }
+
         VectorCL normGrad( 5);
         for (int v=0; v<5; ++v) // init normGrad
             normGrad[v]= norm( gradPhi[v]);
