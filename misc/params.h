@@ -39,14 +39,24 @@ namespace DROPS
 {
 
 /// \brief Parser and container for JSON parameter files
-/// Usage
-///   - see trac
+///        This class is based on BOOST Property Tree
+/// Usage:
+///   - read in JSON file via <ParamCL> P << <ifstream> file
+///   - use get routines to access data
+/// For further information see TRAC
 
 class ParamCL: public boost::property_tree::ptree
 {
   public:
     ParamCL();
 
+    /// \brief standard get routine
+    /// \param template parameter is the desired type of returned variable
+    /// \param pathInPT Path in tree hierarchy
+    ///        e.g. for SimParams { "Timestep" : 0.1 };
+    ///             you use: myvar = P.get("SimParams.TimeStep");
+    /// \returns value stored in node
+    /// \exception BadTreePath if node does not exists
     template <typename OutType>
     OutType get(const std::string & pathInPT) const
     {
@@ -67,12 +77,13 @@ class ParamCL: public boost::property_tree::ptree
       return get<OutType>(std::string(pathInPT));
     }
 
-    template <typename InType>
-    void put(const std::string & pathToNode, InType value)
-    {
-      this->pt.put(pathToNode, value);
-    }
-
+    /// \brief get routine with default value
+    /// \param pathInPT Path in tree hierarchy
+    /// \param default_value value returned if node does not exist
+    ///        type of returned variable is determined by the type of default_value
+    ///        if node does not exist, node will be created with default_value as value
+    /// \returns value stored in node
+    /// \returns default_value if node does not exist
     template <typename OutType>
     OutType get(const std::string & pathInPT, OutType default_val)
     {
@@ -87,7 +98,7 @@ class ParamCL: public boost::property_tree::ptree
 
       //value in container?
       try {
-          return this->pt.get<OutType>(pathInPT);
+          return get<OutType>(pathInPT);
       }
       //no? then add for next time
       catch (boost::property_tree::ptree_error & e) {
@@ -96,14 +107,21 @@ class ParamCL: public boost::property_tree::ptree
       }
     }
 
-//    DROPS::Point3DCL get(const std::string pathInPT) const;
+    /// \brief routine to assign a value to node/create nodes manually
+    /// \param pathToNode Path in tree hierarchy
+    /// \param value This value will be assigned to node
+    template <typename InType>
+    void put(const std::string & pathToNode, InType value)
+    {
+      this->pt.put(pathToNode, value);
+    }
 
     friend std::istream &operator>>(std::istream& stream, ParamCL& P);
     friend std::ostream &operator<<(std::ostream& stream, ParamCL& P);
 
-    //Point3DCL getPoint(const std::string pathInPT) const;
 
   private:
+    //container for data
     boost::property_tree::ptree pt;
 
     void open(const std::string path);
@@ -112,9 +130,12 @@ class ParamCL: public boost::property_tree::ptree
 
 };
 
+/// \brief specialisation of standard get routine for Point3DCL
 template<>
 DROPS::Point3DCL ParamCL::get<DROPS::Point3DCL>(const std::string & pathInPT) const;
 
+
+//DELETE ReadParamsCL?
 ///   \brief Parser for parameter files used by ParamBaseCL.
 ///
 ///   Usage:
