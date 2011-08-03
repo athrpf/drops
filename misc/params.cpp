@@ -57,11 +57,11 @@ namespace DROPS
   {
      Point3DCL point;
 
-     using boost::property_tree::ptree;
+     typedef boost::property_tree::ptree ptree;
      int i=0;
 
-     ptree curPT = this->pt.get_child(pathInPT);
-     for (ptree::const_iterator it = curPT.begin(); it != curPT.end(); ++it) {
+     boost::property_tree::ptree curPT = this->pt.get_child(pathInPT);
+     for (boost::property_tree::ptree::const_iterator it = curPT.begin(); it != curPT.end(); ++it) {
          point[i++] = it->second.get_value<double>();
      }
 
@@ -70,7 +70,7 @@ namespace DROPS
 
   std::ostream& ParamCL::print(std::ostream& s)
   {
-    using boost::property_tree::ptree;
+    typedef boost::property_tree::ptree ptree;
 
     for (ptree::const_iterator it = this->pt.begin(); it != this->pt.end(); ++it) {
         s << it->first << ": " << it->second.get_value<std::string>() << "\n";
@@ -82,7 +82,7 @@ namespace DROPS
   void ParamCL::print(boost::property_tree::ptree child, std::string level, std::ostream& s)
   {
 
-    using boost::property_tree::ptree;
+    typedef boost::property_tree::ptree ptree;
 
     for (ptree::const_iterator it = child.begin(); it != child.end(); ++it) {
         s << level << it->first << ": " << it->second.get_value<std::string>() << "\n";

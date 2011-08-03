@@ -55,7 +55,7 @@ template <class GridFunT, class QuadDataT, class WeightSelectorT>
 
 template <class GridFunT>
   inline typename ValueHelperCL<GridFunT>::value_type
-  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s=AllTetraC)
+  quad (const GridFunT& f, double absdet, const QuadDomainCL& dom, TetraSignEnum s)
 {
     return quad_impl( dom.weight_begin( s), f, dom.dof_begin( s), dom.dof_end( s))*absdet;
 }

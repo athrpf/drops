@@ -541,7 +541,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
             
         case StokesMGM_OS: {
             if (APc_==PVanka_SM) {
-                if (P_.template get("NavierStokes.Nonlinear", 0.0)==0.0) // Stokes
+                if (P_.template get<double>("NavierStokes.Nonlinear", 0.0)==0.0) // Stokes
                     mgvankasolver_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
                                ( Stokes_.prM.Data, vankasmoother_, coarse_blockminressolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), false, 2);
                 else
@@ -550,7 +550,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, Prolongatio
                 stokessolver = mgvankasolver_;
             }
             else if (APc_==BraessSarazin_SM) {
-                if (P_.template get("NavierStokes.Nonlinear", 0.0) ==0.0) // Stokes
+                if (P_.template get<double>("NavierStokes.Nonlinear", 0.0) ==0.0) // Stokes
                     mgbssolver_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
                                ( Stokes_.prM.Data, bssmoother_, coarse_blockminressolver_, P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), false, 2);
                 else

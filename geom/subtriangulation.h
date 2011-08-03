@@ -31,7 +31,7 @@
 
 #include <vector>
 #include <valarray>
-#include <tr1/unordered_map>
+//#include <tr1/unordered_map>
 
 
 namespace DROPS {
@@ -302,7 +302,7 @@ class MergeCutPolicyCL
     };
 
     typedef std::pair<Uint, Uint> EdgeT;
-    typedef std::tr1::unordered_map<EdgeT, Uint, UintPairHasherCL> EdgeToCutMapT;
+    typedef DROPS_STD_UNORDERED_MAP<EdgeT, Uint, UintPairHasherCL> EdgeToCutMapT;
 
     const PrincipalLatticeCL::const_vertex_iterator lattice_vertexes_;
     VertexContT vertexes_;
