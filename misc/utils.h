@@ -48,7 +48,7 @@
 #  include <sys/types.h>
 #endif
 #include <cmath>
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+#if __GNUC__ >= 4
 #    include <tr1/unordered_map>
 #    define DROPS_STD_UNORDERED_MAP std::tr1::unordered_map
 #endif
