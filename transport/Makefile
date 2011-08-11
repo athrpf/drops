@@ -40,7 +40,7 @@ ns_transp: \
     ../out/vtkOut.o ../levelset/surfacetension.o ../geom/simplex.o ../surfactant/ifacetransp.o\
     ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o ../levelset/coupling.o \
     ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o \
-    ../num/quadrature.o ../geom/multigridgraph.o $(PAR_OBJ)
+    ../num/quadrature.o  $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 

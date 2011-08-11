@@ -186,7 +186,7 @@ xfem: \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../num/discretize.o ../levelset/levelset.o ../levelset/fastmarch.o \
     ../stokes/instatstokes2phase.o ../out/ensightOut.o ../levelset/surfacetension.o \
-    ../misc/bndmap.o ../geom/bndVelFunctions.o ../geom/multigridgraph.o\
+    ../misc/bndmap.o ../geom/bndVelFunctions.o \
     ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -194,7 +194,7 @@ f_Gamma: \
     ../tests/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../num/interfacePatch.o \
-    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../geom/multigridgraph.o\
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
     ../levelset/surfacetension.o ../misc/bndmap.o ../geom/bndVelFunctions.o \
     ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o 
 	$(CXX) -o $@ $^ $(LFLAGS)

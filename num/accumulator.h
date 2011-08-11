@@ -89,7 +89,7 @@ class AccumulatorTupleCL
     template <class ExternalIteratorCL>
     void operator() (ExternalIteratorCL begin, ExternalIteratorCL end);
     
-    /// \brief Calls the accumulators for each object by using a multigridgraph.
+    /// \brief Calls the accumulators for each object by using a MultiGridCL::IndependentTetraCT.
     void operator() ( const MultiGridCL::IndependentTetraCT& graph);
 };
 
