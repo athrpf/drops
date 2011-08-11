@@ -70,7 +70,7 @@ void LocalNonlConvSystemOnePhase_P2CL::setup (const SMatrixCL<3,3>& T, double ab
 
 /// \brief Setup of the local (nonl.) convection term on a tetra with two phases
 ///  using smoothed versions of disc. density 
-class LocalNonlConvSystemSmootedJumps_P2CL
+class LocalNonlConvSystemSmoothedJumps_P2CL
 {
   private:
     const SmoothedJumpCL & rho_;
@@ -82,7 +82,7 @@ class LocalNonlConvSystemSmootedJumps_P2CL
     const SVectorCL<Quad2DataCL::NumNodesC> Ones;
 
   public:
-    LocalNonlConvSystemSmootedJumps_P2CL (const SmoothedJumpCL & rho_arg)
+    LocalNonlConvSystemSmoothedJumps_P2CL (const SmoothedJumpCL & rho_arg)
         : rho_( rho_arg), Ones( 1.)
     { 
         P2DiscCL::GetGradientsOnRef( GradRef); 
@@ -103,7 +103,7 @@ class LocalNonlConvSystemSmootedJumps_P2CL
     void setup (const SMatrixCL<3,3>& T, double absdet, LocalNonlConvDataCL& loc);
 };
 
-void LocalNonlConvSystemSmootedJumps_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, LocalNonlConvDataCL& loc)
+void LocalNonlConvSystemSmoothedJumps_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, LocalNonlConvDataCL& loc)
 {
     P2DiscCL::GetGradients( Grad, GradRef, T);
     for (Uint i= 0; i < 10; ++i) {
@@ -190,7 +190,7 @@ class NonlConvSystemAccumulator_P2CL : public TetraAccumulatorCL
 
     LocalNonlConvSystemOnePhase_P2CL local_onephase; ///< used on tetras in a single phase
     LocalNonlConvSystemTwoPhase_P2CL local_twophase; ///< used on intersected tetras
-    LocalNonlConvSystemSmootedJumps_P2CL local_smoothed_twophase; ///< used on intersected tetras
+    LocalNonlConvSystemSmoothedJumps_P2CL local_smoothed_twophase; ///< used on intersected tetras
     LocalNonlConvDataCL loc; ///< Contains the memory, in which the local operators are set up; former coupM, coupA, coupAk, rho_phi.
 
     LocalNumbP2CL n; ///< global numbering of the P2-unknowns
@@ -232,10 +232,9 @@ NonlConvSystemAccumulator_P2CL::NonlConvSystemAccumulator_P2CL (const TwoPhaseFl
 
 void NonlConvSystemAccumulator_P2CL::begin_accumulation ()
 {
-    std::cout << "entering NonlConvSystemP2CL::begin_accumulation ()";
+    std::cout << "entering NonlConvSystemP2CL";
     if (smoothed)
-        std::cout << " [smoothed] ";
-    std::cout << std::endl;
+        std::cout << " [smoothed]";
     const size_t num_unks_vel= RowIdx.NumUnknowns();
     mN_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &N, num_unks_vel, num_unks_vel);
     if (cplN != 0) {
@@ -248,12 +247,9 @@ void NonlConvSystemAccumulator_P2CL::finalize_accumulation ()
     mN_->Build();
     delete mN_;
 #ifndef _PAR
-    std::cout << N.num_nonzeros() << " nonzeros in N, " << std::endl;
+    std::cout << ": " << N.num_nonzeros() << " nonzeros in N, ";
 #endif
-    std::cout << "leaving NonlConvSystem_P2CL::finalize_accumulation ()";
-    if (smoothed)
-        std::cout << " [smoothed] ";
-    std::cout << std::endl;
+    std::cout << '\n';
 }
 
 void NonlConvSystemAccumulator_P2CL::visit (const TetraCL& tet)
