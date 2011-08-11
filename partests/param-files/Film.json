@@ -8,10 +8,10 @@
 
 	"Material":
 	{
-		"KineticViscosity":		1.004e-6,
+		"KineticViscosity":		1.004e-06,
 		"HeatConductivity":		1,
-		"InflowTemperature":		300.,
-		"WallTemperature":		350.,
+		"InflowTemperature":		300,
+		"WallTemperature":		350,
 		"g":		[0, 9.81, 0 ]
 	},
 

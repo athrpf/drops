@@ -15,11 +15,11 @@
 		"Iter":		200,
 		"Restart":		100,
 		"RelativeErr":		0,
-		"Tol":		1.0e-10,
+		"Tol":		1e-10,
 		"Method":		302,
 		"SmoothingSteps":		1,
 		"NumLvl":		-1,
-		"Relax":		1.0,
+		"Relax":		1,
 		"SolutionIsKnown":		1
 	},
 
@@ -37,12 +37,13 @@
 # solution, we have no convection, no reaction and a given solution.
 #############################################",
 
-		"Diffusion":		1.0,
+		"Diffusion":		1,
 		"Reaction":		"Example2_Reaction",
 		"Solution":		"Example2_Solution",
 		"Source":		"Example2_Source",
 		"Flowfield":		"Example2_Flowfield",
-		"InitialVal":		"Example2_Solution"
+		"InitialVal":		"Example2_Solution",
+        "Stabilization":      0
 	},
 
 	"DomainCond":
@@ -88,7 +89,7 @@
 
 		"Heat":		5960,
 		"Rho":		866,
-		"Mu":		1.732e-3,
+		"Mu":		0.001732,
 		"Cp":		1500,
 		"Lambda":		0.26
 	},
@@ -122,7 +123,7 @@
 		"DoErrorEstimate":		0,
 		"RelReduction":		0.1,
 		"DoMark":		1,
-		"MinRatio":		0.0,
+		"MinRatio":		0,
 		"Threshold":		0.6,
 		"Meas":		0.875,
 		"NumRef":		2

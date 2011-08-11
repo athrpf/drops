@@ -199,13 +199,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         MLIdxDescCL* cidx= &massTransp.idx;
         massTransp.CreateNumbering( MG.GetLastLevel(), cidx);
         massTransp.ct.SetIdx( cidx);
-        if (P.get<int>("DomainCond.InitialCond") != -1){
+        if (P.get<int>("DomainCond.InitialCond") != -1)
             massTransp.Init( inscamap["Initialcneg"], inscamap["Initialcpos"]);
-        }
         else
-        {
             ReadFEFromFile( massTransp.ct, MG, P.get<std::string>("DomainCond.InitialFile")+"concentrationTransf");
-        }
+
         massTransp.Update();
         std::cout << massTransp.c.Data.size() << " concentration unknowns,\n";
     }
@@ -252,7 +250,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     // Time discretisation + coupling
     TimeDisc2PhaseCL* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, P, lsetmod);
     if (P.get<int>("Time.NumSteps") != 0){
-        timedisc->SetTimeStep( P.get<double>("Time.StepSize"));
         timedisc->SetSchurPrePtr( stokessolverfactory.GetSchurPrePtr() );
     }
     if (P.get<double>("NavStokes.Nonlinear")!=0.0 || P.get<int>("Time.NumSteps") == 0) {
@@ -397,6 +394,9 @@ int main (int argc, char** argv)
     DROPS::ParMultiGridInitCL pmginit;
 #endif
     std::ifstream param;
+
+    std::cout << "Boost version: " << BOOST_LIB_VERSION << std::endl;
+
     if (argc!=2)
     {
         std::cout << "Using default parameter file: risingdroplet.json\n";

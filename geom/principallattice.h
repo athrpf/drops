@@ -47,7 +47,13 @@ class PrincipalLatticeCL
   private:
     /// \brief cache for computed lattices
     ///@{
-    static std::vector<const PrincipalLatticeCL*> cache_;
+    class PrincipalLatticeCacheCL : public std::vector<const PrincipalLatticeCL*>
+    {
+      public:
+    	~PrincipalLatticeCacheCL() { for ( size_t i = 0; i< this->size(); ++i) if ((*this)[i]) delete (*this)[i];; }
+    };
+
+    static PrincipalLatticeCacheCL cache_;
     static bool is_memoized (Uint n)
         { return n-1 < cache_.size() && cache_[n-1]; }
     static const PrincipalLatticeCL& read_cache (Uint n) { return *cache_[n-1]; }

@@ -28,7 +28,7 @@
 
 using namespace std;
 
-extern DROPS::ParamCL P_Stokes;
+extern DROPS::ParamCL P;
 
 double ScaZero(const DROPS::Point3DCL&, double =0)
 {
@@ -132,7 +132,7 @@ static DROPS::RegisterScalarFunction regscaprsolution("PrSol_FSdrops_stat",     
 
 DROPS::SVectorCL<3> helper( const DROPS::Point3DCL& p)
 {
-	DROPS::SVectorCL<3> ret;
+    DROPS::SVectorCL<3> ret;
     ret[0]=     std::cos(p[0])*std::sin(p[1])*std::sin(p[2]);
     ret[1]=     std::sin(p[0])*std::cos(p[1])*std::sin(p[2]);
     ret[2]= -2.*std::sin(p[0])*std::sin(p[1])*std::cos(p[2]);
@@ -141,12 +141,12 @@ DROPS::SVectorCL<3> helper( const DROPS::Point3DCL& p)
 
 DROPS::Point3DCL Source_instat( const DROPS::Point3DCL& p, double t)
 {
-	return (1 + 3*t)*helper(p);
+    return (1 + 3*t)*helper(p);
 }
 
 DROPS::SVectorCL<3> VelSolution_instat( const DROPS::Point3DCL& p, double t)
 {
-	return t*helper(p);
+    return t*helper(p);
 }
 
 static DROPS::RegisterVectorFunction reginvecsource("Source_FSdrops_instat",     Source_instat );
@@ -154,16 +154,16 @@ static DROPS::RegisterVectorFunction reginvecvelsolution("VelSol_FSdrops_instat"
 
 DROPS::Point3DCL Source_instat2( const DROPS::Point3DCL& p, double t)
 {
-	DROPS::SVectorCL<3> ret;
-	ret[0]=       2/3*t*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
-	ret[1]=      -2/3*t*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
-	ret[2]= (4/3+3*t)*t*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
-	return ret;
+    DROPS::SVectorCL<3> ret;
+    ret[0]=       2/3*t*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+    ret[1]=      -2/3*t*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+    ret[2]= (4/3+3*t)*t*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
+    return ret;
 }
 
 DROPS::SVectorCL<3> VelSolution_instat2( const DROPS::Point3DCL& p, double t)
 {
-	DROPS::SVectorCL<3> ret;
+    DROPS::SVectorCL<3> ret;
     ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2])*t*t;
     ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2])*t*t;
     ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2])*t*t;
@@ -172,7 +172,7 @@ DROPS::SVectorCL<3> VelSolution_instat2( const DROPS::Point3DCL& p, double t)
 
 double PrSolution_instat2( const DROPS::Point3DCL& p, double t)
 {
-	return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])*t*t;
+    return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])*t*t;
 }
 
 static DROPS::RegisterVectorFunction regin2vecsource("Source_FSdrops_instat2",     Source_instat2 );
@@ -181,17 +181,17 @@ static DROPS::RegisterScalarFunction regin2scaprsolution("PrSol_FSdrops_instat2"
 
 DROPS::Point3DCL Source_instat3( const DROPS::Point3DCL& , double )
 {
-	return DROPS::SVectorCL<3>(-2.);
+    return DROPS::SVectorCL<3>(-2.);
 }
 
 DROPS::SVectorCL<3> VelSolution_instat3( const DROPS::Point3DCL& , double t)
 {
-	return DROPS::SVectorCL<3>(-t);
+    return DROPS::SVectorCL<3>(-t);
 }
 
 double PrSolution_instat3( const DROPS::Point3DCL& p, double)
 {
-	return -(p[0]+p[1]+p[2]);
+    return -(p[0]+p[1]+p[2]);
 }
 
 static DROPS::RegisterVectorFunction regin3vecsource("Source_FSdrops_instat3",     Source_instat3 );
@@ -208,9 +208,9 @@ namespace drivcav{
 
 DROPS::SVectorCL<3> Inflow1( const DROPS::Point3DCL& , double)
 {
-	DROPS::SVectorCL<3> ret(0.);
-	ret[0]= 1.;
-	return ret;
+    DROPS::SVectorCL<3> ret(0.);
+    ret[0]= 1.;
+    return ret;
 }
 
 static DROPS::RegisterVectorFunction reginflow1("Inflow_drivcav_v1",Inflow1 );
@@ -252,9 +252,9 @@ DROPS::SVectorCL<3> VelSolution( const DROPS::Point3DCL& p, double t)
 
 double PrSolution( const DROPS::Point3DCL& p, double t)
 {
-	 return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])*t*t
-	        -(std::sin( 1.) -2.*std::sin( 1.)*std::cos( 1.)
-	        + std::sin( 1.)*std::pow( std::cos( 1.), 2))*t*t; // (...)==0.1778213062
+    return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])*t*t
+           -(std::sin( 1.) -2.*std::sin( 1.)*std::cos( 1.)
+           + std::sin( 1.)*std::pow( std::cos( 1.), 2))*t*t; // (...)==0.1778213062
 }
 
 static DROPS::RegisterVectorFunction regvecsource("Source_isstokes",      Source );
@@ -267,9 +267,9 @@ static DROPS::RegisterScalarFunction regscaprsolution("PrSol_isstokes",   PrSolu
 namespace MGsdropsP2{
 DROPS::Point3DCL Source( const DROPS::Point3DCL& p, double)
 {
-	 DROPS::SVectorCL<3> ret(0.0);
-	 ret[2]= 3.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
-	 return ret;
+    DROPS::SVectorCL<3> ret(0.0);
+    ret[2]= 3.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
+    return ret;
 }
 
 DROPS::SVectorCL<3> VelSolution( const DROPS::Point3DCL& p, double)
@@ -313,11 +313,11 @@ namespace stsdrops {
 
 DROPS::SVectorCL<3> VelSolution( const DROPS::Point3DCL& p, double)
 {
-	DROPS::SVectorCL<3> ret;
-	ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
-	ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
-	ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
-	return ret/3.;
+    DROPS::SVectorCL<3> ret;
+    ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+    ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+    ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
+    return ret/3.;
 }
 
 DROPS::SMatrixCL<3, 3> DVelSolution(const DROPS::Point3DCL& p, double)
@@ -339,18 +339,18 @@ DROPS::SMatrixCL<3, 3> DVelSolution(const DROPS::Point3DCL& p, double)
 
 double PrSolution( const DROPS::Point3DCL& p, double)
 {
-	return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])
-	               -(std::sin( 1.) -2.*std::sin( 1.)*std::cos( 1.) + std::sin( 1.)*std::pow( std::cos( 1.), 2)); // (...)==0.1778213062
+    return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])
+                   -(std::sin( 1.) -2.*std::sin( 1.)*std::cos( 1.) + std::sin( 1.)*std::pow( std::cos( 1.), 2)); // (...)==0.1778213062
 }
 
 double ConstQ(const DROPS::Point3DCL&, double =0)
 {
-    return P_Stokes.get<double>("Mat.Dens");
+    return P.get<double>("Mat.Dens");
 }
 
 DROPS::Point3DCL Source( const DROPS::Point3DCL& p, double)
 {
-    const double g= P_Stokes.get<double>("Mat.Dens");
+    const double g= P.get<double>("Mat.Dens");
     DROPS::SVectorCL<3> ret;
     ret[0]= g/3.*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
     ret[1]= -g/3.*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);

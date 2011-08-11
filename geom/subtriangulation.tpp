@@ -155,7 +155,6 @@ template <class VertexCutMergingPolicyT>
   SurfacePatchCL::make_patch (Uint num_intervals, const std::valarray<double>& ls)
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-    PrincipalLatticeCL::const_vertex_iterator lattice_verts= lat.vertex_begin();
 
     triangles_.resize( 0);
     is_boundary_triangle_.resize( 0);

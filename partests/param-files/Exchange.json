@@ -11,9 +11,9 @@
 		"BasicRefX":		3,
 		"BasicRefY":		3,
 		"BasicRefZ":		3,
-		"dx":		5.0,
-		"dy":		1.0,
-		"dz":		1.0,
+		"dx":		5,
+		"dy":		1,
+		"dz":		1,
 		"RefAll":		2,
 		"RefineStrategy":		1,
 		"MigEveryTime":		1

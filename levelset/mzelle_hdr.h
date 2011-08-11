@@ -229,53 +229,53 @@ TimeDisc2PhaseCL* CreateTimeDisc( InstatNavierStokes2PhaseP2P1CL& Stokes, Levels
     {
         case 1 :
             return (new LinThetaScheme2PhaseCL<LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<double>("Coupling.Stab")));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<double>("Coupling.Stab")));
         break;
         case 3 :
             std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
         case 2 :
             return (new RecThetaScheme2PhaseCL<LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
         break;
         case 4 :
             return (new OperatorSplitting2PhaseCL<LevelSetSolverT>
-                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol"), P.get<double>("NavStokes.Nonlinear")));
+                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol"), P.get<double>("NavStokes.Nonlinear")));
         break;
         case 6 :
             return (new SpaceTimeDiscTheta2PhaseCL<LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), false));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), false));
         break;
         case 7 :
             return (new SpaceTimeDiscTheta2PhaseCL< LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), true));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("Stokes.Theta"), P.get<double>("Levelset.Theta"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), true));
         break;
         case 8 :
             return (new EulerBackwardScheme2PhaseCL<LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
         break;
         case 9 :
             return (new CrankNicolsonScheme2PhaseCL<RecThetaScheme2PhaseCL, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
         break;
         case 10 :
             return (new CrankNicolsonScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab")));
         break;
         case 11 :
             return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
         break;
         case 12 :
             return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
         break;
         case 13 :
             return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
         break;
         case 14 :
             return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, P.get<double>("Time.StepSize"), P.get<double>("Coupling.Tol"), P.get<double>("NavStokes.Nonlinear"), P.get<int>("Coupling.Projection"), P.get<double>("Coupling.Stab"), -1));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
@@ -316,7 +316,7 @@ void SolveStatProblem( StokesT& Stokes, const LevelsetP2CL& lset,
     std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 }
 
-void SetInitialLevelsetConditions( LevelsetP2CL& lset, MultiGridCL& MG, const ParamCL& P)
+void SetInitialLevelsetConditions( LevelsetP2CL& lset, MultiGridCL& MG, ParamCL& P)
 {
     switch (P.get<int>("DomainCond.InitialCond"))
     {

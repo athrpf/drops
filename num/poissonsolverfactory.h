@@ -23,8 +23,8 @@
 */
 
 
-#ifndef PoissonSOLVERFACTORY_H_
-#define PoissonSOLVERFACTORY_H_
+#ifndef POISSONSOLVERFACTORY_H_
+#define POISSONSOLVERFACTORY_H_
 
 #include "num/solver.h"
 #include "misc/params.h"
@@ -166,29 +166,29 @@ PoissonSolverBaseCL* PoissonSolverFactoryCL<ProlongationT>::CreatePoissonSolver(
     PoissonSolverBaseCL* Poissonsolver = 0;
     switch (P_.get<int>("Poisson.Method"))
     {
-		case  102 : {
+        case  102 : {
             Poissonsolver = new PoissonSolverCL<MGSolversymmJORT>( MGSolversymmJOR_);
             prolongptr_ = MGSolversymmJOR_.GetProlongation();
-		} break;
-		case  103 : {
+        } break;
+        case  103 : {
             Poissonsolver = new PoissonSolverCL<MGSolversymmSSORT>( MGSolversymmSSOR_);
             prolongptr_ = MGSolversymmSSOR_.GetProlongation();
-		} break;
-		case  104 : {
+        } break;
+        case  104 : {
             Poissonsolver = new PoissonSolverCL<MGSolversymmGST>( MGSolversymmGS_);
             prolongptr_ = MGSolversymmGS_.GetProlongation();
-		} break;
-		case  105 : {
+        } break;
+        case  105 : {
             Poissonsolver = new PoissonSolverCL<MGSolversymmSGST>( MGSolversymmSGS_);
             prolongptr_ = MGSolversymmSGS_.GetProlongation();
-		} break;
-		case  106 : {
+        } break;
+        case  106 : {
             Poissonsolver = new PoissonSolverCL<MGSolversymmSORT>( MGSolversymmSOR_);
             prolongptr_ = MGSolversymmSOR_.GetProlongation();
-		} break;
-		case  302 : Poissonsolver = new PoissonSolverCL<GMResSolverT>( GMResSolver_);  break;
-		case  303 : Poissonsolver = new PoissonSolverCL<GMResSolverSSORT>( GMResSolverSSOR_);  break;
-		case  203 : Poissonsolver = new PoissonSolverCL<PCGSolverT>( PCGSolver_); break;
+        } break;
+        case  302 : Poissonsolver = new PoissonSolverCL<GMResSolverT>( GMResSolver_);  break;
+        case  303 : Poissonsolver = new PoissonSolverCL<GMResSolverSSORT>( GMResSolverSSOR_);  break;
+        case  203 : Poissonsolver = new PoissonSolverCL<PCGSolverT>( PCGSolver_); break;
         default: throw DROPSErrCL("PoissonSolverFactoryCL: Unknown Poisson solver");
     }
     return Poissonsolver;
@@ -205,7 +205,7 @@ template <class ProlongationT= MLMatrixCL>
 class PoissonSolverFactoryCL
 {
   private:
-	MLIdxDescCL & idx_;
+    MLIdxDescCL & idx_;
     ParamCL& P_;
 
     // generic preconditioners
@@ -243,15 +243,15 @@ class PoissonSolverFactoryCL
 };
 
 template <class ProlongationT>
-PoissonSolverFactoryCL<ParamsT, ProlongationT>::
-    PoissonSolverFactoryCL(ParamsT* PT, MLIdxDescCL& idx)
-    : idx_(idx), JACPc_( idx_->getFinest(), P->get<double>("Poisson.Relax")), DummyPC_(idx_->getFinest()),
-      JacPCGSolver_( P->get<int>("Poisson.Iter"), P->get<double>("Poisson.Tol"), idx_->getFinest(), JACPc_, P->get<double>("Poisson.RelativeErr")),
-      CGSolver_( P->get<int>("Poisson.Iter"), P->get<double>("Poisson.Tol"), idx_->getFinest(), P->get<double>("Poisson.RelativeErr")),
-      JacGMResSolver_( P->get<int>("Poisson.Restart"), P->get<int>("Poisson.Iter"), P->get<double>("Poisson.Tol"), idx_->getFinest(), JACPc_, P->get<double>("Poisson.RelativeErr")),
-      DummyGMResSolver_( P->get<int>("Poisson.Restart"), P->get<int>("Poisson.Iter"), P->get<double>("Poisson.Tol"), idx_->getFinest(), DummyPC_, P->get<double>("Poisson.RelativeErr"))
+PoissonSolverFactoryCL<ProlongationT>::
+    PoissonSolverFactoryCL(ParamCL& P, MLIdxDescCL& idx)
+    : idx_(idx), P_(P), JACPc_( idx_.GetFinest(), P.get<double>("Poisson.Relax")), DummyPC_(idx_.GetFinest()),
+      JacPCGSolver_( P.get<int>("Poisson.Iter"), P.get<double>("Poisson.Tol"), idx_.GetFinest(), JACPc_, P.get<double>("Poisson.RelativeErr")),
+      CGSolver_( P.get<int>("Poisson.Iter"), P.get<double>("Poisson.Tol"), idx_.GetFinest(), P.get<double>("Poisson.RelativeErr")),
+      JacGMResSolver_( P.get<int>("Poisson.Restart"), P.get<int>("Poisson.Iter"), P.get<double>("Poisson.Tol"), idx_.GetFinest(), JACPc_, P.get<double>("Poisson.RelativeErr")),
+      DummyGMResSolver_( P.get<int>("Poisson.Restart"), P.get<int>("Poisson.Iter"), P.get<double>("Poisson.Tol"), idx_.GetFinest(), DummyPC_, P.get<double>("Poisson.RelativeErr"))
 #ifdef _HYPRE
-      , hypreAMG_( idx.getFinest(), P->get<int>("Poisson.Iter"), P->get<double>("Poisson.Tol"))
+      , hypreAMG_( idx.getFinest(), P.get<int>("Poisson.Iter"), P.get<double>("Poisson.Tol"))
 #endif
         {}
 
@@ -259,7 +259,7 @@ template <class ProlongationT>
 PoissonSolverBaseCL* PoissonSolverFactoryCL<ProlongationT>::CreatePoissonSolver()
 {
     PoissonSolverBaseCL* Poissonsolver = 0;
-    switch (P->get<int>("Poisson.Method"))
+    switch (P_.get<int>("Poisson.Method"))
     {
         case 200 : Poissonsolver = new PoissonSolverCL<CGSolverT>( CGSolver_); break;
         case 202 : Poissonsolver = new PoissonSolverCL<JacPCGSolverT>( JacPCGSolver_); break;

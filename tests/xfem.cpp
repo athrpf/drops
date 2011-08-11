@@ -299,7 +299,6 @@ int main (int argc, char** argv)
     std::ofstream out ("u.txt");
     std::ofstream outpr ("up.txt");
     Point3DCL p;
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     DROPS_FOR_TRIANG_VERTEX( mg, mg.GetLastLevel(), it) {
         p= it->GetCoord();
         if (p[0]==0 && p[1]==0) {

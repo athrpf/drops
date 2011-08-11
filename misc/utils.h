@@ -39,6 +39,8 @@
 #  include <windows.h>
 #  undef max
 #  undef min
+#  include <unordered_map>
+#  define DROPS_STD_UNORDERED_MAP std::unordered_map
 #else
 #  include <sys/time.h>
 #  include <sys/resource.h>
@@ -46,8 +48,9 @@
 #  include <sys/types.h>
 #endif
 #include <cmath>
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+#if __GNUC__ >= 4
 #    include <tr1/unordered_map>
+#    define DROPS_STD_UNORDERED_MAP std::tr1::unordered_map
 #endif
 
 #ifndef M_PI
@@ -64,6 +67,8 @@
 #ifdef DROPS_WIN
 double cbrt(double arg);
 #endif
+
+#include <cstddef>
 
 namespace DROPS
 {
@@ -680,8 +685,6 @@ template <class ContainerT>
   sequence_begin (const ContainerT& c) { return SequenceTraitCL<ContainerT>::const_begin( c); }
 ///@}
 
-
-
 /// \brief Create a directory
 int CreateDirectory(std::string path);
 
@@ -777,10 +780,21 @@ inline byte sign (double d)
     return d > 0. ? 1 : (d < 0. ? -1 : 0);
 }
 
-
 } // end of namespace DROPS
 
 
+#ifdef DROPS_WIN
+///\brief Assignement of slice array is missing in VS Compi
+template<typename T>
+inline std::slice_array<T>&
+std::slice_array<T>::operator=(const slice_array<T>& a)
+{
+    for (size_t i = 0; i < a.size(); ++i){
+        this->_Myptr[i * this->stride()] = a._Myptr[i *a.stride()];
+	}
+	return *this;
+}
+#endif
 
 #ifdef _PAR
 #  ifndef _MPICXX_INTERFACE
@@ -795,7 +809,14 @@ inline byte sign (double d)
 #    include <HYPRE_IJ_mv.h>
 #    include <HYPRE_parcsr_ls.h>
 #  endif
-
 #endif
+
+#ifndef DROPS_WIN
+#  pragma GCC system_header // Suppress warnings from boost
+#endif
+# include <boost/property_tree/ptree.hpp>
+# include <boost/property_tree/exceptions.hpp>
+# include <boost/property_tree/json_parser.hpp>
+
 
 #endif

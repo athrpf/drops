@@ -119,12 +119,12 @@ class InterfaceTetraCL : public InterfacePatchCL
     std::vector<Uint>      posChildIdx, negChildIdx;
 
     SubTetraT TransformToSubTetra(const SubTetraT& tetra); ///< Transforms tetra to the subtetra st_ given in InterfacePatchCL: the columns of tetra are interpreted as barycentric coordinates w.r.t. st_, the return values are the barycentric coordinates of these points w. r. t. T.
-    void InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child); ///< modifies its first argument, if barysubtetra_ == true, because the transformation to the subtetra st_ is performed here
+    void InsertSubTetra(const SubTetraT& BaryCoords, bool pos, Uint child); ///< modifies its first argument, if barysubtetra_ == true, because the transformation to the subtetra st_ is performed here
 
   public:
     bool   ComputeCutForChild( Uint ch); ///< returns true, if a patch exists for this child
     void   ComputeSubTets( Uint ch, bool clearTetras= true); ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap (\mbox{child ch of }T)\f$ and \f$\{\varphi>0\}\cap (\mbox{child ch of} T)\f$; For ch == 8 this gives the tetrahedralization of T itself. The call with clearTetras == false appends the computed tetras to posTetras and negTetras.
-    void   ComputeSubTets(); ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap T\f$ and \f$\{\varphi>0\}\cap T\f$; the regular children of T are triangulated.
+    void   ComputeSubTets(bool subdivide_first = true); ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap T\f$ and \f$\{\varphi>0\}\cap T\f$; the regular children of T are triangulated.
     ///@}
 
     /// \name Use after ComputeSubTets
@@ -167,6 +167,10 @@ class InterfaceTriangleCL : public InterfacePatchCL
     Point3DCL GetNormal () const;                         ///< Returns the unit normal to the linear approximation of \f$\Gamma\f$, that points from \f$\{\varphi<0\}\f$ to \f$\{\varphi<0\}\f$.
     Point3DCL ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
 };
+
+
+LocalP2CL<double> ProjectIsoP2ChildToParentP1 (LocalP2CL<double> lpin, Uint child);
+
 
 } // end of namespace DROPS
 

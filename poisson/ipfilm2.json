@@ -1,24 +1,24 @@
 {
 	"_comment":
 "#=============================================================
-#    DROPS parameter file for ipfilm.cpp
+#    DROPS parameter file for poissonP1.cpp
 #    simulation of poisson problem
 #=============================================================
 #poisson solver",
 
 	"Poisson":
 	{
-		"PcIter":		1,
-		"PcTol":		0.1,
-		"Iter":		100,
-		"Restart":		50,
-		"RelativeErr":		1,
-		"Tol":		1e-10,
-		"Method":		303,
-		"SmoothingSteps":		1,
-		"NumLvl":		-1,
-		"Relax":		1,
-		"SolutionIsKnown":		0
+		"PcIter":		 1,
+		"PcTol":		 0.1,
+		"Iter":		     1000,
+		"Restart":		 50,
+		"RelativeErr":   1,
+		"Tol":		     1e-8,
+		"Method":		 303,
+		"SmoothingSteps": 1,
+		"NumLvl":		 -1,
+		"Relax":		  1.0,
+		"SolutionIsKnown": 0
 	},
 
 	"DomainCond":
@@ -26,23 +26,23 @@
 		"_comment":
 "# domain, bnd/ini conditions",
 
-		"RefineSteps":		2,
-		"GeomType":		1,
+		"RefineSteps":		4,
+		"GeomType":		    1,
 		"InitialFile":		"none",
-		"MeshFile":		"100x0.3x1@8x2x2",
-		"BoundaryType":		"0!21!23!21!21!21",
-		"BoundaryFncs":		"Zero!Zero!Heat!Zero!Zero!Zero"
+		"MeshFile":		    "50x0.2x0.2@5x1x1",
+		"BoundaryType":		"0!21!21!2!21!21",
+		"BoundaryFncs":		"Zero!Zero!Zero!Interface!Zero!Zero"
 	},
 
 	"PoissonCoeff":
 	{
-		"Diffusion":		0.200154,
-		"Reaction":		"Zero",
-		"Solution":		"Zero",
-		"Source":		"Zero",
+		"Diffusion":		 2.1e-2,
+		"Reaction":		    "Zero",
+		"Solution":		    "Zero",
+		"Source":	 	    "Zero",
 		"Flowfield":		"Nusselt",
 		"InitialVal":		"Zero",
-        "Stabilization":      0
+        "Stabilization":      1
 	},
 
 	"Time":
@@ -50,11 +50,11 @@
 		"_comment":
 "# time stepping",
 
-		"StepSize":		0.1,
-		"NumSteps":		5,
+		"StepSize":		0.05,
+		"NumSteps":		20,
 		"Theta":		1,
 		"Scheme":		1,
-		"Convection":		1
+		"Convection":   1
 	},
 
 	"Exp":
@@ -63,10 +63,10 @@
 "# experimental conditions",
 
 		"Heat":		5960,
-		"Rho":		866,
-		"Mu":		0.001732,
+		"Rho":		998,
+		"Mu":		1.00412,
 		"Cp":		1500,
-		"Lambda":		0.26
+		"Lambda":	0.26
 	},
 
 	"Ensight":
@@ -79,7 +79,7 @@
 		"EnsDir":		"ensight",
 		"GeomName":		"test",
 		"MasterOut":		1,
-		"Binary":		1
+		"Binary":		    1
 	},
 
 	"Err":
@@ -88,12 +88,12 @@
 "# Error estimator",
 
 		"RelReduction":		0.1,
-		"MinRatio":		0,
+		"MinRatio":		    0.0,
 		"Threshold":		0.6,
-		"Meas":		0.875,
-		"DoMark":		0,
-		"DoErrorEstimate":		0,
-		"NumRef":		6
+		"Meas":		        0.875,
+		"DoMark":		    0,
+		"DoErrorEstimate":  0,
+		"NumRef":		    6
 	},
 
 	"VTK":

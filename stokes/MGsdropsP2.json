@@ -22,11 +22,12 @@
 		"InnerIter":		200,
 		"OuterIter":		200,
 		"InnerTol":		1e-10,
-		"OuterTol":		1e-8,
+		"OuterTol":		1e-08,
 		"StokesMethod":		510100,
 		"PcAIter":		100,
-		"PcATol":		1e-2,
-		"PcSTol":		1e-4,
+		"PcATol":		0.01,
+		"PcSTol":		0.0001,
+		"XFEMStab":		0,
 		"Theta":		1
 	},
 
@@ -47,8 +48,8 @@
 		"_comment":
 "# Miscellaneous",
 
-		"Omega":		1.0,
-		"Tau":		1.0,
+		"Omega":		1,
+		"Tau":		1,
 		"ModifyGrid":		0
 	},
 
@@ -116,7 +117,7 @@
 		"RelReduction":		0.1,
 		"MinRatio":		0,
 		"Threshold":		0.6,
-		"Meas":		0.484473073129685,
+		"Meas":		0.48447307313,
 		"DoMark":		0,
 		"DoErrorEstimate":		1,
 		"NumRef":		2

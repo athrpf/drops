@@ -25,7 +25,8 @@
 		"StokesMethod":		30207,
 		"PcAIter":		1,
 		"PcATol":		1e-99,
-		"PcSTol":		1e-2,
+		"PcSTol":		0.01,
+		"XFEMStab":		0,
 		"Theta":		1
 	},
 
@@ -46,9 +47,9 @@
 		"_comment":
 "# Miscellaneous",
 
-		"Omega":		1.0,
-		"Tau":		1.0,
-		"MarkLower":		0.0
+		"Omega":		1,
+		"Tau":		1,
+		"MarkLower":		0.25
 	},
 
 	"Mat":
@@ -73,10 +74,10 @@
 		"_comment":
 "# domain, bnd/ini conditions",
 
-		"InitialCond":		0,
+		"InitialCond":		2,
 		"GeomType":		1,
 		"InitialFile":		"none",
-		"MeshFile":		"1x1x1@2x2x2",
+		"MeshFile":		"1x1x1@5x5x5",
 		"BoundaryType":		"0!0!0!0!0!2",
 		"BoundaryFncs":		"VecZero!VecZero!VecZero!VecZero!VecZero!Inflow_drivcav_v2"
 	},
@@ -107,18 +108,18 @@
 		"Binary":		1
 	},
 
-	"Error":
+	"Err":
 	{
 		"_comment":
 "# Error estimator",
 
-		"RelReduction":		0.01,
+		"RelReduction":		0.1,
 		"MinRatio":		0,
-		"Threshold":		0.8,
-		"Meas":		1.0,
+		"Threshold":		0.6,
+		"Meas":		1,
 		"DoMark":		0,
-		"DoErrorEstimate":		1,
-		"NumRef":		7
+		"DoErrorEstimate":		0,
+		"NumRef":		3
 	}
 
 }

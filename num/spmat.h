@@ -272,8 +272,7 @@ struct BlockTraitsCL
     static const bool no_reuse= true; ///< False, if the sparsity-pattern can be reused with this block-type
 
     ///\brief Computes the beginning of double-valued rows in the matrix for one block-row
-    template <class Iter>
-    static inline void row_begin ( size_t*, Iter, Iter); // not defined
+    static inline void row_begin ( size_t*, size_t); // not defined
     ///\brief Inserts one block-row in the form of double-valued rows into the matrix
     template <class Iter>
     static inline void insert_block_row (Iter, Iter, const size_t*, size_t*, double*); // not defined
@@ -293,9 +292,8 @@ struct BlockTraitsCL<double>
     static const Uint num_cols= 1;
     static const bool no_reuse= false;
 
-    template <class Iter>
-    static inline void row_begin ( size_t* prev_row_end, Iter begin, Iter end)
-        { prev_row_end[1]= prev_row_end[0] + std::distance( begin, end); }
+    static inline void row_begin (size_t* prev_row_end, size_t num_blocks)
+        { prev_row_end[1]= prev_row_end[0] + num_blocks; }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
         for (size_t j= rb[0]; begin != end; ++begin, ++j) {
@@ -323,9 +321,7 @@ struct BlockTraitsCL< SMatrixCL<Rows, Cols> >
     static const Uint num_cols= Cols;
     static const bool no_reuse= true;
 
-    template <class Iter>
-    static inline  void row_begin (size_t* prev_row_end, Iter begin, Iter end) {
-        const size_t num_blocks= std::distance( begin, end);
+    static inline  void row_begin (size_t* prev_row_end, size_t num_blocks) {
         for (Uint k= 0; k < num_rows; ++k)
             prev_row_end[k + 1]= prev_row_end[k] + num_cols*num_blocks;
     }
@@ -358,9 +354,7 @@ struct BlockTraitsCL< SDiagMatrixCL<Rows> >
     static const Uint num_cols= Rows;
     static const bool no_reuse= true;
 
-    template <class Iter>
-    static inline  void row_begin (size_t* prev_row_end, Iter begin, Iter end) {
-        const size_t num_blocks= std::distance( begin, end);
+    static inline  void row_begin (size_t* prev_row_end, size_t num_blocks) {
         for (Uint k= 0; k < num_rows; ++k)
             prev_row_end[k + 1]= prev_row_end[k] + num_blocks;
     }
@@ -462,7 +456,7 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 
     rb[0]= 0;
     for (size_t i= 0; i < block_rows; ++i)
-        BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].begin(), _coupl[i].end());
+        BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
 
     _mat->resize_val( rb[_rows]);
     _mat->resize_cols( _cols, rb[_rows]);

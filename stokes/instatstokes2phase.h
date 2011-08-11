@@ -102,7 +102,7 @@ class TwoPhaseFlowCoeffCL
     const double SurfTens;
     const Point3DCL g;
 
-    TwoPhaseFlowCoeffCL( const ParamCL& P, bool dimless = false)
+    TwoPhaseFlowCoeffCL( ParamCL& P, bool dimless = false)
       //big question: film or measurecell? 1: measure, 2: film
       : film( (P.get("Mat.DensDrop", 0.0) == 0.0) ),
         surfTens( film ? P.get<double>("Mat.SurfTension") : P.get<double>("SurfTens.SurfTension")),

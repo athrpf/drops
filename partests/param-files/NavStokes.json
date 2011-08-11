@@ -7,7 +7,7 @@
 
 	"Stokes":
 	{
-		"nu":		1.0
+		"nu":		1
 	},
 
 	"ExpData":
@@ -30,9 +30,9 @@
 		"BasicRefX":		2,
 		"BasicRefY":		2,
 		"BasicRefZ":		2,
-		"dx":		1.0,
-		"dy":		1.0,
-		"dz":		1.0,
+		"dx":		1,
+		"dy":		1,
+		"dz":		1,
 		"RefAll":		0
 	},
 
@@ -47,7 +47,7 @@
 		"InnerIter":		2000,
 		"InnerTol":		1e-12,
 		"OuterIter":		1000,
-		"OuterTol":		1e-2,
+		"OuterTol":		0.01,
 		"Restart":		100,
 		"Relative":		0,
 		"Accur":		1,
@@ -60,7 +60,7 @@
 	{
 		"Reduction":		0.1,
 		"Iter":		50,
-		"Tol":		1e-7,
+		"Tol":		1e-07,
 		"RefTop":		0
 	},
 

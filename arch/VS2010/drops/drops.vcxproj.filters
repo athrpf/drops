@@ -85,9 +85,6 @@
     <ClCompile Include="..\..\..\levelset\levelset.cpp">
       <Filter>levelset</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\levelset\lsetparams.cpp">
-      <Filter>levelset</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\levelset\params.cpp">
       <Filter>levelset</Filter>
     </ClCompile>
@@ -214,9 +211,6 @@
     <ClCompile Include="..\..\..\poisson\poisson.cpp">
       <Filter>poisson</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\poisson\poissonparams.cpp">
-      <Filter>poisson</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\poisson\transport2phase.cpp">
       <Filter>poisson</Filter>
     </ClCompile>
@@ -233,9 +227,6 @@
       <Filter>stokes</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\stokes\integrTime.cpp">
-      <Filter>stokes</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\stokes\stokesparams.cpp">
       <Filter>stokes</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\stokes\sdropsP2.cpp">
@@ -285,6 +276,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\misc\bndmap.cpp">
       <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\subtriangulation.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\reftetracut.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\quadrature.cpp">
+      <Filter>num</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -510,6 +510,15 @@
     <ClInclude Include="..\..\..\misc\bndmap.h">
       <Filter>misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\geom\subtriangulation.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\reftetracut.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\quadrature.h">
+      <Filter>num</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\levelset\brick_transp.param">
@@ -622,6 +631,9 @@
     </None>
     <None Include="..\..\..\geom\geomselect.tpp">
       <Filter>geom</Filter>
+    </None>
+    <None Include="..\..\..\num\quadrature.tpp">
+      <Filter>num</Filter>
     </None>
   </ItemGroup>
 </Project>

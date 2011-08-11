@@ -1,6 +1,6 @@
 /// \file instatstokes2phase.cpp
 /// \brief classes that constitute the 2-phase Stokes problem
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Jens Berger, Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -1382,7 +1382,7 @@ System1Accumulator_P2CL::System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coe
 
 void System1Accumulator_P2CL::begin_accumulation ()
 {
-    std::cout << "entering SetupSystem1_P2CL::begin_accumulation ()" << std::endl;
+    std::cout << "entering SetupSystem1_P2CL: ";
     const size_t num_unks_vel= RowIdx.NumUnknowns();
     mA_= new SparseMatBuilderCL<double, SMatrixCL<3,3> >( &A, num_unks_vel, num_unks_vel);
     mM_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &M, num_unks_vel, num_unks_vel);
@@ -1401,9 +1401,9 @@ void System1Accumulator_P2CL::finalize_accumulation ()
     delete mM_;
 #ifndef _PAR
     std::cout << A.num_nonzeros() << " nonzeros in A, "
-              << M.num_nonzeros() << " nonzeros in M! " << std::endl;
+              << M.num_nonzeros() << " nonzeros in M!";
 #endif
-    std::cout << "leaving SetupSystem1_P2CL::finalize_accumulation ()" << std::endl;
+    std::cout << '\n';
 }
 
 void System1Accumulator_P2CL::visit (const TetraCL& tet)
@@ -1818,7 +1818,6 @@ void SetupRhs1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, co
     double det, absdet, intHat_p, intHat_n;
     Point3DCL tmp;
 
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     InterfaceTetraCL tetra;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
@@ -2019,103 +2018,184 @@ void InstatStokes2PhaseP2P1CL::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset
         throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1 not implemented for this FE type");
 }
 
+/// \brief Raw data for "Laplace-Beltrami" stabilization
+///
+struct LocalLBDataCL
+{
+    double         A [10][10];
+};
+
+/// \brief Setup of the local "LB" on a tetra intersected by the dividing surface.
+class LocalLBTwoPhase_P2CL
+{
+  private:
+    LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
+    Quad5_2DCL<Point3DCL> surfGrad[10];
+    Quad5_2DCL<> LB;
+
+    double surfTension_;
+               
+  public:
+    LocalLBTwoPhase_P2CL (double surfTension)
+        : surfTension_( surfTension)
+    { P2DiscCL::GetGradientsOnRef( GradRefLP1); }
+
+    void setup (const SMatrixCL<3,3>& T, InterfaceTriangleCL& triangle, LocalLBDataCL& loc);
+};
+
+void LocalLBTwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, InterfaceTriangleCL& triangle, LocalLBDataCL& loc)
+{
+    P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
+    std::memset( loc.A, 0, 10*10*sizeof( double));
+    for (Uint ch= 0; ch < 8; ++ch) {
+        triangle.ComputeForChild( ch);
+        for (int tri= 0; tri < triangle.GetNumTriangles(); ++ tri) {
+            for (int i= 0; i < 10; ++i) {
+                surfGrad[i].assign( GradLP1[i], &triangle.GetBary( tri));
+                surfGrad[i].apply( triangle, &InterfaceTriangleCL::ApplyProj);
+            }
+            for (int i=0; i<10; ++i)
+                for (int j=0; j<=i; ++j) {
+                    // Laplace-Beltrami Stabilization
+                    LB= surfTension_*dot( surfGrad[i], surfGrad[j]);
+                    const double cLB= LB.quad( triangle.GetAbsDet( tri));
+                    loc.A[j][i]+= cLB;
+                    loc.A[i][j]= loc.A[j][i]; //symmetric matrix
+                }
+        }
+    }
+}
+
+/// \brief Accumulator to set up the matrices A and cplA for Laplace-Beltrami stabilization.
+class LBAccumulator_P2CL : public TetraAccumulatorCL
+{
+  private:
+    const TwoPhaseFlowCoeffCL& Coeff;
+    const StokesBndDataCL& BndData;
+    const LevelsetP2CL& lset;
+    double t;
+
+    IdxDescCL& RowIdx;
+    MatrixCL& A;
+    VecDescCL* cplA;
+    
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >* mA_;
+
+    LocalLBTwoPhase_P2CL local_twophase; ///< used on intersected tetras
+    LocalLBDataCL loc; ///< Contains the memory, in which the local operators are set up; former coupA.
+
+    LocalNumbP2CL n; ///< global numbering of the P2-unknowns
+
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    LocalP2CL<> ls_loc;
+
+    InterfaceTriangleCL triangle;
+
+    Point3DCL dirichlet_val[10];
+
+    ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
+    void local_setup (const TetraCL& tet, InterfaceTriangleCL& triangle);
+    ///\brief Update the global system.
+    void update_global_system ();
+
+  public:
+    LBAccumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff, const StokesBndDataCL& BndData_,
+        const LevelsetP2CL& ls, IdxDescCL& RowIdx_, MatrixCL& A_, VecDescCL* cplA_, double t);
+
+    ///\brief Initializes matrix-builders and load-vectors
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+};
+
+LBAccumulator_P2CL::LBAccumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_,
+    const LevelsetP2CL& lset_arg, IdxDescCL& RowIdx_, MatrixCL& A_, VecDescCL* cplA_, double t_)
+    : Coeff( Coeff_), BndData( BndData_), lset( lset_arg), t( t_),
+      RowIdx( RowIdx_), A( A_), cplA( cplA_), local_twophase( Coeff.SurfTens)
+{}
+
+void LBAccumulator_P2CL::begin_accumulation ()
+{
+    std::cout << "entering SetupLB: ";
+    const size_t num_unks_vel= RowIdx.NumUnknowns();
+    mA_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &A, num_unks_vel, num_unks_vel);
+    if (cplA != 0) {
+        cplA->Clear( t);
+    }
+}
+
+void LBAccumulator_P2CL::finalize_accumulation ()
+{
+    mA_->Build();
+    delete mA_;
+#ifndef _PAR
+    std::cout << A.num_nonzeros() << " nonzeros in A_LB!";
+#endif
+    std::cout << '\n';
+}
+
+void LBAccumulator_P2CL::visit (const TetraCL& tet)
+{
+    ls_loc.assign( tet, lset.Phi, lset.GetBndData());
+    triangle.Init( tet, ls_loc);
+
+    if (triangle.Intersects())  //only for interface triangulations
+    {
+        local_setup( tet, triangle);
+        update_global_system();
+    }
+    
+}
+
+void LBAccumulator_P2CL::local_setup (const TetraCL& tet, InterfaceTriangleCL& tri)
+{
+    GetTrafoTr( T, det, tet);
+
+    n.assign( tet, RowIdx, BndData.Vel);
+
+    local_twophase.setup( T, tri, loc);
+
+    if(cplA != 0) {
+        for (int i= 0; i < 10; ++i) {
+            if (!n.WithUnknowns( i)) {
+                typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[i]).GetBndFun();
+                dirichlet_val[i]= i<4 ? bf( tet.GetVertex( i)->GetCoord(), t)
+                    : bf( GetBaryCenter( *tet.GetEdge( i-4)), t);
+            }
+        }
+    }
+}
+
+void LBAccumulator_P2CL::update_global_system ()
+{
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >& mA= *mA_;
+
+    for(int i= 0; i < 10; ++i)    // assemble row Numb[i]
+        if (n.WithUnknowns( i)) { // dof i is not on a Dirichlet boundary
+            for(int j= 0; j < 10; ++j) {
+                if (n.WithUnknowns( j)) { // dof j is not on a Dirichlet boundary
+                    mA( n.num[i], n.num[j])+= SDiagMatrixCL<3>( loc.A[j][i]);
+                }
+                else if (cplA != 0) { // right-hand side for eliminated Dirichlet-values
+                    const double cA= loc.A[j][i];
+                    for (int k=0; k<3; ++k)
+                        cplA->Data[n.num[i]+k]-= cA*dirichlet_val[j][k];
+                }
+            }
+        }
+}
 
 void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up the Laplace-Beltrami-matrix
 {
-    const IdxT num_unks_vel= RowIdx.NumUnknowns();
-
-    MatrixBuilderCL mA( &A, num_unks_vel, num_unks_vel);
-    if (cplA != 0) cplA->Clear( t);
-
-    const Uint lvl = RowIdx.TriangLevel();
-
-    LocalNumbP2CL n;
-#ifndef _PAR
-    std::cout << "entering SetupLB: " << num_unks_vel << " vels. ";
-#endif
-    LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
-    LocalP2CL<Point3DCL> GradLP2[10];
-
-    Quad5_2DCL<Point3DCL> surfGrad[10];
-    Quad5_2DCL<> surfTension, LB;
-
-    SMatrixCL<3,3> T;
-
-    double coupA[10][10];
-    double det, absdet;
-    Point3DCL tmp;
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    LocalP2CL<> aij;
-
-    P2DiscCL::GetGradientsOnRef( GradRefLP1);
-
-    InterfaceTriangleCL triangle;
-    LocalP2CL<> loc_phi;
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
-        triangle.Init( *sit, loc_phi);
-        if (triangle.Intersects()) { // We are at the phase boundary.
-            n.assign( *sit, RowIdx, BndData_.Vel);
-            GetTrafoTr( T, det, *sit);
-            absdet= std::fabs( det);
-            P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
-            std::memset( coupA, 0, 10*10*sizeof( double));
-            for (int i= 0; i < 10; ++i)
-                GradLP2[i].assign( GradLP1[i]);
-
-            for (int ch= 0; ch < 8; ++ch) {
-                triangle.ComputeForChild( ch);
-                for (int tri= 0; tri < triangle.GetNumTriangles(); ++ tri) {
-                    surfTension= Coeff_.SurfTens;
-                    for (int i= 0; i < 10; ++i) {
-                        surfGrad[i].assign( GradLP1[i], &triangle.GetBary( tri));
-                        surfGrad[i].apply( triangle, &InterfaceTriangleCL::ApplyProj);
-                    }
-                    for (int i=0; i<10; ++i)
-                        for (int j=0; j<=i; ++j) {
-                            // Laplace-Beltrami... Stabilization
-                            LB= surfTension*dot( surfGrad[i], surfGrad[j]);
-                            const double cLB= LB.quad( triangle.GetAbsDet( tri));
-                            coupA[j][i]+= cLB;
-                            coupA[i][j]= coupA[j][i];
-                        }
-                }
-            }
-
-            for(int i=0; i<10; ++i)    // assemble row Numb[i]
-                if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
-                {
-                    for(int j=0; j<10; ++j)
-                    {
-                        if (n.WithUnknowns( j)) // vert/edge j is not on a Dirichlet boundary
-                        {
-                            mA( n.num[i],   n.num[j]  )+= coupA[j][i];
-                            mA( n.num[i]+1, n.num[j]+1)+= coupA[j][i];
-                            mA( n.num[i]+2, n.num[j]+2)+= coupA[j][i];
-                        }
-                        else if (cplA != 0)  // put coupling on rhs
-                        {
-                            typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                            bnd_val_fun bf= BndData_.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
-                            tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
-                                    : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
-                            const double cA= coupA[j][i];
-                            for (int k=0; k<3; ++k)
-                                cplA->Data[n.num[i]+k]-= cA*tmp[k];
-                        }
-                    }
-                }
-        }
-    }
-
-    mA.Build();
-#ifndef _PAR
-    std::cout << A.num_nonzeros() << " nonzeros in A_LB" << std::endl;
-#endif
+     LBAccumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, cplA, t);
+     TetraAccumulatorTupleCL accus;
+     accus.push_back( &accu);
+     accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
 }
 
 
@@ -2124,7 +2204,10 @@ void InstatStokes2PhaseP2P1CL::SetupLB (MLMatDescCL* A, VecDescCL* cplA, const L
     MLMatrixCL::iterator  itA = A->Data.begin();
     MLIdxDescCL::iterator it  = A->RowIdx->begin();
     for (size_t lvl=0; lvl < A->RowIdx->size(); ++lvl, ++itA, ++it)
-        SetupLB_P2( MG_,  Coeff_, BndData_, *itA, lvl == A->Data.size()-1 ? cplA : 0, lset, *it, t);
+    {
+       SetupLB_P2( MG_,  Coeff_, BndData_, *itA, lvl == A->Data.size()-1 ? cplA : 0, lset, *it, t);
+    }
+
 }
 
 
@@ -2173,8 +2256,9 @@ void InstatStokes2PhaseP2P1CL::SetupSystem2( MLMatDescCL* B, VecDescCL* c, const
         else
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
 #ifndef _PAR
-        std::cout << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
+        std::cout << itB->num_nonzeros() << " nonzeros in B!";
 #endif
+        std::cout << '\n';
     }
 }
 

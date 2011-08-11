@@ -9,7 +9,7 @@
 	"Time":
 	{
 		"NumSteps":		1,
-		"StepSize":		1.0,
+		"StepSize":		1,
 		"Scheme":		1
 	},
 
@@ -21,11 +21,12 @@
 		"InnerIter":		500,
 		"OuterIter":		100,
 		"InnerTol":		1e-14,
-		"OuterTol":		1e-8,
+		"OuterTol":		1e-08,
 		"StokesMethod":		501101,
 		"PcAIter":		0,
 		"PcATol":		0,
 		"PcSTol":		0,
+		"XFEMStab":		0,
 		"Theta":		1
 	},
 
@@ -46,8 +47,8 @@
 		"_comment":
 "# Miscellaneous",
 
-		"Omega":		1.0,
-		"Tau":		1.0,
+		"Omega":		1,
+		"Tau":		1,
 		"ModifyGrid":		1
 	},
 

@@ -138,12 +138,12 @@ void VTKOutCL::NewFile(__UNUSED__ bool writeDistribution)
         {
             std::string parfilename;
             std::stringstream helper;
-            helper << filename_ << "." << std::setfill('0') << std::setw( int( log10( ProcCL::Size()))+1) << p << "_";
+            helper << filename_ << "." << std::setfill('0') << std::setw( int( log10( (float)ProcCL::Size()))+1) << p << "_";
 
             parfilename=helper.str();
             AppendTimecode( parfilename);
             parfilename+= ".vtu";
-	    parfilename.erase(0,length_dirname+1);
+            parfilename.erase(0,length_dirname+1);
             masterfile << "<Piece Source=\"" << parfilename << "\"/>\n";
         }
         masterfile << "</PUnstructuredGrid>\n"
