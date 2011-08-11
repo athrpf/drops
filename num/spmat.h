@@ -430,6 +430,8 @@ public:
         {
             Comment("SparseMatBuilderCL: Creating NEW matrix" << std::endl, DebugNumericC);
             _coupl= new couplT[_rows/BlockTraitT::num_rows];
+            for (size_t i=0; i< _rows/BlockTraitT::num_rows; ++i) 
+                _coupl[i].rehash(100);
         }
     }
 
