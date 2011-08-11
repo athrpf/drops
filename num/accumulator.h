@@ -28,7 +28,7 @@
 #include <vector>
 #include <functional>
 #include <algorithm>
-#include "geom/multigridgraph.h"
+
 namespace DROPS
 {
 
@@ -90,7 +90,7 @@ class AccumulatorTupleCL
     void operator() (ExternalIteratorCL begin, ExternalIteratorCL end);
     
     /// \brief Calls the accumulators for each object by using a multigridgraph.
-    void operator() (MultiGridGraphCL &graph);      
+    void operator() ( const MultiGridCL::IndependentTetraCT& graph);
 };
 
 template <class VisitedT>
@@ -116,16 +116,16 @@ void AccumulatorTupleCL<VisitedT>::operator() (ExternalIteratorCL begin, Externa
 }
 
 template<class VisitedT>
-void AccumulatorTupleCL<VisitedT>::operator() (MultiGridGraphCL& graph)
+void AccumulatorTupleCL<VisitedT>::operator() ( const MultiGridCL::IndependentTetraCT& graph)
 {
     std::vector<ContainerT> clones(omp_get_max_threads());
     begin_iteration();
     clone_accus(clones);    
     
-    for( size_t i = 0 ; i < graph.get_num_colors() ; ++i)
+    for( size_t i = 0 ; i < graph.size() ; ++i)
         #pragma omp parallel for
-        for( size_t j = 0 ; j < graph.get_num_tetras(i); ++j)
-            std::for_each( clones[omp_get_thread_num()].begin(), clones[omp_get_thread_num()].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *graph.get_tetra_pointer(i,j)));
+        for( size_t j = 0 ; j < graph[i].size(); ++j)
+            std::for_each( clones[omp_get_thread_num()].begin(), clones[omp_get_thread_num()].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *(graph[i][j])));
 
     finalize_iteration();
     delete_clones(clones);

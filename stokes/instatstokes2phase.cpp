@@ -26,7 +26,6 @@
 #include "num/accumulator.h"
 #include "num/quadrature.h"
 #include "num/lattice-eval.h"
-#include "geom/multigridgraph.h"
 
 namespace DROPS
 {
@@ -1471,12 +1470,6 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
                       VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up matrices A, M and rhs b (depending on phase bnd)
 {
-
-    MultiGridGraphCL graph( MG_ );
-
-    graph.create_graph( RowIdx.TriangLevel());
-    graph.select_graph( RowIdx.TriangLevel());
-    
     // TimerCL time;
     // time.Start();
     
@@ -1485,7 +1478,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
     accus.push_back( &accu);
     
     //accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
-    accus(graph);
+    accus( MG_.GetGraph( RowIdx.TriangLevel()));
     
     // time.Stop();
     // std::cout << "setup: " << time.GetTime() << " seconds" << std::endl;

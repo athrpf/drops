@@ -284,6 +284,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     IFInfo.Init(infofile);
     IFInfo.WriteHeader();
 
+    PrincipalLatticeCL::instance( 2);
+
     if (P.get<int>("Time.NumSteps") == 0)
         SolveStatProblem( Stokes, lset, *navstokessolver);
 
