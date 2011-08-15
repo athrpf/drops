@@ -320,7 +320,7 @@ class MultiGridCL
     Uint GetNumDistributedFaces(int Level=-1);                  // get number of faces on processor boundary
 #endif
 
-    const IndependentTetraCT& GetGraph( size_t lvl) const { if( _graph.find( lvl) == _graph.end()) BuildIndependentTetras(lvl); return (_graph[lvl]);}
+    const IndependentTetraCT& GetGraph( size_t lvl) const;
 
     bool IsSane (std::ostream&, int Level=-1) const;
 };

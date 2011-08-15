@@ -1331,4 +1331,12 @@ void MultiGridCL::BuildIndependentTetras ( Uint level) const {
     _graph[level] = graph;
 }
 
+const MultiGridCL::IndependentTetraCT& MultiGridCL::GetGraph( size_t lvl) const
+{
+	if( _graph.find( lvl) == _graph.end()) {
+		BuildIndependentTetras(lvl);
+	}
+	return (_graph[lvl]);
+}
+
 } // end of namespace DROPS
