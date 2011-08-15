@@ -218,6 +218,8 @@ class NonlConvSystemAccumulator_P2CL : public TetraAccumulatorCL
     void finalize_accumulation();
 
     void visit (const TetraCL& sit);
+
+    TetraAccumulatorCL* clone (){ return new NonlConvSystemAccumulator_P2CL ( *this); };
 };
 
 NonlConvSystemAccumulator_P2CL::NonlConvSystemAccumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff_, const MultiGridCL& MG_, const StokesBndDataCL& BndData_,
@@ -319,7 +321,8 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(MatrixCL& N, const VelVec
     NonlConvSystemAccumulator_P2CL accu( Coeff_, MG_, BndData_, *vel, lset, RowIdx, N, cplN, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    accus( MG_.GetGraph( RowIdx.TriangLevel()));
+    //accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
     // time.Stop();
     // std::cout << "setup: " << time.GetTime() << std::endl;
 }
