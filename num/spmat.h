@@ -462,7 +462,10 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     _mat->resize_cols( _cols, rb[_rows]);
 
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+//#pragma omp parallel shared(rb)
+{
     std::vector<typename BlockTraitT::sort_pair_type> pv;
+//#pragma omp for
     for (size_t i= 0; i < block_rows; ++i) {
         pv.resize( _coupl[i].size());
         std::transform( _coupl[i].begin(), _coupl[i].end(), pv.begin(), &BlockTraitT::pair_copy);
@@ -470,6 +473,7 @@ void SparseMatBuilderCL<T, BlockT>::Build()
         BlockTraitT::insert_block_row( pv.begin(), pv.end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
         // std::cout << _coupl[i].load_factor() << '\t' << std::setfill('0') << std::setw(3) <<_coupl[i].size() << '\n';
     }
+}
 #else
     for (size_t i= 0; i < block_rows; ++i)
         BlockTraitT::insert_block_row( _coupl[i].begin(), _coupl[i].end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
