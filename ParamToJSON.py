@@ -23,17 +23,19 @@ if FROM_FILE:
 		FILES.append(arr[0])
 	paramfile.close()
 else:
-	FILES = ["./transport/risingbutanoldroplet"]
+	FILES = ["stokes"]
 
 #/settings
 
 
 #some static variables
-STARTING_COMMENTS = True
-VAR_START = ""
+VAR_START1 = ""
+VAR_START2 = ""
 LEVEL_START = ""
 level = 0
-comment = ""
+fullComment = ""
+inlineComment = ""
+inlineCommentOld = ""
 
 for filename in FILES:
 	try:
@@ -53,42 +55,29 @@ for filename in FILES:
 	level = 1
 
 	for line in infile:
-		#starting comments in first level
-		if STARTING_COMMENTS:
-			if (line[0] == "#"):
-				comment = comment + line
-				continue
-			#empty line?
-			elif (line.strip() == ""): 
-				continue
-		
-			STARTING_COMMENTS = False
-			comment = replace(comment, '"', "'")
-			outfile.write(level*"\t" + '"_comment":\n"' + comment.rstrip() + '",\n\n')
-			comment = ""
 
-		#comment?
-		if (line[0] == "#"):
-			comment = comment + line
-			if DEBUG: print("COMMENT: \t" + line)
-			continue
+		#comments
+		if ("#" in line):
+			#inline or full?
+			lineArray = line.partition("#")
+			if (len(lineArray[0].strip()) == 0):
+				fullComment = fullComment + level*"\t" + "//" + lineArray[2]
+			else:
+				inlineComment = " \t //" + lineArray[2].strip()
+			line = lineArray[0]
 
-		#remove inline comments without saving them
-		line = (line.lstrip(" \n")).partition("#")[0]
 		#new hierarchy level?
 		if ("{" in line):
 			if DEBUG: print("NEW LEVEL: \t" + line)
 			name = (line.partition("{")[0]).strip()
-			outfile.write(LEVEL_START + level*"\t" + '"' + name + '":\n' + level*"\t" + "{\n")
+			outfile.write(LEVEL_START + fullComment + level*"\t" + '"' + name + '":\n' + level*"\t" + "{ " + inlineComment + "\n")
 			level = level + 1
-			#add comments fetched before
-			if (comment != ""):
-				comment.rstrip("\n")
-				comment = replace(comment, '"', "'")
-				outfile.write(level*"\t" + '"_comment":\n"' + comment.rstrip() + '",\n\n')
-				comment = ""
-			VAR_START = ""
+			VAR_START1 = ""
+			VAR_START2 = ""
 			LEVEL_START = ",\n\n"
+			fullComment = ""
+			inlineComment = ""
+
 		#new variable?
 		elif("=" in line):
 			if DEBUG: print("VARIABLE: \t" + line)
@@ -126,21 +115,30 @@ for filename in FILES:
 				var_name = "RefineSteps"
 
 			#last variable cannot end with "," so it's added for line before
-			outfile.write(VAR_START + level*"\t" + '"' + var_name + '":\t\t' + var_str)
-			VAR_START = ",\n"
+			outfile.write(VAR_START1 + inlineCommentOld + VAR_START2 + fullComment + level*"\t" + '"' + var_name + '":\t\t' + var_str)
+			VAR_START1 = ","
+			VAR_START2 = "\n"
+			fullComment = ""
+			inlineCommentOld = ""
+
 		#hierarchy level closed?
 		elif ("}" in line):
 			if DEBUG: print("CLOSED LEVEL: \t" + line)
 			level = level-1
-			outfile.write("\n" + level*"\t" + "}")
-	
+			outfile.write(fullComment + inlineCommentOld + "\n" + level*"\t" + "}")
+			fullComment = ""
+			inlineComment = ""
+			inlineCommentOld = ""
+
+		inlineCommentOld = inlineComment
+
 	outfile.write("\n\n}")
 	outfile.close()
 	infile.close()
-	STARTING_COMMENTS = True
-	VAR_START = ""
+	VAR_START1 = ""
+	VAR_START2 = ""
 	LEVEL_START = ""
 	level = 0
-	comment = ""
+	inlinecomment = ""
 	print(filename + " done.")
 		
