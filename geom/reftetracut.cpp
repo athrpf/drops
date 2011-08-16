@@ -92,12 +92,53 @@ operator<< (std::ostream& out, const SignPatternTraitCL& c)
 }
 
 
+RefTetraPatchCL RefTetraPatchCL::instance_array_[81];
+
+int RefTetraPatchCL::InitializerCL::init_count_= 0;
+
+RefTetraPatchCL::InitializerCL::InitializerCL ()
+{
+    if (init_count_++ > 0)
+        return;
+
+    byte ls[4];
+    for (ls[0]= -1; ls[0] < 2; ++ls[0])
+        for (ls[1]= -1; ls[1] < 2; ++ls[1])
+            for (ls[2]= -1; ls[2] < 2; ++ls[2])
+                for (ls[3]= -1; ls[3] < 2; ++ls[3]) {
+                    if ( ls[0] == 0 && ls[1] == 0 && ls[2] == 0 && ls[3] == 0)
+                        continue;
+                    RefTetraPatchCL::instance( ls);
+                }
+}
+
 bool
 RefTetraPatchCL::assign (const SignPatternTraitCL& cut)
 {
     for (size_= 0; size_ < num_triangles( cut); ++size_)
         triangle_[size_]= MakeTriangle( cut(size_), cut(size_ + 1), cut(size_ + 2));
     return empty();
+}
+
+
+RefTetraPartitionCL RefTetraPartitionCL::instance_array_[81];
+
+int RefTetraPartitionCL::InitializerCL::init_count_= 0;
+
+RefTetraPartitionCL::InitializerCL::InitializerCL ()
+{
+    if (init_count_++ > 0)
+        return;
+
+    byte ls[4];
+    for (ls[0]= -1; ls[0] < 2; ++ls[0])
+        for (ls[1]= -1; ls[1] < 2; ++ls[1])
+            for (ls[2]= -1; ls[2] < 2; ++ls[2])
+                for (ls[3]= -1; ls[3] < 2; ++ls[3]) {
+                    if ( ls[0] == 0 && ls[1] == 0 && ls[2] == 0 && ls[3] == 0)
+                        continue;
+                    RefTetraPartitionCL::instance( ls);
+                }
 }
 
 Ubyte
