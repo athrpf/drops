@@ -1,59 +1,51 @@
 {
-	"_comment":
-"##
-## only for use with ipdropsAD
-##
-#=============================================================
-#    DROPS parameter file for ipdrops.cpp
-#    simulation of poisson problem
-#=============================================================
-#poisson solver",
-
+	//#
+	//# only for use with ipdropsAD
+	//#
+	//=============================================================
+	//    DROPS parameter file for ipdrops.cpp
+	//    simulation of poisson problem
+	//=============================================================
+	//poisson solver
 	"Poisson":
-	{
+	{ 
 		"PcIter":		1,
 		"PcTol":		0.1,
 		"Iter":		100,
-		"Restart":		100,
-		"RelativeErr":		0,
-		"Tol":		1e-07,
-		"Method":		203,
-		"SmoothingSteps":		1,
-		"NumLvl":		-1,
-		"Relax":		1,
-		"SolutionIsKnown":		1
+		"Restart":		100, 	 //only valid when using GMRES
+		"RelativeErr":		0, 	 //only valid when using GMRES,1 = true, 0 = false
+		"Tol":		1e-07, 	 //only valid when using GMRES,1 = true, 0 = false
+		"Method":		203, 	 //only valid when using GMRES,1 = true, 0 = false
+		"SmoothingSteps":		1, 	 //only valid when using GMRES,1 = true, 0 = false
+		"NumLvl":		-1, 	 //only valid when using GMRES,1 = true, 0 = false
+		"Relax":		1, 	 //only valid when using GMRES,1 = true, 0 = false
+		"SolutionIsKnown":		1 	 //1 = true, 0 = false
 	},
 
+	// domain, bnd/ini conditions
 	"DomainCond":
-	{
-		"_comment":
-"# domain, bnd/ini conditions",
-
-		"RefineSteps":		2,
-		"GeomType":		1,
-		"InitialFile":		"none",
-		"MeshFile":		"1x1x1@2x2x2",
-		"BoundaryType":		2
+	{ 
+		"RefineSteps":		2, 	 //initial refinement
+		"GeomType":		1, 	 //specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder, 2=CavityBuilder, 3=LBuilder, 4=BBuilder)
+		"InitialFile":		"none", 	 //file prefix when reading data for initial condition
+		"MeshFile":		"1x1x1@2x2x2", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+		"BoundaryType":		2 	 //boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
 	},
 
+	// time stepping
 	"Time":
-	{
-		"_comment":
-"# time stepping",
-
-		"StepSize":		0.1,
-		"NumSteps":		5,
-		"Theta":		0.5,
-		"Scheme":		1,
-		"Convection":		1,
-		"Nu":		1
+	{ 
+		"StepSize":		0.1, 	 //time step size
+		"NumSteps":		5, 	 //number of timesteps
+		"Theta":		0.5, 	 //number of timesteps
+		"Scheme":		1, 	 //1= theta scheme, 2=fractional step
+		"Convection":		1, 	 //1= theta scheme, 2=fractional step
+		"Nu":		1 	 //1= theta scheme, 2=fractional step
 	},
 
+	// experimental conditions
 	"Exp":
-	{
-		"_comment":
-"# experimental conditions",
-
+	{ 
 		"Heat":		5960,
 		"Rho":		866,
 		"Mu":		0.001732,
@@ -61,31 +53,27 @@
 		"Lambda":		0.26
 	},
 
+	// Ensight settings
 	"Ensight":
-	{
-		"_comment":
-"# Ensight settings",
-
-		"EnsightOut":		1,
-		"EnsCase":		"FilmTemp",
-		"EnsDir":		"ensight",
-		"GeomName":		"test",
-		"MasterOut":		1,
-		"Binary":		1
+	{ 
+		"EnsightOut":		1, 	 //Ensight output
+		"EnsCase":		"FilmTemp", 	 //name of Ensight Case
+		"EnsDir":		"ensight", 	 //local directory for Ensight files
+		"GeomName":		"test", 	 //name for the geometry
+		"MasterOut":		1, 	 //only master writes out ensight files
+		"Binary":		1 	 //write out ensight files in binary format
 	},
 
+	// Error estimator    
 	"Err":
-	{
-		"_comment":
-"# Error estimator",
-
+	{ 
 		"RelReduction":		0.1,
 		"MinRatio":		0,
 		"Threshold":		0.6,
 		"Meas":		0.875,
-		"DoMark":		0,
-		"DoErrorEstimate":		0,
-		"NumRef":		6
+		"DoMark":		0, 	 //1 = true, 0 = false
+		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
+		"NumRef":		6 	 //1 = true, 0 = false
 	}
 
 }
