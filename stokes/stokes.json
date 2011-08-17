@@ -20,9 +20,9 @@
 		"OuterTol":		1e-08,
 		"StokesMethod":		30207,
 		"PcAIter":		1, 	 //V-cycles multigrid, iter pc for A block
-		"PcATol":		999999999999999967336168804116691273849533185806555472917961779471295845921727862608739868455469056, 	 //V-cycles multigrid, iter pc for A block
-		"PcSTol":		0.01, 	 //V-cycles multigrid, iter pc for A block
-		"XFEMStab":		-0.1, 	 //V-cycles multigrid, iter pc for A block
+		"PcATol":		1e99,
+		"PcSTol":		0.01,
+		"XFEMStab":		-0.1,
 		"Theta":		1 	 //backward Euler
 	},
 
@@ -64,7 +64,7 @@
 		"InitialFile":		"none", 	 //file prefix when reading data for initial condition
 		"MeshFile":		"0.78540x0.78540x0.78540@3x3x3", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
 		"BoundaryType":		"2!2!2!2!2!2", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
-		"BoundaryFncs":		"VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes" 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
+		"BoundaryFncs":		"VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes!VelSol_stokes"
 	},
 
 	// adaptive refinement
@@ -94,11 +94,11 @@
 	{ 
 		"RelReduction":		0.1,
 		"MinRatio":		0, 	 //not used in Stokes case
-		"Threshold":		0.6, 	 //not used in Stokes case
-		"Meas":		0.48447307313, 	 //not used in Stokes case
+		"Threshold":		0.6,
+		"Meas":		0.48447307313,
 		"DoMark":		0, 	 //1 = true, 0 = false
 		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
-		"NumRef":		0 	 //1 = true, 0 = false
+		"NumRef":		0
 	}
 
 }

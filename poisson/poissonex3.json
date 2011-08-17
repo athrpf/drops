@@ -102,7 +102,7 @@
 		// a function of a function container (s. PoissonCoeff-sect.)
 		// -> Here: all boundaries have zero natural boundaries
 		// except for the first part which has dirichlet value 1.
- 	 //Boundary conditions for each boundary domain
+
 	},
 
 	//###################################################
@@ -162,7 +162,7 @@
 		// times the error of the worst element is marked
 		"Threshold":		0.6, 	 //error of marked elements should be at least this
 		// fraction of the total estimated error
-		"Meas":		0.875, 	 //
+		"Meas":		0.875,
 		"NumRef":		2 	 //number of adaptive refinements
 	},
 

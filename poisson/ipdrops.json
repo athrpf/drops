@@ -14,11 +14,11 @@
 		"Iter":		100,
 		"Restart":		100, 	 //only valid when using GMRES
 		"RelativeErr":		0, 	 //only valid when using GMRES,1 = true, 0 = false
-		"Tol":		1e-07, 	 //only valid when using GMRES,1 = true, 0 = false
-		"Method":		203, 	 //only valid when using GMRES,1 = true, 0 = false
-		"SmoothingSteps":		1, 	 //only valid when using GMRES,1 = true, 0 = false
-		"NumLvl":		-1, 	 //only valid when using GMRES,1 = true, 0 = false
-		"Relax":		1, 	 //only valid when using GMRES,1 = true, 0 = false
+		"Tol":		1e-07,
+		"Method":		203,
+		"SmoothingSteps":		1,
+		"NumLvl":		-1,
+		"Relax":		1,
 		"SolutionIsKnown":		1 	 //1 = true, 0 = false
 	},
 
@@ -37,10 +37,10 @@
 	{ 
 		"StepSize":		0.1, 	 //time step size
 		"NumSteps":		5, 	 //number of timesteps
-		"Theta":		0.5, 	 //number of timesteps
+		"Theta":		0.5,
 		"Scheme":		1, 	 //1= theta scheme, 2=fractional step
-		"Convection":		1, 	 //1= theta scheme, 2=fractional step
-		"Nu":		1 	 //1= theta scheme, 2=fractional step
+		"Convection":		1,
+		"Nu":		1
 	},
 
 	// experimental conditions
@@ -73,7 +73,7 @@
 		"Meas":		0.875,
 		"DoMark":		0, 	 //1 = true, 0 = false
 		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
-		"NumRef":		6 	 //1 = true, 0 = false
+		"NumRef":		6
 	}
 
 }

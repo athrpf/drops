@@ -21,9 +21,9 @@
 		"OuterTol":		1e-08,
 		"StokesMethod":		550000,
 		"PcAIter":		0, 	 //V-cycles multigrid, iter pc for A block
-		"PcATol":		0, 	 //V-cycles multigrid, iter pc for A block
-		"PcSTol":		0, 	 //V-cycles multigrid, iter pc for A block
-		"XFEMStab":		0, 	 //V-cycles multigrid, iter pc for A block
+		"PcATol":		0,
+		"PcSTol":		0,
+		"XFEMStab":		0,
 		"Theta":		1 	 //backward Euler
 	},
 
@@ -31,10 +31,10 @@
 	"StokesCoeff":
 	{ 
 		"Reaction":		"ScaZero", 	 //Zero scalar function
-		"Source":		"Source_FSdrops_instat", 	 //Zero scalar function
-		"Solution_Vel":		"VelSol_FSdrops_instat", 	 //Zero scalar function
+		"Source":		"Source_FSdrops_instat",
+		"Solution_Vel":		"VelSol_FSdrops_instat",
 		"Solution_DVel":		"None", 	 //Zero matrix function
-		"Solution_Pr":		"ScaZero" 	 //Zero matrix function
+		"Solution_Pr":		"ScaZero"
 	},
 
 	// Miscellaneous
@@ -65,7 +65,7 @@
 		"InitialFile":		"none", 	 //file prefix when reading data for initial condition
 		"MeshFile":		"0.78540x0.78540x0.78540@1x1x1", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
 		"BoundaryType":		"2!2!2!2!2!2", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
-		"BoundaryFncs":		"VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat" 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
+		"BoundaryFncs":		"VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat!VelSol_FSdrops_instat"
 	},
 
 	// adaptive refinement
@@ -95,11 +95,11 @@
 	{ 
 		"RelReduction":		0.1,
 		"MinRatio":		0, 	 //not used in Stokes case
-		"Threshold":		0.6, 	 //not used in Stokes case
-		"Meas":		0.48447307313, 	 //not used in Stokes case
+		"Threshold":		0.6,
+		"Meas":		0.48447307313,
 		"DoMark":		0, 	 //1 = true, 0 = false
 		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
-		"NumRef":		0 	 //1 = true, 0 = false
+		"NumRef":		0
 	}
 
 }

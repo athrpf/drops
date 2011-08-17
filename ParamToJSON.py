@@ -13,7 +13,7 @@ from string import replace
 FROM_FILE = True
 DEBUG = False
 SUFFIX_IN = ".param"
-SUFFIX_OUT = ".json"
+SUFFIX_OUT = "_dev.json"
 
 FILES = []
 if FROM_FILE:
@@ -23,7 +23,7 @@ if FROM_FILE:
 		FILES.append(arr[0])
 	paramfile.close()
 else:
-	FILES = ["stokes"]
+	FILES = ["./stokes/stokes"]
 
 #/settings
 
@@ -62,7 +62,7 @@ for filename in FILES:
 			lineArray = line.partition("#")
 			if (len(lineArray[0].strip()) == 0):
 				fullComment = fullComment + level*"\t" + "//" + lineArray[2]
-			else:
+			elif (len(lineArray[2].strip()) != 0):
 				inlineComment = " \t //" + lineArray[2].strip()
 			line = lineArray[0]
 
@@ -127,10 +127,10 @@ for filename in FILES:
 			level = level-1
 			outfile.write(fullComment + inlineCommentOld + "\n" + level*"\t" + "}")
 			fullComment = ""
-			inlineComment = ""
 			inlineCommentOld = ""
 
-		inlineCommentOld = inlineComment
+		inlineCommentOld = inlineCommentOld + inlineComment
+		inlineComment = ""
 
 	outfile.write("\n\n}")
 	outfile.close()

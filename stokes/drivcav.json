@@ -20,9 +20,9 @@
 		"OuterTol":		1e-10,
 		"StokesMethod":		30207,
 		"PcAIter":		1, 	 //V-cycles multigrid, iter pc for A block
-		"PcATol":		1e-99, 	 //V-cycles multigrid, iter pc for A block
-		"PcSTol":		0.01, 	 //V-cycles multigrid, iter pc for A block
-		"XFEMStab":		0, 	 //V-cycles multigrid, iter pc for A block
+		"PcATol":		1e-99,
+		"PcSTol":		0.01,
+		"XFEMStab":		0,
 		"Theta":		1 	 //backward Euler
 	},
 
@@ -30,10 +30,10 @@
 	"StokesCoeff":
 	{ 
 		"Reaction":		"ScaZero", 	 //Zero scalar function
-		"Source":		"VecZero", 	 //Zero scalar function
-		"Solution_Vel":		"None", 	 //Zero scalar function
-		"Solution_DVel":		"None", 	 //Zero scalar function
-		"Solution_Pr":		"None" 	 //Zero scalar function
+		"Source":		"VecZero",
+		"Solution_Vel":		"None",
+		"Solution_DVel":		"None",
+		"Solution_Pr":		"None"
 	},
 
 	// Miscellaneous
@@ -95,8 +95,8 @@
 	{ 
 		"RelReduction":		0.1,
 		"MinRatio":		0, 	 //not used in Stokes case
-		"Threshold":		0.6, 	 //not used in Stokes case
-		"Meas":		1, 	 //not used in Stokes case
+		"Threshold":		0.6,
+		"Meas":		1,
 		"DoMark":		0, 	 //1 = true, 0 = false
 		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
 		"NumRef":		3 	 //also used for MarkLower refinement

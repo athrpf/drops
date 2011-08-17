@@ -1,7 +1,7 @@
 {
 	//#################################
 	//=============================================================
-	//    DROPS parameter file for poissonP1.cpp
+	//    DROPS parameter file for ipfilm.cpp
 	//    simulation of poisson problem
 	//=============================================================
 	//poisson solver
@@ -12,11 +12,11 @@
 		"Iter":		1000,
 		"Restart":		50, 	 //only valid when using GMRES
 		"RelativeErr":		1, 	 //only valid when using GMRES,1 = true, 0 = false
-		"Tol":		1e-8, 	 //only valid when using GMRES,1 = true, 0 = false
-		"Method":		303, 	 //only valid when using GMRES,1 = true, 0 = false
-		"SmoothingSteps":		1, 	 //only valid when using GMRES,1 = true, 0 = false
-		"NumLvl":		-1, 	 //only valid when using GMRES,1 = true, 0 = false
-		"Relax":		1, 	 //only valid when using GMRES,1 = true, 0 = false
+		"Tol":		1e-8,
+		"Method":		303,
+		"SmoothingSteps":		1,
+		"NumLvl":		-1,
+		"Relax":		1,
 		"SolutionIsKnown":		0 	 //1 = true, 0 = false
 	},
 
@@ -28,7 +28,7 @@
 		"InitialFile":		"none", 	 //file prefix when reading data for initial condition
 		"MeshFile":		"50x0.2x0.2@5x1x1", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
 		"BoundaryType":		"0!21!21!21!21!21", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
-		"BoundaryFncs":		"Zero!Zero!Interface!Zero!Zero!Zero" 	 //
+		"BoundaryFncs":		"Zero!Zero!Interface!Zero!Zero!Zero"
 	},
 
 	"PoissonCoeff":
@@ -47,9 +47,9 @@
 	{ 
 		"StepSize":		0.051, 	 //time step size
 		"NumSteps":		20, 	 //number of timesteps
-		"Theta":		1, 	 //number of timesteps
+		"Theta":		1, 	 
 		"Scheme":		1, 	 //1= theta scheme, 2=fractional step
-		"Convection":		1 	 //1= theta scheme, 2=fractional step
+		"Convection":		1
 	},
 
 	// experimental conditions
@@ -77,12 +77,12 @@
 	"Err":
 	{ 
 		"RelReduction":		0.1,
-		"MinRatio":		    0.0,
+		"MinRatio":		0,
 		"Threshold":		0.6,
 		"Meas":		0.875,
 		"DoMark":		0, 	 //1 = true, 0 = false
 		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
-		"NumRef":		6 	 //1 = true, 0 = false
+		"NumRef":		6
 	},
 
 	//VTK output

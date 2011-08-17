@@ -99,7 +99,7 @@
 		"BoundaryFncs":		"Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution"		// For each boundary domain take a string which describes 
 		// a function of a function container (s. PoissonCoeff-sect.)
 		// -> Here: all boundaries have dirichlet value exp(t)exp(x+y+z) (s. solution).
- 	 //Boundary conditions for each boundary domain
+
 	},
 
 	//###################################################
@@ -159,7 +159,7 @@
 		// times the error of the worst element is marked
 		"Threshold":		0.6, 	 //error of marked elements should be at least this
 		// fraction of the total estimated error
-		"Meas":		0.875, 	 //
+		"Meas":		0.875,
 		"NumRef":		2 	 //number of adaptive refinements
 	},
 
