@@ -418,7 +418,7 @@ public:
                 throw DROPSErrCL( "SparseMatBuilderCL: Cannot reuse the pattern for block_type != double.");
             Comment("SparseMatBuilderCL: Reusing OLD matrix" << std::endl, DebugNumericC);
             _coupl=0;
-            _mat->_val=T();
+            std::memset( _mat->_val, 0, mat->num_nonzeros()*sizeof( T));
         }
         else
         {
@@ -478,56 +478,50 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     _coupl= 0;
 }
 
-//*****************************************************************************
-//
-//  S p a r s e M a t B a s e C L :  row based sparse matrix format
-//                                   use SparseMatBuilderCL for setting up!
-//
-//*****************************************************************************
-
+///\brief  SparseMatBaseCL: compressed row storage sparse matrix
+/// Use SparseMatBuilderCL for setting up.
 template <typename T>
 class SparseMatBaseCL
 {
 private:
-    size_t _rows;                   // global dimensions
-    size_t _cols;
+    size_t _rows; ///< number of rows
+    size_t _cols; ///< number of columns
+    size_t nnz_;  ///< number of non-zeros
 
-    size_t version_;                // All modifications increment this. Starts with 1.
+    size_t version_; ///< All modifications increment this. Starts with 1.
 
-    std::valarray<size_t> _rowbeg;  // (_rows+1 entries, last entry must be <=_nz) index of first non-zero-entry in _val belonging to the row given as subscript
-    std::valarray<size_t> _colind;  // (_nz elements) column-number of corresponding entry in _val
-    std::valarray<T>      _val;     // nonzero-entries
+    size_t* _rowbeg; ///< (_rows+1 entries, last entry must be <=_nz) index of first non-zero-entry in _val belonging to the row given as subscript
+    size_t* _colind; ///< (nnz_ entries) column-number of corresponding entry in _val
+    T*      _val;    ///< (nnz_ entries) the components of the matrix
 
-    void resize_rows (size_t rows)            { _rows=rows; _rowbeg.resize(rows+1); }
-    void resize_cols (size_t cols, size_t nz) { _cols=cols; _colind.resize(nz); }
-    void resize_val  (size_t nz)              { _val.resize(nz); }
+    void resize_rows (size_t rows);
+    void resize_cols (size_t cols, size_t nnz);
+    void resize_val  (size_t nnz);
 
 public:
     typedef T value_type;
 
-    SparseMatBaseCL () : _rows(0), _cols(0), version_(1) {}
+    SparseMatBaseCL (); ///< empty zero-matrix
+    SparseMatBaseCL (const SparseMatBaseCL&);
+    ~SparseMatBaseCL ();
+
+    SparseMatBaseCL (size_t rows, size_t cols, size_t nnz); ///< the fields are allocated, but not initialized
+    SparseMatBaseCL (size_t rows, size_t cols, size_t nnz,  ///< construct matrix from the CRS-fields
+                     const T* valbeg , const size_t* rowbeg, const size_t* colindbeg);
+    SparseMatBaseCL (const std::valarray<T>&); ///< Creates a square diagonal matrix.
+
     SparseMatBaseCL& operator= (const SparseMatBaseCL& m);
-    // default copy-ctor, dtor
-    SparseMatBaseCL (size_t rows, size_t cols, size_t nz)
-        : _rows(rows), _cols(cols), version_( 1), _rowbeg(rows+1), _colind(nz), _val(nz) {}
-    SparseMatBaseCL (size_t rows, size_t cols, size_t nz,
-                     const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
-        : _rows(rows), _cols(cols), version_( 1), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
-    SparseMatBaseCL (const std::valarray<T>&); // Creates a square diagonal matrix.
 
-    const T*      raw_val() const { return Addr( _val); }
-    T*            raw_val()       { return &_val[0]; }
-    const size_t* raw_row() const { return Addr( _rowbeg); }
-    size_t*       raw_row()       { return &_rowbeg[0]; }
-    const size_t* raw_col() const { return Addr( _colind); }
-    size_t*       raw_col()       { return &_colind[0]; }
-
-    std::valarray<T>&       val()       { return _val; }
-    const std::valarray<T>& val() const { return _val; }
+    const T*      raw_val() const { return _val; }
+    T*            raw_val()       { return _val; }
+    const size_t* raw_row() const { return _rowbeg; }
+    size_t*       raw_row()       { return _rowbeg; }
+    const size_t* raw_col() const { return _colind; }
+    size_t*       raw_col()       { return _colind; }
 
     size_t num_rows     () const { return _rows; }
     size_t num_cols     () const { return _cols; }
-    size_t num_nonzeros () const { return _val.size(); }
+    size_t num_nonzeros () const { return nnz_; }
 #ifdef _PAR
     size_t num_acc_nonzeros() const { return ProcCL::GlobalSum(num_nonzeros()); }
 #endif
@@ -536,17 +530,18 @@ public:
     size_t col_ind (size_t i) const { return _colind[i]; }
     T      val     (size_t i) const { return _val[i]; }
 
-    void IncrementVersion() { ++version_; }         ///< Increment modification version number
-    size_t Version() const  {  return version_; }   ///< Get modification version number
+    void IncrementVersion() { ++version_; }      ///< Increment modification version number
+    size_t Version() const  { return version_; } ///< Get modification version number
 
-    const size_t* GetFirstCol(size_t i) const { return Addr(_colind)+_rowbeg[i]; }
-    const T*      GetFirstVal(size_t i) const { return Addr(_val)+_rowbeg[i]; }
-          T*      GetFirstVal(size_t i)       { return &_val[0]+_rowbeg[i]; }
+    const size_t* GetFirstCol(size_t i) const { return _colind + _rowbeg[i]; }
+          size_t* GetFirstCol(size_t i)       { return _colind + _rowbeg[i]; }
+    const T*      GetFirstVal(size_t i) const { return _val    + _rowbeg[i]; }
+          T*      GetFirstVal(size_t i)       { return _val    + _rowbeg[i]; }
 
     inline T  operator() (size_t i, size_t j) const;
 
-    SparseMatBaseCL& operator*= (T c) { IncrementVersion(); _val*= c; return *this; }
-    SparseMatBaseCL& operator/= (T c) { IncrementVersion(); _val/= c; return *this; }
+    SparseMatBaseCL& operator*= (T c);
+    SparseMatBaseCL& operator/= (T c);
 
     SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&);
@@ -560,13 +555,13 @@ public:
 
     void insert_col (size_t c, const VectorBaseCL<T>& v);
 
-    void resize (size_t rows, size_t cols, size_t nz)
-        { IncrementVersion(); _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
-    void clear() { resize(0,0,0); }
+    ///\brief Resize to new dimensions. The old content is lost.
+    void resize (size_t rows, size_t cols, size_t nnz);
+    void clear  () { resize(0,0,0); }
 
-    VectorBaseCL<T> GetDiag()       const;
-    VectorBaseCL<T> GetLumpedDiag() const;
-    VectorBaseCL<T> GetSchurDiag( const VectorBaseCL<T>& W) const; ///< returns diagonal of B W B^T
+    VectorBaseCL<T> GetDiag()                              const;
+    VectorBaseCL<T> GetLumpedDiag()                        const;
+    VectorBaseCL<T> GetSchurDiag(const VectorBaseCL<T>& W) const; ///< returns diagonal of B W B^T
 
     void permute_rows (const PermutationT&);
     void permute_columns (const PermutationT&);
@@ -576,30 +571,100 @@ public:
 };
 
 template <typename T>
-  SparseMatBaseCL<T>& SparseMatBaseCL<T>::operator= (const SparseMatBaseCL<T>& m)
+  void
+  SparseMatBaseCL<T>::resize_rows (size_t rows)
 {
-    if (&m == this) return *this;
+    _rows= rows;
+    delete[] _rowbeg;
+    _rowbeg= new size_t[rows + 1];
+}
 
-    IncrementVersion();
-    _rows= m._rows;
-    _cols= m._cols;
-    _rowbeg.resize(m._rowbeg.size());
-    _rowbeg= m._rowbeg;
-    _colind.resize(m._colind.size());
-    _colind= m._colind;
-    _val.resize(m._val.size());
-    _val= m._val;
-    return *this;
+template <typename T>
+  void
+  SparseMatBaseCL<T>::resize_cols (size_t cols, size_t nnz)
+{
+    _cols= cols;
+    nnz_= nnz;
+    delete[] _colind;
+    _colind= new size_t[nnz];
+}
+
+template <typename T>
+  void
+  SparseMatBaseCL<T>::resize_val (size_t nnz)
+{
+    nnz_= nnz;
+    delete[] _val;
+    _val= new T[nnz];
+}
+
+template <typename T>
+  SparseMatBaseCL<T>::SparseMatBaseCL ()
+    : _rows(0), _cols(0), nnz_( 0), version_(1), _rowbeg( new size_t[1]), _colind(0), _val(0)
+{
+    _rowbeg[0]= 0;
+}
+
+template <typename T>
+  SparseMatBaseCL<T>::SparseMatBaseCL (const SparseMatBaseCL& m)
+    : _rows( m._rows), _cols( m._cols), nnz_( m.nnz_), version_( m.version_),
+      _rowbeg( new size_t[m._rows+1]), _colind( new size_t[m.num_nonzeros()]), _val(new T[m.num_nonzeros()])
+{
+    std::copy( m.raw_row(), m.raw_row() + m.num_rows() + 1, raw_row());
+    std::copy( m.raw_col(), m.raw_col() + m.num_nonzeros(), raw_col());
+    std::copy( m.raw_val(), m.raw_val() + m.num_nonzeros(), raw_val());
+}
+
+template <typename T>
+  SparseMatBaseCL<T>::~SparseMatBaseCL ()
+{
+    delete[] _rowbeg;
+    delete[] _colind;
+    delete[] _val;
+}
+
+template <typename T>
+  SparseMatBaseCL<T>::SparseMatBaseCL (size_t rows, size_t cols, size_t nnz)
+    : _rows( rows), _cols( cols), nnz_( nnz), version_( 1),
+      _rowbeg( new size_t[rows+1]), _colind( new size_t[nnz]), _val( new T[nnz])
+{
+    // std::memset( _rowbeg, 0, (_rows + 1)*sizeof( size_t));
+    // std::memset( _colind, 0, nnz_*sizeof( size_t));
+    // std::memset( _val,    0, nnz_*sizeof( T));
+}
+
+template <typename T>
+  SparseMatBaseCL<T>::SparseMatBaseCL (size_t rows, size_t cols, size_t nnz,
+    const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
+    : _rows(rows), _cols(cols), nnz_(nnz), version_( 1),
+      _rowbeg( new size_t[rows+1]), _colind( new size_t[nnz]), _val( new T[nnz])
+{
+    std::copy( rowbeg, rowbeg + num_rows() + 1, raw_row());
+    std::copy( colindbeg, colindbeg + num_nonzeros(), raw_col());
+    std::copy( valbeg,    valbeg    + num_nonzeros(), raw_val());
 }
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL(const std::valarray<T>& v)
-      : _rows( v.size()), _cols( v.size()), version_( 1),
-        _rowbeg( v.size() + 1), _colind( v.size()), _val( v)
+      : _rows( v.size()), _cols( v.size()), nnz_( v.size()), version_( 1),
+        _rowbeg( new size_t[v.size() + 1]), _colind( new size_t[v.size()]), _val( new T[v.size()])
 {
     for (size_t i= 0; i < _rows; ++i)
         _rowbeg[i]= _colind[i]= i;
     _rowbeg[_rows]= _rows;
+    std::copy( Addr( v), Addr( v) + num_nonzeros(), raw_val());
+}
+
+template <typename T>
+  SparseMatBaseCL<T>& SparseMatBaseCL<T>::operator= (const SparseMatBaseCL<T>& m)
+{
+    if (&m == this) return *this;
+
+    resize( m.num_rows(), m.num_cols(), m.num_nonzeros());
+    std::copy( m.raw_row(), m.raw_row() + m.num_rows() + 1, raw_row());
+    std::copy( m.raw_col(), m.raw_col() + m.num_nonzeros(), raw_col());
+    std::copy( m.raw_val(), m.raw_val() + m.num_nonzeros(), raw_val());
+    return *this;
 }
 
 template <typename T>
@@ -609,6 +674,36 @@ T SparseMatBaseCL<T>::operator() (size_t i, size_t j) const
     const size_t *pos= std::lower_bound( GetFirstCol(i), GetFirstCol(i+1), j);
     // lower_bound returns the iterator to the next column entry, if col j is not found
     return (pos != GetFirstCol(i+1) && *pos==j) ? _val[pos-GetFirstCol(0)] : T();
+}
+
+template <typename T>
+  SparseMatBaseCL<T>&
+  SparseMatBaseCL<T>::operator*= (T c)
+{
+    IncrementVersion();
+    for (size_t i= 0; i < nnz_; ++i)
+        _val[i]*= c;
+    return *this;
+}
+
+template <typename T>
+  SparseMatBaseCL<T>&
+  SparseMatBaseCL<T>::operator/= (T c)
+{
+    IncrementVersion();
+    for (size_t i= 0; i < nnz_; ++i)
+        _val[i]/= c;
+    return *this;
+}
+
+template <typename T>
+  void
+  SparseMatBaseCL<T>::resize (size_t rows, size_t cols, size_t nnz)
+{
+    IncrementVersion();
+    resize_rows( rows);
+    resize_cols( cols, nnz);
+    resize_val( nnz);
 }
 
 template <typename T>
@@ -662,17 +757,13 @@ template <typename T>
 
     IncrementVersion();
     PermutationT pi( invert_permutation( p));
-    std::valarray<size_t> r( _rowbeg);
-    std::valarray<size_t> c( _colind);
-    std::valarray<T> v( _val);
+    SparseMatBaseCL<T> tmp( *this);
+
     _rowbeg[0]= 0;
     for (size_t i= 0; i < num_rows(); ++i) {
-        size_t nonzeros= r[pi[i] + 1] - r[pi[i]];
-        _rowbeg[i + 1]= _rowbeg[i] + nonzeros;
-        std::slice oldpos( std::slice( r[pi[i]], nonzeros, 1));
-        std::slice newpos( std::slice( _rowbeg[i], nonzeros, 1));
-        _val[newpos]= v[oldpos];
-        _colind[newpos]= c[oldpos];
+        _rowbeg[i + 1]= _rowbeg[i] + tmp.row_beg( pi[i] + 1) - tmp.row_beg( pi[i]);
+        std::copy( tmp.GetFirstVal( pi[i]),  tmp.GetFirstVal( pi[i] + 1), GetFirstVal( i));
+        std::copy( tmp.GetFirstCol( pi[i]),  tmp.GetFirstCol( pi[i] + 1), GetFirstCol( i));
     }
 }
 
@@ -684,7 +775,7 @@ template <typename T>
         DROPSErrCL( "permute_columns: Matrix and Permutation have different dimension.\n"), DebugNumericC);
 
     IncrementVersion();
-    for (size_t i= 0; i < _colind.size(); ++i)
+    for (size_t i= 0; i < nnz_; ++i)
         _colind[i]= p[_colind[i]];
 
     // Sort the indices in each row. This affects the internal matrix-layout only.
@@ -974,15 +1065,14 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     // die Anzahl der Unbekannten nicht aendert. Daher schalten wir die
     // Wiederverwendung vorerst global aus.
     Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
-    _rows=A.num_rows();
-    _cols=A.num_cols();
 
     // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
 
     // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
-    _rowbeg.resize(A.num_rows()+1);
+    resize_rows( A.num_rows());
     size_t i=0, iA=0, iB=0;
 
+    _rowbeg[0]= 0;
     for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
     {
         while ( iA < A.row_beg(row) )                                      // process every entry in A
@@ -999,8 +1089,8 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     }
 
     // Calculate the entries of _colind, _val (really perform the merging of the matrices)
-    _colind.resize(row_beg(num_rows()));
-    _val.resize(row_beg(num_rows()));
+    resize_cols( A.num_cols(), row_beg(num_rows()));
+    resize_val( row_beg(num_rows()));
 
     i=0, iA=0, iB=0;
 
@@ -1111,12 +1201,11 @@ SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
     // Adjust the last rowbeg-entry.
     rowbeg[num_rows()]= colind.size();
     // Copy adapted arrays into the matrix.
-    _rowbeg.resize( rowbeg.size());
-    _rowbeg= rowbeg;
-    _colind.resize( colind.size());
-    _colind= colind;
-    _val.resize( val.size());
-    _val= val;
+    std::copy( &rowbeg[0], &rowbeg[0] + num_rows() + 1, _rowbeg);
+    resize_cols( _cols, colind.size());
+    std::copy( &colind[0], &colind[0] + colind.size(), _colind);
+    resize_val( val.size());
+    std::copy( &val[0], &val[0] + val.size(), _val);
 }
 
 

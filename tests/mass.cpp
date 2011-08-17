@@ -51,8 +51,9 @@ main()
 
     MatrixCL I( std::valarray<double>( 1.0, M.num_rows()));
 
+    std::valarray<double> Mval( M.raw_val(), M.num_nonzeros());
     MatrixCL N;
-    N.LinComb(1e-2*M.val().apply( std::abs).max(), I, 1.0, M);
+    N.LinComb(1e-2*Mval.apply( std::abs).max(), I, 1.0, M);
 //    MatrixCL N( M1);
 
     // SSORPcCL ssorpc;
