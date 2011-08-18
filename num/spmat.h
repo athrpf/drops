@@ -1065,44 +1065,45 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     resize_rows( A.num_rows());
 
     // Compute the entries of _rowbeg (that is the number of nonzeros in each row of the result)
-    size_t i, iA, iB;
+    size_t i;
+    const size_t* rA;
+    const size_t* rB;
     _rowbeg[0]= 0;
     for (size_t row= 0; row < A.num_rows(); ++row) {
-        const size_t rAend= A.row_beg( row + 1),
-                     rBend= B.row_beg( row + 1);
-        iA= A.row_beg( row);
-        iB= B.row_beg( row);
-        i=    row_beg( row);
-        // Visit all columns of A and B in row 'row'.
-        for (; iA != rAend && iB != rBend; ++i) {
-            const bool Acolind_le_Bcolind= A.col_ind( iA) <= B.col_ind( iB);
-            if (B.col_ind( iB) <= A.col_ind( iA))
-                ++iB;
-            if (Acolind_le_Bcolind)
-                ++iA;
-        }
-        _rowbeg[row + 1]= i + rAend - iA + rBend - iB;
+        i= row_beg( row);
+        rA= A.GetFirstCol( row);
+        rB= B.GetFirstCol( row);
+        const size_t* const rAend= A.GetFirstCol( row + 1);
+        const size_t* const rBend= B.GetFirstCol( row + 1);
+        for (; rA != rAend && rB != rBend; ++i)
+            if (*rB < *rA)
+                ++rB;
+            else if (*rA < *rB)
+                ++rA;
+            else {
+                ++rA;
+                ++rB;
+            }
+        _rowbeg[row + 1]= i + (rAend - rA) + (rBend - rB);
     }
 
     resize_cols( A.num_cols(), row_beg( num_rows()));
     resize_val( row_beg( num_rows()));
 
     // Compute the entries of _colind, _val (actual merge).
+    size_t iA, iB;
     for (size_t row= 0; row < A.num_rows(); ++row) { // same structure as above
-        const size_t rAend= A.row_beg( row + 1),
-                     rBend= B.row_beg( row + 1);
+        i=    row_beg( row);
         iA= A.row_beg( row);
         iB= B.row_beg( row);
-        i=    row_beg( row);
-        for (; iA != rAend && iB != rBend; ++i) {
-            // The following could be written as in the first loop. But, then _colind[i] would
-            // sometimes be written twice (consistently though) and one would have to zero-initialize _val[i].
-            const bool Acolind_lt_Bcolind= A.col_ind( iA) < B.col_ind( iB);
+        const size_t rAend= A.row_beg( row + 1),
+                     rBend= B.row_beg( row + 1);
+        for (; iA != rAend && iB != rBend; ++i)
             if (B.col_ind( iB) < A.col_ind( iA)) {
                 _val[i]= coeffB*B._val[iB];
                 _colind[i]= B._colind[iB++];
             }
-            else if (Acolind_lt_Bcolind) {
+            else if (A.col_ind( iA) < B.col_ind( iB)) {
                 _val[i]= coeffA*A._val[iA];
                 _colind[i]= A._colind[iA++];
             }
@@ -1110,17 +1111,13 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
                 _val[i]= coeffA*A._val[iA++] + coeffB*B._val[iB];
                 _colind[i]= B._colind[iB++];
             }
-        }
-
         // At most one of A or B might have entries left.
-        for (; iA < rAend; ++iA, ++i) {
+        std::copy( B._colind + iB, B._colind + rBend,
+                   std::copy( A._colind + iA, A._colind + rAend, _colind + i));
+        for (; iA < rAend; ++iA, ++i)
             _val[i]= coeffA*A._val[iA];
-            _colind[i]= A._colind[iA];
-        }
-        for (; iB < rBend; ++iB, ++i) {
+        for (; iB < rBend; ++iB, ++i)
             _val[i]= coeffB*B._val[iB];
-            _colind[i]= B._colind[iB];
-        }
     }
 
     return *this;
