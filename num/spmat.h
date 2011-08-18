@@ -451,15 +451,14 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     if (_reuse) return;
 
     const size_t block_rows= _rows/BlockTraitT::num_rows;
-    _mat->resize_rows( _rows);
-    size_t* rb= _mat->raw_row();
+    _mat->num_rows( _rows);
+    _mat->num_cols( _cols);
 
+    size_t* rb= _mat->raw_row();
     rb[0]= 0;
     for (size_t i= 0; i < block_rows; ++i)
         BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
-
-    _mat->resize_val( rb[_rows]);
-    _mat->resize_cols( _cols, rb[_rows]);
+    _mat->num_nonzeros( rb[_rows]);
 
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
     std::vector<typename BlockTraitT::sort_pair_type> pv;
@@ -494,9 +493,9 @@ private:
     size_t* _colind; ///< (nnz_ entries) column-number of corresponding entry in _val
     T*      _val;    ///< (nnz_ entries) the components of the matrix
 
-    void resize_rows (size_t rows);
-    void resize_cols (size_t cols, size_t nnz);
-    void resize_val  (size_t nnz);
+    void num_rows (size_t rows);
+    void num_cols (size_t cols);
+    void num_nonzeros (size_t nnz);
 
 public:
     typedef T value_type;
@@ -572,7 +571,7 @@ public:
 
 template <typename T>
   void
-  SparseMatBaseCL<T>::resize_rows (size_t rows)
+  SparseMatBaseCL<T>::num_rows (size_t rows)
 {
     _rows= rows;
     delete[] _rowbeg;
@@ -581,21 +580,20 @@ template <typename T>
 
 template <typename T>
   void
-  SparseMatBaseCL<T>::resize_cols (size_t cols, size_t nnz)
+  SparseMatBaseCL<T>::num_cols (size_t cols)
 {
     _cols= cols;
-    nnz_= nnz;
-    delete[] _colind;
-    _colind= new size_t[nnz];
 }
 
 template <typename T>
   void
-  SparseMatBaseCL<T>::resize_val (size_t nnz)
+  SparseMatBaseCL<T>::num_nonzeros (size_t nnz)
 {
     nnz_= nnz;
     delete[] _val;
+    delete[] _colind;
     _val= new T[nnz];
+    _colind= new size_t[nnz];
 }
 
 template <typename T>
@@ -701,9 +699,9 @@ template <typename T>
   SparseMatBaseCL<T>::resize (size_t rows, size_t cols, size_t nnz)
 {
     IncrementVersion();
-    resize_rows( rows);
-    resize_cols( cols, nnz);
-    resize_val( nnz);
+    num_rows( rows);
+    num_cols( cols);
+    num_nonzeros( nnz);
 }
 
 template <typename T>
@@ -1062,7 +1060,8 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     IncrementVersion();
     Comment( "LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
 
-    resize_rows( A.num_rows());
+    num_rows( A.num_rows());
+    num_cols( A.num_cols());
 
     // Compute the entries of _rowbeg (that is the number of nonzeros in each row of the result)
     size_t i;
@@ -1086,9 +1085,7 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
             }
         _rowbeg[row + 1]= i + (rAend - rA) + (rBend - rB);
     }
-
-    resize_cols( A.num_cols(), row_beg( num_rows()));
-    resize_val( row_beg( num_rows()));
+    num_nonzeros( row_beg( num_rows()));
 
     // Compute the entries of _colind, _val (actual merge).
     size_t iA, iB;
@@ -1161,11 +1158,10 @@ SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
     size_t       zerocount= 0,
                  shift= 1;
     IncrementVersion();
-    _cols+= c <= _cols ? 1 : c - _cols + 1;
     // These will become the new data-arrays of the matrix.
     std::valarray<size_t> rowbeg( num_rows() + 1);
     std::valarray<size_t> colind( num_nonzeros() + nnz);
-    std::valarray<T>      val( num_nonzeros() + nnz);
+    std::valarray<T>      val(    num_nonzeros() + nnz);
     size_t* newcbeg= Addr( colind);
     T*      newvbeg= Addr( val);
 
@@ -1202,14 +1198,14 @@ SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
     if (zerocount != numzero)
         throw DROPSErrCL( "SparseMatBaseCL<T>::insert_col: Inconsistent zero-counts in v.\n");
 
+    num_cols( num_cols() + c <= _cols ? 1 : c - _cols + 1);
     // Adjust the last rowbeg-entry.
     rowbeg[num_rows()]= colind.size();
     // Copy adapted arrays into the matrix.
     std::copy( &rowbeg[0], &rowbeg[0] + num_rows() + 1, _rowbeg);
-    resize_cols( _cols, colind.size());
+    num_nonzeros( colind.size());
     std::copy( &colind[0], &colind[0] + colind.size(), _colind);
-    resize_val( val.size());
-    std::copy( &val[0], &val[0] + val.size(), _val);
+    std::copy( &val[0],    &val[0]    + val.size(),    _val);
 }
 
 
