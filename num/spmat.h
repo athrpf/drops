@@ -1046,8 +1046,8 @@ void ortho( VectorBaseCL<T>& v, const VectorBaseCL<T>& k, const SparseMatBaseCL<
     v-= alpha*k;
 }
 
-
 /// \brief Compute the linear combination of two sparse matrices efficiently.
+/// The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
 /// \todo Das alte Pattern wiederzuverwenden, macht mal wieder Aerger:
 ///   Zur Zeit (2.2008) mit der Matrix im NS-Loeser nach Gitteraenderungen, die
 ///   die Anzahl der Unbekannten nicht aendert. Daher schalten wir die
@@ -1060,59 +1060,66 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
             "LinComb: incompatible dimensions", DebugNumericC);
 
     IncrementVersion();
-    // Todo: Das alte Pattern wiederzuverwenden, macht mal wieder Aerger:
-    // Zur Zeit (2.2008) mit der Matrix im NS-Loeser nach Gitteraenderungen, die
-    // die Anzahl der Unbekannten nicht aendert. Daher schalten wir die
-    // Wiederverwendung vorerst global aus.
-    Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
+    Comment( "LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
 
-    // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
-
-    // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
     resize_rows( A.num_rows());
-    size_t i=0, iA=0, iB=0;
 
+    // Compute the entries of _rowbeg (that is the number of nonzeros in each row of the result)
+    size_t i, iA, iB;
     _rowbeg[0]= 0;
-    for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
-    {
-        while ( iA < A.row_beg(row) )                                      // process every entry in A
-        {
-            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) ) // process entries in B with smaller col_ind
-                { ++i; ++iB; }
-            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )   // process entries in B with equal col_ind
+    for (size_t row= 0; row < A.num_rows(); ++row) {
+        const size_t rAend= A.row_beg( row + 1),
+                     rBend= B.row_beg( row + 1);
+        iA= A.row_beg( row);
+        iB= B.row_beg( row);
+        i=    row_beg( row);
+        // Visit all columns of A and B in row 'row'.
+        for (; iA != rAend && iB != rBend; ++i) {
+            const bool Acolind_le_Bcolind= A.col_ind( iA) <= B.col_ind( iB);
+            if (B.col_ind( iB) <= A.col_ind( iA))
                 ++iB;
-            ++i; ++iA;
+            if (Acolind_le_Bcolind)
+                ++iA;
         }
-        while ( iB < B.row_beg(row) )                                      // process, what is left in B
-            { ++iB; ++i; }
-        _rowbeg[row]=i;                                                    // store result
+        _rowbeg[row + 1]= i + rAend - iA + rBend - iB;
     }
 
-    // Calculate the entries of _colind, _val (really perform the merging of the matrices)
-    resize_cols( A.num_cols(), row_beg(num_rows()));
-    resize_val( row_beg(num_rows()));
+    resize_cols( A.num_cols(), row_beg( num_rows()));
+    resize_val( row_beg( num_rows()));
 
-    i=0, iA=0, iB=0;
-
-    for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
-    {
-        while ( iA < A.row_beg(row) )
-        {
-            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
-            {
-                _val[i]=coeffB*B._val[iB];
-                _colind[i++]=B._colind[iB++];
+    // Compute the entries of _colind, _val (actual merge).
+    for (size_t row= 0; row < A.num_rows(); ++row) { // same structure as above
+        const size_t rAend= A.row_beg( row + 1),
+                     rBend= B.row_beg( row + 1);
+        iA= A.row_beg( row);
+        iB= B.row_beg( row);
+        i=    row_beg( row);
+        for (; iA != rAend && iB != rBend; ++i) {
+            // The following could be written as in the first loop. But, then _colind[i] would
+            // sometimes be written twice (consistently though) and one would have to zero-initialize _val[i].
+            const bool Acolind_lt_Bcolind= A.col_ind( iA) < B.col_ind( iB);
+            if (B.col_ind( iB) < A.col_ind( iA)) {
+                _val[i]= coeffB*B._val[iB];
+                _colind[i]= B._colind[iB++];
             }
-            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
-                _val[i]=coeffA*A._val[iA]+coeffB*B._val[iB++];
-            else
-                _val[i]=coeffA*A._val[iA];
-            _colind[i++]=A._colind[iA++];
+            else if (Acolind_lt_Bcolind) {
+                _val[i]= coeffA*A._val[iA];
+                _colind[i]= A._colind[iA++];
+            }
+            else {
+                _val[i]= coeffA*A._val[iA++] + coeffB*B._val[iB];
+                _colind[i]= B._colind[iB++];
+            }
         }
-        while ( iB < B.row_beg(row) )
-        {
-            _val[i]=coeffB*B._val[iB];
-            _colind[i++]=B._colind[iB++];
+
+        // At most one of A or B might have entries left.
+        for (; iA < rAend; ++iA, ++i) {
+            _val[i]= coeffA*A._val[iA];
+            _colind[i]= A._colind[iA];
+        }
+        for (; iB < rBend; ++iB, ++i) {
+            _val[i]= coeffB*B._val[iB];
+            _colind[i]= B._colind[iB];
         }
     }
 
