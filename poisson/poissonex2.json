@@ -1,9 +1,9 @@
 {
+	//#################################
 	//=============================================================
-	//    DROPS parameter file for drops.cpp
+	//    DROPS parameter file for poissonP{1,2}
 	//    simulation of poisson problem
 	//=============================================================
-	//poisson solver
 	// Options for the iterative Solver
 	//#######################################
 	"Poisson":
