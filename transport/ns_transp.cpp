@@ -124,20 +124,14 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     instat_scalar_fun_ptr Rhs = tdscalarmap["Rhs"];
     instat_scalar_fun_ptr Initialcneg = tdscalarmap["IniCnegFct"];
     instat_scalar_fun_ptr Initialcpos = tdscalarmap["IniCposFct"];
-    instat_scalar_fun_ptr Dirichlet = tdscalarmap["Dirichlet"];
-    instat_scalar_fun_ptr Dirichlett = tdscalarmap["Dirichlett"];
-    instat_scalar_fun_ptr Zero = tdscalarmap["ZeroFct"];
     scalar_fun_ptr distance = scalarmap[P.get("Transp.Levelset", std::string("Ellipsoid"))];
 
-    const c_bnd_val_fun c_bfun[6]= {Zero,Dirichlet,Zero,Zero,Zero,Zero};  
-    const c_bnd_val_fun c_bfunt[6]= {Zero,Dirichlett,Zero,Zero,Zero,Zero};  
-    const DROPS::BndCondT c_bc[6]= {
-        DROPS::OutflowBC, DROPS::DirBC, DROPS::OutflowBC,
-        DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
-    };
-    
-    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
-    cBndDataCL Bnd_ct( 6, c_bc, c_bfunt);
+    cBndDataCL *pBnd_c, *pBnd_ct;
+    DROPS::BuildBoundaryData( &MG, pBnd_c,  P.get<std::string>("Transp.BoundaryType","21!2!21!21!21!21"), P.get<std::string>("Transp.BoundaryFncs","Zero!Dirichlet!Zero!Zero!Zero!Zero"));
+    DROPS::BuildBoundaryData( &MG, pBnd_ct, P.get<std::string>("Transp.BoundaryType","21!2!21!21!21!21"), P.get<std::string>("Transp.BoundaryFncs_t","Zero!Dirichlett!Zero!Zero!Zero!Zero"));
+    cBndDataCL & Bnd_c(*pBnd_c);
+    cBndDataCL & Bnd_ct(*pBnd_ct); 
+   
     DROPS::instat_scalar_fun_ptr sigmap = 0;
     SurfaceTensionCL sf( sigmap, Bnd_c);    
     
@@ -279,39 +273,38 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
             vtkwriter.Write(t);
     }
     std::cout << std::endl;
+
+    delete pBnd_c;
+    delete pBnd_ct;
 }
 
 void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbnddata, AdapTriangCL& adap)
 // flow control
 {
-    const DROPS::BndCondT c_bc[6]= {
-          DROPS::DirBC, DROPS::DirBC,  DROPS::DirBC, 
-          DROPS::DirBC, DROPS::DirBC,  DROPS::DirBC, 
-    };
-    
+    MultiGridCL& MG= Stokes.GetMG();
+
     InVecMap & tdvectormap = InVecMap::getInstance();
     InScaMap & tdscalarmap = InScaMap::getInstance();
-
-
     ScaMap & scalarmap = ScaMap::getInstance();
+
     instat_vector_fun_ptr Flowfield = tdvectormap["ZeroVel"];
     instat_scalar_fun_ptr Reaction = tdscalarmap["ReactionFct"];
-    instat_scalar_fun_ptr Rhs = tdscalarmap["Rhs"];
+    instat_scalar_fun_ptr Rhs = tdscalarmap["Rhs"]; 
     instat_scalar_fun_ptr Initialcneg = tdscalarmap["IniCnegFct"];
     instat_scalar_fun_ptr Initialcpos = tdscalarmap["IniCposFct"];
-    instat_scalar_fun_ptr Dirichlet = tdscalarmap["Dirichlet"];
-    instat_scalar_fun_ptr Dirichlett = tdscalarmap["Dirichlett"];    
+
 //    scalar_fun_ptr distance = scalarmap["distance"];
     scalar_fun_ptr distance = scalarmap[P.get("Transp.Levelset", std::string("Ellipsoid"))];
     InflowLset::Init(distance);
 
-    const c_bnd_val_fun c_bfun[6]= {Dirichlet,Dirichlet,Dirichlet,Dirichlet,Dirichlet,Dirichlet};  
-    const c_bnd_val_fun c_bfunt[6]= {Dirichlett,Dirichlett,Dirichlett,Dirichlett,Dirichlett,Dirichlett};  
-    
+    cBndDataCL *pBnd_c, *pBnd_ct;
+    DROPS::BuildBoundaryData( &MG, pBnd_c,  P.get<std::string>("Transp.BoundaryType","2!2!2!2!2!2"), P.get<std::string>("Transp.BoundaryFncs","Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet"));
+    DROPS::BuildBoundaryData( &MG, pBnd_ct, P.get<std::string>("Transp.BoundaryType","2!2!2!2!2!2"), P.get<std::string>("Transp.BoundaryFncs","Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett"));
+    cBndDataCL & Bnd_c(*pBnd_c);
+    cBndDataCL & Bnd_ct(*pBnd_ct); 
     
     typedef InstatNavierStokes2PhaseP2P1CL StokesProblemT;
 
-    MultiGridCL& MG= Stokes.GetMG();
 
     // initialization of surface tension
     sigma= Stokes.GetCoeff().SurfTens;
@@ -326,8 +319,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     {
         sigmap  = &sigmaf;
     }
-    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
-    cBndDataCL Bnd_ct( 6, c_bc, c_bfunt);
     double cp=0., coeffC[5];
     //coefficients for ansatz of var. surface tension
 //    coeffC[0]= 1.625; coeffC[1]= 0.0; coeffC[2]= 0.0; coeffC[3]= coeffC[4]= 0.;
@@ -668,6 +659,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     delete gm;
     if (infofile) delete infofile;
 //     delete stokessolver1;
+
+    delete pBnd_c;
+    delete pBnd_ct;
+
 }
 
 } // end of namespace DROPS
