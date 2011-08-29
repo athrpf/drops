@@ -127,7 +127,7 @@
                 "NitschePenalty":       100,
                 "SDStabilization":      1,
                 "NitscheXFEMStab":      0.01,
-                "Levelset":             "planedistancex",        //Only active if UseNSSol == 0
+                "Levelset":             "Ellipsoid",             //Only active if UseNSSol == 0
                 "Flow":                 "ZeroVel",               //Only active if UseNSSol == 0
                 "BoundaryType":         "2!2!2!2!2!2",
                 "BoundaryFncs":         "Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet",
