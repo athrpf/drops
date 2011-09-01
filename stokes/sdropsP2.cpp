@@ -25,8 +25,12 @@
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
-#include "out/output.h"
 #include "geom/geomselect.h"
+
+//output
+#include "out/output.h"
+#include "out/ensightOut.h"
+#include "out/vtkOut.h"
 
  // include numeric computing!
 #include "num/fe.h"
@@ -297,14 +301,36 @@ void Strategy( StokesProblemT& Stokes)
         }
     }
 
-    Ensight6OutCL  ens(P.get<string>("Ensight.EnsCase")+".case", P.get<int>("Time.NumSteps")+1, P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
-    const std::string filename= P.get<string>("Ensight.EnsDir") + "/" + P.get<string>("Ensight.EnsCase");
-    ens.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), P.get<string>("Ensight.GeomName"),       filename + ".geo"));
-    ens.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure", filename + ".pr",  true));
-    ens.Register( make_Ensight6Vector( Stokes.GetVelSolution(), "Velocity", filename + ".vel", true));
+    // Output-Registrations:
+    Ensight6OutCL* ensight = NULL;
 
-    if(P.get<int>("Ensight.EnsightOut"))
-       ens.Write();
+    if (P.get<int>("Ensight.EnsightOut",0)){
+        // Initialize Ensight6 output
+        const std::string ensf = P.get<string>("Ensight.EnsDir") + "/" + P.get<string>("Ensight.EnsCase");
+        ensight = new Ensight6OutCL (P.get<string>("Ensight.EnsCase")+".case", 
+                                     P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1,
+                                     P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
+
+        ensight->Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), P.get<string>("Ensight.GeomName"),
+                                                ensf + ".geo", /*time_dependent*/ false));
+        ensight->Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure", ensf + ".pr",  true));
+        ensight->Register( make_Ensight6Vector( Stokes.GetVelSolution(), "Velocity", ensf + ".vel", true));
+
+        ensight->Write();
+    }
+
+    VTKOutCL * vtkwriter = NULL;
+    if (P.get<int>("VTK.VTKOut",0)){
+        vtkwriter = new VTKOutCL(MG, "DROPS data", 
+                                 P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1,
+                                 std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), 
+                                 P.get<int>("VTK.Binary"));
+        vtkwriter->Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
+        vtkwriter->Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
+        vtkwriter->Write(Stokes.v.t);
+    }
+
+
 
     for ( int step = 1; step <= P.get<int>("Time.NumSteps"); ++step) {
         timer.Reset();
@@ -317,15 +343,19 @@ void Strategy( StokesProblemT& Stokes)
         std::cout << " o Solved system with:\n"
                   << "   - time          " << timer.GetTime()    << " s\n";
 
-        // check the result
-        if(P.get<int>("Ensight.EnsightOut"))
-          ens.Write( step*P.get<double>("Time.StepSize"));
+        // check the result (<= what is meant here?)
+        if (ensight && step%P.get("Ensight.EnsightOut", 0)==0)
+            ensight->Write( Stokes.v.t);
+        if (vtkwriter && step%P.get("VTK.VTKOut", 0)==0)
+            vtkwriter->Write(Stokes.v.t);
+
     }
 
     if( P.get<string>("StokesCoeff.Solution_Vel").compare("None")!=0 && P.get<int>("Time.NumSteps") != 0)  // check whether solution is given
         Stokes.CheckSolution( &Stokes.v, &Stokes.p, StokesFlowCoeffCL::LsgVel, StokesFlowCoeffCL::DLsgVel, StokesFlowCoeffCL::LsgPr, false);
 
-
+    if (vtkwriter) delete vtkwriter;
+    if (ensight) delete ensight;
     delete stokessolver;
 }
 

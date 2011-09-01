@@ -276,7 +276,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
     std::ofstream* infofile = 0;
     IF_MASTER {
-        infofile = new std::ofstream ((P.get<std::string>("Ensight.EnsCase")+".info").c_str());
+        infofile = new std::ofstream ((P.get<std::string>("VTK.VTKName","twophasedrops")+".info").c_str());
     }
     IFInfo.Init(infofile);
     IFInfo.WriteHeader();
@@ -286,52 +286,61 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
     // for serialization of geometry and numerical data
     TwoPhaseStoreCL<InstatNavierStokes2PhaseP2P1CL> ser(MG, Stokes, lset, P.get("Transp.DoTransp", 0) ? &massTransp : 0,
-                                                        P.get<std::string>("Restart.Outputfile"), P.get<int>("Restart.Overwrite"), P.get<int>("Restart.Binary"));
+                                                        P.get<std::string>("Restart.Outputfile"), 
+                                                        P.get<int>("Restart.Overwrite"), 
+                                                        P.get<int>("Restart.Binary"));
+    // Output-Registrations:
+    Ensight6OutCL* ensight = NULL;
+    if (P.get<int>("Ensight.EnsightOut",0)){
+        // Initialize Ensight6 output
+        std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
+        ensight = new Ensight6OutCL( P.get<std::string>("Ensight.EnsCase") + ".case", 
+                                     P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1,
+                                     P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
+        ensight->Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(), P.get<std::string>("Ensight.GeomName"),
+                                                    ensf + ".geo", true));
+        ensight->Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
+        ensight->Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
+        ensight->Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
+        ensight->Register( make_Ensight6Scalar    ( ScalarFunAsP2EvalCL( sigmap, 0., &MG, MG.GetLastLevel()),
+                                                    "Surfaceforce",  ensf + ".sf",  true));
 
-    // Initialize Ensight6 output
-    std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
-    Ensight6OutCL ensight( P.get<std::string>("Ensight.EnsCase") + ".case", (P.get("Ensight.EnsightOut", 0) ? P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1 : 0),
-                           P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
-    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   P.get<std::string>("Ensight.GeomName"),      ensf + ".geo", true));
-    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
-    ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
-    ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
-    ensight.Register( make_Ensight6Scalar    ( ScalarFunAsP2EvalCL( sigmap, 0., &MG, MG.GetLastLevel()),
-                                                                        "Surfaceforce",  ensf + ".sf",  true));
-    if (P.get("Transp.DoTransp", 0)) {
-        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution(),"Concentration", ensf + ".c",   true));
-        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct),
-                                                                        "TransConc",     ensf + ".ct",  true));
-    }
-    if (P.get("SurfTransp.DoTransp", 0)) {
-        ensight.Register( make_Ensight6IfaceScalar( MG, surfTransp.ic,  "InterfaceSol",  ensf + ".sur", true));
-    }
+        if (P.get("Transp.DoTransp", 0)) {
+            ensight->Register( make_Ensight6Scalar( massTransp.GetSolution(),"Concentration", ensf + ".c",   true));
+            ensight->Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct),
+                                                    "TransConc",     ensf + ".ct",  true));
+        }
+        if (P.get("SurfTransp.DoTransp", 0)) {
+            ensight->Register( make_Ensight6IfaceScalar( MG, surfTransp.ic,  "InterfaceSol",  ensf + ".sur", true));
+        }
 
 #ifndef _PAR
-    if (Stokes.UsesXFEM())
-        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
+        if (Stokes.UsesXFEM())
+            ensight->Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
 #endif
+        ensight->Write( Stokes.v.t);
+    }
 
     // writer for vtk-format
-    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get("VTK.VTKOut", 0) ? P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1 : 0),
-                std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary"));
+    VTKOutCL * vtkwriter = NULL;
+    if (P.get<int>("VTK.VTKOut",0)){
+        vtkwriter = new VTKOutCL(adap.GetMG(), "DROPS data", 
+                                 P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1,
+                                 std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), 
+                                 P.get<int>("VTK.Binary"));
+        vtkwriter->Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
+        vtkwriter->Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
+        vtkwriter->Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
-    vtkwriter.Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
-    vtkwriter.Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
-    vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
+        if (P.get("Transp.DoTransp", 0)) {
+            vtkwriter->Register( make_VTKScalar( massTransp.GetSolution(), "massTransport") );
+        }
 
-    if (P.get("Transp.DoTransp", 0)) {
-        vtkwriter.Register( make_VTKScalar( massTransp.GetSolution(), "massTransport") );
+        if (P.get("SurfTransp.DoTransp", 0)) {
+            vtkwriter->Register( make_VTKIfaceScalar( MG, surfTransp.ic,  "InterfaceSol"));
+        }
+        vtkwriter->Write(Stokes.v.t);
     }
-
-    if (P.get("SurfTransp.DoTransp", 0)) {
-        vtkwriter.Register( make_VTKIfaceScalar( MG, surfTransp.ic,  "InterfaceSol"));
-    }
-
-    if (P.get("Ensight.EnsightOut", 0))
-        ensight.Write( Stokes.v.t);
-    if (P.get("VTK.VTKOut", 0))
-        vtkwriter.Write(Stokes.v.t);
 
     for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
     {
@@ -361,10 +370,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
             }
         }
 
-        if (P.get("Ensight.EnsightOut", 0) && step%P.get("Ensight.EnsightOut", 0)==0)
-            ensight.Write( Stokes.v.t);
-        if (P.get("VTK.VTKOut", 0) && step%P.get("VTK.VTKOut", 0)==0)
-            vtkwriter.Write(Stokes.v.t);
+        if (ensight && step%P.get("Ensight.EnsightOut", 0)==0)
+            ensight->Write( Stokes.v.t);
+        if (vtkwriter && step%P.get("VTK.VTKOut", 0)==0)
+            vtkwriter->Write(Stokes.v.t);
         if (P.get("Restart.Serialization", 0) && step%P.get("Restart.Serialization", 0)==0)
             ser.Write();
     }
@@ -375,6 +384,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     delete navstokessolver;
     delete stokessolver;
     delete gm;
+    if (ensight) delete ensight;
+    if (vtkwriter) delete vtkwriter;
     if (infofile) delete infofile;
 //     delete stokessolver1;
 }
