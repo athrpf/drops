@@ -114,6 +114,26 @@ class ParamCL: public boost::property_tree::ptree
       this->pt.put(pathToNode, value);
     }
 
+    /// \brief routine to assign a value to node/create nodes manually
+    /// only if node is not set yet!
+    /// \param pathToNode Path in tree hierarchy
+    /// \param value This value will be assigned to node
+    /// \returns if value has been set already
+    template <typename InType>
+    bool put_if_unset(const std::string & pathToNode, InType value)
+    {
+      //value in container?
+      try {
+          get<InType>(pathToNode);
+          return true;
+      }
+      //no? then add for next time
+      catch (boost::property_tree::ptree_error & e) {
+          this->pt.put(pathToNode, value);
+          return false;
+      }
+    }
+
     friend std::istream &operator>>(std::istream& stream, ParamCL& P);
     friend std::ostream &operator<<(std::ostream& stream, ParamCL& P);
 
