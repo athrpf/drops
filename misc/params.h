@@ -39,7 +39,7 @@ namespace DROPS
 /// \brief Parser and container for JSON parameter files
 ///        This class is based on BOOST Property Tree
 /// Usage:
-///   - read in JSON file via <ParamCL> P << <ifstream> file
+///   - read in JSON file via ParamCL P << ifstream file
 ///   - use get routines to access data
 /// For further information see TRAC
 
@@ -49,7 +49,7 @@ class ParamCL: public boost::property_tree::ptree
     ParamCL();
 
     /// \brief standard get routine
-    /// \param template parameter is the desired type of returned variable
+    /// template parameter is the desired type of returned variable
     /// \param pathInPT Path in tree hierarchy
     ///        e.g. for SimParams { "Timestep" : 0.1 };
     ///             you use: myvar = P.get("SimParams.TimeStep");
@@ -80,8 +80,8 @@ class ParamCL: public boost::property_tree::ptree
     /// \param default_value value returned if node does not exist
     ///        type of returned variable is determined by the type of default_value
     ///        if node does not exist, node will be created with default_value as value
+    /// \param default_value for the node (used if node does not exist yet)
     /// \returns value stored in node
-    /// \returns default_value if node does not exist
     template <typename OutType>
     OutType get(const std::string & pathInPT, OutType default_val)
     {

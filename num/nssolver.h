@@ -1,4 +1,4 @@
-/// \filenssolver.h
+/// \file nssolver.h
 /// \brief nonlinear solvers for the Navier-Stokes equation
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 

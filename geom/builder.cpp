@@ -172,6 +172,8 @@ CavityBuilderCL::CavityBuilderCL(const Point3DCL& origin,
     \param n1     refinement of basis 1
     \param n2     refinement of basis 2
     \param n3     refinement of basis 3
+    \param cavityorigin     origin of cavity
+    \param cavity           cavity
 */
 {}
 

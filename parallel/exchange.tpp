@@ -367,7 +367,7 @@ void ExchangeCL::AccFromAllProc(VectorBaseCL<T> &vec, RequestCT& req, VectorBase
     can be performed.
 
     \param vec     recieve from other procs the values of the shared entries and add them
-    \param tag     default -1: the tag used by this function. If tag=-1, then use the default tag=1001
+    \param req     storage request for all neighbor procs
     \param offset  default 0: For blocked vectors this offset is used to enter a special block
     \param recvBuf Buffer of received unknowns
     \pre List has to be created
