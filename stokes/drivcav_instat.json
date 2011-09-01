@@ -14,16 +14,17 @@
 	// flow solver
 	"Stokes":
 	{ 
-		"InnerIter":		10,
-		"OuterIter":		200,
-		"InnerTol":		0.6,
-		"OuterTol":		1e-10,
-		"StokesMethod":		30207,
-		"PcAIter":		1, 	 //V-cycles multigrid, iter pc for A block
-		"PcATol":		1e-99,
-		"PcSTol":		0.01,
-		"XFEMStab":		0,
-		"Theta":		1 	 //backward Euler
+		"InnerIter":		1,       // maximum number of iterations for the inner solver
+		"OuterIter":		200,     // maximum number of iterations for the outer solver
+		"InnerTol":		1e-14,       // tolerance for the inner solver. (! Attention: The inner solver tolerance should be chosen some orders of magnitude smaller than the outer solver tolerance, otherwise the outer solver diverges).
+		"OuterTol":		1e-10,       // tolerance for the outer solver
+		"StokesMethod":		30207,  // determination of the solver for the Stokes problem. The solver is built of the Oseen solver and preconditioners for the A-Block and the Schur complement S. See the doxygen documentation of StokesSolverfactoryBaseCL for more details
+		"PcAIter":		1,   	     // V-cycles multigrid, iter pc for A block
+		"PcATol":		1e-99,       // tolerance for the preconditioner of the A-Block
+		"PcSTol":		0.01,        // tolerance for the preconditioner of the Schur complement
+		"Theta":		1,	         // backward Euler
+        "Omega":		1,           // relaxation of ssor
+		"Tau":		1                // used in obsolete uzawa solvers
 	},
 
 	// stokes coefficients
@@ -34,14 +35,6 @@
 		"Solution_Vel":		"None",
 		"Solution_DVel":		"None",
 		"Solution_Pr":		"None"
-	},
-
-	// Miscellaneous
-	"Misc":
-	{ 
-		"Omega":		1,
-		"Tau":		1,
-		"MarkLower":		0.25 	 //a double value, range from 0 to the maximum value of Y coordinate, mark all tetrahedron (y<MarkLower) for further refinement
 	},
 
 	// material data, all units are SI
@@ -68,17 +61,6 @@
 		"BoundaryFncs":		"VecZero!VecZero!VecZero!VecZero!VecZero!Inflow_drivcav_v2" 	 //Two versions of inflow condition
 	},
 
-	// adaptive refinement
-	"AdaptRef":
-	{ 
-		"Freq":		0,
-		"FinestLevel":		0,
-		"CoarsestLevel":		0,
-		"Width":		0.1,
-		"LoadBalStrategy":		1, 	 //0 - No Migration, 1 - Adaptive, 2 - Recursive
-		"Partitioner":		1 	 //1 - Metis, 2 - Zoltan, 3 - Scotch
-	},
-
 	// Ensight settings
 	"Ensight":
 	{ 
@@ -88,18 +70,5 @@
 		"GeomName":		"cave", 	 //name for the geometry
 		"MasterOut":		1, 	 //only master writes out ensight files
 		"Binary":		1 	 //write out ensight files in binary format
-	},
-
-	// Error estimator    
-	"Err":
-	{ 
-		"RelReduction":		0.1,
-		"MinRatio":		0, 	 //not used in Stokes case
-		"Threshold":		0.6,
-		"Meas":		1,
-		"DoMark":		0, 	 //1 = true, 0 = false
-		"DoErrorEstimate":		0, 	 //1 = true, 0 = false
-		"NumRef":		3 	 //also used for MarkLower refinement
 	}
-
 }

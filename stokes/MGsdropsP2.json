@@ -1,6 +1,6 @@
 {
 	//=============================================================
-	//    DROPS parameter file for stokesP2.cpp
+	//    DROPS parameter file for stokesP2.cpp and errorestimator.cpp
 	//    simulation of stokes problem
 	//    Inherited from isdrops.cpp (old file before merging)
 	//=============================================================
@@ -15,16 +15,17 @@
 	// flow solver
 	"Stokes":
 	{ 
-		"InnerIter":		200,
-		"OuterIter":		200,
-		"InnerTol":		1e-10,
-		"OuterTol":		1e-08,
-		"StokesMethod":		510100,
-		"PcAIter":		100, 	 //V-cycles multigrid, iter pc for A block
-		"PcATol":		0.01,
-		"PcSTol":		0.0001,
-		"XFEMStab":		0,
-		"Theta":		1 	 //backward Euler
+		"InnerIter":		200,     // maximum number of iterations for the inner solver
+		"OuterIter":		200,     // maximum number of iterations for the outer solver
+		"InnerTol":		1e-10,       // tolerance for the inner solver. (! Attention: The inner solver tolerance should be chosen some orders of magnitude smaller than the outer solver tolerance, otherwise the outer solver diverges).
+		"OuterTol":		1e-06,       // tolerance for the outer solver
+		"StokesMethod":		30207,   // determination of the solver for the Stokes problem. The solver is built of the Oseen solver and preconditioners for the A-Block and the Schur complement S. See the doxygen documentation of StokesSolverfactoryBaseCL for more details
+		"PcAIter":		2,   	     // V-cycles multigrid, iter pc for A block
+		"PcATol":		1e-99,       // tolerance for the preconditioner of the A-Block
+		"PcSTol":		0.0001,      // tolerance for the preconditioner of the Schur complement
+		"Theta":		1,	         // backward Euler
+        "Omega":		1,           // relaxation of ssor
+		"Tau":		1                // used in obsolete uzawa solvers
 	},
 
 	// stokes coefficients
@@ -35,14 +36,6 @@
 		"Solution_Vel":		"VelSol_MGsdropsP2",
 		"Solution_DVel":		"DVelSol_MGsdropsP2",
 		"Solution_Pr":		"PrSol_MGsdropsP2"
-	},
-
-	// Miscellaneous
-	"Misc":
-	{ 
-		"Omega":		1,
-		"Tau":		1,
-		"ModifyGrid":		0 	 //0= Normal Case, 1= isdrops.cpp
 	},
 
 	// material data, all units are SI
@@ -69,17 +62,6 @@
 		"BoundaryFncs":		"VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2!VelSol_MGsdropsP2"
 	},
 
-	// adaptive refinement
-	"AdaptRef":
-	{ 
-		"Freq":		0,
-		"FinestLevel":		1,
-		"CoarsestLevel":		0,
-		"Width":		0,
-		"LoadBalStrategy":		1, 	 //0 - No Migration, 1 - Adaptive, 2 - Recursive
-		"Partitioner":		1 	 //1 - Metis, 2 - Zoltan, 3 - Scotch
-	},
-
 	// Ensight settings
 	"Ensight":
 	{ 
@@ -92,7 +74,7 @@
 	},
 
 	// Error estimator    
-	"Err":
+	"Error":
 	{ 
 		"RelReduction":		0.1,
 		"MinRatio":		0, 	 //not usede in Stokes case
@@ -100,7 +82,16 @@
 		"Meas":		0.48447307313,
 		"DoMark":		0, 	 //1 = true, 0 = false
 		"DoErrorEstimate":		1, 	 //1 = true, 0 = false
-		"NumRef":		2 	 //also used for MarkLower refinement
-	}
+		"NumRef":		2, 	 //also used for MarkLower refinement
+		"MarkLower":	0.25
+	},
 
+	// adaptive refinement of the error estimator
+	"AdaptRef":
+	{ 
+		"FinestLevel":		2,
+		"CoarsestLevel":		0,
+		"Width":		0,
+		"ModifyGrid":		0 	 //0= Normal Case, 1= isdrops.cpp
+	}
 }

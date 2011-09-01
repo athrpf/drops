@@ -953,10 +953,10 @@ StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, ProlongationPT>::
     : base_( Stokes, P),
       kA_(P.get<int>("Time.NumSteps") != 0 ? 1.0/P.get<double>("Time.StepSize") : 0.0), // P.get<int>("Time.NumSteps") == 0: stat. problem
       kM_(P.get<double>("Stokes.Theta")),
-      ssor_( P.get<double>("Misc.Omega")), PCGsolver_( ssor_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")), CGsolver_( P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")),
+      ssor_( P.get<double>("Stokes.Omega")), PCGsolver_( ssor_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")), CGsolver_( P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")),
       PCGsgssolver_(sgs_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")),
       q_(), minressolver_( q_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.OuterTol")),
-      PPA_( ssor_, 8, 1e-20), PA_( PPA_), PS_( Stokes_.prM.Data.GetFinest(), Stokes_.prM.Data.GetFinest(), kA_, kM_, P.get<double>("Misc.Omega")),
+      PPA_( ssor_, 8, 1e-20), PA_( PPA_), PS_( Stokes_.prM.Data.GetFinest(), Stokes_.prM.Data.GetFinest(), kA_, kM_, P.get<double>("Stokes.Omega")),
       pre_( PA_, PS_), pq_( pre_), pminressolver_( pq_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.OuterTol")),
       smoother_(1.0), coarsesolver_( ssorom_, 500, P.get<double>("Stokes.InnerTol")),
       MGsolver_( smoother_, coarsesolver_, P.get<int>("Stokes.InnerIter"), ( P.get<int>("Stokes.StokesMethod") == 500101)?-1:P.get<double>("Stokes.InnerTol")),
@@ -973,14 +973,14 @@ StokesSolverBaseCL* StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, Pro
     switch (P_.template get<int>("Stokes.StokesMethod"))
     {
         case 500000 :
-            stokessolver = new  UzawaSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
+            stokessolver = new  UzawaSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.Tau"));
             break;
         case 500100 :
             stokessolver = new  UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, Stokes_.prM.Data.GetFinest(),
-                P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
+                P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.Tau"));
             break;
         case 501101 :
-            stokessolver = new  UzawaSolver2ModifiedCL<ISMGPreCL, MGPCT>( ismgpcp_, MGpc_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
+            stokessolver = new  UzawaSolver2ModifiedCL<ISMGPreCL, MGPCT>( ismgpcp_, MGpc_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.Tau"));
             break;
         case 510000 :
             stokessolver = new  PSchurSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));

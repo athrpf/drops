@@ -328,7 +328,7 @@ void Strategy( StokesProblemT& Stokes)
     Stokes.pr_idx.SetFE( P1_FE);
 
     //Modify Triangulation
-    if( P.get("Misc.ModifyGrid", 0) == 1)
+    if( P.get("AdaptRef.ModifyGrid", 0) == 1)
         MakeInitialTriangulation( MG, &SignedDistToInterface, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"));
 
     // solve the linear equation system
@@ -364,8 +364,8 @@ void Strategy( StokesProblemT& Stokes)
 
     do
     {
-        if( P.get<double>("Misc.MarkLower") != 0)
-        	MarkLower( MG, P.get<double>("Misc.MarkLower"));
+        if( P.get<double>("Error.MarkLower") != 0)
+        	MarkLower( MG, P.get<double>("Error.MarkLower"));
 
         MG.Refine();
 
@@ -394,16 +394,7 @@ void Strategy( StokesProblemT& Stokes)
         if( StokesSolverFactoryHelperCL().VelMGUsed(P) || StokesSolverFactoryObsoleteHelperCL().VelMGUsed(P))
         {
             MLMatrixCL* PVel = (P.get<int>("Stokes.StokesMethod")< 500000) ? factory.GetPVel() : obsoletefactory.GetPVel();
-            vidx1->resize( MG.GetNumLevel(), vecP2_FE);
-            Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
             SetupP2ProlongationMatrix( MG, *PVel, vidx1, vidx1);
-            vidx1->resize( MG.GetNumLevel(), vecP2_FE);
-            Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
-
-            std::cout << "Check MG-Data..." << std::endl;
-            std::cout << "                begin     " << Stokes.vel_idx.GetCoarsest().NumUnknowns() << std::endl;
-            std::cout << "                end       " << Stokes.vel_idx.GetFinest().NumUnknowns() << std::endl;
-            CheckMGData( Stokes.A.Data, *PVel);
         }
 
         if( StokesSolverFactoryHelperCL().PrMGUsed(P) || StokesSolverFactoryObsoleteHelperCL().PrMGUsed(P))
@@ -541,7 +532,7 @@ int main ( int argc, char** argv)
         if (argc!=2)
         {
             std::cout << "Using default parameter file: drivcav.json\n";
-            param.open( "drivcav.json");
+            param.open( "MGsdropsP2.json");
         }
         else
             param.open( argv[1]);
@@ -555,7 +546,7 @@ int main ( int argc, char** argv)
         std::cout << P << std::endl;
 
         // Check MarkLower value
-        if( P.get<int>("DomainCond.GeomType") == 0) P.put("Misc.MarkLower", 0);
+        if( P.get<int>("DomainCond.GeomType") == 0) P.put("Error.MarkLower", 0);
         else {
           int nx, ny, nz;
           double dx, dy, dz;
@@ -565,7 +556,7 @@ int main ( int argc, char** argv)
             mesh[idx]= ' ';
           std::istringstream brick_info( mesh);
           brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
-          if (P.get("Misc.MarkLower", 0)<0 || P.get("Misc.MarkLower", 0) > dy)
+          if (P.get("Error.MarkLower", 0)<0 || P.get("Error.MarkLower", 0) > dy)
           {
         	  std::cerr << "Wrong value of MarkLower\n";
         	  return 1;
