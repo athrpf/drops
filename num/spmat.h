@@ -522,12 +522,16 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 #pragma omp for
     for (size_t i= 0; i < block_rows; ++i)
         BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
+<<<<<<< HEAD
 
     inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
 #pragma omp barrier
 #pragma omp master
     _mat->num_nonzeros( rb[_rows]);
 #pragma omp barrier
+=======
+    _mat->num_nonzeros( rb[_rows]);
+>>>>>>> master
 
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
 
@@ -1116,7 +1120,6 @@ void ortho( VectorBaseCL<T>& v, const VectorBaseCL<T>& k, const SparseMatBaseCL<
     const double alpha= dot(v,Yk)/dot(k,Yk);
     v-= alpha*k;
 }
-
 
 /// \brief Compute the linear combination of two sparse matrices efficiently.
 /// The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.

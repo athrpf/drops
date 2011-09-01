@@ -58,7 +58,7 @@ template <class GridFunT>
   equal_signs (const GridFunT& f);
 
 
-class TetraPartitionCL; ///< forward declaratino for output-routines
+class TetraPartitionCL; ///< forward declaration for output-routines
 
 ///\brief declaration of debug output (neccessary due to friend declaration in TetraPartitionCL)
 std::ostream&

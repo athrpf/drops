@@ -78,6 +78,16 @@ class RefTetraPatchCL
     typedef const TriangleT* const_triangle_iterator;
     typedef       TriangleT*       triangle_iterator;
 
+    /// \brief Initializes RefTetraPatchCL::instance_array_ below in the constructor by calling RefTetraPatchCL::instance() for all legal sign patterns.
+    class InitializerCL
+    {
+      private:
+        static int init_count_;
+
+      public:
+        InitializerCL ();
+    };
+
   private:
     TriangleT triangle_[2];      ///< at most two triangles
     Ubyte size_;                 ///< number of triangles
@@ -85,6 +95,8 @@ class RefTetraPatchCL
 
     Ubyte num_triangles (const SignPatternTraitCL& cut) const { return cut.is_2d() ? cut.num_cut_simplexes() - 2 : 0; }
     TriangleT MakeTriangle (Ubyte v0, Ubyte v1, Ubyte v2) const { return MakeSArray( v0, v1, v2); }
+
+    static RefTetraPatchCL instance_array_[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
 
   public:
     RefTetraPatchCL () : size_( static_cast<Ubyte>( -1)), is_boundary_triangle_( 0) {} ///< Uninitialized default state
@@ -109,14 +121,20 @@ class RefTetraPatchCL
     ///@}
 };
 
+namespace {
+RefTetraPatchCL::InitializerCL RefTetraPatch_initializer_;
+
+} // end of anonymous namespace
 
 ///\brief Return a signed array-index for the possible 3^4 sign-patterns on the vertices of a tetra.
+/// The index ranges from [-40..40].
 inline byte instance_idx (const byte ls[4])
 {
     return  27*ls[0] + 9*ls[1] + 3*ls[2] + ls[3];
 }
 
 ///\brief Return a signed array-index for the possible 3^4 sign-patterns on the vertices of a tetra.
+/// The index ranges from [-40..40].
 inline Ubyte instance_idx (const double ls[4])
 {
     return  27*sign( ls[0]) + 9*sign( ls[1]) + 3*sign( ls[2]) + sign( ls[3]);
@@ -125,10 +143,7 @@ inline Ubyte instance_idx (const double ls[4])
 inline const RefTetraPatchCL&
 RefTetraPatchCL::instance (const byte ls[4])
 {
-    static RefTetraPatchCL instance_array[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
-    static RefTetraPatchCL* const instances= instance_array + 40;
-
-    RefTetraPatchCL& instance= instances[instance_idx ( ls)];
+    RefTetraPatchCL& instance= instance_array_[instance_idx ( ls) + 40];
     if ( !instance.is_initialized())
         instance.assign( SignPatternTraitCL( ls));
     return instance;
@@ -138,8 +153,7 @@ inline const RefTetraPatchCL&
 RefTetraPatchCL::instance (const double ls[4])
 {
     byte ls_byte[4];
-    for (int i= 0; i < 4; ++i)
-        ls_byte[i]= sign( ls[i]);
+    std::transform( ls + 0, ls + 4, ls_byte + 0, DROPS::sign);
     return instance( ls_byte);
 }
 
@@ -156,6 +170,16 @@ class RefTetraPartitionCL
     typedef SArrayCL<Ubyte, 4> TetraT; ///< representation of a tetra of the partition via its vertices: (0..3): original vertices; (4..9): original edges + 4
     typedef const TetraT* const_tetra_iterator;
     typedef       TetraT*       tetra_iterator;
+
+    /// \brief Initializes RefTetraPartitionCL::instance_array_ below in the constructor by calling RefTetraPartitionCL::instance() for all legal sign patterns.
+    class InitializerCL
+    {
+      private:
+        static int init_count_;
+
+      public:
+        InitializerCL ();
+    };
 
   private:
     TetraT tetras_[6]; ///< at most six tetras
@@ -176,6 +200,8 @@ class RefTetraPartitionCL
     ///\brief If the intersection is quadrilateral, this returns the first uncut edge.
     Ubyte first_uncut_edge (const SignPatternTraitCL& cut) const { return cut[0] == 1 ? 0 : (cut[1] == 2 ? 1 : 2); }
     Ubyte some_non_zero_vertex (const SignPatternTraitCL& cut) const;
+
+    static RefTetraPartitionCL instance_array_[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
 
   public:
     RefTetraPartitionCL () : begin_( tetras_ + 3), end_( tetras_) {} ///< Uninitialized default state
@@ -204,14 +230,15 @@ class RefTetraPartitionCL
     friend std::ostream& operator<< (std::ostream&, const RefTetraPartitionCL&); ///< Debug-output to a stream (dumps all members)
 };
 
+namespace {
+RefTetraPartitionCL::InitializerCL RefTetraPartition_initializer_;
+
+} // end of anonymous namespace
 
 inline const RefTetraPartitionCL&
 RefTetraPartitionCL::instance (const byte ls[4])
 {
-    static RefTetraPartitionCL instance_array[81]; // 81 = 3^4 = all possible sign-patterns on the vertices
-    static RefTetraPartitionCL* const instances= instance_array + 40;
-
-    RefTetraPartitionCL& instance= instances[instance_idx ( ls)];
+    RefTetraPartitionCL& instance= instance_array_[instance_idx ( ls) + 40];
     if ( !instance.is_initialized())
         instance.assign( SignPatternTraitCL( ls));
     return instance;
@@ -221,8 +248,7 @@ inline const RefTetraPartitionCL&
 RefTetraPartitionCL::instance (const double ls[4])
 {
     byte ls_byte[4];
-    for (int i= 0; i < 4; ++i)
-        ls_byte[i]= DROPS::sign( ls[i]);
+    std::transform( ls + 0, ls + 4, ls_byte + 0, DROPS::sign);
     return instance( ls_byte);
 }
 

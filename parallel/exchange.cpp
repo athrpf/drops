@@ -108,6 +108,20 @@ ProcCL::RequestT ExchangeDataSendCL::Isend<>(const std::valarray<int>& v, int ta
     return ProcCL::Isend(Addr(v)+offset, 1, intSendType_, toProc_, tag);
 }
 
+/// \brief send a c-array
+inline ProcCL::RequestT ExchangeDataSendCL::Isend(const double* v, int tag, Ulint offset) const
+/** This procedure send the data with a non-blocking non-synchronous MPI Send. Since this
+    procedure is used to send vector-entries as well as non-zero-elements of a matrix, the
+    type VectorT is a template parameter.
+    \param v      vector, that contains elements for sending (local data)
+    \param tag    used tag for communication
+    \param offset start element of the vector
+    \pre v has to be big enough
+*/
+{
+    return ProcCL::Isend( v+offset, 1, SendType_, toProc_, tag);
+}
+
 // ------------------------------------
 // E X C H A N G E  D A T A  C L A S S
 // ------------------------------------
@@ -917,7 +931,7 @@ MatrixCL ExchangeMatrixCL::Accumulate(const MatrixCL& mat)
     std::vector<ProcCL::RequestT> send_req( ExList_.size());
     std::vector<ProcCL::RequestT> recv_req( ExList_.size());
     for (size_t ex=0; ex<ExList_.size(); ++ex){
-        send_req[ex]= ExList_[ex].Isend( mat.val(), 2213, 0);
+        send_req[ex]= ExList_[ex].Isend( mat.raw_val(), 2213, 0);
         recv_req[ex]= ProcCL::Irecv( RecvBuf_[ex], ExList_[ex].GetProc(), 2213);
     }
 
@@ -928,7 +942,7 @@ MatrixCL ExchangeMatrixCL::Accumulate(const MatrixCL& mat)
         // add received non-zeros
         for ( size_t nz=0; nz<RecvBuf_[ex].size(); ++nz){
             if (Coupl_[ex][nz]!=NoIdx_)
-                result.val()[Coupl_[ex][nz]]+= RecvBuf_[ex][nz];
+                result.raw_val()[Coupl_[ex][nz]]+= RecvBuf_[ex][nz];
         }
     }
 

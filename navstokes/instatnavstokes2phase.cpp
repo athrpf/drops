@@ -48,7 +48,7 @@ class LocalNonlConvSystemOnePhase_P2CL
         : Ones( 1.)
     { P2DiscCL::GetGradientsOnRef( GradRef); }
 
-    void   velocity  (LocalP2CL<Point3DCL> & velp2)          { vel_.assign(velp2); }
+    void   velocity  (const LocalP2CL<Point3DCL> & velp2)          { vel_.assign(velp2); }
     const Quad5CL<Point3DCL> & velocity  () const { return vel_;        }
 
     void   rho (double new_rho)                   { rho_= new_rho;      }
@@ -89,10 +89,10 @@ class LocalNonlConvSystemSmoothedJumps_P2CL
 
     }
 
-    void   velocity  (LocalP2CL<Point3DCL> & velp2) { vel_.assign(velp2); }
+    void   velocity  (const LocalP2CL<Point3DCL> & velp2) { vel_.assign(velp2); }
     const Quad5CL<Point3DCL> & velocity  () const   { return vel_;        }
 
-    void   levelset  (LocalP2CL<double> & lsetp2) { 
+    void   levelset  (const LocalP2CL<double> & lsetp2) { 
         lset_.assign(lsetp2); 
         qrho_ = lset_;
         qrho_.apply( rho_);

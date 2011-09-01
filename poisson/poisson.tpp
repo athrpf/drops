@@ -1570,7 +1570,7 @@ void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<
     bool IsOnDirBnd[10];
     
 #ifndef _PAR
- std::cout<< "entering SetupInstatSystem: " << ColIdx.NumUnknowns()<< "unknowns,"<<std::endl;
+ std::cout<< "entering SetupInstatSystem: " << ColIdx.NumUnknowns()<< " unknowns,"<<std::endl;
 #endif
 
 //fill value part of matrices
