@@ -1380,7 +1380,7 @@ System1Accumulator_P2CL::System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coe
 
 void System1Accumulator_P2CL::begin_accumulation ()
 {
-    std::cout << "entering SetupSystem1_P2CL::begin_accumulation ()" << std::endl;
+    std::cout << "entering SetupSystem1_P2CL: ";
     const size_t num_unks_vel= RowIdx.NumUnknowns();
     mA_= new SparseMatBuilderCL<double, SMatrixCL<3,3> >( &A, num_unks_vel, num_unks_vel);
     mM_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &M, num_unks_vel, num_unks_vel);
@@ -1399,9 +1399,9 @@ void System1Accumulator_P2CL::finalize_accumulation ()
     delete mM_;
 #ifndef _PAR
     std::cout << A.num_nonzeros() << " nonzeros in A, "
-              << M.num_nonzeros() << " nonzeros in M! " << std::endl;
+              << M.num_nonzeros() << " nonzeros in M!";
 #endif
-    std::cout << "leaving SetupSystem1_P2CL::finalize_accumulation ()" << std::endl;
+    std::cout << '\n';
 }
 
 void System1Accumulator_P2CL::visit (const TetraCL& tet)
@@ -2139,7 +2139,7 @@ LBAccumulator_P2CL::LBAccumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff_, const
 
 void LBAccumulator_P2CL::begin_accumulation ()
 {
-    //std::cout << "entering SetupLB::begin_accumulation ()" << std::endl;
+    std::cout << "entering SetupLB: ";
     const size_t num_unks_vel= RowIdx.NumUnknowns();
     mA_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &A, num_unks_vel, num_unks_vel);
     if (cplA != 0) {
@@ -2152,9 +2152,9 @@ void LBAccumulator_P2CL::finalize_accumulation ()
     mA_->Build();
     delete mA_;
 #ifndef _PAR
-    std::cout << A.num_nonzeros() << " nonzeros in A_LB. "<< std::endl;
+    std::cout << A.num_nonzeros() << " nonzeros in A_LB!";
 #endif
-    //std::cout << "leaving SetupLB::finalize_accumulation ()" << std::endl;
+    std::cout << '\n';
 }
 
 void LBAccumulator_P2CL::visit (const TetraCL& tet)
@@ -2272,8 +2272,9 @@ void InstatStokes2PhaseP2P1CL::SetupSystem2( MLMatDescCL* B, VecDescCL* c, const
         else
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
 #ifndef _PAR
-        std::cout << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
+        std::cout << itB->num_nonzeros() << " nonzeros in B!";
 #endif
+        std::cout << '\n';
     }
 }
 

@@ -746,19 +746,19 @@ template <typename Mat, typename Vec>
 void ISNonlinearPreCL<SolverT>::Apply(const Mat&, Vec& p, const Vec& c) const
 {
     p= 0.0;
-//    std::cout << "ISNonlinearPreCL";
     if (kA_ != 0.0) {
         solver_.Solve( A_, p, c);
-//        std::cout << "\tp: iterations: " << solver_.GetIter()
-//                  << "\tresidual: " <<  solver_.GetResid();
+        if (solver_.GetIter() == solver_.GetMaxIter())
+        std::cout << "ISNonlinearPreCL::Apply (1st solve: iterations: " << solver_.GetIter()
+                  << "\tresidual: " <<  solver_.GetResid() << '\n';
         p*= kA_;
     }
     if ( kM_ != 0.0) {
         Vec p2_( c.size());
         solver_.Solve( M_, p2_, c);
-//        std::cout << "\t p2: iterations: " << solver_.GetIter()
-//                  << "\tresidual: " <<  solver_.GetResid()
-//                  << '\n';
+        if (solver_.GetIter() == solver_.GetMaxIter())
+        std::cout << "ISNonlinearPreCL::Apply (2nd solve: iterations: " << solver_.GetIter()
+                  << "\tresidual: " <<  solver_.GetResid() << '\n';
         p+= kM_*p2_;
     }
 }

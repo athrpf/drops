@@ -1,36 +1,33 @@
+//=============================================================
+//    DROPS parameter file for twophasedrops
+//    simulation of two-phase flow:
+//    butanol droplet in water
+//=============================================================
 {
-        "_comment":
-"#=============================================================
-#    DROPS parameter file for twophasedrops
-#    simulation of two-phase flow:
-#    droplet in brick
-#=============================================================
-# time stepping",
-
+        // time stepping:
         "Time":
         {
                 "NumSteps":             2000,
                 "StepSize":             0.0005,
                 "Scheme":               1
         },
-
+    
+        //stokes solver parameters:
         "Stokes":
         {
-                "_comment":
-"# flow solver",
-
-                "StokesMethod":         10101,
-                "InnerIter":            1000,
-                "OuterIter":            200,
-                "InnerTol":             0.6,
-                "OuterTol":             1e-10,
-                "PcAIter":              500,
-                "PcATol":               0.01,
-                "PcSTol":               0.01,
-                "XFEMStab":             0.01,
-                "Theta":                1
+                "StokesMethod":     10101,
+                "InnerIter":        1000,
+                "OuterIter":        200,
+                "InnerTol":         0.6,
+                "OuterTol":         1e-10,
+                "PcAIter":          500,
+                "PcATol":           0.01,
+                "PcSTol":           0.01,
+                "XFEMStab":         0.01,
+                "Theta":            1
         },
 
+        //navier stokes solver parameters:
         "NavStokes":
         {
                 "Nonlinear":            1,
@@ -39,11 +36,9 @@
                 "Reduction":            0.1
         },
 
+        //level set solver parameters:
         "Levelset":
         {
-                "_comment":
-"# levelset solver",
-
                 "Tol":                  1e-10,
                 "Iter":                 1000,
                 "SD":                   0.1,
@@ -60,10 +55,9 @@
                 "Projection":           0
         },
 
+        //re-initialization of levelset function:
         "Reparam":
         {
-                "_comment":
-"# re-initialization of levelset function",
 
                 "Freq":                 1,
                 "Method":               1,
@@ -72,11 +66,9 @@
                 "NarrowBand":           -1
         },
 
+        //adaptive refinement:
         "AdaptRef":
         {
-                "_comment":
-"# adaptive refinement",
-
                 "Freq":                 1,
                 "FinestLevel":          3,
                 "CoarsestLevel":        0,
@@ -86,11 +78,9 @@
                 "Partitioner":          1
         },
 
+        // material data, all units are SI",
         "Mat":
         {
-                "_comment":
-"# material data, all units are SI",
-
                 "DensDrop":             845.442,
                 "ViscDrop":             0.003281,
                 "DensFluid":            986.506,
@@ -98,11 +88,9 @@
                 "SmoothZone":           0.0001
         },
 
+        // experimental conditions
         "Exp":
         {
-                "_comment":
-"# experimental conditions",
-
                 "RadDrop":              [1e-3, 1e-3, 1e-3 ],
                 "PosDrop":              [10e-3, 10e-3, 10e-3 ],
                 "Gravity":              [0, -9.81, 0 ],
@@ -113,11 +101,9 @@
                 "InflowAmpl":           0
         },
 
+        //surface tension
         "SurfTens":
         {
-                "_comment":
-"# surface tension",
-
                 "VarTension":           1,
                 "SurfTension":          0.00163,
                 "JumpWidth":            0.00045,
@@ -127,9 +113,7 @@
 
         "Transp":
         {
-                "_comment":
-"# mass transport",
-
+                "UseNSSol":             1,
                 "DoTransp":             1,
                 "Theta":                1,
                 "Iter":                 200,
@@ -142,15 +126,16 @@
                 "IniCNeg":              0,
                 "NitschePenalty":       100,
                 "SDStabilization":      1,
-                "Levelset":             "Ellipsoid"
-                "NitscheXFEMStab":      0.01
+                "NitscheXFEMStab":      0.01,
+                "Levelset":             "Ellipsoid",             //Only active if UseNSSol == 0
+                "Flow":                 "ZeroVel",               //Only active if UseNSSol == 0
+                "BoundaryType":         "2!2!2!2!2!2",
+                "BoundaryFncs":         "Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet",
+                "BoundaryFncst":        "Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett"
         },
 
         "SurfTransp":
         {
-                "_comment":
-"# surfactant transport",
-
                 "SDStabilization":      0,
                 "DoTransp":             0,
                 "Theta":                0.5,
@@ -162,9 +147,6 @@
 
         "Ensight":
         {
-                "_comment":
-"# Ensight settings",
-
                 "EnsightOut":           0,
                 "EnsCase":              "risingbubble_butanol",
                 "EnsDir":               "ensight",
@@ -175,8 +157,6 @@
 
         "VTK":
         {
-                "_comment":
-"#VTK output",
 
                 "VTKOut":               5,
                 "VTKDir":               "vtk",
@@ -184,11 +164,9 @@
                 "Binary":               0
         },
 
+        //Write out results:
         "Restart":
         {
-                "_comment":
-"# Write out results",
-
                 "Serialization":        0,
                 "Overwrite":            0,
                 "Inputfile":            "none",
@@ -196,11 +174,9 @@
                 "Binary":               0
         },
 
+        // Domain boundary and initial condition
         "DomainCond":
         {
-                "_comment":
-"# domain, bnd/ini conditions",
-
                 "InitialCond":          0,
                 "GeomType":             1,
                 "InitialFile":          "none",

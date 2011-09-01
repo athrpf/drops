@@ -48,7 +48,7 @@ enum APcE {
 
 /// codes for the pressure Schur complement preconditioners
 enum SPcE {
-    ISBBT_SPC= 1, MinComm_SPC= 2, ISPre_SPC= 3, ISMG_SPC= 7, BDinvBT_SPC= 5, SIMPLER_SPC=8, MSIMPLER_SPC=9, VankaSchur_SPC= 4, VankaBlock_SPC=6
+    ISBBT_SPC= 1, MinComm_SPC= 2, ISPre_SPC= 3, ISMG_SPC= 7, BDinvBT_SPC= 5, SIMPLER_SPC=8, MSIMPLER_SPC=9, VankaSchur_SPC= 4, VankaBlock_SPC=6, ISNonlinear_SPC=10
 }; 
 
 /// collects some information on the different Oseen solvers and preconditioners
@@ -86,6 +86,7 @@ struct StokesSolverInfoCL
             case ISBBT_SPC:        return "ISBBT (modified Cahouet-Chabard)";
             case MinComm_SPC:      return "MinComm (minimal commutator)";
             case ISPre_SPC:        return "ISPre (Cahouet-Chabard)";
+            case ISNonlinear_SPC:  return "ISNonlinearPreCL (Cahouet-Chabard)";
             case ISMG_SPC:         return "ISMGPre (multigrid Cahouet-Chabard)";
             case BDinvBT_SPC:      return "B D^-1 B^T";
             case SIMPLER_SPC:      return "SIMPLER";
@@ -204,6 +205,9 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, Prolonga
     VankaSchurPreCL vankaschurpc_;
     ISPreCL         isprepc_;
     ISMGPreCL       ismgpre_;
+    
+    PCG_SsorCL isnonlinearprepc_;
+    ISNonlinearPreCL<PCG_SsorCL> isnonlinearpc_;
 
 // PC for A-block
     PreBaseCL *apc_;
@@ -350,6 +354,8 @@ StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>::
         bdinvbtispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(),Stokes_.pr_idx.GetFinest(), P.get<double>("Stokes.PcSTol") /* enable regularization: , 0.707*/),
         vankaschurpc_( &Stokes.pr_idx), isprepc_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
         ismgpre_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
+        isnonlinearprepc_( SSORPc_, 100, P.get<double>("Stokes.PcSTol"), true),
+        isnonlinearpc_( isnonlinearprepc_, Stokes_.prA.Data.GetFinest(), Stokes_.prM.Data.GetFinest(), kA_, kM_),
         // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPc_, 500, 1e-6, true),
         MGSolversymm_ ( smoother_, coarsesolversymm_, P.get<int>("Stokes.PcAIter"), P.get<double>("Stokes.PcATol"), false),
@@ -459,6 +465,7 @@ SchurPreBaseCL* StokesSolverFactoryCL<StokesT, ProlongationVelT, ProlongationPT>
         case MSIMPLER_SPC:
         case BDinvBT_SPC:    return &bdinvbtispc_;
         case VankaSchur_SPC: return &vankaschurpc_;
+        case ISNonlinear_SPC:return &isnonlinearpc_;
         default:             return 0;
     }
 }
@@ -946,10 +953,10 @@ StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, ProlongationPT>::
     : base_( Stokes, P),
       kA_(P.get<int>("Time.NumSteps") != 0 ? 1.0/P.get<double>("Time.StepSize") : 0.0), // P.get<int>("Time.NumSteps") == 0: stat. problem
       kM_(P.get<double>("Stokes.Theta")),
-      ssor_( P.get<double>("Misc.Omega")), PCGsolver_( ssor_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")), CGsolver_( P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")),
+      ssor_( P.get<double>("Stokes.Omega")), PCGsolver_( ssor_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")), CGsolver_( P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")),
       PCGsgssolver_(sgs_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.InnerTol")),
       q_(), minressolver_( q_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.OuterTol")),
-      PPA_( ssor_, 8, 1e-20), PA_( PPA_), PS_( Stokes_.prM.Data.GetFinest(), Stokes_.prM.Data.GetFinest(), kA_, kM_, P.get<double>("Misc.Omega")),
+      PPA_( ssor_, 8, 1e-20), PA_( PPA_), PS_( Stokes_.prM.Data.GetFinest(), Stokes_.prM.Data.GetFinest(), kA_, kM_, P.get<double>("Stokes.Omega")),
       pre_( PA_, PS_), pq_( pre_), pminressolver_( pq_, P.get<int>("Stokes.InnerIter"), P.get<double>("Stokes.OuterTol")),
       smoother_(1.0), coarsesolver_( ssorom_, 500, P.get<double>("Stokes.InnerTol")),
       MGsolver_( smoother_, coarsesolver_, P.get<int>("Stokes.InnerIter"), ( P.get<int>("Stokes.StokesMethod") == 500101)?-1:P.get<double>("Stokes.InnerTol")),
@@ -966,14 +973,14 @@ StokesSolverBaseCL* StokesSolverFactoryObsoleteCL<StokesT, ProlongationVelT, Pro
     switch (P_.template get<int>("Stokes.StokesMethod"))
     {
         case 500000 :
-            stokessolver = new  UzawaSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
+            stokessolver = new  UzawaSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.Tau"));
             break;
         case 500100 :
             stokessolver = new  UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, Stokes_.prM.Data.GetFinest(),
-                P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
+                P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.Tau"));
             break;
         case 501101 :
-            stokessolver = new  UzawaSolver2ModifiedCL<ISMGPreCL, MGPCT>( ismgpcp_, MGpc_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Misc.Tau"));
+            stokessolver = new  UzawaSolver2ModifiedCL<ISMGPreCL, MGPCT>( ismgpcp_, MGpc_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"), P_.template get<double>("Stokes.Tau"));
             break;
         case 510000 :
             stokessolver = new  PSchurSolverCL<PCG_SsorCL>( PCGsolver_, Stokes_.prM.Data.GetFinest(), P_.template get<int>("Stokes.OuterIter"), P_.template get<double>("Stokes.OuterTol"));

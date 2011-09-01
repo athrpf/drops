@@ -86,6 +86,8 @@ class ExchangeDataSendCL
     // Send data to "toProc_" (nonblocking, asynchronous)
     template <typename T>
     inline ProcCL::RequestT Isend(const std::valarray<T>&, int tag, Ulint offset) const;
+    // Send data to "toProc_" (nonblocking, asynchronous)
+    inline ProcCL::RequestT Isend(const double*, int tag, Ulint offset) const;
 };
 
 /****************************************************************************

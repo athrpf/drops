@@ -400,7 +400,6 @@ int main (int argc, char** argv)
         // ---------------------------------------------------------------------
         std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
         timer.Reset();
-        std::cout << "VORHER\n";
         // Create new tetrahedra
         for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
             std::cout << " refine (" << ref << ")\n";
