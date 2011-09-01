@@ -1,179 +1,156 @@
 {
-	//#################################
-	//=============================================================
-	//    DROPS parameter file for poissonP{1,2}
-	//    simulation of poisson problem
-	//=============================================================
-	// Options for the iterative Solver
-	//#######################################
-	"Poisson":
-	{ 
-		"PcIter":		1, 	 //inactive (former: iterations of the preconditioner)
-		"PcTol":		0.1, 	 //inactive (former: tolerance of the preconditioning solve)
-		"Iter":		200, 	 //number of iterations of the iterativ solver
-		"Restart":		100, 	 //used for GMRES: a possible krylov-space uses only as
-		// many vectors to construct the new krylov space
-		"RelativeErr":		0, 	 //use relative tolerances (otherwise absolute) 1 = true, 0 = false
-		"Tol":		1e-10, 	 //(relative/absolute) tolerance of iterative method
-		"Method":		302, 	 //Methods describes Solver (first digit) + Preconditioner (last two digits)
-		// First digit:
-		//           1XX : Multigrid
-		//           2XX : Prec. CG
-		//           3XX : GMRES
-		// last two digits: (Smoother + Coarse Solver[only for MG])
-		//           X02 : Jacobi     + SSOR
-		//           X03 : SSOR       + SSOR
-		//           X04 : GS         + SSOR
-		//           X05 : SGS        + SSOR
-		//           X06 : SOR        + SSOR
-		// BUT it exist only the following combinations:
-		// 102,103,104,105,106,203,302,303
-		"SmoothingSteps":		1, 	 //for Multigrid: number of Smoothing steps;
-		"NumLvl":		-1, 	 //for Multigird: number of used levels (-1 = all)
-		"Relax":		1, 	 //Relaxation factor
-		"SolutionIsKnown":		1 	 //Is the solution known/can we measure an exact error? 1 = true, 0 = false
-	},
+    //#################################
+    //=============================================================
+    //    DROPS parameter file for poissonP{1,2}
+    //    simulation of poisson problem
+    //=============================================================
+    // Options for the iterative Solver
+    //#######################################
+    "Poisson":
+    {
+        "PcIter":           1,      //inactive (former: iterations of the preconditioner)
+        "PcTol":            0.1,    //inactive (former: tolerance of the preconditioning solve)
+        "Iter":             200,    //number of iterations of the iterativ solver
+        "Restart":          100,    //used for GMRES: a possible krylov-space uses only as
+            // many vectors to construct the new krylov space
+        "RelativeErr":      0,      //use relative tolerances (otherwise absolute) 1 = true, 0 = false
+        "Tol":              1e-10,  //(relative/absolute) tolerance of iterative method
+        "Method":           302,    //Methods describes Solver (first digit)
+            //+ Preconditioner (last two digits)
+            // First digit:
+            //           1XX : Multigrid
+            //           2XX : Prec. CG
+            //           3XX : GMRES
+            // last two digits: (Smoother + Coarse Solver[only for MG])
+            //           X02 : Jacobi     + SSOR
+            //           X03 : SSOR       + SSOR
+            //           X04 : GS         + SSOR
+            //           X05 : SGS        + SSOR
+            //           X06 : SOR        + SSOR
+            // BUT it exist only the following combinations:
+            // 102,103,104,105,106,203,302,303
+        "SmoothingSteps":   1,   //for Multigrid: number of Smoothing steps;
+        "NumLvl":           -1,  //for Multigird: number of used levels (-1 = all)
+        "Relax":            1,   //Relaxation factor
+        "SolutionIsKnown":  1    //Is the solution known/can we measure an exact error? 1 = true, 0 = false
+    },
 
-	//#######################################
-	// Functions and Coefficients that define the continuous problem:
-	// du/dt - a laplace u + b grad u + q u = f 
-	// on Domain (s. DomainCond) + bound. cond. (s. DomainCond)
-	// the coefficients are set with strings which correspond to 
-	// functions of a container. The given ones used here are 
-	// defined in poissonCoeff.cpp
-	// In this concrete example we are only interested in an unsteady 
-	// solution, we have no convection, no reaction and a given solution.
-	//############################################
-	"PoissonCoeff":
-	{ 
-		"Diffusion":		1, 	 //Diffusion coefficient
-		// -> Here: a = 1
-		"Reaction":		"Example2_Reaction", 	 //Reaction term [q] with the name "Example1_Reaction"
-		// -> Here: q = 0
-		"Solution":		"Example2_Solution", 	 //Solution of poisson problem [u] has the name "Example1_Solution"
-		// -> Here: u = exp(t)*exp(x+y+z)
-		"Source":		"Example2_Source", 	 //Right hand side of PDE [f]
-		// -> Here: f = -2 exp(t)*(exp(x+y+z)
-		"Flowfield":		"Example2_Flowfield", 	 //Convection velocity of PDE [b]
-		// -> Here: b = (0,0,0)
-		"InitialVal":		"Example2_Solution",		// -> Here: u(t=0) = exp(x+y+z)
- 	 //Initial value of the pde [u(t=0)]
-		"Stabilization":      0
-	},
+    //#######################################
+    // Functions and Coefficients that define the continuous problem:
+    // du/dt - a laplace u + b grad u + q u = f
+    // on Domain (s. DomainCond) + bound. cond. (s. DomainCond)
+    // the coefficients are set with strings which correspond to
+    // functions of a container. The given ones used here are
+    // defined in poissonCoeff.cpp
+    // In this concrete example we are only interested in an unsteady
+    // solution, we have no convection, no reaction and a given solution.
+    //############################################
+    "PoissonCoeff":
+    {
+        "Diffusion":     1,                       //Diffusion coefficient
+            // -> Here: a = 1
+        "Reaction":      "Example2_Reaction",     //Reaction term [q] with the name "Example1_Reaction"
+            // -> Here: q = 0
+        "Solution":      "Example2_Solution",     //Solution of poisson problem [u] has the name "Example1_Solution"
+            // -> Here: u = exp(t)*exp(x+y+z)
+        "Source":        "Example2_Source",       //Right hand side of PDE [f]
+            // -> Here: f = -2 exp(t)*(exp(x+y+z)
+        "Flowfield":     "Example2_Flowfield",    //Convection velocity of PDE [b]
+            // -> Here: b = (0,0,0)
+        "InitialVal":    "Example2_Solution",     // -> Here: u(t=0) = exp(x+y+z)
+            //Initial value of the pde [u(t=0)]
+        "Stabilization":      0
+    },
 
-	//############################################
-	// Description of Geometry and mesh parameters
-	// and Boundary conditions
-	//###################################################
-	"DomainCond":
-	{ 
-		"RefineSteps":		4, 	 //initial refinement: how often is the mesh refined
-		// -> Here: four times refinement
-		"GeomType":		1, 	 //specifies the used geometry:
-		// 0=ReadMeshBuilder (from file)
-		// 1=BrickBuilder (a cuboid)
-		// 2=CavityBuilder (a cuboid cut away from a cuboid)
-		// 3=LBuilder
-		// 4=BBuilder
-		// -> Here: Brickbuilder
-		"InitialFile":		"none", 	 //file prefix when reading data for initial condition
-		// -> Here: no initial data is read from outside
-		"MeshFile":		"1x1x1@1x1x1", 	 //mesh file (created by GAMBIT or NETGEN, FLUENT/UNS format)
-		// or (in case of the BrickBuilder:)
-		// dimensions of a cuboid (e.g. AxBxC@DxExF) with edge 
-		// sizes A,B and C in x,y,z direction and a partition into 
-		// D/E/F cuboids in x/y/z direction (for initial mesh)
-		// Note that the Brickbuilder genenrates 6 Boundary domains
-		// with the order: b.dom. 1 has normal in neg. x direction
-		// b.dom. 2 has normal in pos. x direction
-		// b.dom. 3 has normal in neg. y direction, etc..
-		// -> Here: a cube.
-		"BoundaryType":		"2!2!2!2!2!2", 	 //Boundary conditions for each boundary domain
-		// are prescribes by a type and a function. Thus
-		// each boundary domain gets an index.
-		// the '!' is the delimiter between those indices.
-		// The following indices are allowed: 
-		// Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, 
-		// NatBC= 23, NoBC= 98, UndefinedBC_= 99 
-		// -> Here: all boundaries are dirichlet boundaries.
-		"BoundaryFncs":		"Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution"		// For each boundary domain take a string which describes 
-		// a function of a function container (s. PoissonCoeff-sect.)
-		// -> Here: all boundaries have dirichlet value exp(t)exp(x+y+z) (s. solution).
+    //############################################
+    // Description of Geometry and mesh parameters
+    // and Boundary conditions
+    //###################################################
+    "DomainCond":
+    {
+        "RefineSteps":      4,
+            //initial refinement: how often is the mesh refined
+            // -> Here: four times refinement
+        "GeomType":     1,
+            //specifies the used geometry:
+            // 0=ReadMeshBuilder (from file)
+            // 1=BrickBuilder (a cuboid)
+            // 2=CavityBuilder (a cuboid cut away from a cuboid)
+            // 3=LBuilder
+            // 4=BBuilder
+            // -> Here: Brickbuilder
+        "InitialFile":      "none",
+            //file prefix when reading data for initial condition
+            // -> Here: no initial data is read from outside
+        "MeshFile":     "1x1x1@1x1x1",
+            //mesh file (created by GAMBIT or NETGEN, FLUENT/UNS format)
+            // or (in case of the BrickBuilder:)
+            // dimensions of a cuboid (e.g. AxBxC@DxExF) with edge
+            // sizes A,B and C in x,y,z direction and a partition into
+            // D/E/F cuboids in x/y/z direction (for initial mesh)
+            // Note that the Brickbuilder genenrates 6 Boundary domains
+            // with the order: b.dom. 1 has normal in neg. x direction
+            // b.dom. 2 has normal in pos. x direction
+            // b.dom. 3 has normal in neg. y direction, etc..
+            // -> Here: a cube.
+        "BoundaryType":     "2!2!2!2!2!2",
+            //Boundary conditions for each boundary domain
+            // are prescribes by a type and a function. Thus
+            // each boundary domain gets an index.
+            // the '!' is the delimiter between those indices.
+            // The following indices are allowed:
+            // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
+            // NatBC= 23, NoBC= 98, UndefinedBC_= 99
+            // -> Here: all boundaries are dirichlet boundaries.
+        "BoundaryFncs":     "Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution!Example2_Solution"
+            // For each boundary domain take a string which describes
+            // a function of a function container (s. PoissonCoeff-sect.)
+            // -> Here: all boundaries have dirichlet value exp(t)exp(x+y+z) (s. solution).
 
-	},
+    },
 
-	//###################################################
-	// Time Discretization
-	//################################################
-	"Time":
-	{ 
-		"StepSize":		0.01, 	 //time step size
-		"NumSteps":		100, 	 //number of timesteps. -> Here: >0, i.e. instationary setup
-		"Scheme":		1, 	 //time disc. method: 1= theta scheme, 2=fractional step
-		"Theta":		1, 	 //For theta scheme: parameter theta
-		"Convection":		0 	 //Do we have convection? -> Here: no
-	},
+    //###################################################
+    // Time Discretization
+    //################################################
+    "Time":
+    {
+        "StepSize":     0.01,   //time step size
+        "NumSteps":     100,    //number of timesteps. -> Here: >0, i.e. instationary setup
+        "Scheme":       1,      //time disc. method: 1= theta scheme, 2=fractional step
+        "Theta":        1,      //For theta scheme: parameter theta
+        "Convection":   0       //Do we have convection? -> Here: no
+    },
 
-	//################################################
-	// experimental conditions
-	// coefficients which are used by some
-	// function for the description of the
-	// pde. 
-	// -> Here: not active
-	//###############################
-	"Exp":
-	{ 
-		"Heat":		5960, 	 //-> Here: not active
-		"Rho":		866, 	 //-> Here: not active
-		"Mu":		0.001732, 	 //-> Here: not active
-		"Cp":		1500, 	 //-> Here: not active
-		"Lambda":		0.26 	 //-> Here: not active
-	},
+    //#################################
+    // Error estimator
+    // For stationary cases poissonP1
+    // is also able to estimate the
+    // error and refine adaptively
+    //#################################
+    "Err":
+    {
+        "DoErrorEstimate":      0,      //Do ErrorEstimate at all? 1 = true, 0 = false
+        "RelReduction":         0.1,    //relative error reduction that should be achieved
+        "DoMark":               1,      //Mark Elements (and refine adaptively)? 1 = true, 0 = false
+        "MinRatio":             0,      //every element which has a larger error than this fraction
+                                        //times the error of the worst element is marked
+        "Threshold":            0.6,    //error of marked elements should be at least this
+                                        //fraction of the total estimated error
+        "Meas":                 0.875,
+        "NumRef":               2       //number of adaptive refinements
+    },
 
-	//###############################
-	// Ensight output parameters
-	// for visualization with ensight
-	//#################################
-	"Ensight":
-	{ 
-		"EnsightOut":		0, 	 //Use Ensight output?
-		"EnsCase":		"FilmTemp", 	 //name of Ensight Case (filename prefix)
-		"EnsDir":		"ensight", 	 //local directory for Ensight files (has to exist already)
-		"GeomName":		"test", 	 //name for the geometry (filename prefix)
-		"MasterOut":		1, 	 //only master writes out ensight files (for parallel)
-		"Binary":		1 	 //write out ensight files in binary format
-	},
-
-	//#################################
-	// Error estimator     
-	// For stationary cases poissonP1
-	// is also able to estimate the 
-	// error and refine adaptively
-	//#################################
-	"Err":
-	{ 
-		"DoErrorEstimate":		0, 	 //Do ErrorEstimate at all? 1 = true, 0 = false
-		"RelReduction":		0.1, 	 //relative error reduction that should be achieved
-		"DoMark":		1, 	 //Mark Elements (and refine adaptively)? 1 = true, 0 = false
-		"MinRatio":		0, 	 //every element which has a larger error than this fraction
-		// times the error of the worst element is marked
-		"Threshold":		0.6, 	 //error of marked elements should be at least this
-		// fraction of the total estimated error
-		"Meas":		0.875,
-		"NumRef":		2 	 //number of adaptive refinements
-	},
-
-	//#################################
-	// VTK output parameters
-	// for visualization with 
-	// VTK/Paraview
-	//#################################
-	"VTK":
-	{ 
-		"VTKOut":		1, 	 //Use VTK output?
-		"VTKDir":		"vtk", 	 //local directory for vtk files
-		"VTKName":		"poisson_ex2_", 	 //name of vtk files (filename prefix)
-		"Binary":		0 	 //write out VTK files in binary format
-	}
+    //#################################
+    // VTK output parameters
+    // for visualization with
+    // VTK/Paraview
+    //#################################
+    "VTK":
+    {
+        "VTKOut":       1,              //Use VTK output?
+        "VTKDir":       "vtk",          //local directory for vtk files
+        "VTKName":      "poisson_ex2_", //name of vtk files (filename prefix)
+        "Binary":       0               //write out VTK files in binary format
+    }
 
 }
