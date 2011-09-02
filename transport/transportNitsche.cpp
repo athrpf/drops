@@ -749,7 +749,7 @@ void TransportP1XCL::SetupInstatMixedMassMatrix(MLMatDescCL& matM,
 
 
 
-/// compute \$f \left( \int_{\Gamma} [c_T]^2 dx \right)^{\frac12} \$f
+/// compute \f$ \left( \int_{\Gamma} [c_T]^2 dx \right)^{\frac12} \f$
 double TransportP1XCL::Interface_L2error() const
 {
     const IdxDescCL &RowIdx = idx.GetFinest(); 

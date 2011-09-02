@@ -441,7 +441,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
 
-    const int n= std::atoi( P.get<std::string>("DomainCond.MeshFile").c_str());
+    const int n=  P.get<int>("DomainCond.MeshFile");
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
 
     const DROPS::BndCondT bc[6]=

@@ -145,16 +145,6 @@
                 "Visc":                 1e-05
         },
 
-        "Ensight":
-        {
-                "EnsightOut":           0,
-                "EnsCase":              "risingbubble_butanol",
-                "EnsDir":               "ensight",
-                "Binary":               0,
-                "MasterOut":            1,
-                "GeomName":             "Brick"
-        },
-
         "VTK":
         {
 

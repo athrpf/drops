@@ -742,7 +742,7 @@ void Ensight6OutCL::putVector( const DiscVecT& v, std::string varName)
     time. The template parameter DiscScalT describe the finite element function.
     \param fileName name of the file
     \param v        finite element function
-    \param t        discrete time
+    \param varName  Name of vector
 */
 {
     const MultiGridCL& mg= v.GetMG();

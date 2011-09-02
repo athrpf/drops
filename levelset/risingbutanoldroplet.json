@@ -156,19 +156,6 @@
 		"Visc":		1e-5
 	},
 
-	"Ensight":
-	{
-		"_comment":
-"# Ensight settings",
-
-		"EnsightOut":		0,
-		"EnsCase":		"brick",
-		"EnsDir":		"ensight",
-		"Binary":		0,
-		"MasterOut":		1,
-		"GeomName":		"Brick"
-	},
-
 	"VTK":
 	{
 		"_comment":

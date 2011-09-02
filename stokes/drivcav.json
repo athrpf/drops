@@ -61,14 +61,14 @@
 		"BoundaryFncs":		"VecZero!VecZero!VecZero!VecZero!VecZero!Inflow_drivcav_v2" 	 //Two versions of inflow condition
 	},
 
-	// Ensight settings
-	"Ensight":
-	{ 
-		"EnsightOut":		1, 	 //Ensight output
-		"EnsCase":		"cavity", 	 //name of Ensight Case
-		"EnsDir":		"ensight", 	 //local directory for Ensight files
-		"GeomName":		"cave", 	 //name for the geometry
-		"MasterOut":		1, 	 //only master writes out ensight files
-		"Binary":		1 	 //write out ensight files in binary format
+	"VTK":
+	{
+		"_comment":
+"#VTK output",
+
+		"VTKOut":		1,
+		"VTKDir":		"vtk",
+		"VTKName":		"cavity",
+		"Binary":		1
 	}
 }
