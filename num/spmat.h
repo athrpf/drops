@@ -43,7 +43,6 @@
 #ifdef _PAR
 # include "parallel/parallel.h"
 #endif
-#include "misc/ScopeTimer.h"
 
 
 namespace DROPS
@@ -522,19 +521,14 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 #pragma omp for
     for (size_t i= 0; i < block_rows; ++i)
         BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
-<<<<<<< HEAD
 
     inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
 #pragma omp barrier
 #pragma omp master
     _mat->num_nonzeros( rb[_rows]);
 #pragma omp barrier
-=======
-    _mat->num_nonzeros( rb[_rows]);
->>>>>>> master
 
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
-
     std::vector<typename BlockTraitT::sort_pair_type> pv;
 #pragma omp for
     for (size_t i= 0; i < block_rows; ++i) {
@@ -1131,7 +1125,6 @@ template <typename T>
 SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
                                                  double coeffB, const SparseMatBaseCL<T>& B)
 {
-    ScopeTimerCL timer_main("LinComb");
     Assert( A.num_rows()==B.num_rows() && A.num_cols()==B.num_cols(),
             "LinComb: incompatible dimensions", DebugNumericC);
 
@@ -1332,7 +1325,8 @@ BBTDiag (const SparseMatBaseCL<T>& B /*, const VectorBaseCL<T>& Mdiaginv*/)
     }
     return ret;
 }
-/*
+
+
 // y= A*x
 // fails, if num_rows==0.
 // Assumes, that none of the arrays involved do alias.
@@ -1345,31 +1339,6 @@ y_Ax(T* __restrict y,
      const size_t* __restrict Acol,
      const T* __restrict x)
 {
-    T sum;
-    size_t rowend;
-    size_t nz= 0;
-    do {
-        rowend= *++Arow;
-        sum= T();
-        for (; nz<rowend; ++nz)
-            sum+= (*Aval++)*x[*Acol++];
-        (*y++)= sum;
-    } while (--num_rows > 0);
-}
-*/
-// y= A*x
-// fails, if num_rows==0.
-// Assumes, that none of the arrays involved do alias.
-template <typename T>
-inline void
-y_Ax(T* __restrict y,
-     size_t num_rows,
-     const T* __restrict Aval,
-     const size_t* __restrict Arow,
-     const size_t* __restrict Acol,
-     const T* __restrict x)
-{
-    ScopeTimerCL timer_main("y_Ax");
     T sum;
     size_t rowend, rowbeg;
     size_t nz= 0;
@@ -1380,12 +1349,11 @@ y_Ax(T* __restrict y,
         rowend = Arow[i+1];
         rowbeg = Arow[i];
         for (nz=rowbeg; nz<rowend; ++nz)
-        {
             sum += Aval[nz] * x[Acol[nz]];
-        }
         y[i] = sum;
     }
 }
+
 
 template <typename _MatEntry, typename _VecEntry>
 VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
@@ -1414,7 +1382,6 @@ y_ATx(T* __restrict y,
      const size_t* __restrict Acol,
      const T* __restrict x)
 {
-    ScopeTimerCL timer_main("y_ATx");
     size_t rowend;
     size_t nz= 0;
     do {

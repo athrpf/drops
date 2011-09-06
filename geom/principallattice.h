@@ -99,7 +99,12 @@ class PrincipalLatticeCL
 
     ///\brief Access the principal lattice with n intervals on each edge (singleton pattern)
     static const PrincipalLatticeCL& instance (Uint n)
-        { return is_memoized( n) ? read_cache( n) : memoize( n); }
+        {
+    	const PrincipalLatticeCL* tmp;
+#pragma omp critical
+    	tmp = is_memoized( n) ? &read_cache( n) : &memoize( n);
+
+    	return *tmp;}//is_memoized( n) ? read_cache( n) : memoize( n); }
 };
 
 extern const size_t p1_dof_on_lattice_2[4];  ///< For vertex i (in 0..3) as counted in topo.h, p1_dof_on_lattice_2[i] is the number of the vertex in the principal lattice of order 2.
