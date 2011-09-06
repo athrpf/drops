@@ -313,8 +313,8 @@ struct BlockTraitsCL
     static const Uint num_cols= BlockT::num_cols; ///< Number of columns of one block
     static const bool no_reuse= true; ///< False, if the sparsity-pattern can be reused with this block-type
 
-    ///\brief Computes the beginning of double-valued rows in the matrix for one block-row
-    static inline void row_begin ( size_t*, size_t); // not defined
+    ///\brief Computes the number of non-zeroes for each row in one block-row
+    static inline void row_nnz ( size_t*, size_t, size_t); // not defined
     ///\brief Inserts one block-row in the form of double-valued rows into the matrix
     template <class Iter>
     static inline void insert_block_row (Iter, Iter, const size_t*, size_t*, double*); // not defined
@@ -334,8 +334,8 @@ struct BlockTraitsCL<double>
     static const Uint num_cols= 1;
     static const bool no_reuse= false;
 
-    static inline void row_begin (size_t* prev_row_end, size_t num_blocks)
-        { prev_row_end[1]= num_blocks; }
+    static inline void row_nnz (size_t* row_nnz_ar, size_t row, size_t num_blocks)
+        { row_nnz_ar[row]= num_blocks; }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
         for (size_t j= rb[0]; begin != end; ++begin, ++j) {
@@ -363,9 +363,9 @@ struct BlockTraitsCL< SMatrixCL<Rows, Cols> >
     static const Uint num_cols= Cols;
     static const bool no_reuse= true;
 
-    static inline  void row_begin (size_t* prev_row_end, size_t num_blocks) {
+    static inline  void row_nnz (size_t* row_nnz_ar, size_t row, size_t num_blocks) {
         for (Uint k= 0; k < num_rows; ++k)
-            prev_row_end[k + 1]= num_cols*num_blocks;
+            row_nnz_ar[num_rows*row + k]= num_cols*num_blocks;
     }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
@@ -396,9 +396,9 @@ struct BlockTraitsCL< SDiagMatrixCL<Rows> >
     static const Uint num_cols= Rows;
     static const bool no_reuse= true;
 
-    static inline  void row_begin (size_t* prev_row_end, size_t num_blocks) {
+    static inline  void row_nnz (size_t* row_nnz_ar, size_t row, size_t num_blocks) {
         for (Uint k= 0; k < num_rows; ++k)
-            prev_row_end[k + 1]= num_blocks;
+            row_nnz_ar[num_rows*row + k]= num_blocks;
     }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
@@ -492,6 +492,8 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 {
     if (_reuse) return;
 
+    Assert( _rows%BlockTraitT::num_rows == 0, DROPSErrCL( "SparseMatBuilderCL::Build: Number of rows does not match block-structure.\n"), DebugNumericC);
+
     const size_t block_rows= _rows/BlockTraitT::num_rows;
     _mat->num_rows( _rows);
     _mat->num_cols( _cols);
@@ -504,8 +506,7 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     {
 #       pragma omp for
         for (size_t i= 0; i < block_rows; ++i)
-            BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
-
+            BlockTraitT::row_nnz( rb + 1, i, _coupl[i].size());
         inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
 #       pragma omp barrier
 #       pragma omp master
