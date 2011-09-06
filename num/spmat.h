@@ -245,28 +245,12 @@ inline T KahanInnerProd( const Cont& a, const Cont&b, Iterator firstIdx, const I
     return sum;
 }
 
-template<typename iterator>
-  iterator*
-  equal_split (iterator begin, iterator end, int num_threads, iterator* split_begin)
-  {
-    Assert( num_threads > 0, DROPSErrCL("equal_split: num_threads must be positive.\n"), DebugNumericC);
-    const size_t chunk_size= (end - begin)/num_threads;
-    const size_t remainder = (end - begin)%num_threads;
-
-    iterator s= begin;
-    *split_begin= begin;
-    for (size_t i= 0; i < static_cast<size_t>( num_threads); ++i) {
-        s+= i < remainder ? chunk_size + 1 : chunk_size;
-        *++split_begin= s;
-    }
-    return split_begin;
-  }
-
-/// \brief Performs the std::partial_sum in parallel 
+/// \brief Performs the std::partial_sum in parallel
 /// Can be used with any number of threads in a surrounding parallel region.
 /// \param t_sum Array of size omp_num_threads(); used internally.
 template<typename iterator>
-void inplace_parallel_partial_sum (iterator begin, iterator end, iterator t_sum)
+void inplace_parallel_partial_sum (iterator begin, iterator end,
+    typename std::iterator_traits<iterator>::value_type* const t_sum)
 {
     if (begin == end)
         return;
@@ -351,7 +335,7 @@ struct BlockTraitsCL<double>
     static const bool no_reuse= false;
 
     static inline void row_begin (size_t* prev_row_end, size_t num_blocks)
-        { prev_row_end[1]= /*prev_row_end[0] + */num_blocks; }
+        { prev_row_end[1]= num_blocks; }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
         for (size_t j= rb[0]; begin != end; ++begin, ++j) {
@@ -381,7 +365,7 @@ struct BlockTraitsCL< SMatrixCL<Rows, Cols> >
 
     static inline  void row_begin (size_t* prev_row_end, size_t num_blocks) {
         for (Uint k= 0; k < num_rows; ++k)
-            prev_row_end[k + 1]= /*prev_row_end[k] +*/ num_cols*num_blocks;
+            prev_row_end[k + 1]= num_cols*num_blocks;
     }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
@@ -414,7 +398,7 @@ struct BlockTraitsCL< SDiagMatrixCL<Rows> >
 
     static inline  void row_begin (size_t* prev_row_end, size_t num_blocks) {
         for (Uint k= 0; k < num_rows; ++k)
-            prev_row_end[k + 1]= /*prev_row_end[k] +*/ num_blocks;
+            prev_row_end[k + 1]= num_blocks;
     }
     template <class Iter>
     static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
@@ -516,33 +500,33 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     rb[0]= 0;
 
     size_t* t_sum= new size_t[omp_get_max_threads()];
-#pragma omp parallel
-{
-#pragma omp for
-    for (size_t i= 0; i < block_rows; ++i)
-        BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
+#   pragma omp parallel
+    {
+#       pragma omp for
+        for (size_t i= 0; i < block_rows; ++i)
+            BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].size());
 
-    inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
-#pragma omp barrier
-#pragma omp master
-    _mat->num_nonzeros( rb[_rows]);
-#pragma omp barrier
+        inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
+#       pragma omp barrier
+#       pragma omp master
+        _mat->num_nonzeros( rb[_rows]);
+#       pragma omp barrier
 
-#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
-    std::vector<typename BlockTraitT::sort_pair_type> pv;
-#pragma omp for
-    for (size_t i= 0; i < block_rows; ++i) {
-        pv.resize( _coupl[i].size());
-        std::transform( _coupl[i].begin(), _coupl[i].end(), pv.begin(), &BlockTraitT::pair_copy);
-        std::sort( pv.begin(), pv.end(), less1st<typename BlockTraitT::sort_pair_type>());
-        BlockTraitT::insert_block_row( pv.begin(), pv.end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
-        // std::cout << _coupl[i].load_factor() << '\t' << std::setfill('0') << std::setw(3) <<_coupl[i].size() << '\n';
-    }
-}
-#else
-    for (size_t i= 0; i < block_rows; ++i)
-        BlockTraitT::insert_block_row( _coupl[i].begin(), _coupl[i].end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
-#endif
+#       if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+            std::vector<typename BlockTraitT::sort_pair_type> pv;
+#           pragma omp for
+            for (size_t i= 0; i < block_rows; ++i) {
+                pv.resize( _coupl[i].size());
+                std::transform( _coupl[i].begin(), _coupl[i].end(), pv.begin(), &BlockTraitT::pair_copy);
+                std::sort( pv.begin(), pv.end(), less1st<typename BlockTraitT::sort_pair_type>());
+                BlockTraitT::insert_block_row( pv.begin(), pv.end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
+                // std::cout << _coupl[i].load_factor() << '\t' << std::setfill('0') << std::setw(3) <<_coupl[i].size() << '\n';
+            }
+#       else
+            for (size_t i= 0; i < block_rows; ++i)
+                BlockTraitT::insert_block_row( _coupl[i].begin(), _coupl[i].end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
+#       endif
+    } // end of omp parallel
     delete[] t_sum;
     delete[] _coupl;
     _coupl= 0;
@@ -564,9 +548,9 @@ private:
     size_t* _colind; ///< (nnz_ entries) column-number of corresponding entry in _val
     T*      _val;    ///< (nnz_ entries) the components of the matrix
 
-    void num_rows (size_t rows);
-    void num_cols (size_t cols);
-    void num_nonzeros (size_t nnz);
+    void num_rows (size_t rows);    ///< Set _rows and resize _rowbeg
+    void num_cols (size_t cols);    ///< Set _cols
+    void num_nonzeros (size_t nnz); ///< Set nnz_ and resize _colind and _val
 
 public:
     typedef T value_type;
@@ -1135,67 +1119,67 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     _rowbeg[0]= 0;
     size_t* t_sum= new size_t[omp_get_max_threads()];
 
-#pragma omp parallel
+#   pragma omp parallel
     {
-    // Compute the entries of _rowbeg (that is the number of nonzeros in each row of the result)
-    size_t i;
-    const size_t* rA;
-    const size_t* rB;
-#pragma omp for
-    for (size_t row= 0; row < A.num_rows(); ++row) {
-        i= 0;//row_beg( row);
-        rA= A.GetFirstCol( row);
-        rB= B.GetFirstCol( row);
-        const size_t* const rAend= A.GetFirstCol( row + 1);
-        const size_t* const rBend= B.GetFirstCol( row + 1);
-        for (; rA != rAend && rB != rBend; ++i)
-            if (*rB < *rA)
-                ++rB;
-            else if (*rA < *rB)
-                ++rA;
-            else {
-                ++rA;
-                ++rB;
-            }
-        _rowbeg[row + 1]= i + (rAend - rA) + (rBend - rB);
-    }
+        // Compute the entries of _rowbeg (that is the number of nonzeros in each row of the result)
+        size_t i;
+        const size_t* rA;
+        const size_t* rB;
+#       pragma omp for
+        for (size_t row= 0; row < A.num_rows(); ++row) {
+            i= 0;
+            rA= A.GetFirstCol( row);
+            rB= B.GetFirstCol( row);
+            const size_t* const rAend= A.GetFirstCol( row + 1);
+            const size_t* const rBend= B.GetFirstCol( row + 1);
+            for (; rA != rAend && rB != rBend; ++i)
+                if (*rB < *rA)
+                    ++rB;
+                else if (*rA < *rB)
+                    ++rA;
+                else {
+                    ++rA;
+                    ++rB;
+                }
+            _rowbeg[row + 1]= i + (rAend - rA) + (rBend - rB);
+        }
 
-    inplace_parallel_partial_sum( _rowbeg, _rowbeg + num_rows() + 1, t_sum); 
-#   pragma omp barrier
-#    pragma omp master
-        num_nonzeros( row_beg( num_rows()));
-#    pragma omp barrier
-    // Compute the entries of _colind, _val (actual merge).
-    size_t iA, iB;
+        inplace_parallel_partial_sum( _rowbeg, _rowbeg + num_rows() + 1, t_sum); 
+#       pragma omp barrier
+#       pragma omp master
+            num_nonzeros( row_beg( num_rows()));
+#       pragma omp barrier
+        // Compute the entries of _colind, _val (actual merge).
+        size_t iA, iB;
 
-#pragma omp for
-    for (size_t row= 0; row < A.num_rows(); ++row) { // same structure as above
-        i=    row_beg( row);
-        iA= A.row_beg( row);
-        iB= B.row_beg( row);
-        const size_t rAend= A.row_beg( row + 1),
-                     rBend= B.row_beg( row + 1);
-        for (; iA != rAend && iB != rBend; ++i)
-            if (B.col_ind( iB) < A.col_ind( iA)) {
-                _val[i]= coeffB*B._val[iB];
-                _colind[i]= B._colind[iB++];
-            }
-            else if (A.col_ind( iA) < B.col_ind( iB)) {
+        #pragma omp for
+        for (size_t row= 0; row < A.num_rows(); ++row) { // same structure as above
+            i=    row_beg( row);
+            iA= A.row_beg( row);
+            iB= B.row_beg( row);
+            const size_t rAend= A.row_beg( row + 1),
+                         rBend= B.row_beg( row + 1);
+            for (; iA != rAend && iB != rBend; ++i)
+                if (B.col_ind( iB) < A.col_ind( iA)) {
+                    _val[i]= coeffB*B._val[iB];
+                    _colind[i]= B._colind[iB++];
+                }
+                else if (A.col_ind( iA) < B.col_ind( iB)) {
+                    _val[i]= coeffA*A._val[iA];
+                    _colind[i]= A._colind[iA++];
+                }
+                else {
+                    _val[i]= coeffA*A._val[iA++] + coeffB*B._val[iB];
+                    _colind[i]= B._colind[iB++];
+                }
+            // At most one of A or B might have entries left.
+            std::copy( B._colind + iB, B._colind + rBend,
+                       std::copy( A._colind + iA, A._colind + rAend, _colind + i));
+            for (; iA < rAend; ++iA, ++i)
                 _val[i]= coeffA*A._val[iA];
-                _colind[i]= A._colind[iA++];
-            }
-            else {
-                _val[i]= coeffA*A._val[iA++] + coeffB*B._val[iB];
-                _colind[i]= B._colind[iB++];
-            }
-        // At most one of A or B might have entries left.
-        std::copy( B._colind + iB, B._colind + rBend,
-                   std::copy( A._colind + iA, A._colind + rAend, _colind + i));
-        for (; iA < rAend; ++iA, ++i)
-            _val[i]= coeffA*A._val[iA];
-        for (; iB < rBend; ++iB, ++i)
-            _val[i]= coeffB*B._val[iB];
-    }
+            for (; iB < rBend; ++iB, ++i)
+                _val[i]= coeffB*B._val[iB];
+        }
     } //end of omp parallel
     delete [] t_sum;
     return *this;
@@ -1340,15 +1324,13 @@ y_Ax(T* __restrict y,
      const T* __restrict x)
 {
     T sum;
-    size_t rowend, rowbeg;
-    size_t nz= 0;
+    size_t rowend, nz;
 
-#pragma omp parallel for private(sum, rowend, rowbeg, nz)
+#   pragma omp parallel for private(sum, rowend, nz)
     for (size_t i = 0; i < num_rows; i++){
         sum = 0.0;
         rowend = Arow[i+1];
-        rowbeg = Arow[i];
-        for (nz=rowbeg; nz<rowend; ++nz)
+        for (nz= Arow[i]; nz < rowend; ++nz)
             sum += Aval[nz] * x[Acol[nz]];
         y[i] = sum;
     }
