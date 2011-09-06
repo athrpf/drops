@@ -219,7 +219,7 @@ class NonlConvSystemAccumulator_P2CL : public TetraAccumulatorCL
 
     void visit (const TetraCL& sit);
 
-    TetraAccumulatorCL* clone (){ return new NonlConvSystemAccumulator_P2CL ( *this); };
+    TetraAccumulatorCL* clone (int /*tid*/) { return new NonlConvSystemAccumulator_P2CL ( *this); };
 };
 
 NonlConvSystemAccumulator_P2CL::NonlConvSystemAccumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff_, const MultiGridCL& MG_, const StokesBndDataCL& BndData_,
