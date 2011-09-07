@@ -160,6 +160,17 @@ MultiGridCL::MultiGridCL (const MGBuilderCL& Builder)
 #endif
 }
 
+void MultiGridCL::ClearTriangCache ()
+{
+    _TriangVertex.clear();
+    _TriangEdge.clear();
+    _TriangFace.clear();
+    _TriangTetra.clear();
+
+    for (std::map<int, ColorClassesCL*>::iterator it= _colors.begin(), end= _colors.end(); it != end; ++it)
+        delete it->second;
+    _colors.clear();
+}
 
 void MultiGridCL::CloseGrid(Uint Level)
 {
@@ -1238,105 +1249,116 @@ std::string PrioToString(Uint prio)
 }
 #endif
 
-void MultiGridCL::BuildIndependentTetras ( Uint level) const {
-#ifdef _PAR
-    ParTimerCL timer;
-#else
-    TimerCL timer;
-#endif
-    timer.Start();
 
-    const size_t triangTetraNum = GetTriangTetra().size( level);
+void ColorClassesCL::compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL begin,
+                                        MultiGridCL::const_TriangTetraIteratorCL end,
+                                        std::vector<TetraNumVecT>& neighbors)
+{
+    const size_t num_tetra= std::distance( begin, end);
 
-    // compute and store all corresponding vertices for every tetra
-    std::vector< const TetraCL* > tetraVec( triangTetraNum);
+    typedef std::set<size_t> TetraNumSetT;
+    typedef std::tr1::unordered_map<const VertexCL*, TetraNumSetT> VertexMapT;
+    VertexMapT vertexMap;
+    // Collect all tetras, that have vertex v in vertexMap[v].
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= begin; sit != end; ++sit)
+        for (int i= 0; i < 4; ++i)
+            vertexMap[sit->GetVertex( i)].insert( sit - begin);
 
-    typedef std::set<size_t> tetraNumbT;
-    typedef std::tr1::unordered_map< const VertexCL*, tetraNumbT> vertexMapT;
-
-    vertexMapT vertexMap( triangTetraNum);
-    vertexMapT::iterator JT;
-
-    const_TriangTetraIteratorCL sit = GetTriangTetraBegin( level);
-
-    // for each tetra the four vertices are stored
-    for( size_t k=0; k< triangTetraNum; ++k, ++sit) {
-        tetraVec[k] =  &(*sit);
-        for( int i=0; i<4; ++i)
-            vertexMap[ sit->GetVertex(i) ].insert(k);
-    }
-
-    // for every tetra compute and store all neighboring tetras in set
-    std::vector< tetraNumbT> Tetraliste( tetraVec.size() );
-
-    tetraNumbT::iterator tit;
-
-    #pragma omp parallel for private( tit)
-    for( int j=0; j< (int)tetraVec.size(); j++) //integer loop for openmp
-        for( int i=0; i<4; ++i) {
-            const tetraNumbT& tmpset = vertexMap.find( tetraVec[j]->GetVertex(i))->second; // list of all tetrahedra which are adjacent to vertex j
-            for ( tit = tmpset.begin(); tit != tmpset.end(); ++tit)
-                Tetraliste[j].insert( *tit);
+    // For every tetra j, store all neighboring tetras in neighbors[j].
+    std::vector<TetraNumSetT> neighborsets( num_tetra);
+#   pragma omp parallel
+    {
+#       pragma omp for
+        for (size_t j= 0; j < num_tetra; ++j)
+            for (int i= 0; i < 4; ++i) {
+                const TetraNumSetT& tetra_nums= vertexMap[(begin + j)->GetVertex( i)];
+                neighborsets[j].insert( tetra_nums.begin(), tetra_nums.end());
+            }
+#       pragma omp for
+        for (size_t j= 0; j < num_tetra; ++j) {
+            neighbors[j].resize( neighborsets[j].size());
+            std::copy( neighborsets[j].begin(), neighborsets[j].end(), neighbors[j].begin());
         }
-
-        vertexMap.clear();
-
-    // graph coloring algorithm
-    std::vector<int> colorlist( tetraVec.size(), 0); // vector for the color of every tetra
-
-    int color_max = 0, new_color = 0;
-
-    for( size_t j=0; j< tetraVec.size() ; j++){
-        new_color = 0;
-        std::set<int> forbidden_colors;
-
-        for( tit = Tetraliste[j].begin(); tit != Tetraliste[j].end(); ++tit){
-            if( *tit != j)
-                forbidden_colors.insert( colorlist[*tit]);
-        }
-
-        while( forbidden_colors.find( new_color) != forbidden_colors.end())
-            new_color++;
-
-        if( new_color > color_max)
-            color_max =  new_color;
-        colorlist[j] = new_color;
     }
-    Tetraliste.clear();
-
-    IndependentTetraCT graph( color_max+1);
-
-    for( size_t j=0; j< tetraVec.size(); j++ )
-        graph[colorlist[j]].push_back( tetraVec[j]);
-
-    colorlist.clear();
-    tetraVec.clear();
-
-    // detailed list of colored tetras
-    //for( size_t h = 0 ; h < Colors.size(); ++h)
-    //    std::cout << "Color " << h << " has " << Colors[h].size() << " tetras!" << std::endl;
-    //std::cout << std::endl;
-
-
-    // tetra sorting for better alignment in cache
-    #pragma omp parallel for
-    for( int j = 0; j < (int)graph.size(); ++j)
-        sort( graph[j].begin(), graph[j].end());
-
-    timer.Stop();
-    const double duration = timer.GetTime();
-
-    std::cout << "creating graph took " << duration << " seconds, use of " << graph.size() << " colors" << std::endl;
-
-    _graph[level] = graph;
 }
 
-const MultiGridCL::IndependentTetraCT& MultiGridCL::GetGraph( size_t lvl) const
+void ColorClassesCL::fill_pointer_arrays (
+    const std::vector<size_t>& color_sizes, const std::vector<int>& color,
+    MultiGridCL::const_TriangTetraIteratorCL begin, MultiGridCL::const_TriangTetraIteratorCL end)
 {
-	if( _graph.find( lvl) == _graph.end()) {
-		BuildIndependentTetras(lvl);
-	}
-	return (_graph[lvl]);
+    colors_.resize( color_sizes.size());
+    for (size_t j= 0; j < num_colors(); ++j)
+        colors_[j].reserve( color_sizes[j]);
+    const size_t num_tetra= std::distance( begin, end);
+    for (size_t j= 0; j < num_tetra; ++j)
+        colors_[color[j]].push_back( &*(begin + j));
+
+    // tetra sorting for better memory access pattern
+    #pragma omp parallel for
+    for (size_t j= 0; j < num_colors(); ++j)
+        sort( colors_[j].begin(), colors_[j].end());
+}
+
+void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIteratorCL begin,
+                                            MultiGridCL::const_TriangTetraIteratorCL end)
+{
+#   ifdef _PAR
+        ParTimerCL timer;
+#   else
+        TimerCL timer;
+#   endif
+        timer.Start();
+
+    const size_t num_tetra= std::distance( begin, end);
+
+    // Build the adjacency lists (a vector of neighbors for each tetra).
+    std::vector<TetraNumVecT> neighbors( num_tetra);
+    compute_neighbors( begin, end, neighbors);
+
+    // Color the tetras
+    std::vector<int> color( num_tetra, -1);
+    std::vector<size_t> size_of_color_partition;
+    std::vector<int> used_colors;
+    for (size_t j= 0; j < num_tetra; ++j) {
+        for (TetraNumVecT::iterator neigh_it= neighbors[j].begin(); neigh_it != neighbors[j].end(); ++neigh_it)
+            used_colors.push_back( color[*neigh_it]);
+        size_t c= 0; // Note that the undefined color -1 is ignored.
+        while (find( used_colors.begin(), used_colors.end(), c) != used_colors.end())
+            ++c;
+        if (c < size_of_color_partition.size()) {
+            color[j]= c;
+            ++size_of_color_partition[c];
+        }
+        else {
+            size_of_color_partition.push_back( 1); // Add new color with one use
+            color[j]= size_of_color_partition.size() - 1;
+        }
+        used_colors.clear();
+    }
+    neighbors.clear();
+
+    // Build arrays of pointers for the colors
+    fill_pointer_arrays( size_of_color_partition, color, begin, end);
+    color.clear();
+
+    // for (size_t j= 0; j < num_colors(); ++j)
+    //     std::cout << "Color " << j << " has " << colors_[j].size() << " tetras." << std::endl;
+    // std::cout << std::endl;
+
+    timer.Stop();
+    const double duration= timer.GetTime();
+    std::cout << "Creation of the tetra-coloring took " << duration << " seconds, " << num_colors() << " colors used." << '\n';
+}
+
+const ColorClassesCL& MultiGridCL::GetColorClasses (int Level) const
+{
+    if (Level < 0)
+        Level+= GetNumLevel();
+
+    if (_colors.find( Level) == _colors.end())
+        _colors[Level]= new ColorClassesCL( GetTriangTetraBegin( Level), GetTriangTetraEnd( Level));
+
+    return *_colors[Level];
 }
 
 } // end of namespace DROPS

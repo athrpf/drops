@@ -89,7 +89,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff,
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
     if ( omp_get_max_threads() > 1)
-        accus( MG.GetGraph( RowIdx->TriangLevel()));
+        accus( MG.GetColorClasses( RowIdx->TriangLevel()));
     else
         accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
 }
@@ -234,7 +234,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff
     TetraAccumulatorTupleCL accus;
     accus.push_back( &p1x_accu);
     if ( omp_get_max_threads() > 1)
-        accus( MG.GetGraph( RowIdx->TriangLevel()));
+        accus( MG.GetColorClasses( RowIdx->TriangLevel()));
     else
         accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
 
@@ -1505,7 +1505,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
     if ( omp_get_max_threads() > 1)
-    	accus( MG_.GetGraph( RowIdx.TriangLevel()));
+    	accus( MG_.GetColorClasses( RowIdx.TriangLevel()));
     else
         accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
     // time.Stop();
@@ -2248,7 +2248,7 @@ void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, cons
      TetraAccumulatorTupleCL accus;
      accus.push_back( &accu);
      if ( omp_get_max_threads() > 1)
-         accus( MG_.GetGraph( RowIdx.TriangLevel()));
+         accus( MG_.GetColorClasses( RowIdx.TriangLevel()));
      else
     	 accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
 }

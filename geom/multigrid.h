@@ -146,6 +146,8 @@ class BoundaryCL
 class LbIteratorCL;
 #endif
 
+class ColorClassesCL; ///< forward declaration of the partitioning of the tetras in a triangulation into color classes
+
 class MultiGridCL
 {
 
@@ -184,9 +186,6 @@ class MultiGridCL
     typedef TriangFaceCL::const_iterator   const_TriangFaceIteratorCL;
     typedef TriangTetraCL::const_iterator  const_TriangTetraIteratorCL;
 
-    /// \brief Storage of independend set of tetrahedra for assembling
-    typedef std::vector< std::vector< const TetraCL* > > IndependentTetraCT;
-
   private:
     BoundaryCL _Bnd;
     VertexCont _Vertices;
@@ -199,9 +198,9 @@ class MultiGridCL
     TriangFaceCL   _TriangFace;
     TriangTetraCL  _TriangTetra;
 
-    size_t     _version;                            // each modification of the multigrid increments this number
+    size_t         _version;                        // each modification of the multigrid increments this number
 
-    mutable std::map<size_t, IndependentTetraCT> _graph;    // colored graph on level
+    mutable std::map<int, ColorClassesCL*> _colors; // map: level -> Color-classes of the tetra for that level
 
 #ifdef _PAR
     bool killedGhostTetra_;                         // are there ghost tetras, that are marked for removement, but has not been removed so far
@@ -216,7 +215,7 @@ class MultiGridCL
     void AppendLevel     () { _Vertices.AppendLevel(); _Edges.AppendLevel(); _Faces.AppendLevel(); _Tetras.AppendLevel(); }
     void RemoveLastLevel () { _Vertices.RemoveLastLevel(); _Edges.RemoveLastLevel(); _Faces.RemoveLastLevel(); _Tetras.RemoveLastLevel(); }
 
-    void ClearTriangCache () { _TriangVertex.clear(); _TriangEdge.clear(); _TriangFace.clear(); _TriangTetra.clear(); _graph.clear(); }
+    void ClearTriangCache ();
 
     void RestrictMarks (Uint Level) { std::for_each( _Tetras[Level].begin(), _Tetras[Level].end(), std::mem_fun_ref(&TetraCL::RestrictMark)); }
     void CloseGrid     (Uint);
@@ -229,7 +228,8 @@ class MultiGridCL
     MultiGridCL (const MGBuilderCL& Builder);
     MultiGridCL (const MultiGridCL&); // Dummy
     // default ctor
-
+    ~MultiGridCL () // avoid leaking the ColorClasses.
+    { ClearTriangCache (); }
 #ifdef _PAR
     bool KilledGhosts()      const              /// Check if there are ghost tetras, that are marked for removement, but has not been removed so far
         { return killedGhostTetra_; }
@@ -320,7 +320,7 @@ class MultiGridCL
     Uint GetNumDistributedFaces(int Level=-1);                  // get number of faces on processor boundary
 #endif
 
-    const IndependentTetraCT& GetGraph( size_t lvl) const;
+    const ColorClassesCL& GetColorClasses (int Level=-1) const;
 
     bool IsSane (std::ostream&, int Level=-1) const;
 };
@@ -357,6 +357,39 @@ class PeriodicEdgesCL
     void AccumulateMFR( int lvl);
     /// print out list of identified edges for debugging
     void DebugInfo(std::ostream&);
+};
+
+/// \brief Storage of independend set of tetrahedra for assembling
+class ColorClassesCL
+{
+  public:
+    typedef std::vector<const TetraCL*> ColorClassT;
+    typedef std::vector<ColorClassT>::const_iterator const_iterator;
+
+  private:
+    std::vector<ColorClassT> colors_;
+
+    typedef std::vector<size_t> TetraNumVecT;
+
+    void compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL begin,
+                            MultiGridCL::const_TriangTetraIteratorCL end,
+                            std::vector<TetraNumVecT>& neighbors);
+    void fill_pointer_arrays (const std::vector<size_t>& color_sizes,
+        const std::vector<int>& color,
+        MultiGridCL::const_TriangTetraIteratorCL begin,
+        MultiGridCL::const_TriangTetraIteratorCL end);
+
+  public:
+    ColorClassesCL (MultiGridCL::const_TriangTetraIteratorCL begin,
+                    MultiGridCL::const_TriangTetraIteratorCL end)
+    { compute_color_classes( begin, end); }
+
+    void compute_color_classes (MultiGridCL::const_TriangTetraIteratorCL begin,
+                                MultiGridCL::const_TriangTetraIteratorCL end);
+
+    size_t num_colors () const { return colors_.size(); }
+    const_iterator begin () const { return colors_.begin(); }
+    const_iterator end   () const { return colors_.end(); }
 };
 
 

@@ -91,8 +91,8 @@ class AccumulatorTupleCL
     template <class ExternalIteratorCL>
     void operator() (ExternalIteratorCL begin, ExternalIteratorCL end);
 
-    /// \brief Calls the accumulators for each object by using a MultiGridCL::IndependentTetraCT.
-    void operator() (const MultiGridCL::IndependentTetraCT& graph);
+    /// \brief Calls the accumulators for each object by using a ColorClassesCL.
+    void operator() (const ColorClassesCL& colors);
 };
 
 template <class VisitedT>
@@ -118,20 +118,20 @@ void AccumulatorTupleCL<VisitedT>::operator() (ExternalIteratorCL begin, Externa
 }
 
 template<class VisitedT>
-void AccumulatorTupleCL<VisitedT>::operator() (const MultiGridCL::IndependentTetraCT& graph)
+void AccumulatorTupleCL<VisitedT>::operator() (const ColorClassesCL& colors)
 {
     begin_iteration();
 
     std::vector<ContainerT> clones( omp_get_max_threads());
     clone_accus( clones);
-    for( size_t i = 0 ; i < graph.size() ; ++i) {
+    for (ColorClassesCL::const_iterator cit= colors.begin(); cit != colors.end() ;++cit) {
 #       pragma omp parallel
         {
             const int t_id= omp_get_thread_num();
-            const size_t size= graph[i].size();
+            const ColorClassesCL::ColorClassT& cc= *cit;
 #           pragma omp for
-            for (size_t j= 0; j < size; ++j)
-                std::for_each( clones[t_id].begin(), clones[t_id].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *graph[i][j]));
+            for (size_t j= 0; j < cc.size(); ++j)
+                std::for_each( clones[t_id].begin(), clones[t_id].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *cc[j]));
         }
     }
     delete_clones(clones);

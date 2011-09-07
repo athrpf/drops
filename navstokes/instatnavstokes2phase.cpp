@@ -322,7 +322,7 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(MatrixCL& N, const VelVec
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
     if ( omp_get_max_threads() > 1)
-        accus( MG_.GetGraph( RowIdx.TriangLevel()));
+        accus( MG_.GetColorClasses( RowIdx.TriangLevel()));
     else
         accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
     // time.Stop();
