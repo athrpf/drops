@@ -84,8 +84,8 @@ class VTKOutCL
     void AppendTimecode( std::string&) const;
     /// Checks whether the file is open
     void CheckFile( const std::ofstream&) const;
-    /// Creates new file
-    void NewFile( /*TODO double time */bool writeDistribution);
+    /// Creates new file; writes timestep-info and (for parallel version only) writes a masterfile with distribution information
+    void NewFile( double time , bool writeDistribution=true);
     /// Puts the description header into the file
     void PutHeader();
     /// Puts the footer into the file
@@ -140,7 +140,7 @@ class VTKOutCL
     /// Writes out all registered objects.
     void Write ( double time, bool writeDistribution=true);
     /// \brief Puts geometry into the VTK file
-    void PutGeom( bool writeDistribution=true);
+    void PutGeom( double time, bool writeDistribution=true);
 
     /// \brief Writes scalar-valued variable into the file
     template <typename DiscScalT>
