@@ -44,7 +44,7 @@ lsshear: \
     ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o ../navstokes/instatnavstokes2phase.o \
     ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o \
     ../misc/bndmap.o ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o \
-    ../geom/bndScalarFunctions.o 
+    ../geom/bndScalarFunctions.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfTens: \
@@ -55,7 +55,7 @@ surfTens: \
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/MGsolver.o ../misc/bndmap.o \
     ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o \
     ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o \
-    ../geom/bndScalarFunctions.o 
+    ../geom/bndScalarFunctions.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prJump: \
@@ -66,7 +66,7 @@ prJump: \
     ../num/fe.o  ../out/ensightOut.o ../stokes/integrTime.o ../num/interfacePatch.o \
     ../levelset/surfacetension.o ../levelset/coupling.o ../geom/bndVelFunctions.o ../misc/bndmap.o \
     ../geom/principallattice.o ../geom/reftetracut.o ../geom/subtriangulation.o ../num/quadrature.o \
-    ../geom/bndScalarFunctions.o 
+    ../geom/bndScalarFunctions.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \

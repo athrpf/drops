@@ -1615,10 +1615,11 @@ void ParDirectDistanceCL::Perform()
 //-------------------
 
 /** Pass all necessary information to reparametrization class
-    \param mg       multi grid
-    \param phi      values of level set function
-    \param periodic periodic boundaries are used
-    \param bnd      boundary conditions for periodic boundaries
+    \param mg         multi grid
+    \param phi        values of level set function
+    \param periodic   periodic boundaries are used
+    \param bnd        boundary conditions for periodic boundaries
+    \param gatherPerp flag if perpendicular foots are to be gathered
 */
 ReparamCL::ReparamCL( MultiGridCL& mg, VecDescCL& phi, bool gatherPerp, bool periodic, const BndDataCL<>* bnd)
   : data_( mg, phi, gatherPerp, periodic, bnd)
@@ -1684,11 +1685,12 @@ void ReparamCL::Perform()
 
 
 /** Construct the reparametrization class. For method the following arguments are valid
-    \param mg       multi grid
-    \param phi      values of level set function
-    \param method   used methods to reparametrize a level set function
-    \param periodic periodic boundaries are used
-    \param bnd      boundary conditions for periodic boundaries
+    \param mg            multi grid
+    \param phi           values of level set function
+    \param method        used methods to reparametrize a level set function
+    \param periodic      periodic boundaries are used
+    \param bnd           boundary conditions for periodic boundaries
+    \param perDirections directions of periodicity
     \return pointer to a reparametrization class
 */
 std::auto_ptr<ReparamCL> ReparamFactoryCL::GetReparam( MultiGridCL& mg,

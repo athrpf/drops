@@ -36,6 +36,7 @@ VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint nums
 \param numsteps  number of time steps
 \param filename  prefix of all files (e.g. vtk/output)
 \param binary    Write out files in binary format.
+\param lvl       Multigrid level
 */
     : mg_(mg), timestep_(0), numsteps_(numsteps), descstr_(dataname),
         filename_(filename), binary_(binary), geomwritten_(false),
@@ -506,7 +507,6 @@ void VTKOutCL::WriteValues( const VectorBaseCL<float>& allData, const std::strin
 void VTKOutCL::PutGeom(double time, bool writeDistribution)
 /** At first the geometry is put into the VTK file. Therefore this procedure
     opens the file and writes description into the file.
-    \param time simulation time
     \param writeDistribution Flag indicator whether distribution-data should be written in the file (as CellData)
 */
 {

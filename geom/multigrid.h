@@ -184,6 +184,9 @@ class MultiGridCL
     typedef TriangFaceCL::const_iterator   const_TriangFaceIteratorCL;
     typedef TriangTetraCL::const_iterator  const_TriangTetraIteratorCL;
 
+    /// \brief Storage of independend set of tetrahedra for assembling
+    typedef std::vector< std::vector< const TetraCL* > > IndependentTetraCT;
+
   private:
     BoundaryCL _Bnd;
     VertexCont _Vertices;
@@ -196,14 +199,16 @@ class MultiGridCL
     TriangFaceCL   _TriangFace;
     TriangTetraCL  _TriangTetra;
 
-    size_t     _version;                            // each mudification of the multigrid increments this number
+    size_t     _version;                            // each modification of the multigrid increments this number
+
+    mutable std::map<size_t, IndependentTetraCT> _graph;    // colored graph on level
 
 #ifdef _PAR
     bool killedGhostTetra_;                         // are there ghost tetras, that are marked for removement, but has not been removed so far
     bool withUnknowns_;                             // are the unknowns on simplices
     std::list<TetraIterator> toDelGhosts_;
     bool EmptyLevel(Uint lvl)
-        { return _Vertices[lvl].empty()&&_Edges[lvl].empty()&&_Faces[lvl].empty()&&_Tetras[lvl].empty(); }
+        { return _Vertices[lvl].empty()&&_Edges[lvl].empty()&&_Faces[lvl].empty()&&_Tetras[lvl].empty();}
 #endif
 
     void PrepareModify   () { _Vertices.PrepareModify(); _Edges.PrepareModify(); _Faces.PrepareModify(); _Tetras.PrepareModify(); }
@@ -211,12 +216,14 @@ class MultiGridCL
     void AppendLevel     () { _Vertices.AppendLevel(); _Edges.AppendLevel(); _Faces.AppendLevel(); _Tetras.AppendLevel(); }
     void RemoveLastLevel () { _Vertices.RemoveLastLevel(); _Edges.RemoveLastLevel(); _Faces.RemoveLastLevel(); _Tetras.RemoveLastLevel(); }
 
-    void ClearTriangCache () { _TriangVertex.clear(); _TriangEdge.clear(); _TriangFace.clear(); _TriangTetra.clear(); }
+    void ClearTriangCache () { _TriangVertex.clear(); _TriangEdge.clear(); _TriangFace.clear(); _TriangTetra.clear(); _graph.clear(); }
 
     void RestrictMarks (Uint Level) { std::for_each( _Tetras[Level].begin(), _Tetras[Level].end(), std::mem_fun_ref(&TetraCL::RestrictMark)); }
     void CloseGrid     (Uint);
     void UnrefineGrid  (Uint);
     void RefineGrid    (Uint);
+
+    void BuildIndependentTetras( Uint Level) const;
 
   public:
     MultiGridCL (const MGBuilderCL& Builder);
@@ -312,6 +319,8 @@ class MultiGridCL
     Uint GetNumTriangFace(int Level=-1);                        // get number of faces of a given level
     Uint GetNumDistributedFaces(int Level=-1);                  // get number of faces on processor boundary
 #endif
+
+    const IndependentTetraCT& GetGraph( size_t lvl) const;
 
     bool IsSane (std::ostream&, int Level=-1) const;
 };

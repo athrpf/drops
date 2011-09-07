@@ -351,6 +351,7 @@ class TransformedP1FiniteElement{
     SMatrixCL<4,4> GTG;
     double det, absdet;
     double vol;
+    double tetravol;
   protected:
     TetraCL* tet;
     bool has_trafo_base;
@@ -388,7 +389,7 @@ class TransformedP1FiniteElement{
 
     void SetSubTetra(const SArrayCL<BaryCoordCL,4>& cutT){
       
-      vol = VolFrac(cutT) * GetAbsDeterminant() * 1.0/6.0;
+      vol = VolFrac(cutT) * tetravol;
       if (nodes) delete nodes;
       nodes = Quad3CL<>::TransformNodes(cutT);
       oninterface = true;
@@ -407,6 +408,7 @@ class TransformedP1FiniteElement{
       P1DiscCL::GetGradients(G, det, GetTetra());
       absdet = std::fabs( det);
       vol = absdet * 1.0/6.0;
+      tetravol = vol;
       has_trafo_base = true;
     }
     
@@ -430,6 +432,11 @@ class TransformedP1FiniteElement{
     double GetVolume(){
       if (!has_trafo_base) CalcTrafoBase();
       return vol;
+    }
+
+    double GetTetraVolume(){
+      if (!has_trafo_base) CalcTrafoBase();
+      return tetravol;
     }
 
     SMatrixCL<3,4> & GetDShape(){
@@ -587,13 +594,9 @@ class StabilizedTransformedP1FiniteElement : public TransformedP1FiniteElement{
     void CalcStabilizationOnePhase(bool pospart){
       CalcTrafoBase(); //s.t. gradients, etc.. are known.
       //l2-average of velocity
-      double ul2 = 1.0/lcdcoefs->GetHenryWeighting(pospart)*std::sqrt( (Quad3CL<>(dot( lcdcoefs->GetVelocityAsQuad3(), lcdcoefs->GetVelocityAsQuad3()))).quad(6.0));
-      double h = cbrt(6.0*GetVolume()); 
+      double ul2 = /*1.0/lcdcoefs->GetHenryWeighting(pospart) * */ std::sqrt( (Quad3CL<>(dot( lcdcoefs->GetVelocityAsQuad3(), lcdcoefs->GetVelocityAsQuad3()))).quad(6.0));
+      double h = cbrt(6.0*GetTetraVolume()); 
       delta_T = stabfactor_ * stabfunc(lcdcoefs->GetDiffusionCoef(pospart),ul2,h);
-      //ATTENTION: convdiff-debug
-#ifdef ONLY_OUTERCONVECTION      
-      if (!pospart) delta_T = 0;
-#endif
       Point3DCL stabtimesgradv;
       SMatrixCL<3,4> & dshape = GetDShape();
       for (int i = 0; i < 4; i ++){
@@ -607,12 +610,9 @@ class StabilizedTransformedP1FiniteElement : public TransformedP1FiniteElement{
     void CalcStabilizationTwoPhase(bool pospart){
       //l2-average of velocity
       Quad3CL<Point3DCL> q3_n_vel(lcdcoefs->GetVelocityAsLocalP2(), nodes);      
-      double ul2 = 1.0/lcdcoefs->GetHenryWeighting(pospart)*std::sqrt( (Quad3CL<>(dot( q3_n_vel, q3_n_vel))).quad(6.0));
-      double h = cbrt(6.0*GetVolume());
+      double ul2 =  /*1.0/lcdcoefs->GetHenryWeighting(pospart) * */ std::sqrt( (Quad3CL<>(dot( q3_n_vel, q3_n_vel))).quad(6.0));
+      double h = cbrt(6.0*GetTetraVolume());
       delta_T = stabfactor_ * stabfunc(lcdcoefs->GetDiffusionCoef(pospart),ul2,h);
-
-      //ATTENTION: convdiff-debug
-      //if (!pospart) delta_T = 0;
       Point3DCL stabtimesgradv;
       SMatrixCL<3,4> & dshape = GetDShape();
       for (int i = 0; i < 4; i ++){

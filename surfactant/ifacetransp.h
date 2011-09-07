@@ -67,7 +67,7 @@ void SetupConvectionP1OnTriangle (const BaryCoordCL triangle[3], double det,
     const LocalP1CL<> p1[4], Quad5_2DCL<> qp1[4],
     const LocalP2CL<Point3DCL>& u, Point3DCL grad[4], double coup[4][4]);
 
-/// \brief The routine sets up the mass-matrix scaled with div_\Gamma v in mat on the interface
+/// \brief The routine sets up the mass-matrix scaled with \f$ div_\Gamma v \f$ in mat on the interface
 ///        defined by ls. It belongs to the FE induced by standard P1-elements.
 ///
 /// The template-parameter is only used to circumvent the exact type of the discrete
@@ -93,6 +93,7 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
 /// \brief Short-hand for simple loops over the interface.
 /// \param t  - Reference to a tetra
 /// \param ls - Levelset-reference: Something that can be handed to InterfacePatchCL::Init as 2nd argument.
+/// \param bnd  - ???
 /// \param p  - The InterfacePatchCL that should be used.
 /// \param n  - Name of the integer to reference the interface-triangles
 #define DROPS_FOR_TETRA_INTERFACE_BEGIN( t, ls, bnd, p, n) \
@@ -246,7 +247,7 @@ class SurfactantcGP1CL
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair an interface p1-function.
 ///
-/// The function is extended to a P1-function on \Omega and then repaired as such. In
+/// The function is extended to a P1-function on \f$ \Omega \f$ and then repaired as such. In
 /// post_refine_sequence() the new interface-index is generated and the function is restricted
 /// to it.
 class InterfaceP1RepairCL : public MGObserverCL

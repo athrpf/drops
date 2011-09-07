@@ -440,6 +440,12 @@ class TwoPhaseStoreCL
       /** This class generates multiple files, all with prefix path, for storing
        *  the geometric as well as the numerical data.
        *  \param recoverySteps number of backup steps before overwriting files
+       *  \param mg Multigrid
+       *  \param Stokes Stokes flow field 
+       *  \param lset Level Set field
+       *  \param transp mass transport concentration field
+       *  \param path location for storing output
+       *  \param binary save output  binary?
        *  */
     TwoPhaseStoreCL(MultiGridCL& mg, const StokesT& Stokes, const LevelsetP2CL& lset, const TransportP1CL* transp,
                     const std::string& path, Uint recoverySteps=2, bool binary= false)

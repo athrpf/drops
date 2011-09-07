@@ -278,6 +278,8 @@ class StokesSystem1Accumulator_P2CL : public TetraAccumulatorCL
     void finalize_accumulation();
 
     void visit (const TetraCL& sit);
+
+    TetraAccumulatorCL* clone (int /*tid*/) { return new StokesSystem1Accumulator_P2CL ( *this); };
 };
 
 template< class CoeffT>
@@ -375,7 +377,8 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const CoeffT& Coeff_, const Stokes
     StokesSystem1Accumulator_P2CL<CoeffT> accu( Coeff_, BndData_, RowIdx, A, M, b, cplA, cplM, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    accus( MG_.GetGraph( RowIdx.TriangLevel()));
+    //accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
 }
 
 
@@ -398,28 +401,11 @@ void StokesP2P1CL<CoeffT>::SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VecDesc
 }
 
 
-/// \brief Shared data for "system 2" between P1 and P1X.
-/// All members are setup by System2Accumulator_P2P1CL::visit.
-struct LocalSystem2_sharedDataCL
-{
-    IdxT          prNumb[4];  ///< global numbering of the P1-unknowns
-    LocalNumbP2CL n;          ///< global numbering of the P2-unknowns
-
-    Point3DCL dirichlet_val[10]; ///< Dirichlet values, filled in only on the Dirichlet-boundary.
-
-    SparseMatBuilderCL<double, SMatrixCL<1,3> >* mB;
-    VecDescCL*                                   c;
-
-    SMatrixCL<3,3> T;
-    double         absdet;
-};
-
-
 /// \brief Accumulator to set up the matrix B and, if requested the right-hand side C for two-phase flow.
 template<class CoeffT>
 class System2Accumulator_P2P1CL : public TetraAccumulatorCL
 {
-  private:
+  protected:
     const CoeffT& coeff;
     const StokesBndDataCL& BndData;
     const double t;
@@ -428,12 +414,22 @@ class System2Accumulator_P2P1CL : public TetraAccumulatorCL
     const IdxDescCL& ColIdx;
     MatrixCL& B;
 
-    LocalSystem2_sharedDataCL loc;
+    IdxT          prNumb[4];  ///< global numbering of the P1-unknowns
+    LocalNumbP2CL n;          ///< global numbering of the P2-unknowns
+
+    Point3DCL dirichlet_val[10]; ///< Dirichlet values, filled in only on the Dirichlet-boundary.
+
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >* mB_;
+    VecDescCL*                                   c;
+
+    SMatrixCL<3,3> T;
+    double         absdet;
 
     Quad2CL<Point3DCL> GradRef[10],
                        Grad[10];
     SMatrixCL<1,3>     locB[10][4];
 
+  private:
     ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
     void local_setup ();
     ///\brief Update the global system.
@@ -451,7 +447,7 @@ class System2Accumulator_P2P1CL : public TetraAccumulatorCL
 
     void visit (const TetraCL& sit);
 
-    LocalSystem2_sharedDataCL& GetLocalData() { return loc; }
+    TetraAccumulatorCL* clone (int /*tid*/) { return new System2Accumulator_P2P1CL ( *this); };
 };
 
 template< class CoeffT>
@@ -460,40 +456,40 @@ System2Accumulator_P2P1CL<CoeffT>::System2Accumulator_P2P1CL ( const CoeffT& coe
     MatrixCL& B_arg, VecDescCL* c_arg, double t_arg)
     : coeff( coeff_arg), BndData( BndData_arg), t( t_arg), RowIdx( RowIdx_arg), ColIdx( ColIdx_arg), B( B_arg)
 {
-    loc.c = c_arg;
+    c = c_arg;
     P2DiscCL::GetGradientsOnRef( GradRef);
 }
 
 template< class CoeffT>
 void System2Accumulator_P2P1CL<CoeffT>::begin_accumulation ()
 {
-    loc.mB = new SparseMatBuilderCL<double, SMatrixCL<1,3> > ( &B, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
-    if (loc.c != 0) loc.c->Clear( t);
+    mB_ = new SparseMatBuilderCL<double, SMatrixCL<1,3> > ( &B, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    if (c != 0) c->Clear( t);
 }
 
 template< class CoeffT>
 void System2Accumulator_P2P1CL<CoeffT>::finalize_accumulation ()
 {
-    loc.mB->Build();
-    delete loc.mB;
+    mB_->Build();
+    delete mB_;
 }
 
 template< class CoeffT>
 void System2Accumulator_P2P1CL<CoeffT>::visit (const TetraCL& tet)
 {
     double det;
-    GetTrafoTr( loc.T, det, tet);
-    P2DiscCL::GetGradients( Grad, GradRef, loc.T);
-    loc.absdet= std::fabs( det);
-    loc.n.assign( tet, ColIdx, BndData.Vel);
-    GetLocalNumbP1NoBnd( loc.prNumb, tet, RowIdx);
+    GetTrafoTr( T, det, tet);
+    P2DiscCL::GetGradients( Grad, GradRef, T);
+    absdet= std::fabs( det);
+    n.assign( tet, ColIdx, BndData.Vel);
+    GetLocalNumbP1NoBnd( prNumb, tet, RowIdx);
 
-    if (loc.c != 0) {
+    if (c != 0) {
         typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
         for (int i= 0; i < 10; ++i)
-            if (!loc.n.WithUnknowns( i)) {
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( loc.n.bndnum[i]).GetBndFun();
-                loc.dirichlet_val[i]= i<4 ? bf( tet.GetVertex( i)->GetCoord(), t)
+            if (!n.WithUnknowns( i)) {
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[i]).GetBndFun();
+                dirichlet_val[i]= i<4 ? bf( tet.GetVertex( i)->GetCoord(), t)
                     : bf( GetBaryCenter( *tet.GetEdge( i-4)), t);
             }
     }
@@ -507,22 +503,22 @@ void System2Accumulator_P2P1CL<CoeffT>::local_setup ()
     // b(i,j) =  -\int psi_i * div( phi_j)
     for(int vel=0; vel<10; ++vel) {
         for(int pr=0; pr<4; ++pr)
-            locB[vel][pr]= SMatrixCL<1,3>( quad( Grad[vel], loc.absdet, Quad2Data_Mul_P1_CL(), pr));
+            locB[vel][pr]= SMatrixCL<1,3>( quad( Grad[vel], absdet, Quad2Data_Mul_P1_CL(), pr));
     }
 }
 
 template< class CoeffT>
 void System2Accumulator_P2P1CL<CoeffT>::update_global_system ()
 {
-    SparseMatBuilderCL<double, SMatrixCL<1,3> >& mB= *loc.mB;
+    SparseMatBuilderCL<double, SMatrixCL<1,3> >& mB= (*mB_);
 
     for(int vel=0; vel<10; ++vel) {
-        if (loc.n.WithUnknowns( vel))
+        if (n.WithUnknowns( vel))
             for(int pr=0; pr<4; ++pr)
-                mB( loc.prNumb[pr], loc.n.num[vel])-= locB[vel][pr];
-        else if (loc.c != 0) { // put coupling on rhs
+                mB( prNumb[pr], n.num[vel])-= locB[vel][pr];
+        else if (c != 0) { // put coupling on rhs
             for(int pr=0; pr<4; ++pr)
-                loc.c->Data[loc.prNumb[pr]]+= inner_prod( locB[vel][pr], loc.dirichlet_val[vel]); // operator* returns SVectorCL<1>.
+                c->Data[prNumb[pr]]+= inner_prod( locB[vel][pr], dirichlet_val[vel]); // operator* returns SVectorCL<1>.
         }
     }
 }
@@ -535,7 +531,8 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT& coeff, const Stokes
     System2Accumulator_P2P1CL<CoeffT> accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
+    accus( MG.GetGraph( RowIdx->TriangLevel()));
+    //accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
 }
 
 template <class CoeffT>

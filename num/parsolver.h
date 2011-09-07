@@ -1372,6 +1372,7 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
     /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in,out] os                   outstream pointer
     /// \return                             convergence within max_iter iterations
 {
     // Check if preconditioner needs diagonal of matrix. The preconditioner
