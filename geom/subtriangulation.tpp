@@ -85,9 +85,8 @@ template <class VertexCutMergingPolicyT>
 template <class VertexPartitionPolicyT,
           class VertexCutMergingPolicyT>
   void
-  TetraPartitionCL::make_partition (Uint num_intervals, const std::valarray<double>& ls)
+  TetraPartitionCL::make_partition (const PrincipalLatticeCL& lat, const std::valarray<double>& ls)
 {
-    const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
     const Uint lattice_num_vertexes= lat.vertex_size();
 
     tetras_.resize( 0);
@@ -152,10 +151,8 @@ template <class VertexCutMergingPolicyT>
 
 template <class VertexCutMergingPolicyT>
   void
-  SurfacePatchCL::make_patch (Uint num_intervals, const std::valarray<double>& ls)
+  SurfacePatchCL::make_patch (const PrincipalLatticeCL& lat, const std::valarray<double>& ls)
 {
-    const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
-
     triangles_.resize( 0);
     is_boundary_triangle_.resize( 0);
 

@@ -169,7 +169,7 @@ make_CompositeQuad3Domain (QuadDomainCL& q, const TetraPartitionCL& p)
 
 template <class SubdivisionT>
   ExtrapolationToZeroCL::ExtrapolationToZeroCL (Uint num_level, const SubdivisionT& s)
-    : num_intervals_( num_level), f0_( num_level)
+    : lattices_( num_level), f0_( num_level)
 {
     if (num_level == 0)
         throw DROPSErrCL( "ExtrapolationToZeroCL: At least one level is needed.");
@@ -177,8 +177,8 @@ template <class SubdivisionT>
     std::vector<VecT> f( num_level);
     VecT x( num_level);
     for (Uint i= 0; i < num_level; ++i) {
-        num_intervals_[i]= s( i);
-        x[i]= 1./num_intervals_[i];
+        lattices_[i]= &PrincipalLatticeCL::instance( s( i));
+        x[i]= 1./num_intervals( i);
         f[i].resize( num_level);
         f[i][i]= 1.;
     }
@@ -215,10 +215,9 @@ template <class QuadDataT, class LocalFET>
     std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
     // Accumulate quadrature-points and weights for each level
     for (Uint i= extra.num_level() - 1; i < extra.num_level(); --i) {
-        const Uint num_intervals= extra.num_intervals( i);
-        const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
+        const PrincipalLatticeCL& lat= extra.lattice( i);
         resize_and_evaluate_on_vertexes( ls, lat, ls_val);
-        partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( num_intervals, ls_val);
+        partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( lat, ls_val);
         make_CompositeQuadDomain<QuadDataT>( qdom, partition);
         // if (i == extra.num_level() - 1 && lat.tetra_size() == partition.tetra_size()) // No interface cut; no extrapolation; this makes sense, if the order through extrapolation is not higher than the order of the base quadrature in the uncut case.
         //     return make_SimpleQuadDomain<QuadDataT>( q, qdom.vertex_size( NegTetraC) > 0 ? NegTetraC : PosTetraC);
@@ -302,10 +301,9 @@ template <class QuadDataT, class LocalFET>
     std::valarray<double> ls_val; // values of the level-set function in the lattice-vertexes
     // Accumulate quadrature-points and weights for each level
     for (Uint i= extra.num_level()-1; i < extra.num_level(); --i) {
-        const Uint num_intervals= extra.num_intervals( i);
-        const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance( num_intervals);
+        const PrincipalLatticeCL& lat= extra.lattice( i);
         resize_and_evaluate_on_vertexes( ls, lat, ls_val);
-        partition.make_patch<MergeCutPolicyCL>( num_intervals, ls_val);
+        partition.make_patch<MergeCutPolicyCL>( lat, ls_val);
         make_CompositeQuadDomain2D<QuadDataT>( qdom, partition, t);
         std::copy( qdom.vertex_begin(), qdom.vertex_end(), std::back_inserter( q.vertexes_));
         w_vec.push_back( QuadDomain2DCL::WeightContT( qdom.weight_begin(), qdom.vertex_size()));

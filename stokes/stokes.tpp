@@ -406,6 +406,7 @@ template<class CoeffT>
 class System2Accumulator_P2P1CL : public TetraAccumulatorCL
 {
   protected:
+    const PrincipalLatticeCL& lat;
     const CoeffT& coeff;
     const StokesBndDataCL& BndData;
     const double t;
@@ -454,7 +455,7 @@ template< class CoeffT>
 System2Accumulator_P2P1CL<CoeffT>::System2Accumulator_P2P1CL ( const CoeffT& coeff_arg, const StokesBndDataCL& BndData_arg,
     const IdxDescCL& RowIdx_arg, const IdxDescCL& ColIdx_arg,
     MatrixCL& B_arg, VecDescCL* c_arg, double t_arg)
-    : coeff( coeff_arg), BndData( BndData_arg), t( t_arg), RowIdx( RowIdx_arg), ColIdx( ColIdx_arg), B( B_arg)
+    : lat( PrincipalLatticeCL::instance( 2)), coeff( coeff_arg), BndData( BndData_arg), t( t_arg), RowIdx( RowIdx_arg), ColIdx( ColIdx_arg), B( B_arg)
 {
     c = c_arg;
     P2DiscCL::GetGradientsOnRef( GradRef);

@@ -120,6 +120,7 @@ void LocalNonlConvSystemSmoothedJumps_P2CL::setup (const SMatrixCL<3,3>& T, doub
 class LocalNonlConvSystemTwoPhase_P2CL
 {
   private:
+    const PrincipalLatticeCL& lat;
 
     const double rho_p, rho_n;
 
@@ -139,7 +140,7 @@ class LocalNonlConvSystemTwoPhase_P2CL
 
   public:
     LocalNonlConvSystemTwoPhase_P2CL (double rhop, double rhon)
-        : rho_p( rhop), rho_n( rhon), ls_loc( 10)
+        : lat( PrincipalLatticeCL::instance( 2)), rho_p( rhop), rho_n( rhon), ls_loc( 10)
     { P2DiscCL::GetGradientsOnRef( GradRef); }
 
     double rho (int sign) const                   { return sign > 0 ? rho_p : rho_n; }
@@ -151,8 +152,8 @@ void LocalNonlConvSystemTwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, double ab
 {
     P2DiscCL::GetGradients( Grad, GradRef, T);
 
-    evaluate_on_vertexes( ls, PrincipalLatticeCL::instance( 2), Addr( ls_loc));
-    partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( 2, ls_loc);
+    evaluate_on_vertexes( ls, lat, Addr( ls_loc));
+    partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( lat, ls_loc);
     make_CompositeQuad5Domain( q5dom, partition);
     GridFunctionCL<Point3DCL> velocity;
     resize_and_evaluate_on_vertexes( velp2, q5dom, velocity);

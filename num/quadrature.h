@@ -320,7 +320,7 @@ class ExtrapolationToZeroCL
   private:
     typedef std::valarray<double> VecT;
 
-    std::vector<Uint> num_intervals_; ///< The number of intervals used to subdivide the edges of the tetra on each level.
+    std::vector<const PrincipalLatticeCL*> lattices_; ///< The lattice used to subdivide the tetra on each level.
     VecT f0_; ///< Vector of weighting factors for the level-wise quadrature weights due to extrapolation to zero of the error and due to elimination of the linear error term.
 
     /// \brief Compute the coefficients of the polynomial interpolating (x_i, w_i) in the Newton-basis.
@@ -342,7 +342,9 @@ class ExtrapolationToZeroCL
     ///\brief return the number of extrapolation-levels.
     Uint num_level () const { return f0_.size(); }
     ///\brief return the number of subdivisions of the tetra's edges on level i
-    Uint num_intervals (Uint i) const { return num_intervals_[i]; }
+    Uint num_intervals (Uint i) const { return lattices_[i]->num_intervals(); }
+    ///\brief return the PrincipalLatticeCL on level i
+    const PrincipalLatticeCL& lattice (Uint i) const { return *lattices_[i]; }
 };
 
 } // end of namespace DROPS

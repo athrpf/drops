@@ -52,7 +52,7 @@ void test_tetra_cut ()
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
               DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
               DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
-              tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL> ( 1, ls);
+              tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL> ( DROPS::PrincipalLatticeCL::instance( 1), ls);
 //              if (c == 5) {
 //                  std::cerr << comb_cut << std::endl;
 //                  std:: cerr << cut << std::endl;
@@ -82,7 +82,7 @@ void test_cut_surface ()
               std::cout << "c: " << c << " ls: " << ls[0] << ' ' << ls[1] << ' ' << ls[2] << ' ' << ls[3] << std::endl;
               DROPS::RefTetraPartitionCL cut( static_cast<double*>(&ls[0]));
               DROPS::SignPatternTraitCL comb_cut( static_cast<double*>(&ls[0]));
-              tet.make_patch<DROPS::MergeCutPolicyCL>( 1, ls);
+              tet.make_patch<DROPS::MergeCutPolicyCL>( DROPS::PrincipalLatticeCL::instance( 1), ls);
               std::ostringstream name;
               name << "hallo_surf" << c << ".vtu";
               std::ofstream file( name.str().c_str());
@@ -124,7 +124,7 @@ void test_sphere_cut ()
     DROPS::GridFunctionCL<> ls( lat.vertex_size());
     evaluate_on_vertexes( &sphere_instat, *mg.GetAllTetraBegin(), lat, 0., Addr( ls));
     DROPS::TetraPartitionCL tet;
-    tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( 10, ls);
+    tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( lat, ls);
     std::ostringstream name;
     name << "sphere.vtu";
     std::ofstream file( name.str().c_str());
@@ -132,7 +132,7 @@ void test_sphere_cut ()
     file.close();
 
     DROPS::SurfacePatchCL surf;
-    surf.make_patch<DROPS::MergeCutPolicyCL>( 10, ls);
+    surf.make_patch<DROPS::MergeCutPolicyCL>( lat, ls);
     name.str( "");
     name << "sphere_surf.vtu";
     file.open( name.str().c_str());
@@ -164,10 +164,10 @@ void test_sphere_integral ()
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate_on_vertexes( sphere_instat, *it, lat, 0., Addr( ls));
-        // tet.make_partition<DROPS::UnorderedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
-        // tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
-        tet.make_partition<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
-        // patch.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        // tet.make_partition<DROPS::UnorderedVertexPolicyCL, DROPS::MergeCutPolicyCL>( lat, ls);
+        // tet.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( lat, ls);
+        tet.make_partition<DROPS::PartitionedVertexPolicyCL, DROPS::MergeCutPolicyCL>( lat, ls);
+        // patch.make_partition<DROPS::SortedVertexPolicyCL, DROPS::MergeCutPolicyCL>( lat, ls);
         DROPS::make_CompositeQuad5Domain( qdom, tet);
         DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
         double tmp_neg, tmp_pos;
@@ -233,7 +233,7 @@ void test_sphere_surface_integral ()
 
     DROPS_FOR_TRIANG_TETRA( mg, 0, it) {
         evaluate_on_vertexes( &sphere_instat, *it, lat, 0., Addr( ls));
-        patch.make_patch<DROPS::MergeCutPolicyCL>( num_sub_lattice, ls);
+        patch.make_patch<DROPS::MergeCutPolicyCL>( lat, ls);
         DROPS::make_CompositeQuad5Domain2D( qdom, patch, *it);
         DROPS::GridFunctionCL<> integrand( 1., qdom.vertex_size());
         surf+= quad_2D( integrand, qdom);

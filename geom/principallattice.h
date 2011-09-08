@@ -56,8 +56,8 @@ class PrincipalLatticeCL
     static PrincipalLatticeCacheCL cache_;
     static bool is_memoized (Uint n)
         { return n-1 < cache_.size() && cache_[n-1]; }
-    static const PrincipalLatticeCL& read_cache (Uint n) { return *cache_[n-1]; }
-    static const PrincipalLatticeCL& memoize (Uint n);
+    static const PrincipalLatticeCL* read_cache (Uint n) { return cache_[n-1]; }
+    static const PrincipalLatticeCL* memoize (Uint n);
     ///@}
 
     ///\brief computation of the tetras
@@ -98,13 +98,7 @@ class PrincipalLatticeCL
     ///@}
 
     ///\brief Access the principal lattice with n intervals on each edge (singleton pattern)
-    static const PrincipalLatticeCL& instance (Uint n)
-        {
-    	const PrincipalLatticeCL* tmp;
-#pragma omp critical
-    	tmp = is_memoized( n) ? &read_cache( n) : &memoize( n);
-
-    	return *tmp;}//is_memoized( n) ? read_cache( n) : memoize( n); }
+    static const PrincipalLatticeCL& instance (Uint n);
 };
 
 extern const size_t p1_dof_on_lattice_2[4];  ///< For vertex i (in 0..3) as counted in topo.h, p1_dof_on_lattice_2[i] is the number of the vertex in the principal lattice of order 2.

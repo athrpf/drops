@@ -78,14 +78,22 @@ void PrincipalLatticeCL::create_tetras (Uint xbegin, Uint xend)
             }
 }
 
-const PrincipalLatticeCL& PrincipalLatticeCL::memoize (Uint n)
+const PrincipalLatticeCL* PrincipalLatticeCL::memoize (Uint n)
 {
     if (n-1 >= cache_.size()) {
         const Uint oldsize= cache_.size();
         cache_.resize( n);
         create_tetras( oldsize, n);
     }
-    return *(cache_[n-1]= new PrincipalLatticeCL( n));
+    return cache_[n-1]= new PrincipalLatticeCL( n);
+}
+
+const PrincipalLatticeCL& PrincipalLatticeCL::instance (Uint n)
+{
+    const PrincipalLatticeCL* tmp;
+#   pragma omp critical
+    tmp= is_memoized( n) ? read_cache( n) : memoize( n);
+    return *tmp;
 }
 
 const size_t p1_dof_on_lattice_2[4]= { 0, 4, 7, 9 };

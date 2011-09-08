@@ -104,6 +104,8 @@ class System2Accumulator_P2P1XCL : public System2Accumulator_P2P1CL<TwoPhaseFlow
     using base_::BndData;
     const LevelsetP2CL&        lset_;
 
+    using base_::lat;
+
     using base_::t;
 
     using base_::prNumb;  ///< global numbering of the P1-unknowns
@@ -171,11 +173,11 @@ void System2Accumulator_P2P1XCL::finalize_accumulation ()
 
 void System2Accumulator_P2P1XCL::visit (const TetraCL& tet)
 {
-	base_::visit( tet);
-    evaluate_on_vertexes( lset_.GetSolution(), tet, PrincipalLatticeCL::instance( 2), Addr( ls_loc_));
+    base_::visit( tet);
+    evaluate_on_vertexes( lset_.GetSolution(), tet, lat, Addr( ls_loc_));
     if (equal_signs( ls_loc_)) return; // extended basis functions have only support on tetra intersecting Gamma.
 
-    partition_.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( 2, ls_loc_);
+    partition_.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( lat, ls_loc_);
     make_CompositeQuad2Domain( q2dom_, partition_);
     local_setup();
     update_global_system();
@@ -1288,6 +1290,8 @@ void LocalSystem1OnePhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, L
 class LocalSystem1TwoPhase_P2CL
 {
   private:
+    const PrincipalLatticeCL& lat;
+
     const double mu_p, mu_n;
     const double rho_p, rho_n;
 
@@ -1306,7 +1310,7 @@ class LocalSystem1TwoPhase_P2CL
 
   public:
     LocalSystem1TwoPhase_P2CL (double mup, double mun, double rhop, double rhon)
-        : mu_p( mup), mu_n( mun), rho_p( rhop), rho_n( rhon), ls_loc( 10)
+        : lat( PrincipalLatticeCL::instance( 2)), mu_p( mup), mu_n( mun), rho_p( rhop), rho_n( rhon), ls_loc( 10)
     { P2DiscCL::GetGradientsOnRef( GradRefLP1); }
 
     double mu  (int sign) const { return sign > 0 ? mu_p  : mu_n; }
@@ -1319,8 +1323,8 @@ void LocalSystem1TwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, c
 {
     P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
 
-    evaluate_on_vertexes( ls, PrincipalLatticeCL::instance( 2), Addr( ls_loc));
-    partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( 2, ls_loc);
+    evaluate_on_vertexes( ls, lat, Addr( ls_loc));
+    partition.make_partition<SortedVertexPolicyCL, MergeCutPolicyCL>( lat, ls_loc);
     make_CompositeQuad5Domain( q5dom, partition);
     make_CompositeQuad2Domain( q2dom, partition);
     double phi_neg, phi_pos;
@@ -2056,29 +2060,29 @@ void InstatStokes2PhaseP2P1CL::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset
 class LocalLBTwoPhase_P2CL
 {
   private:
+    const PrincipalLatticeCL& lat;
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     Quad5_2DCL<Point3DCL> surfGrad[10];
     Quad5_2DCL<> LB;
     GridFunctionCL<Point3DCL> qnormal;
     GridFunctionCL<Point3DCL> qgrad[10];
-    
+
     QuadDomain2DCL  q2Ddomain;
     std::valarray<double> ls_loc;
     SurfacePatchCL spatch;
-   
+
 
     double surfTension_;
     void Get_Normals(const LocalP2CL<>& ls, LocalP1CL<Point3DCL>&);
-               
+
   public:
-     
     LocalLBTwoPhase_P2CL (double surfTension)
-        : ls_loc( 10), surfTension_( surfTension) 
+        : lat( PrincipalLatticeCL::instance( 2)), ls_loc( 10), surfTension_( surfTension) 
     { P2DiscCL::GetGradientsOnRef( GradRefLP1); }
-    
+
     //Setup-Routine of (improved) LB for the tetrahedra tet 
     void setup (const SMatrixCL<3,3>& T, const LocalP2CL<>& ls, const TetraCL& tet, double A[10][10]);
-   
+
 };
 
 // The P2 levelset-function is used to compute the normals which are needed for the (improved) projection onto the interface, GradLP1 has to be set before
@@ -2088,14 +2092,14 @@ void LocalLBTwoPhase_P2CL::Get_Normals(const LocalP2CL<>& ls, LocalP1CL<Point3DC
     {
         Normals+=ls[i]*GradLP1[i];
     }
-    
+
 }
 
 void LocalLBTwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, const LocalP2CL<>& ls, const TetraCL& tet, double A[10][10])
 {
     P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
-    evaluate_on_vertexes( ls, PrincipalLatticeCL::instance( 2), Addr( ls_loc));
-    spatch.make_patch<MergeCutPolicyCL>( 2, ls_loc);
+    evaluate_on_vertexes( ls, lat, Addr( ls_loc));
+    spatch.make_patch<MergeCutPolicyCL>( lat, ls_loc);
     // The routine takes the information about the tetrahedra and the cutting surface and generates a two-dimensional triangulation of the cut, including the necessary point-positions and weights for the quadrature  
     make_CompositeQuad5Domain2D ( q2Ddomain, spatch, tet);
     LocalP1CL<Point3DCL> Normals;
@@ -2135,11 +2139,11 @@ class LBAccumulator_P2CL : public TetraAccumulatorCL
     IdxDescCL& RowIdx;
     MatrixCL& A;
     VecDescCL* cplA;
-    
+
     SparseMatBuilderCL<double, SDiagMatrixCL<3> >* mA_;
 
     LocalLBTwoPhase_P2CL local_twophase; ///< used on intersected tetras
-  
+
     LocalNumbP2CL n; ///< global numbering of the P2-unknowns
 
     SMatrixCL<3,3> T;
@@ -2196,13 +2200,13 @@ void LBAccumulator_P2CL::finalize_accumulation ()
 void LBAccumulator_P2CL::visit (const TetraCL& tet)
 {
     ls_loc.assign( tet, lset.Phi, lset.GetBndData());
-    
+
     if (!equal_signs( ls_loc)) 
     {
         local_setup( tet);
         update_global_system();
     }
-    
+
 }
 
 void LBAccumulator_P2CL::local_setup (const TetraCL& tet)
