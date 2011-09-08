@@ -1520,7 +1520,7 @@ template <typename T>
         p_inv[V[i].second]= i;
 
     // Select a minimal degree vertex.
-    size_t v_old= arg_min( V.begin(), V.end(), less1st<DegVertT>())->second;
+    size_t v_old= std::min_element( V.begin(), V.end(), less1st<DegVertT>())->second;
 
     int l_old= 0;
     size_t v, w;
@@ -1559,7 +1559,7 @@ template <typename T>
         for (size_t i= 0; i < Q.size(); ++i) {
             lastlevel.push_back( V[p_inv[Q[i]]]);
         }
-        v= arg_min( lastlevel.begin(), lastlevel.end(), less1st<DegVertT>())->second;
+        v= std::min_element( lastlevel.begin(), lastlevel.end(), less1st<DegVertT>())->second;
 
         if (level[p_inv[v]] <= l_old) {
             max_iter= iter;

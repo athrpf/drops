@@ -451,37 +451,6 @@ PermutationT
 invert_permutation (const PermutationT& p);
 
 
-/// \brief Return the first iterator i from [begin, end) where l(*j, *i) == false for all j in [begin, end) excluding i.
-/// For an empty sequence end is returned.
-/// \todo (merge) What is the difference to std::min_element?
-template <class Iterator, class Cmp>
-  Iterator
-  arg_min (Iterator begin, Iterator end, Cmp l= std::less<typename std::iterator_traits<Iterator>::value_type>())
-{
-    if (begin == end) return end;
-
-    typename std::iterator_traits<Iterator>::value_type m= *begin;
-    Iterator am= begin;
-    while (++begin != end)
-        if ( l( *begin, m)) {
-            m= *begin;
-            am= begin;
-        }
-    return am;
-}
-
-
-/// \brief Return the first iterator i from [begin, end) where *i<=*j for all j in [begin, end).
-/// For an empty sequence end is returned.
-/// \todo (merge) What is the difference to std::min_element?
-template <class Iterator>
-  Iterator
-  arg_min (Iterator begin, Iterator end)
-{
-    return arg_min( begin, end,
-        std::less<typename std::iterator_traits<Iterator>::value_type>());
-}
-
 /// \brief Output [begin, end) to out, separated by newline.
 template <class Iterator>
 void

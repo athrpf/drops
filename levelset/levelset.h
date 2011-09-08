@@ -118,8 +118,6 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     /// Reparametrization of the level set function.
     void Reparam( int method=03, bool Periodic= false);
 
-    /// tests whether level set function changes its sign on tetra \p t.
-    bool   Intersects( const TetraCL&) const;
     /// returns information about level set function and interface.
     template<class DiscVelSolT>
     void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& vel_sol, Point3DCL& minCoord, Point3DCL& maxCoord, double& surfArea) const;
