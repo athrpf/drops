@@ -61,7 +61,9 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::SolveLsNs()
     time.Reset();
 
     // operators are computed for old level set
-    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, cplA_, cplM_, LvlSet_, Stokes_.v.t);
+    MLTetraAccumulatorTupleCL accus( Stokes_.A.Data.size());
+    accumulate( Stokes_.system1_accu( accus, &Stokes_.A, &Stokes_.M, old_b_, cplA_, cplM_, LvlSet_, Stokes_.v.t),
+                Stokes_.GetMG());
     Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
     Stokes_.SetupPrMass( &Stokes_.prM, LvlSet_);
 
@@ -153,7 +155,9 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::CommitStep()
         Stokes_.B.Data.clear();
         Stokes_.prA.Data.clear();
         Stokes_.prM.Data.clear();
-        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.v.t);
+        MLTetraAccumulatorTupleCL accus( Stokes_.B.Data.size());
+        accumulate( Stokes_.system2_accu( accus, &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.v.t),
+                    Stokes_.GetMG());
     }
     else
         Stokes_.SetupRhs2( &Stokes_.c, LvlSet_, Stokes_.v.t);
@@ -215,8 +219,12 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::Update()
     // Diskretisierung
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
-    Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.v.t);
-    Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.v.t);
+
+    MLTetraAccumulatorTupleCL updates( Stokes_.A.Data.size());
+    Stokes_.system2_accu( updates, &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.v.t);
+    Stokes_.nonlinear_accu( updates, &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.v.t);
+    accumulate( updates, Stokes_.GetMG());
+
     time.Stop();
     duration=time.GetTime();
     std::cout << "Discretizing took " << duration << " sec.\n";
