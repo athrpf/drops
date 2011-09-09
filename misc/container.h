@@ -1172,6 +1172,11 @@ template <class T>
 class MLDataCL : public std::list<T>
 {
   public:
+    explicit MLDataCL ()
+        : std::list<T>() {}
+    explicit MLDataCL (size_t n, const T& val= T())
+        : std::list<T>( n, val) {}
+
     T&       GetFinest()      { return this->back();  }
     T&       GetCoarsest()    { return this->front(); }
     T*       GetFinestPtr()   { return &this->back(); }
