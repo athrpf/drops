@@ -55,6 +55,7 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL
     //@{
     /// \brief Set up matrix for nonlinearity
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
+    MLTetraAccumulatorTupleCL& nonlinear_accu (MLTetraAccumulatorTupleCL& accus, MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
     /// \brief Set up matrix for nonlinearity at the time in the base-class using the registered Levelset-object.
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN) const {
         this->SetupNonlinear( matN, vel, cplN, *ls_, vel->t);

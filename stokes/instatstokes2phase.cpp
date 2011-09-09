@@ -139,8 +139,8 @@ class System2Accumulator_P2P1XCL : public System2Accumulator_P2P1CL<TwoPhaseFlow
 
   public:
     System2Accumulator_P2P1XCL ( const TwoPhaseFlowCoeffCL& coeff_arg, const StokesBndDataCL& BndData_arg,
-    		const LevelsetP2CL& lset, const IdxDescCL& RowIdx_arg, const IdxDescCL& ColIdx_arg,
-    	    MatrixCL& B_arg, VecDescCL* c_arg, double t_arg);
+        const LevelsetP2CL& lset, const IdxDescCL& RowIdx_arg, const IdxDescCL& ColIdx_arg,
+        MatrixCL& B_arg, VecDescCL* c_arg, double t_arg);
 
     ///\brief Initializes matrix-builders and load-vectors
     void begin_accumulation ();
@@ -1830,6 +1830,25 @@ void InstatStokes2PhaseP2P1CL::SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, Vec
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1 not implemented for this FE type");
 }
 
+MLTetraAccumulatorTupleCL&
+InstatStokes2PhaseP2P1CL::system1_accu (MLTetraAccumulatorTupleCL& accus, MLMatDescCL* A, MLMatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
+{
+    MLMatrixCL::iterator                   itA= A->Data.begin();
+    MLMatrixCL::iterator                   itM= M->Data.begin();
+    MLIdxDescCL::iterator                   it= A->RowIdx->begin();
+    MLTetraAccumulatorTupleCL::iterator itaccu= accus.begin();
+    for (size_t lvl= 0; lvl < A->Data.size(); ++lvl, ++itA, ++itM, ++it, ++itaccu)
+        switch (it->GetFE()) {
+          case vecP2_FE:
+            itaccu->push_back_acquire( new System1Accumulator_P2CL( GetCoeff(), GetBndData(), lset,
+                *it, *itA, *itM, lvl == A->Data.size() - 1 ? b : 0, cplA, cplM, t));
+            break;
+
+          default:
+              throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::system1_accu: not implemented for this FE type");
+        }
+    return accus;
+}
 
 void SetupRhs1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, VecDescCL* b, const LevelsetP2CL& lset, double t)
 {
@@ -2319,6 +2338,48 @@ void InstatStokes2PhaseP2P1CL::SetupSystem2( MLMatDescCL* B, VecDescCL* c, const
 #endif
         std::cout << '\n';
     }
+}
+
+MLTetraAccumulatorTupleCL&
+InstatStokes2PhaseP2P1CL::system2_accu (MLTetraAccumulatorTupleCL& accus, MLMatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const
+// Set up matrix B and rhs c
+{
+    MLMatrixCL::iterator                itB   = B->Data.begin();
+    MLIdxDescCL::iterator               itRow = B->RowIdx->begin();
+    MLIdxDescCL::iterator               itCol = B->ColIdx->begin();
+    MLTetraAccumulatorTupleCL::iterator itaccu= accus.begin();
+    if ( B->RowIdx->size() == 1 || B->ColIdx->size() == 1)
+    { // setup B only on finest level, if row or column index has only 1 level
+        itCol = B->ColIdx->GetFinestIter();
+        itRow = B->RowIdx->GetFinestIter();
+        itB   = B->Data.GetFinestIter();
+        itaccu= accus.GetFinestIter();
+    }
+    for (; itB!=B->Data.end() && itRow!=B->RowIdx->end() && itCol!=B->ColIdx->end(); ++itB, ++itRow, ++itCol, ++itaccu)
+    {
+#ifndef _PAR
+        std::cout << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs, " << itCol->NumUnknowns() << " vels. ";
+#endif
+        VecDescCL* rhsPtr= itB==B->Data.GetFinestIter() ? c : 0; // setup rhs only on finest level
+        if (itCol->GetFE()==vecP2_FE)
+            switch (GetPrFE()) {
+                case P1_FE:
+                    itaccu->push_back_acquire( new System2Accumulator_P2P1CL<TwoPhaseFlowCoeffCL>( Coeff_, BndData_, *itRow, *itCol, *itB, rhsPtr, t));
+                    break;
+                case P1X_FE:
+                    itaccu->push_back_acquire( new System2Accumulator_P2P1XCL(Coeff_, BndData_, lset, *itRow, *itCol, *itB, rhsPtr, t));
+                    break;
+                default:
+                    throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this pressure FE type");
+            }
+        else
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::system2_accu: not implemented for this velocity FE type");
+#ifndef _PAR
+        std::cout << itB->num_nonzeros() << " nonzeros in B!";
+#endif
+        std::cout << '\n';
+    }
+    return accus;
 }
 
 

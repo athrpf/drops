@@ -343,4 +343,15 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear
         SetupNonlinear_P2( *itN, vel, lvl == N->Data.size()-1 ? cplN : 0, lset,*it, t);
 }
 
+MLTetraAccumulatorTupleCL&
+InstatNavierStokes2PhaseP2P1CL::nonlinear_accu (MLTetraAccumulatorTupleCL& accus, MLMatDescCL* N, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const
+{
+    MLMatrixCL::iterator                itN    = N->Data.begin();
+    MLIdxDescCL::iterator               it     = N->RowIdx->begin();
+    MLTetraAccumulatorTupleCL::iterator it_accu= accus.begin();
+    for (size_t lvl=0; lvl < N->Data.size(); ++lvl, ++itN, ++it, ++it_accu)
+        it_accu->push_back_acquire( new NonlConvSystemAccumulator_P2CL( Coeff_, MG_, BndData_, *vel, lset, *it, *itN, lvl == N->Data.size()-1 ? cplN : 0, t));
+    return accus;
+}
+
 } // end of namespace DROPS
