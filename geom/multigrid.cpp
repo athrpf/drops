@@ -1316,16 +1316,29 @@ void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIterat
     compute_neighbors( begin, end, neighbors);
 
     // Color the tetras
+// std::srand( 1);
     std::vector<int> color( num_tetra, -1);
     std::vector<size_t> size_of_color_partition;
     std::vector<int> used_colors;
     for (size_t j= 0; j < num_tetra; ++j) {
         for (TetraNumVecT::iterator neigh_it= neighbors[j].begin(); neigh_it != neighbors[j].end(); ++neigh_it)
             used_colors.push_back( color[*neigh_it]);
-        size_t c= 0; // Note that the undefined color -1 is ignored.
-        while (find( used_colors.begin(), used_colors.end(), c) != used_colors.end())
-            ++c;
-        if (c < size_of_color_partition.size()) {
+//        size_t c= 0; // Note that the undefined color -1 is ignored.
+//        while (find( used_colors.begin(), used_colors.end(), c) != used_colors.end())
+//            ++c;
+
+const int num_colors_in_use= size_of_color_partition.size();
+const int randint= std::rand()%num_colors_in_use;
+int c;
+bool color_found= false;
+for (int i= 0; i < num_colors_in_use && !color_found; ++i) {
+    c= (randint + i)%num_colors_in_use;
+    if (find( used_colors.begin(), used_colors.end(),c) == used_colors.end())
+        color_found= true;
+}
+        if (color_found) {
+
+//         if (c < size_of_color_partition.size()) {
             color[j]= c;
             ++size_of_color_partition[c];
         }
@@ -1341,9 +1354,9 @@ void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIterat
     fill_pointer_arrays( size_of_color_partition, color, begin, end);
     color.clear();
 
-    // for (size_t j= 0; j < num_colors(); ++j)
-    //     std::cout << "Color " << j << " has " << colors_[j].size() << " tetras." << std::endl;
-    // std::cout << std::endl;
+    for (size_t j= 0; j < num_colors(); ++j)
+        std::cout << "Color " << j << " has " << colors_[j].size() << " tetras." << std::endl;
+    std::cout << std::endl;
 
     timer.Stop();
     const double duration= timer.GetTime();
