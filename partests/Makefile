@@ -45,7 +45,8 @@ TestExchangePar: \
    ../partests/TestExchangePar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/fe.o ../num/interfacePatch.o ../levelset/fastmarch.o \
-   ../levelset/levelset.o ../num/discretize.o ../levelset/surfacetension.o
+   ../levelset/levelset.o ../num/discretize.o ../levelset/surfacetension.o ../geom/principallattice.o \
+   ../geom/reftetracut.o ../num/quadrature.o ../geom/subtriangulation.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestPoissonPar: \
@@ -62,7 +63,8 @@ TestInterpolPar: \
     ../geom/builder.o ../misc/utils.o ../levelset/levelset.o \
     ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
     ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../levelset/fastmarch.o ../levelset/surfacetension.o
+    ../levelset/fastmarch.o ../levelset/surfacetension.o ../geom/principallattice.o ../geom/reftetracut.o \
+    ../num/quadrature.o ../geom/subtriangulation.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestSedPar: \
@@ -72,6 +74,7 @@ TestSedPar: \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o ../levelset/twophaseutils.o\
     ../num/interfacePatch.o ../out/vtkOut.o ../surfactant/ifacetransp.o ../levelset/surfacetension.o ../geom/simplex.o \
+    ../geom/principallattice.o ../geom/reftetracut.o ../num/quadrature.o ../geom/subtriangulation.o \
     ../num/hypre.o ../levelset/coupling.o ../navstokes/instatnavstokes2phase.o ../misc/bndmap.o ../geom/bndVelFunctions.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
