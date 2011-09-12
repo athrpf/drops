@@ -63,6 +63,7 @@ class VTKOutCL
     char               decDigits_;                  ///< number of digits for encoding time in filename
     Uint               timestep_, numsteps_;        ///< actual timestep and number of timesteps
     std::string        descstr_;                    ///< stores description info
+    std::string        dirname_; 
     std::string        filename_;                   ///< filenames
     std::ofstream      file_;                       ///< actual file where to put data
     VTKvarMapT         vars_;                       ///< The variables stored by varName.
@@ -86,6 +87,8 @@ class VTKOutCL
     void CheckFile( const std::ofstream&) const;
     /// Creates new file; writes timestep-info and (for parallel version only) writes a masterfile with distribution information
     void NewFile( double time , bool writeDistribution=true);
+    /// Creates the file which collects all the consecutively written data-files and adds the corresponding timestep information
+    void GenerateTimeFile( double time, const std::string & name) const;
     /// Puts the description header into the file
     void PutHeader();
     /// Puts the footer into the file
@@ -130,7 +133,7 @@ class VTKOutCL
   public:
     /// \brief Constructor of this class
     VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
-             const std::string& filename, bool binary, Uint lvl=-1);
+             const std::string& dirname, const std::string& filename , bool binary, Uint lvl=-1);
     ~VTKOutCL();
 
     /// \brief Register a variable or the geometry for output with Write().

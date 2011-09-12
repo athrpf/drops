@@ -323,7 +323,7 @@ void Strategy( StokesProblemT& Stokes)
     if (P.get<int>("VTK.VTKOut",0)){
         vtkwriter = new VTKOutCL(MG, "DROPS data", 
                                  P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1,
-                                 std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), 
+                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), 
                                  P.get<int>("VTK.Binary"));
         vtkwriter->Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
         vtkwriter->Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );

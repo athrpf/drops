@@ -252,7 +252,7 @@ void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
 
     // writer for vtk-format
     VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get<int>("VTK.VTKOut") ? 3 : 0),
-                std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary"));
+                P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), P.get<int>("VTK.Binary"));
     vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
     // Create numbering and assign given distance function

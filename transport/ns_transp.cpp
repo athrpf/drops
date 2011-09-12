@@ -224,7 +224,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     
     // writer for vtk-format
     VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get("VTK.VTKOut", 0) ? P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1 : 0),
-                std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), P.get<int>("VTK.Binary"));
+                P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), P.get<int>("VTK.Binary"));
 
     vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
@@ -576,7 +576,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     if (P.get<int>("VTK.VTKOut",0)){
         vtkwriter = new VTKOutCL(adap.GetMG(), "DROPS data", 
                                  P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1,
-                                 std::string(P.get<std::string>("VTK.VTKDir") + "/" + P.get<std::string>("VTK.VTKName")), 
+                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), 
                                  P.get<int>("VTK.Binary"));
         vtkwriter->Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
         vtkwriter->Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
