@@ -1256,22 +1256,22 @@ void ColorClassesCL::compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL
 {
     const size_t num_tetra= std::distance( begin, end);
 
-    typedef std::set<size_t> TetraNumSetT;
-    typedef std::tr1::unordered_map<const VertexCL*, TetraNumSetT> VertexMapT;
+    typedef std::tr1::unordered_map<const VertexCL*, TetraNumVecT> VertexMapT;
     VertexMapT vertexMap;
     // Collect all tetras, that have vertex v in vertexMap[v].
     for (MultiGridCL::const_TriangTetraIteratorCL sit= begin; sit != end; ++sit)
         for (int i= 0; i < 4; ++i)
-            vertexMap[sit->GetVertex( i)].insert( sit - begin);
+            vertexMap[sit->GetVertex( i)].push_back( sit - begin);
 
     // For every tetra j, store all neighboring tetras in neighbors[j].
+    typedef std::set<size_t> TetraNumSetT;
     std::vector<TetraNumSetT> neighborsets( num_tetra);
 #   pragma omp parallel
     {
 #       pragma omp for
         for (size_t j= 0; j < num_tetra; ++j)
             for (int i= 0; i < 4; ++i) {
-                const TetraNumSetT& tetra_nums= vertexMap[(begin + j)->GetVertex( i)];
+                const TetraNumVecT& tetra_nums= vertexMap[(begin + j)->GetVertex( i)];
                 neighborsets[j].insert( tetra_nums.begin(), tetra_nums.end());
             }
 #       pragma omp for
@@ -1283,12 +1283,12 @@ void ColorClassesCL::compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL
 }
 
 void ColorClassesCL::fill_pointer_arrays (
-    const std::vector<size_t>& color_sizes, const std::vector<int>& color,
+    const std::list<ColorFreqT>& color_list, const std::vector<int>& color,
     MultiGridCL::const_TriangTetraIteratorCL begin, MultiGridCL::const_TriangTetraIteratorCL end)
 {
-    colors_.resize( color_sizes.size());
-    for (size_t j= 0; j < num_colors(); ++j)
-        colors_[j].reserve( color_sizes[j]);
+    colors_.resize( color_list.size());
+    for (std::list<ColorFreqT>::const_iterator it= color_list.begin(); it != color_list.end(); ++it)
+        colors_[it->first].reserve( it->second);
     const size_t num_tetra= std::distance( begin, end);
     for (size_t j= 0; j < num_tetra; ++j)
         colors_[color[j]].push_back( &*(begin + j));
@@ -1316,47 +1316,40 @@ void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIterat
     compute_neighbors( begin, end, neighbors);
 
     // Color the tetras
-// std::srand( 1);
-    std::vector<int> color( num_tetra, -1);
-    std::vector<size_t> size_of_color_partition;
-    std::vector<int> used_colors;
+    std::vector<int> color( num_tetra, -1); // Color of each tetra
+    std::list<ColorFreqT> color_frequency;  // list of colors together with number of their occurrence
+    std::vector<int> used_colors; // list of the colors of all neighbors (multiple occurrences of the same color or -1 are allowed)
     for (size_t j= 0; j < num_tetra; ++j) {
         for (TetraNumVecT::iterator neigh_it= neighbors[j].begin(); neigh_it != neighbors[j].end(); ++neigh_it)
             used_colors.push_back( color[*neigh_it]);
-//        size_t c= 0; // Note that the undefined color -1 is ignored.
-//        while (find( used_colors.begin(), used_colors.end(), c) != used_colors.end())
-//            ++c;
-
-const int num_colors_in_use= size_of_color_partition.size();
-const int randint= std::rand()%num_colors_in_use;
-int c;
-bool color_found= false;
-for (int i= 0; i < num_colors_in_use && !color_found; ++i) {
-    c= (randint + i)%num_colors_in_use;
-    if (find( used_colors.begin(), used_colors.end(),c) == used_colors.end())
-        color_found= true;
-}
+        bool color_found= false;
+        std::list<ColorFreqT>::iterator it;
+        for (it= color_frequency.begin(); it != color_frequency.end(); ++it)
+            if (find( used_colors.begin(), used_colors.end(), it->first) == used_colors.end()) {
+                color_found= true;
+                break;
+            }
         if (color_found) {
-
-//         if (c < size_of_color_partition.size()) {
-            color[j]= c;
-            ++size_of_color_partition[c];
+            color[j]= it->first;
+            ++it->second;
+            // Move color to the end: LRU-policy for evenly used colors.
+            color_frequency.splice( color_frequency.end(), color_frequency, it);
         }
         else {
-            size_of_color_partition.push_back( 1); // Add new color with one use
-            color[j]= size_of_color_partition.size() - 1;
+            color_frequency.push_back( std::make_pair( color_frequency.size(), 1)); // Add new color with one use
+            color[j]= color_frequency.back().first;
         }
         used_colors.clear();
     }
     neighbors.clear();
 
     // Build arrays of pointers for the colors
-    fill_pointer_arrays( size_of_color_partition, color, begin, end);
+    fill_pointer_arrays( color_frequency, color, begin, end);
     color.clear();
 
-    for (size_t j= 0; j < num_colors(); ++j)
-        std::cout << "Color " << j << " has " << colors_[j].size() << " tetras." << std::endl;
-    std::cout << std::endl;
+    // for (size_t j= 0; j < num_colors(); ++j)
+    //     std::cout << "Color " << j << " has " << colors_[j].size() << " tetras." << std::endl;
+    // std::cout << std::endl;
 
     timer.Stop();
     const double duration= timer.GetTime();

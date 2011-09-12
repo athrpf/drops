@@ -370,11 +370,12 @@ class ColorClassesCL
     std::vector<ColorClassT> colors_;
 
     typedef std::vector<size_t> TetraNumVecT;
+    typedef std::pair<size_t, size_t> ColorFreqT;
 
     void compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL begin,
                             MultiGridCL::const_TriangTetraIteratorCL end,
                             std::vector<TetraNumVecT>& neighbors);
-    void fill_pointer_arrays (const std::vector<size_t>& color_sizes,
+    void fill_pointer_arrays (const std::list<ColorFreqT>& color_list,
         const std::vector<int>& color,
         MultiGridCL::const_TriangTetraIteratorCL begin,
         MultiGridCL::const_TriangTetraIteratorCL end);
