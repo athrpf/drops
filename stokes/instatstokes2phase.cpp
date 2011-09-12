@@ -2081,8 +2081,6 @@ class LocalLBTwoPhase_P2CL
   private:
     const PrincipalLatticeCL& lat;
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
-    Quad5_2DCL<Point3DCL> surfGrad[10];
-    Quad5_2DCL<> LB;
     GridFunctionCL<Point3DCL> qnormal;
     GridFunctionCL<Point3DCL> qgrad[10];
 
