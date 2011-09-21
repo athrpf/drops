@@ -154,7 +154,7 @@ void BrickBuilderCL::build (MultiGridCL* mgp) const
                 tetras.back().BuildEdges(edges);
                 tetras.back().BuildAndLinkFaces(faces);
             }
-    std::for_each( va.begin(), va.end(), std::mem_fun( &VertexCL::DestroyRecycleBin ) );
+    std::for_each( verts.begin(), verts.end(), std::mem_fun_ref( &VertexCL::DestroyRecycleBin ) );
 }
 
 /// \brief Creates a MultigridCL of a brick shaped domain
@@ -512,7 +512,7 @@ void LBuilderCL::build (MultiGridCL* mgp) const
                     tetras.back().BuildEdges(edges);
                     tetras.back().BuildAndLinkFaces(faces);
                 }
-    std::for_each( va.begin(), va.end(), std::mem_fun( &VertexCL::DestroyRecycleBin ) );
+    std::for_each( verts.begin(), verts.end(), std::mem_fun_ref( &VertexCL::DestroyRecycleBin ) );
 }
 
 
