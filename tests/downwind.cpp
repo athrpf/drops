@@ -22,7 +22,7 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-#include "num/spmat.h"
+#include "num/renumber.h"
 #include "misc/problem.h"
 #include <iostream>
 #include <fstream>
@@ -350,6 +350,34 @@ Test_rcm()
     print_frobeniusnorm( M);
 }
 
+void
+TestTarjanDownwind ()
+{
+    MatrixCL M;
+    MatrixBuilderCL Mb( &M, 3, 3);
+    Mb( 0, 0)= 0.0;
+    Mb( 1, 1)= 0.0;
+    Mb( 2, 2)= 0.0;
+
+    Mb( 0, 1)= -1.0;
+    Mb( 0, 2)= 1.0;
+
+    Mb( 1, 0)= 1.0;
+    Mb( 2, 0)= -1.0;
+    Mb.Build();
+    std::cout << "M (the digraph):\n" << M << '\n';
+    print_frobeniusnorm( M);
+
+    TarjanDownwindCL re_num;
+    const PermutationT& p= re_num.number_connected_components( M);
+    seq_out( p.begin(), p.end(), std::cout);
+    re_num.stats( std::cout);
+    M.permute_rows( p);
+    M.permute_columns( p);
+    std::cout << "M permuted:\n" << M << '\n';
+    print_frobeniusnorm( M);
+}
+
 int main ()
 {
 try {
@@ -368,7 +396,10 @@ try {
 //     print_frobeniusnorm( M);
 //     std::ofstream of( "normalperm.dat");
 //     of << M;
-    Test_rcm();
+
+//    Test_rcm();
+    TestTarjanDownwind();
+
 }
 catch (DROPSErrCL d) {
     d.handle();
