@@ -119,10 +119,10 @@ reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
 class TarjanDownwindCL
 {
   private:
-    PermutationT new_index;              ///< new_index[i] is the new number of vertex i.
+    PermutationT        new_index;       ///< new_index[i] is the new number of vertex i.
     std::vector<size_t> t_index;         ///< index in Tarjan's algorithm
     std::vector<size_t> low_link;        ///< the smallest index encountered in the current component
-    std::vector<size_t> component;       ///< component[i] is the number of the component of i.
+    std::vector<size_t> component_;      ///< component[i] is the number of the component of i.
     std::vector<size_t> component_size_; ///< number of elements in component i.
 
     size_t idx;                ///< Counter for next available vertex index
@@ -144,7 +144,9 @@ class TarjanDownwindCL
     /// \brief Number of strongly connected components.
     size_t                     num_components () const { return component_size_.size(); }
     /// \brief component_map()[i] is the number of the component, to which vertex i belongs.
-    const std::vector<size_t>& component_map  () const { return component; }
+    const std::vector<size_t>& component_map  () const { return component_; }
+    /// \brief component(c) contains all vertices in component c. The vertices are in ascending order.
+    std::vector<size_t> component  (size_t c) const;
     /// \brief the number of vertices in component i.
     const std::vector<size_t>& component_size () const { return component_size_; }
 

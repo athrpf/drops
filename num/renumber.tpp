@@ -190,14 +190,19 @@ template <typename T>
   TarjanDownwindCL::number_connected_components (const SparseMatBaseCL<T>& M)
 {
     const size_t num_verts= M.num_cols();
+    new_index.clear();
     new_index.resize( num_verts, NoVert);
+    t_index.clear();
     t_index.resize( num_verts, NoVert);
+    low_link.clear();
     low_link.resize( num_verts, NoVert);
-    component.resize( num_verts, NoVert);
+    component_.clear();
+    component_.resize( num_verts, NoVert);
     component_size_.clear();
     idx= 0;
     tidx= 0;
     stack.clear();
+    is_on_stack.clear();
     is_on_stack.resize( num_verts, false);
 
     for (size_t v= 0; v < num_verts; ++v)
@@ -233,7 +238,7 @@ template <typename T>
         component_size_.push_back( 0);
         do {
             w= stack.back();
-            component[w]= component_size_.size() - 1;
+            component_[w]= component_size_.size() - 1;
             ++component_size_.back();
             is_on_stack[w]= false;
             stack.pop_back();
@@ -243,12 +248,24 @@ template <typename T>
     }
 }
 
+inline std::vector<size_t> TarjanDownwindCL::component (size_t c) const
+{
+    std::vector<size_t> ret;
+    ret.reserve( component_size()[c]);
+
+    for (size_t i= 0; i < component_.size(); ++i)
+        if (component_[i] == c)
+            ret.push_back( i);
+
+    return ret;
+}
+
 inline void TarjanDownwindCL::stats (std::ostream& os) const
 {
     const size_t num_nontrivial= num_components() - std::count( component_size().begin(), component_size().end(), 1);
     os << "# unknowns: " << permutation().size() << '\n'
        << "# components: " << num_components() << " of which " << num_nontrivial << " have more than one unknown.\n"
-       << "The largest component has: " << *std::max_element(component_size().begin(), component_size().end()) << " unknowns.\n";
+       << "The largest component has " << *std::max_element(component_size().begin(), component_size().end()) << " unknowns.\n";
 }
 
 
