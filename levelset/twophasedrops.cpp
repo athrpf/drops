@@ -340,6 +340,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
                                  P.get<int>("VTK.Binary"));
         vtkwriter->Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
         vtkwriter->Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
+        if (P.get<int>("VTK.AddP1XPressure",0))
+            vtkwriter->Register( make_VTKP1XScalar( MG, lset.Phi, Stokes.p, "pressure"));
         vtkwriter->Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
         if (massTransp) {

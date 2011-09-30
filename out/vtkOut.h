@@ -209,6 +209,57 @@ template <class DiscScalarT>
     return *new VTKScalarCL<DiscScalarT>( f, varName);
 }
 
+///\brief Represents a scalar XFEM Drops-function (P1EvalCL) as VTK variable.
+class VTKP1XScalarCL : public VTKVariableCL
+{
+  private:
+    const VecDescCL& v_;
+
+    mutable IdxDescCL p1idx_;
+    mutable VecDescCL vneg_,
+                      vpos_;
+
+    const VecDescCL& lset_;
+    BndDataCL<double> bnd_;
+    MultiGridCL& mg_;
+
+  public:
+    VTKP1XScalarCL(MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v, const BndDataCL<>& bnd,
+                   std::string varName)
+        : VTKVariableCL( varName), v_( v), vneg_( &p1idx_), vpos_( &p1idx_), 
+        lset_( lset), bnd_( bnd), mg_( mg) {}
+    ~VTKP1XScalarCL() { if (p1idx_.NumUnknowns() != 0) p1idx_.DeleteNumbering( mg_); }
+    void put( VTKOutCL& cf) const {
+        if (p1idx_.NumUnknowns() != 0)
+            p1idx_.DeleteNumbering( mg_);
+        p1idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_, *v_.RowIdx);
+        P1XtoP1 ( *v_.RowIdx, v_.Data, p1idx_, vpos_.Data, vneg_.Data, lset_, mg_);
+        cf.PutScalar( P1EvalCL<double, const BndDataCL<>, const VecDescCL>(&vneg_, &bnd_, &mg_), varName()+ "_neg"); 
+        cf.PutScalar( P1EvalCL<double, const BndDataCL<>, const VecDescCL>(&vpos_, &bnd_, &mg_), varName()+ "_pos"); 
+    }
+    Uint GetDim() const { return 1; }
+};
+
+///\brief Create an VTKP1XScalarCL with operator new.
+///
+/// This is just for uniform code; the analoguous functions for scalars and vectors are more useful because
+/// they help to avoid template parameters in user code.
+inline  VTKP1XScalarCL&
+    make_VTKP1XScalar(MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v, const BndDataCL<>& bnd,
+                   std::string varName)
+{
+    return *new VTKP1XScalarCL( mg,lset,v,bnd,varName);
+}
+
+inline  VTKP1XScalarCL&
+    make_VTKP1XScalar(MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v,
+                   std::string varName)
+{
+    return *new VTKP1XScalarCL( mg,lset,v,BndDataCL<>( 0),varName);
+}
+
+
+
 ///\brief Represents a vector Drops-function (P1 or P2, given as PXEvalCL) as VTK variable.
 template <class DiscVectorT>
 class VTKVectorCL : public VTKVariableCL

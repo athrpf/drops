@@ -162,10 +162,11 @@
 		"_comment":
 "#VTK output",
 
-		"VTKOut":		1,
-		"VTKDir":		"vtk",
-		"VTKName":		"risingdroplet",
-		"Binary":		1
+		"VTKOut":               1,
+        "AddP1XPressure":       1,
+		"VTKDir":		        "vtk",
+		"VTKName":		        "risingdroplet",
+		"Binary":		        1
 	},
 
 	"Restart":
