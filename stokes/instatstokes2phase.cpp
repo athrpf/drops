@@ -88,10 +88,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff,
     System2Accumulator_P2P1CL<TwoPhaseFlowCoeffCL> accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    if ( omp_get_max_threads() > 1)
-        accus( MG.GetColorClasses( RowIdx->TriangLevel()));
-    else
-        accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
+    accumulate( accus, MG, RowIdx->TriangLevel());
 }
 
 
@@ -235,11 +232,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff
     System2Accumulator_P2P1XCL p1x_accu( coeff, BndData, lset, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &p1x_accu);
-    if ( omp_get_max_threads() > 1)
-        accus( MG.GetColorClasses( RowIdx->TriangLevel()));
-    else
-        accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
-
+    accumulate( accus, MG, RowIdx->TriangLevel());
 }
 
 inline void ComputePgradV( LocalP2CL<Point3DCL>& PgradV, Uint pr, const Quad2CL<Point3DCL>& gradV)
@@ -1504,14 +1497,11 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
 {
     // TimerCL time;
     // time.Start();
-    
+
     System1Accumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, M, b, cplA, cplM, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    if ( omp_get_max_threads() > 1)
-    	accus( MG_.GetColorClasses( RowIdx.TriangLevel()));
-    else
-        accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    accumulate( accus, MG_, RowIdx.TriangLevel());
     // time.Stop();
     // std::cout << "setup: " << time.GetTime() << " seconds" << std::endl;
 }
@@ -2265,13 +2255,10 @@ void LBAccumulator_P2CL::update_global_system ()
 void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up the Laplace-Beltrami-matrix
 {
-     LBAccumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, cplA, t);
-     TetraAccumulatorTupleCL accus;
-     accus.push_back( &accu);
-     if ( omp_get_max_threads() > 1)
-         accus( MG_.GetColorClasses( RowIdx.TriangLevel()));
-     else
-    	 accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    LBAccumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, cplA, t);
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &accu);
+    accumulate( accus, MG_, RowIdx.TriangLevel());
 }
 
 
