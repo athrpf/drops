@@ -94,18 +94,17 @@ class PoissonCoeffCL
     static double PecNum(const DROPS::Point3DCL& p, double t)
     {//Peclet Number
         double Pec=0.;        
-        Pec=Vel(p, t)[0]*h_Value()/(2.*alpha);        
+        Pec=Vel(p, t).norm()*h_Value()/(2.*alpha);        
         return Pec;
     }
     static double Sta_Coeff(const DROPS::Point3DCL& p, double t) 
     {//Stabilization coefficient
-       double h=dx_/(nx_*std::pow(2, Ref_));
-        double Pec=Vel(p, t)[0]*h/(2.*alpha); 
-        //if (PecNum(p,t)<=1)
+        double Pec=PecNum(p,t);
+        double h  =h_Value();
         if (Pec<=1)
             return 0.0;
         else
-            return h/(2.*Vel(p, t)[0])*(1.-1./Pec);
+            return h/(2.*Vel(p, t).norm())*(1.-1./Pec);
     }
     static void Show_Pec()
     {
