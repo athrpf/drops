@@ -1,125 +1,115 @@
 {
-	"_comment":
-"#=============================================================
-#    DROPS parameter file for    film
-#    simulation of two-phase flow:
-#    film flow
-#=============================================================
-# time stepping",
+//=============================================================
+//    DROPS parameter file for    film
+//    simulation of two-phase flow:
+//    falling film flow
+//=============================================================
 
+// time stepping
 	"Time":
 	{
-		"NumSteps":		10000,
-		"StepSize":		0.0001
+		"NumSteps":		10000,		// number of time steps
+		"StepSize":		0.0001		// time step size
 	},
 
+// flow solver, Stokes part
 	"Stokes":
 	{
-		"_comment":
-"# flow solver",
-
-		"StokesMethod":		10502,
+		"StokesMethod":		10502,	// Stokes solver, cf. num/stokessolverfactory.h
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		1e-10,
 		"OuterTol":		1e-08,
-		"PcAIter":		200,
-		"PcATol":		0.0001,
-		"PcSTol":		0.0001,
-		"XFEMStab":		1,
-		"Theta":		1
+		"PcAIter":		200,		// preconditioner for left upper block: max. number of iterations
+		"PcATol":		0.0001,		// preconditioner for left upper block: tolerance
+		"PcSTol":		0.0001,		// Schur complement preconditioner: tolerance
+		"XFEMStab":		1,			// controls how many XFEM basis functions are skipped
+		"Theta":		1			// controls implicitness of time stepping scheme
 	},
 
+// flow solver, Navier-Stokes part
 	"NavStokes":
 	{
-		"Nonlinear":		1,
-		"Tol":		5e-10,
-		"Iter":		10,
-		"Reduction":		0.1
+		"Nonlinear":		1,		// coefficient in front of nonlinear convection term
+		"Tol":		5e-10,			// N-S fixed point iteration: tolerance
+		"Iter":		10,				// N-S fixed point iteration: max. number of iterations
+		"Reduction":		0.1		// N-S fixed point iteration: reduction of resid. in each iteration
 	},
 
+// levelset solver
 	"Levelset":
 	{
-		"_comment":
-"# levelset solver",
-
-		"Tol":		1e-16,
-		"Iter":		1000,
-		"SD":		1,
-		"CurvDiff":		-1,
-		"VolCorrection":		1,
-		"Theta":		1
+		"Tol":		1e-16,			// levelset solver: tolerance
+		"Iter":		1000,			// levelset solver: max. number of iterations
+		"SD":		1,				// streamline diffusion parameter
+		"CurvDiff":		-1,			// smoothing of interface for curvature computation
+		"VolCorrection":		1,	// toggles volume correction
+		"Theta":		1			// controls implicitness of time stepping scheme
 	},
 
+// coupling of level set and flow 
 	"Coupling":
 	{
-		"Tol":		1e-10,
-		"Iter":		0
+		"Tol":		1e-10,	// fixed point iteration: tolerance
+		"Iter":		0		// fixed point iteration: max. number of iterations
 	},
 
+// re-initialization of levelset function
 	"Reparam":
 	{
-		"_comment":
-"# re-initialization of levelset function",
-
-		"Freq":		100,
-		"Method":		3
+		"Freq":		100,	// how often to re-initialize
+		"Method":		3	// Fast-Marching variants
 	},
 
+// adaptive refinement
 	"AdaptRef":
 	{
-		"_comment":
-"# adaptive refinement",
-
-		"Freq":		10,
-		"FinestLevel":		2,
-		"CoarsestLevel":		0,
-		"Width":		0.0005,
-		"LoadBalStrategy":		1,
-		"Partitioner":		1
+		"Freq":		10,				// how often to refine 
+		"FinestLevel":		2,		// refinement level inside shell
+		"CoarsestLevel":		0,	// refinement level outside shell
+		"Width":		0.0005,		// width of refinement shell around interface
+		"LoadBalStrategy":		1,	// inactive
+		"Partitioner":		1		// inactive
 	},
 
 	"Mat":
 	{
-		"_comment":
-"# material data, all units are SI, scaled by rho
-#Mat {
-#  DensGas	=	1			# 'Luft'/Silikonoel
-#  ViscGas	=	1.425e-5	# mu/rho
-#  DensFluid	=	1
-#  ViscFluid	=	5.7e-6	# mu/rho
-#  SmoothZone	=	1e-4
-#  SurfTension	=	0 #5.5e-6 	# 2e-3 # sigma/(0.4 rho_F + 0.6 rho_G)
-#}
-# material data, all units are SI",
+// material data, all units are SI, scaled by rho
+//  "DensGas":		1,			// 'air' / silicon oil
+//  "ViscGas":		1.425e-5,	// mu/rho
+//  "DensFluid":		1,
+//  "ViscFluid":		5.7e-6,	// mu/rho
+//  "SmoothZone":		1e-4,	// inactive
+//  "SurfTension":		0 // 5.5e-6	// tau/(0.4 rho_F + 0.6 rho_G)
 
-		"DensGas":		1.2,
-		"ViscGas":		1.71e-05,
-		"DensFluid":		909.3,
-		"ViscFluid":		0.005183,
-		"SmoothZone":		0.0001,
-		"SurfTension":		0.011
+// material data, all units are SI
+		"DensGas":		1.2,			// density of gas
+		"ViscGas":		1.71e-05,		// kinematic viscosity of gas
+		"DensFluid":		909.3,		// density of liquid film
+		"ViscFluid":		0.005183,	// kinematic viscosity of liquid film
+		"SmoothZone":		0.0001,		// inactive
+		"SurfTension":		0.005		// surface tension coefficient
 	},
 
+// experimental conditions
 	"Exp":
 	{
-		"_comment":
-"# experimental conditions",
-
-		"Gravity":		[8.036, -5.627, 0 ],
-		"PumpAmpl":		0.2,
-		"PumpFreq":		10,
-		"Ampl_zDir":		0.5,
-		"Thickness":		0.000635
+		"Gravity":		[8.036, -5.627, 0 ], // gravity vector -> inclined film
+		"PumpAmpl":		0.2, 			// rel. amplitude of initial wave in x direction 
+		"PumpFreq":		10, 
+		"Ampl_zDir":		0.5, 		// rel. amplitude of initial wave in z direction
+		"Thickness":		0.000635	// average film thickness
 	},
-	"MeshResolution":		[20, 6, 2 ],
-	"MeshSize":		[20.9e-3, 4e-3, 4e-3 ],
-	"InitialCond":		1,
-	"InitialFile":		"initial/filmNs40",
-	"BndCond":		"12wo12",
-	"EnsightCase":		"filmNsTau5e-3",
-	"EnsightDir":		"ensight",
-	"SerializationFile":		"filmNs.mg",
-	"DeserializationFile":		"none"
+	
+// misc parameters	
+	"MeshResolution":		[20, 6, 2 ],	// number of sub-intervals per dimension
+	"MeshSize":		[20.9e-3, 4e-3, 4e-3 ], // length of cuboid domain per dimension 
+	"InitialCond":		1,					// controls initial condition: 1 = stationary Stokes, 2 = Nusselt solution, -1 = read from file
+	"InitialFile":		"initial/filmNs40", // prefix for initial data files
+	"BndCond":		"12wo12",				// boundary conditions: Per1!Per2!Wall!Outflow!Per1!Per2
+	"EnsightCase":		"filmNsTau5e-3",	// Ensight case
+	"EnsightDir":		"ensight",			// directory for Ensight data
+	"SerializationFile":		"filmNs.mg",// write to files
+	"DeserializationFile":		"none"		// read from files
 
 }
