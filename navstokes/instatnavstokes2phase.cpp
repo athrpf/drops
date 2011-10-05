@@ -23,6 +23,7 @@
 */
 
 #include "navstokes/instatnavstokes2phase.h"
+#include "num/renumber.h"
 
 namespace DROPS
 {
@@ -180,7 +181,7 @@ class NonlConvSystemAccumulator_P2CL : public TetraAccumulatorCL
     const MultiGridCL& MG;
     const VelVecDescCL & vel;
     const LevelsetP2CL& lset;
-   
+
     double t;
 
     IdxDescCL& RowIdx;
@@ -349,6 +350,46 @@ InstatNavierStokes2PhaseP2P1CL::nonlinear_accu (MLTetraAccumulatorTupleCL& accus
     for (size_t lvl=0; lvl < N->Data.size(); ++lvl, ++itN, ++it, ++it_accu)
         it_accu->push_back_acquire( new NonlConvSystemAccumulator_P2CL( Coeff_, MG_, BndData_, *vel, lset, *it, *itN, lvl == N->Data.size()-1 ? cplN : 0, t));
     return accus;
+}
+
+
+PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP2CL& lset)
+{
+    std::cout << "Downwind numbering: Setting indices...\n";
+    MLMatDescCL  matN( &vel_idx, &vel_idx);
+    matN.Data.resize( matN.RowIdx->size());
+    VelVecDescCL loccplN( &vel_idx);
+
+    std::cout << "...accumulating convection matrix...\n";
+    // We are interested in convection, not the (implicit) interfacial term.
+    const CoeffCL& coeff= GetCoeff();
+    SmoothedJumpCL oldrho= coeff.rho;
+    const_cast<SmoothedJumpCL&>( coeff.rho)= SmoothedJumpCL( 1., 1., oldrho);
+    SetupNonlinear( &matN, &v, &loccplN, lset, v.t);
+    const_cast<SmoothedJumpCL&>( coeff.rho)= oldrho;
+
+    std::cout << "...extracting scalar convection matrix...\n";
+    const size_t dim= matN.Data.num_rows()/3;
+    MatrixCL M;
+    SparseMatBuilderCL<> Mb(&M, dim, dim);
+    for (size_t i= 0; i < dim; ++i) {
+        const double* Nval= matN.Data.GetFinest().GetFirstVal( 3*i);
+        for (const size_t* Ncol= matN.Data.GetFinest().GetFirstCol( 3*i),
+                         * rowend= matN.Data.GetFinest().GetFirstCol( 3*i + 1);
+            Ncol != rowend; ++Ncol, ++Nval)
+            if (*Ncol%3 == 0)
+                Mb( i, *Ncol/3)= *Nval;
+    }
+    Mb.Build();
+
+    const PermutationT& p= DROPS::downwind_numbering( M);
+    std::cout << "...applying permutation to the fe-basis...\n";
+    permute_fe_basis( GetMG(), vel_idx.GetFinest(), p);
+    std::cout << "...applying permutation to the initial velocity...\n";
+    permute_Vector( v.Data, p, /*blocksize*/ 3);
+    std::cout << "...downwind numbering finished.\n";
+
+    return p;
 }
 
 } // end of namespace DROPS
