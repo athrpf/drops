@@ -43,10 +43,18 @@ namespace DROPS
 ///   - use get routines to access data
 /// For further information see TRAC
 
-class ParamCL: public boost::property_tree::ptree
+class ParamCL
 {
   public:
-    ParamCL();
+    typedef boost::property_tree::ptree ptree_type;
+    typedef ptree_type::path_type       path_type;
+    typedef ParamCL                     self_type;
+
+    ParamCL ();
+    ParamCL (const ptree_type& p) : pt( p) {}
+
+    const ptree_type& get_child(const path_type& path) const
+        { return pt.get_child( path); }
 
     /// \brief standard get routine
     /// template parameter is the desired type of returned variable
