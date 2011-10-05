@@ -46,7 +46,7 @@
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":        1,                              //Diffusion coefficient
+        "Diffusion":        0.01,                              //Diffusion coefficient
             // -> Here: a = 1
         "Reaction":             "SUPG_Reaction",        //Reaction term [q] with the name "Example1_Reaction"
             // -> Here: q = 0
@@ -58,7 +58,7 @@
             // -> Here: b = (0,0,0)
         "InitialVal":       "Zero",                    //Initial value of the pde [u(t=0)]
             // -> Here: u(t=0) = 1
-        "Stabilization":    0
+        "Stabilization":    1
     },
 
     //############################################
@@ -67,7 +67,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      4,
+        "RefineSteps":      2,
             //initial refinement: how often is the mesh refined
             // -> Here: two times refinement
         "GeomType":         1,

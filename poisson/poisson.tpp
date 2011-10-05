@@ -291,138 +291,84 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
   double absdet;
   IdxT UnknownIdx[4];
   Quad2CL<> rhs, quad_a;
+  
+  double coupM[4][4];
+  Quad5CL<> U_Grad[4];
+  LocalP1CL<double> phi[4];
+  for(int i=0; i<4; i++)
+  {
+      phi[i][i]=1.;
+  }
+  Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
 
 //  StripTimeCL strip( &Coeff::f, tf);
 
 //  if (Coeff_.SpecialRhs)
 //      Coeff_.ComputeRhs( vf, tf, MG_);
 
-  if(!SUPG)
+  for (MultiGridCL::const_TriangTetraIteratorCL
+    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
+    sit != send; ++sit)
   {
-      for (MultiGridCL::const_TriangTetraIteratorCL
-        sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
-        send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-        sit != send; ++sit)
-      {
-        P1DiscCL::GetGradients(G,det,*sit);
-        absdet= std::fabs(det);
+    P1DiscCL::GetGradients(G,det,*sit);
+    absdet= std::fabs(det);
 
-        //quad_a.assign( *sit, Coeff_.alpha, tA);
-        const double int_a=  Coeff_.alpha * absdet / 6.0;
-
-        for(int i=0; i<4; ++i)
-        {
-          for(int j=0; j<=i; ++j)
-          {
-            // dot-product of the gradients
-            coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-            // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
-            coupA[j][i]= coupA[i][j];
-          }
-          UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
-                                                                : NoIdx;
-        }
-
-        for(int j=0; j<4; ++j)
-          if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
-          { // coupling with vertex j on right-hand-side
-            const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), tA);
-            for(int i=0; i<4;++i)    // assemble row i
-            {
-              if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-              {
-                vA.Data[UnknownIdx[i]]-= coupA[j][i] * bndval;
-                vM.Data[UnknownIdx[i]]-= P1DiscCL::GetMass( i, j)*absdet * bndval;
-              }
-            }
-          }
-
-        rhs.assign( *sit, Coeff_.f, tf);
-        for(int i=0; i<4;++i)    // assemble row i
-          if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-          {
-    //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
-    //        if (!Coeff_.SpecialRhs)
-            vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
-            if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
-              for (int f=0; f < 3; ++f)
-                if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                  vA.Data[UnknownIdx[i]]+=
-                    Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
-          }
-      }
-  }
-  else
-  {
-      double coupM[4][4];
-      Quad5CL<> U_Grad[4];
-      LocalP1CL<double> phi[4];
-      for(int i=0; i<4; i++)
-      {
-          phi[i][i]=1.;
-      }
-      Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
-      for (MultiGridCL::const_TriangTetraIteratorCL
-        sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
-        send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-        sit != send; ++sit)
-      {
-        
-        P1DiscCL::GetGradients(G,det,*sit);
-        absdet= std::fabs(det);
-
-        //quad_a.assign( *sit, Coeff_.alpha, tA);
-        const double int_a= Coeff_.alpha/6.0 * absdet;//quad_a.quad( absdet);
+    //quad_a.assign( *sit, Coeff_.alpha, tA);
+    const double int_a=  Coeff_.alpha * absdet / 6.0;
+    if(SUPG)
+    {
         Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
         for(int i=0; i<4; i++)
             U_Grad[i]=dot(u, Quad5CL<Point3DCL>(G[i]));
-        
-        for(int i=0; i<4; ++i)
+    }
+    for(int i=0; i<4; ++i)
+    {
+      for(int j=0; j<4; ++j)
+      {
+        // dot-product of the gradients
+        coupA[i][j]= inner_prod( G[i], G[j])*int_a;
+        // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
+        if(SUPG)
         {
-          for(int j=0; j<4; ++j)
-          {
             Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
             Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            // dot-product of the gradients
-            coupA[i][j]= inner_prod( G[i], G[j])*int_a;
             coupA[i][j]+=StrA.quad(absdet)*Coeff::Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
             
             coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
             coupM[i][j]+= StrM.quad(absdet)*Coeff::Sta_Coeff(GetBaryCenter(*sit),tA); //SUPG term
-            
-            // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
-          }
-          UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;      
         }
-        
-                for(int j=0; j<4; ++j)
-          if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
-          { // coupling with vertex j on right-hand-side
-            const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), tA);
-            for(int i=0; i<4;++i)    // assemble row i
-            {
-              if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-              {
-                vA.Data[UnknownIdx[i]]-= coupA[j][i] * bndval;
-                vM.Data[UnknownIdx[i]]-= coupM[i][j] * bndval;
-              }
-            }
-          }
+      }
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
+                                                            : NoIdx;
+    }
 
-        rhs.assign( *sit, Coeff_.f, tf);
+    for(int j=0; j<4; ++j)
+      if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
+      { // coupling with vertex j on right-hand-side
+        const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), tA);
         for(int i=0; i<4;++i)    // assemble row i
+        {
           if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
           {
-    //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
-    //        if (!Coeff_.SpecialRhs)
-            vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
-            if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
-              for (int f=0; f < 3; ++f)
-                if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                  vA.Data[UnknownIdx[i]]+=
-                    Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
+            vA.Data[UnknownIdx[i]]-= coupA[j][i] * bndval;
+            vM.Data[UnknownIdx[i]]-= P1DiscCL::GetMass( i, j)*absdet * bndval;
           }
-      
+        }
+      }
+
+    rhs.assign( *sit, Coeff_.f, tf);
+    for(int i=0; i<4;++i)    // assemble row i
+      if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
+      {
+//        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
+//        if (!Coeff_.SpecialRhs)
+        vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
+        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
+          for (int f=0; f < 3; ++f)
+            if ( sit->IsBndSeg(FaceOfVert(i, f)) )
+              vA.Data[UnknownIdx[i]]+=
+                Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
       }
   }
 }
