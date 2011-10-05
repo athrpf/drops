@@ -183,6 +183,15 @@ class ExtIdxDescCL
 #endif
 };
 
+/// \brief Apply the permutation p to the extended part of a finite element basis
+inline void
+permute_fe_basis_extended_part (ExtIdxDescCL& ext, const PermutationT& p, Uint num_components)
+{
+    for (size_t i= 0; i < ext.GetNumUnknownsStdFE(); ++i)
+        if (ext[i] != NoIdx)
+            ext[i]= num_components*p[ext[i]/num_components];
+}
+
 #ifdef _PAR
 /// \name Wrapper for gathering and scattering data for ExtIdxDescCL::UpdateXNumbering
 //@{
@@ -408,6 +417,9 @@ void P1XtoP1 ( const IdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx,
 
 /// extracts component from vector valued FE vector
 void ExtractComponent( const VectorCL& vecFE, VectorCL& scalarFE, Uint comp, Uint stride=3);
+
+/// \brief Applies the permutation p to the unknown numbers in idx.
+void permute_fe_basis (MultiGridCL& mg, IdxDescCL& idx, const PermutationT& p);
 
 inline void
 GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
