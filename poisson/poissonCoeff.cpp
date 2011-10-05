@@ -28,7 +28,7 @@
 //========================================================================
 //          Functions for poissonP1.cpp and drops_statP2.cpp
 //========================================================================
-
+extern DROPS::ParamCL P;
 double Heat(const DROPS::Point3DCL&, double)
 {
     extern DROPS::ParamCL P;
@@ -64,8 +64,6 @@ double NeuPoly( const DROPS::Point3DCL& p, double ){return -64.0*p[0]*p[1]*(1.0-
 /// \brief Nusselt velocity profile for flat film
 DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 {
-    extern DROPS::ParamCL P;
-
     static bool first = true;
     static double dx, dy;
     static double Rho, Mu;   //density, viscosity
@@ -233,7 +231,48 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
     static DROPS::RegisterScalarFunction regscai("Example3_InitialValue", InitialValue);
 
 }//end of namespace
+/****************************************
+ *  Example for SUPG:                 \n*
+ *   - stationary setup               \n*
+ *   - quasi-1D setup                 \n*
+ *   - constant diffusion             \n*
+ *   - convection                     \n*
+ *   - no reaction                    \n*
+ *   - source = 1                     \n*
+ ****************************************/
 
+
+ namespace PoissonSUPG{
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    /// \brief Convection: constant flow in x direction
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){ 
+        DROPS::Point3DCL v(0.);
+        v[0] = 1.0;
+        return v; 
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL&, double){
+        return 1.0; 
+    }
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1.0;
+    }
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double)
+    {
+        double D = P.get<double>("PoissonCoeff.Diffusion");
+        return p[0] - (1 - exp(p[0]/D))/(1 - exp(1./D)); 
+    }
+    static DROPS::RegisterScalarFunction regscaq("SUPG_Reaction",     Reaction    );
+    static DROPS::RegisterScalarFunction regscaf("SUPG_Source",       Source      );
+    static DROPS::RegisterScalarFunction regscas("SUPG_Solution",     Solution);
+    static DROPS::RegisterScalarFunction regscaa("SUPG_Diffusion",    Diffusion   );
+    static DROPS::RegisterVectorFunction regscav("SUPG_Flowfield",    Flowfield   );
+}//end of namespace
 
 double Solution( const DROPS::Point3DCL& p, double=0.0){
     return 1 + p[0] + (1-exp(p[0]))/exp(1.0);
