@@ -310,18 +310,17 @@ void remove_weak_edges (SparseMatBaseCL<T>& M, const std::vector<size_t>& compon
 }
 
 template <class T>
-PermutationT downwind_numbering (SparseMatBaseCL<T>& M)
+PermutationT IteratedDownwindCL::downwind_numbering (SparseMatBaseCL<T>& M)
 {
     const size_t dim= M.num_rows();
 
-    std::cout << "Sorting by weight of the edges...\n";
+    // std::cout << "Sorting by weight of the edges...\n";
     sort_row_entries( M);
 
-    std::cout << "...numbering in downwind direction...\n";
+    // std::cout << "...numbering in downwind direction...\n";
     TarjanDownwindCL re_num;
-    const double max_rel_component_size= 0.2;
-    const double weak_edge_ratio= 0.2;
     bool have_large_components;
+    int counter= 0;
     // char ccc;
     do {
         have_large_components= false;
@@ -330,13 +329,15 @@ PermutationT downwind_numbering (SparseMatBaseCL<T>& M)
         re_num.number_connected_components( M);
         re_num.stats( std::cout);
         for (size_t c= 0; c < re_num.num_components(); ++c)
-            if (re_num.component_size()[c] > max_rel_component_size*dim) {
+            if (re_num.component_size()[c] > max_rel_component_size_*dim) {
                 std::cout << "...component " << c << " has " << re_num.component_size()[c] << " vertices.\n";
-                std::cout << "...removing the " << weak_edge_ratio*100. << " percent weakest edges.\n";
-                remove_weak_edges( M, re_num.component( c),  weak_edge_ratio);
+                // std::cout << "...removing the " << weak_edge_ratio*100. << " percent weakest edges.\n";
+                remove_weak_edges( M, re_num.component( c),  weak_edge_ratio_);
                 have_large_components= true;
             }
+        ++counter;
     } while (have_large_components);
+    std::cout << "IteratedDownwindCL::downwind_numbering: " << counter << " iterations.\n";
 
     return re_num.permutation();
 }

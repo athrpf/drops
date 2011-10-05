@@ -26,6 +26,7 @@
 #define DROPS_RENUMBER_H
 
 #include "num/spmat.h"
+#include "misc/params.h"
 
 namespace DROPS
 {
@@ -167,8 +168,23 @@ sort_row_entries (SparseMatBaseCL<T>& M);
 /// The positive entries of M are interpreted as digraph for the flow. That is, M should be a convection matrix, see TarjanDownwindCL.
 /// Large connected comnponents are broken, if they contain more than max_rel_component_size of the vertices. This is done by removing the weak_edge_ratio*100 percent of the weakest edges of the component and iteration of Tarjan's algorithm.
 /// The matrix M is modified in this proccess and must be clear()ed before reuse.
-template <class T>
-PermutationT downwind_numbering (SparseMatBaseCL<T>& M);
+class IteratedDownwindCL
+{
+  private:
+    double max_rel_component_size_;
+    double weak_edge_ratio_;
+
+  public:
+    explicit IteratedDownwindCL (double max_rel_component_size= 0.05, double weak_edge_ratio= 0.2)
+        : max_rel_component_size_( max_rel_component_size), weak_edge_ratio_( weak_edge_ratio) {}
+    IteratedDownwindCL (const ParamCL& p)
+        : max_rel_component_size_( p.get<double>( "MaxRelComponentSize")),
+          weak_edge_ratio_( p.get<double>( "WeakEdgeRatio")) {}
+
+    /// \brief Returns a permutation for the unknowns, such that they are arranged from upwind to downwind.
+    template <class T>
+      PermutationT downwind_numbering (SparseMatBaseCL<T>& M);
+};
 
 } // end of namspace DROPS
 

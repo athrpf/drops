@@ -353,7 +353,7 @@ InstatNavierStokes2PhaseP2P1CL::nonlinear_accu (MLTetraAccumulatorTupleCL& accus
 }
 
 
-PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP2CL& lset)
+PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP2CL& lset, IteratedDownwindCL dw)
 {
     std::cout << "Downwind numbering: Setting indices...\n";
     MLMatDescCL  matN( &vel_idx, &vel_idx);
@@ -382,7 +382,7 @@ PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP
     }
     Mb.Build();
 
-    const PermutationT& p= DROPS::downwind_numbering( M);
+    const PermutationT& p= dw.downwind_numbering( M);
     std::cout << "...applying permutation to the fe-basis...\n";
     permute_fe_basis( GetMG(), vel_idx.GetFinest(), p);
     std::cout << "...applying permutation to the initial velocity...\n";
