@@ -72,10 +72,14 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
     double det;
     double absdet;
     IdxT UnknownIdx[4];
-    
-    //Quad2CL<> quad_a;
-    if(!SUPG)
+    Quad5CL<> U_Grad[4], rhs;
+    LocalP1CL<double> phi[4];
+    for(int i=0; i<4; i++)
     {
+      phi[i][i]=1.;
+    }
+    Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
+    //Quad2CL<> quad_a;
         for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
              sit != send; ++sit)
         {
@@ -83,20 +87,30 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
             absdet= std::fabs(det);
             //quad_a.assign( *sit, &Coeff::DiffusionCoeff, 0.0);                  //for variable diffusion coefficient
             //const double int_a= quad_a.quad( absdet);
-
+            if(SUPG)
+            {    
+                Quad5CL<Point3DCL> u(*sit,Coeff::Vel,0.);
+                for(int i=0; i<4; ++i)
+                    U_Grad[i]=dot( u, Quad5CL<Point3DCL>( G[i]));
+            }
             for(int i=0; i<4; ++i)
             {
-                for(int j=0; j<=i; ++j)
+                for(int j=0; j<4; ++j)
                 {
                     // dot-product of the gradients
 
                     coup[i][j]=  Coeff::alpha*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
                     coup[i][j]+= P1DiscCL::Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
-                    coup[j][i]= coup[i][j];
+                    if(SUPG)
+                    {
+                        Quad5CL<double> res3( U_Grad[i] * U_Grad[j]);
+                        coup[i][j]+= res3.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                    }
                 }
                 UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
                                                                       : NoIdx;
             }
+            rhs.assign( *sit, Coeff::f, 0.);
             for(int i=0; i<4; ++i)    // assemble row i
                 if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
                 {
@@ -113,7 +127,12 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
                     }
                     if (b != 0)
                     {
-                        b->Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, Coeff::f, i, 0.0)*absdet;
+                        Quad5CL<double> fp1(rhs*phiq5[i]);
+                        b->Data[UnknownIdx[i]]+= fp1.quad(absdet);
+                        if (SUPG) {
+                            Quad5CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
+                            b->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                        }
                         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
                             for (int f=0; f < 3; ++f)
                                 if ( sit->IsBndSeg(FaceOfVert(i, f)) )
@@ -121,60 +140,6 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
                     }
                 }
         }
-    }
-    else
-    {
-        for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl); sit != send; ++sit)
-        {
-            Quad5CL<> U_Grad[4];
-            P1DiscCL::GetGradients(G, det, *sit);
-            absdet= std::fabs(det);
-        
-            for(int i=0; i<4; ++i)
-            {
-                UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
-            }
-            Quad5CL<Point3DCL> u(*sit,Coeff::Vel,0.);
-            for(int i=0; i<4; ++i)
-                U_Grad[i]=dot( u, Quad5CL<Point3DCL>( G[i]));
-
-            for(int i=0; i<4; ++i)
-            {
-                for(int j=0; j<4; ++j)
-                {
-                    Quad5CL<double> res3( U_Grad[i] * U_Grad[j]);
-                    coup[i][j]=  Coeff::alpha*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
-                    coup[i][j]+= P1DiscCL::Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
-                    coup[i][j]+= res3.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );//*std::pow(absdet, 1./3.);
-                }
-            }
-            for(int i=0; i<4; ++i)    // assemble row i
-            {
-                if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
-                {
-                    for(int j=0; j<4;++j)
-                    {
-                        if (sit->GetVertex(j)->Unknowns.Exist(idx)) // vertex j is not on a Dirichlet boundary
-                        {
-                            A(UnknownIdx[i], UnknownIdx[j])+=coup[j][i];    //DiffusiconCoeff*A
-                        }
-                        else // coupling with vertex j on right-hand-side
-                        {
-                            if (b!=0) b->Data[UnknownIdx[i]]-= coup[j][i] * BndData_.GetDirBndValue(*sit->GetVertex(j));
-                        }
-                    }
-                    if (b != 0)
-                    {
-                        b->Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, Coeff::f, i, 0.0)*absdet;
-                        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
-                            for (int f=0; f < 3; ++f)
-                                if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                                    b->Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun() );
-                    }
-                }
-            }
-        }
-    }
 
     A.Build();
 }
@@ -389,11 +354,18 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
   double det;
   double absdet;
   
+  double coupM[4][4];
+  Quad5CL<> U_Grad[4];
+  LocalP1CL<double> phi[4];
+  for(int i=0; i<4; i++)
+  {
+      phi[i][i]=1.;
+  }
+  Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
+  
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
 
-  if(!SUPG)
-  {
       for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
         sit != send; ++sit)
       {
@@ -403,71 +375,28 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
 
         //quad_a.assign( *sit, Coeff_.alpha, tA);
         const double int_a= Coeff_.alpha/6.0 * absdet;//quad_a.quad( absdet);
-        for(int i=0; i<4; ++i)
+        
+        if(SUPG)
         {
-          for(int j=0; j<=i; ++j)
-          {
-            // dot-product of the gradients
-            coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-            // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
-            coupA[j][i]= coupA[i][j];
-          }
-          UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;      
+            Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, t);
+            for(int i=0; i<4; i++)
+                U_Grad[i]=dot(u, Quad5CL<Point3DCL>(G[i]));
         }
-
-        for(int i=0; i<4; ++i)    // assemble row i
-          if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
-          {
-            for(int j=0; j<4;++j)
-            {
-              if (sit->GetVertex(j)->Unknowns.Exist(idx)) // vertex j is not on a Dirichlet boundary
-              {
-                A( UnknownIdx[i], UnknownIdx[j])+= coupA[j][i];
-                M( UnknownIdx[i], UnknownIdx[j])+= P1DiscCL::GetMass( i, j)*absdet;
-              }
-              // else coupling with vertex j on right-hand-side  --> 0
-            }
-          }
-      }
-  }
-  else
-  {
-      double coupM[4][4];
-      Quad5CL<> U_Grad[4];
-      LocalP1CL<double> phi[4];
-      for(int i=0; i<4; i++)
-      {
-          phi[i][i]=1.;
-      }
-      Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
-      for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
-        sit != send; ++sit)
-      {
-        
-        P1DiscCL::GetGradients(G,det,*sit);
-        absdet= std::fabs(det);
-
-        //quad_a.assign( *sit, Coeff_.alpha, tA);
-        const double int_a= Coeff_.alpha/6.0 * absdet;//quad_a.quad( absdet);
-        Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, t);
-        for(int i=0; i<4; i++)
-            U_Grad[i]=dot(u, Quad5CL<Point3DCL>(G[i]));
-        
-        const DROPS::Point3DCL center=GetBaryCenter(*sit);
         for(int i=0; i<4; ++i)
         {
           for(int j=0; j<4; ++j)
           {
-            Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
-            Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
             // dot-product of the gradients
             coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-            coupA[i][j]+=StrA.quad(absdet)*Coeff_.Sta_Coeff(center,t);  //SUPG term
-            
-            coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-            coupM[i][j]+= StrM.quad(absdet)*Coeff_.Sta_Coeff(center,t); //SUPG term
-            
             // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
+            coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
+            if(SUPG)
+            {
+            Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
+            Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
+            coupA[i][j]+=StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),t);  //SUPG term
+            coupM[i][j]+= StrM.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),t); //SUPG term
+            }
           }
           UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;      
         }
@@ -480,14 +409,12 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
               if (sit->GetVertex(j)->Unknowns.Exist(idx)) // vertex j is not on a Dirichlet boundary
               {
                 A( UnknownIdx[i], UnknownIdx[j])+= coupA[j][i];
-                
                 M( UnknownIdx[i], UnknownIdx[j])+= coupM[i][j];
               }
               // else coupling with vertex j on right-hand-side  --> 0
             }
           }
       }
-  }
       
   A.Build();
   M.Build();
