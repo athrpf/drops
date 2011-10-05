@@ -63,25 +63,6 @@ non_symmetric_part (const MatrixCL& M, MatrixCL& NP)
     std::cout << "non_symmetric_part: nonzeros: " << NP.num_nonzeros () << '\n';
 }
 
-void
-sort_row_entries (MatrixCL& M)
-{
-    // Sort the indices in each row by increasing value of the entries.
-    // Note, that this is dangerous as most parts of Drops assume ordering by column-index.
-    // It is required for the renumbering algo.
-    typedef std::pair<double, size_t> PT;
-    for (size_t r= 0; r < M.num_rows(); ++r) {
-        std::vector<PT> pv( M.row_beg( r + 1) - M.row_beg( r));
-        for (size_t i= M.row_beg( r), j= 0; i < M.row_beg( r + 1); ++i, ++j)
-            pv[j]= std::make_pair( M.val( i), M.col_ind( i));
-        std::sort( pv.begin(), pv.end(), less1st<PT>());
-        for (size_t i= M.row_beg( r), j= 0; i < M.row_beg( r + 1); ++i, ++j) {
-            M.raw_col()[i]= pv[j].second;
-            M.raw_val()[i]= pv[j].first;
-        }
-    }
-}
-
 VectorCL
 weight_in (const MatrixCL& M)
 {

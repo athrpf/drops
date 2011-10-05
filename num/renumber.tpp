@@ -269,4 +269,77 @@ inline void TarjanDownwindCL::stats (std::ostream& os) const
 }
 
 
+template <class T>
+void
+sort_row_entries (SparseMatBaseCL<T>& M)
+{
+    typedef std::pair<T, size_t> PT;
+    for (size_t r= 0; r < M.num_rows(); ++r) {
+        std::vector<PT> pv( M.row_beg( r + 1) - M.row_beg( r));
+        for (size_t i= M.row_beg( r), j= 0; i < M.row_beg( r + 1); ++i, ++j)
+            pv[j]= std::make_pair( M.val( i), M.col_ind( i));
+        std::sort( pv.begin(), pv.end(), less1st<PT>());
+        for (size_t i= M.row_beg( r), j= 0; i < M.row_beg( r + 1); ++i, ++j) {
+            M.raw_col()[i]= pv[j].second;
+            M.raw_val()[i]= pv[j].first;
+        }
+    }
+}
+
+/// \brief Counts the edges within the component 'component' (= positive matrix entries between vertices in 'component') and removes the weakest weak_edge_ratio*100 percent of them.
+/// The routine assumes, that the entries of each row of M are sorted by increasing weight. This is contrary to the linear algebra parts of Drops, which assume an ordering according to increasing column index.
+template <class T>
+void remove_weak_edges (SparseMatBaseCL<T>& M, const std::vector<size_t>& component, double weak_edge_ratio)
+{
+    // Collect all edges within the component
+    std::vector<T*> edge;
+    for (size_t i= 0; i < component.size(); ++i) {
+        T* val= M.GetFirstVal( component[i]);
+        for (const size_t* col= M.GetFirstCol( component[i]); col != M.GetFirstCol( component[i] + 1); ++col, ++val)
+            if (*val > T() && std::binary_search( component.begin(), component.end(), *col))
+                edge.push_back( val);
+    }
+    std::cout << edge.size() << " edges within the component.\n";
+
+    // Remove the weakest edges
+    const size_t weak_edges= weak_edge_ratio*edge.size();
+    typename std::vector<T*>::iterator weak_end= edge.begin() + weak_edges;
+    std::nth_element(edge.begin(), weak_end, edge.end(), less_by_ptr<T*>());
+    for (typename std::vector<T*>::iterator it= edge.begin(); it != weak_end; ++it)
+        **it= T();
+}
+
+template <class T>
+PermutationT downwind_numbering (SparseMatBaseCL<T>& M)
+{
+    const size_t dim= M.num_rows();
+
+    std::cout << "Sorting by weight of the edges...\n";
+    sort_row_entries( M);
+
+    std::cout << "...numbering in downwind direction...\n";
+    TarjanDownwindCL re_num;
+    const double max_rel_component_size= 0.2;
+    const double weak_edge_ratio= 0.2;
+    bool have_large_components;
+    // char ccc;
+    do {
+        have_large_components= false;
+        // WriteToFile( M, "M.txt" , "graph");
+        // std::cin >> ccc;
+        re_num.number_connected_components( M);
+        re_num.stats( std::cout);
+        for (size_t c= 0; c < re_num.num_components(); ++c)
+            if (re_num.component_size()[c] > max_rel_component_size*dim) {
+                std::cout << "...component " << c << " has " << re_num.component_size()[c] << " vertices.\n";
+                std::cout << "...removing the " << weak_edge_ratio*100. << " percent weakest edges.\n";
+                remove_weak_edges( M, re_num.component( c),  weak_edge_ratio);
+                have_large_components= true;
+            }
+    } while (have_large_components);
+
+    return re_num.permutation();
+}
+
+
 } // end of namspace DROPS

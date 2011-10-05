@@ -173,16 +173,19 @@ template <typename T>
 }
 
 
+/// \brief Permutes the components of a vector v according to p.
+/// num_components consecutive components are considered as one block (for vector-valued FE). v must have dim(p) * blocksize components.
 template <typename T>
   void
-  permute_Vector (VectorBaseCL<T>& v, const PermutationT& p)
+  permute_Vector (VectorBaseCL<T>& v, const PermutationT& p, Uint blocksize= 1)
 {
-    Assert( v.size() == p.size(),
+    Assert( v.size() == p.size()*blocksize,
         DROPSErrCL( "permute_Vector: v and p have different dimension.\n"), DebugNumericC);
 
-    VectorBaseCL<T> w( v);
-    for (size_t i= 0; i < v.size(); ++i)
-        v[p[i]]= w[i];
+    const VectorBaseCL<T> w( v);
+    for (size_t i= 0; i < p.size(); ++i)
+        for (Uint c= 0; c < blocksize; ++c)
+            v[blocksize*p[i] + c]= w[blocksize*i + c];
 }
 
 /// \brief v[begin..(begin+2)]+= p[0..2]. A service function for the assembly of right-hand sides for vector-valued PDEs.

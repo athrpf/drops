@@ -110,7 +110,9 @@ reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
 /// If there are no cycles in the graph, all components contain exactly one vertex.
 /// The algo discovers the components in downwind direction (actually in upwind direction
 /// of the graph of M^T).
-/// The numbering within a component has no furhter meaning.
+/// The numbering within a component has no further meaning.
+///
+/// To handle non-trivial components (cycles), use the function downwind_numbering below.
 ///
 /// Permuting M with the permutation returned makes the positive part of M block-lower-triangular,
 /// where the blocks correspond to the connected components. For an acyclic graph, the matrix is
@@ -153,6 +155,20 @@ class TarjanDownwindCL
     /// \brief High-level overview of the numbering proccess.
     inline void stats (std::ostream& os) const;
 };
+
+/// \brief Sort the indices in each row of SparseMatBaseCL by increasing value of the entries.
+/// Note, that the matrix cannot be used with preconditioners in spmat.h anymore, as most of the linear algebra routines assume ordering by column-index.
+/// This is used to break the weakest edges in cycles when renumbering.
+template <class T>
+void
+sort_row_entries (SparseMatBaseCL<T>& M);
+
+/// \brief Returns a permutation for the unknowns, such that they are arranged from upwind to downwind.
+/// The positive entries of M are interpreted as digraph for the flow. That is, M should be a convection matrix, see TarjanDownwindCL.
+/// Large connected comnponents are broken, if they contain more than max_rel_component_size of the vertices. This is done by removing the weak_edge_ratio*100 percent of the weakest edges of the component and iteration of Tarjan's algorithm.
+/// The matrix M is modified in this proccess and must be clear()ed before reuse.
+template <class T>
+PermutationT downwind_numbering (SparseMatBaseCL<T>& M);
 
 } // end of namspace DROPS
 

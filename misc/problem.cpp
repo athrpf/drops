@@ -629,4 +629,59 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
 #endif
 }
 
+void permute_fe_basis (MultiGridCL& mg, IdxDescCL& idx, const PermutationT& p)
+{
+    const Uint sys= idx.GetIdx();
+    const Uint lvl= idx.TriangLevel();
+    const Uint num_components= idx.IsScalar() ? 1 : 3;
+
+   if (idx.IsExtended())
+        permute_fe_basis_extended_part( idx.GetXidx(), p, num_components);
+
+    switch (idx.GetFE()) {
+      case P0_FE:
+        DROPS_FOR_TRIANG_TETRA( mg, lvl, it)
+            if (it->Unknowns.Exist( sys))
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        break;
+
+      case P1_FE:  // fall through
+      case P1X_FE: // fall through
+      case P1IF_FE:
+        DROPS_FOR_TRIANG_VERTEX( mg, lvl, it)
+            if (it->Unknowns.Exist( sys) && it->Unknowns( sys) != NoIdx)
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        break;
+
+      case vecP1Bubble_FE: // fall through
+      case P1Bubble_FE:
+        DROPS_FOR_TRIANG_VERTEX( mg, lvl, it)
+            if (it->Unknowns.Exist( sys))
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        DROPS_FOR_TRIANG_TETRA( mg, lvl, it)
+            if (it->Unknowns.Exist( sys))
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        break;
+
+      case P1D_FE:
+        DROPS_FOR_TRIANG_FACE( mg, lvl, it)
+            if (it->Unknowns.Exist( sys))
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        break;
+
+      case vecP2R_FE: // fall through
+      case vecP2_FE:  // fall through
+      case P2R_FE:    // fall through
+      case P2_FE:
+        DROPS_FOR_TRIANG_VERTEX( mg, lvl, it)
+            if (it->Unknowns.Exist( sys))
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        DROPS_FOR_TRIANG_EDGE( mg, lvl, it)
+            if (it->Unknowns.Exist( sys))
+                it->Unknowns( sys)= num_components*p[it->Unknowns( sys)/num_components];
+        break;
+      default: throw DROPSErrCL("permute_fe_basis: unknown FE type\n");
+    }
+}
+
 } // end of namespace DROPS
