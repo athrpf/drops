@@ -25,7 +25,7 @@
 #ifndef DROPS_SPMAT_H
 #define DROPS_SPMAT_H
 
-#define DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP (__GNUC__ >= 4 && !defined(__INTEL_COMPILER))
+#define DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP (__GNUC__ >= 4 || defined(__INTEL_COMPILER) || DROPS_WIN)
 
 #include <iostream>
 #include <valarray>
@@ -34,7 +34,11 @@
 #include <numeric>
 #include <limits>
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+#  ifndef DROPS_WIN
 #    include <tr1/unordered_map>
+#  else
+#    include <unordered_map>
+#  endif
 #else
 #    include <map>
 #endif
@@ -438,7 +442,11 @@ public:
     typedef SparseMatBaseCL<T>       spmatT;
     typedef std::pair<size_t, block_type> entryT;
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
-    typedef std::tr1::unordered_map<size_t, block_type> couplT;
+#  ifndef DROPS_WIN
+     typedef std::tr1::unordered_map<size_t, block_type> couplT;
+#  else
+    typedef std::unordered_map<size_t, block_type> couplT;
+#  endif
 #else
     typedef std::map<size_t, block_type> couplT;
 #endif
@@ -504,12 +512,19 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     size_t* rb= _mat->raw_row();
     rb[0]= 0;
 
+#ifndef DROPS_WIN
+    size_t i;
+#else
+    int i;
+#endif
+
     size_t* t_sum= new size_t[omp_get_max_threads()];
 #   pragma omp parallel
     {
 #       pragma omp for
-        for (size_t i= 0; i < block_rows; ++i)
+        for (i= 0; i < block_rows; ++i)
             BlockTraitT::row_nnz( rb + 1, i, _coupl[i].size());
+
         inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
 #       pragma omp barrier
 #       pragma omp master
@@ -519,7 +534,7 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 #       if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
             std::vector<typename BlockTraitT::sort_pair_type> pv;
 #           pragma omp for
-            for (size_t i= 0; i < block_rows; ++i) {
+            for ( i= 0; i < block_rows; ++i) {
                 pv.resize( _coupl[i].size());
                 std::transform( _coupl[i].begin(), _coupl[i].end(), pv.begin(), &BlockTraitT::pair_copy);
                 std::sort( pv.begin(), pv.end(), less1st<typename BlockTraitT::sort_pair_type>());
@@ -1129,8 +1144,14 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
         size_t i;
         const size_t* rA;
         const size_t* rB;
+#ifndef DROPS_WIN
 #       pragma omp for
-        for (size_t row= 0; row < A.num_rows(); ++row) {
+        for (size_t row= 0; row < A.num_rows(); ++row) 
+#else
+#       pragma omp for
+        for (int row= 0; row < (int)A.num_rows(); ++row) 
+#endif
+        {
             i= 0;
             rA= A.GetFirstCol( row);
             rB= B.GetFirstCol( row);
@@ -1156,8 +1177,14 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
         // Compute the entries of _colind, _val (actual merge).
         size_t iA, iB;
 
+#ifndef DROPS_WIN
         #pragma omp for
-        for (size_t row= 0; row < A.num_rows(); ++row) { // same structure as above
+        for (size_t row= 0; row < A.num_rows(); ++row) 
+#else
+        #pragma omp for
+        for (int row= 0; row < (int)A.num_rows(); ++row) 
+#endif
+        { // same structure as above
             i=    row_beg( row);
             iA= A.row_beg( row);
             iB= B.row_beg( row);
@@ -1330,8 +1357,15 @@ y_Ax(T* __restrict y,
     T sum;
     size_t rowend, nz;
 
+#ifndef DROPS_WIN
+    size_t i;
+#else
+    int i;
+#endif
+
 #   pragma omp parallel for private(sum, rowend, nz)
-    for (size_t i = 0; i < num_rows; i++){
+    for (i = 0; i < num_rows; i++)
+    {
         sum = 0.0;
         rowend = Arow[i+1];
         for (nz= Arow[i]; nz < rowend; ++nz)

@@ -693,6 +693,7 @@
     <ClInclude Include="..\..\..\num\parstokessolver.h" />
     <ClInclude Include="..\..\..\num\poissonsolverfactory.h" />
     <ClInclude Include="..\..\..\num\quadrature.h" />
+    <ClInclude Include="..\..\..\num\renumber.h" />
     <ClInclude Include="..\..\..\num\solver.h" />
     <ClInclude Include="..\..\..\num\spblockmat.h" />
     <ClInclude Include="..\..\..\num\spmat.h" />
@@ -828,6 +829,7 @@
     <None Include="..\..\..\num\MGsolver.tpp" />
     <None Include="..\..\..\num\parlanczos.tpp" />
     <None Include="..\..\..\num\quadrature.tpp" />
+    <None Include="..\..\..\num\renumber.tpp" />
     <None Include="..\..\..\parallel\exchange.tpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>

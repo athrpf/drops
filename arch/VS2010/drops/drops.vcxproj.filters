@@ -519,6 +519,9 @@
     <ClInclude Include="..\..\..\num\quadrature.h">
       <Filter>num</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\num\renumber.h">
+      <Filter>num</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\levelset\brick_transp.param">
@@ -633,6 +636,9 @@
       <Filter>geom</Filter>
     </None>
     <None Include="..\..\..\num\quadrature.tpp">
+      <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\num\renumber.tpp">
       <Filter>num</Filter>
     </None>
   </ItemGroup>
