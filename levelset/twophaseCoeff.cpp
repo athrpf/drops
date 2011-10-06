@@ -203,12 +203,12 @@ namespace levelsetdistance{
 namespace transpfunctions{
     double tInitialcneg (const DROPS::Point3DCL& , double)
     {
-        return P.get<double>("Transport.IniCNeg");
+        return P.get<double>("Transp.IniCNeg");
     }
 
     double tInitialcpos (const DROPS::Point3DCL& , double)
     {
-        return P.get<double>("Transport.IniCPos");
+        return P.get<double>("Transp.IniCPos");
     }
     static DROPS::RegisterScalarFunction regscainineg("Initialcneg", tInitialcneg);
     static DROPS::RegisterScalarFunction regscainipos("Initialcpos", tInitialcpos);
