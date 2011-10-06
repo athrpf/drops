@@ -26,6 +26,7 @@
 #include <iostream>
 
 #ifdef DROPS_WIN
+#include <direct.h>
 double cbrt(double arg)
 {
     return pow(arg, 1.0/3);
@@ -71,7 +72,7 @@ int CreateDirectory(std::string path)
 {
 #ifdef DROPS_WIN
     throw DROPSErrCL("Creating directories is not implemented for Windows OS");
-    return 0;
+    return _mkdir( path.c_str());
 #else
     return mkdir(path.c_str(), 0777);
 #endif
