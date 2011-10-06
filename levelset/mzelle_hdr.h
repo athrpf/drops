@@ -133,6 +133,8 @@ Point3DCL TwoEllipsoidCL::Radius1_;
 Point3DCL TwoEllipsoidCL::Mitte2_;
 Point3DCL TwoEllipsoidCL::Radius2_;
 
+static DROPS::RegisterScalarFunction regsca_twoellipsoid("TwoEllipsoid", DROPS::TwoEllipsoidCL::DistanceFct);
+
 class InterfaceInfoCL
 {
   private:
