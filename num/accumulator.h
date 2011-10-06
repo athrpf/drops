@@ -163,8 +163,13 @@ void AccumulatorTupleCL<VisitedT>::operator() (const ColorClassesCL& colors)
         {
             const int t_id= omp_get_thread_num();
             const ColorClassesCL::ColorClassT& cc= *cit;
+#ifndef DROPS_WIN
+            size_t j;
+#else
+            int j;
+#endif
 #           pragma omp for
-            for (size_t j= 0; j < cc.size(); ++j)
+            for (j= 0; j < cc.size(); ++j)
                 std::for_each( clones[t_id].begin(), clones[t_id].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *cc[j]));
         }
     }

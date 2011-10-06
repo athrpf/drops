@@ -135,9 +135,9 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     DROPS::instat_scalar_fun_ptr sigmap = 0;
     SurfaceTensionCL sf( sigmap, Bnd_c);    
     
-    LevelsetP2CL lset( MG, lsetbnddata, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
+    LevelsetP2CL lset( MG, lsetbnddata, sf, 1, -1);
     // levelset wrt the previous time step:
-    LevelsetP2CL oldlset( MG, lsetbnddata, sf, P.get<double>("Levelset.SD"), P.get<double>("Levelset.CurvDiff"));
+    LevelsetP2CL oldlset( MG, lsetbnddata, sf, 1, -1);
     //Prolongate and Restrict solution vector levelset from old mesh to new mesh after mesh adaptation:
     //always act on the same grid with possibly different interface position
     LevelsetRepairCL lsetrepair( lset);
@@ -156,7 +156,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     lset.Init( distance );
     oldlset.Init( distance);
     DisplayDetailedGeom( MG);
-    const double Vol= lset.GetVolume(); //0.5 * 0.125 * M_PI; //EllipsoidCL::GetVolume();
+    //const double Vol= lset.GetVolume(); //0.5 * 0.125 * M_PI; //EllipsoidCL::GetVolume();
     std::cout << "initial volume(abs value): " << lset.GetVolume() << std::endl;
     
     //VelocityContainer vel(Stokes.v,Stokes.GetBndData().Vel,MG);
@@ -201,8 +201,6 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
         double c_mean = massTransp.MeanDropConcentration();
         std::cout << "START:: Mean concentration in drop: " << std::setprecision(12) << c_mean <<"\n";        
     }
-    
-    LevelsetModifyCL lsetmod( P.get<int>("Reparam.Freq"), P.get<int>("Reparam.Method"), P.get<double>("Reparam.MaxGrad"), P.get<double>("Reparam.MinGrad"), P.get<int>("Levelset.VolCorrection"), Vol);
 
     // for serialization of geometry and numerical data
     if (P.get("Transp.DoTransp", 0))
@@ -211,35 +209,42 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
     // Initialize Ensight6 output
     //Update c from ct
     //massTransp.TransformWithScaling(massTransp.ct, massTransp.c, 1.0/massTransp.GetHenry(true), 1.0/massTransp.GetHenry(false));
-    std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
-
-    Ensight6OutCL ensight( P.get<std::string>("Ensight.EnsCase") + ".case", (P.get("Ensight.EnsightOut", 0) ? P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1 : 0), P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
-    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   P.get<std::string>("Ensight.GeomName"),     ensf + ".geo", true));
-    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
-    if (P.get("Transp.DoTransp", 0)) {
-        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct,true),
-                                                                        "TransConc",     ensf + ".ct",  true));
-        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, massTransp.ct, "XTransConcentration",   ensf + ".xconc", true));
+    // Output-Registrations:
+    Ensight6OutCL* ensight = NULL;
+    if (P.get<int>("Ensight.EnsightOut",0)){
+        std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
+        ensight = new Ensight6OutCL( P.get<std::string>("Ensight.EnsCase") + ".case", 
+                                     P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1,
+                                     P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
+        ensight->Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   
+                                                    P.get<std::string>("Ensight.GeomName"),     
+                                                    ensf + ".geo", true));
+        ensight->Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      
+                                                    ensf + ".scl", true));
+        ensight->Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct,true),
+                                                "TransConc",     ensf + ".ct",  true));
+        ensight->Register( make_Ensight6P1XScalar( MG, lset.Phi, massTransp.ct, "XTransConcentration",
+                                                   ensf + ".xconc", true));
+        ensight->Write(0);
     }
-    
+
     // writer for vtk-format
-    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (P.get("VTK.VTKOut", 0) ? P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1 : 0),
-                P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), P.get<int>("VTK.Binary"));
+    VTKOutCL * vtkwriter = NULL;
+    if (P.get<int>("VTK.VTKOut",0)){
+        vtkwriter = new VTKOutCL(adap.GetMG(), "DROPS data", 
+                                 P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1,
+                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), 
+                                 P.get<int>("VTK.Binary"));
 
-    vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
+        vtkwriter->Register( make_VTKScalar( lset.GetSolution(), "level-set") );
 
-    if (P.get("Transp.DoTransp", 0)) {
-        vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( massTransp.ct,false), "TransConcentration") );
-        vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( c_out,false), "XConcentrationPos") );
-        vtkwriter.Register( make_VTKScalar( massTransp.GetSolution( c_in,false), "XConcentrationNeg") );
+        vtkwriter->Register( make_VTKScalar( massTransp.GetSolution( massTransp.ct,false), "TransConcentration") );
+        vtkwriter->Register( make_VTKScalar( massTransp.GetSolution( c_out,false), "XConcentrationPos") );
+        vtkwriter->Register( make_VTKScalar( massTransp.GetSolution( c_in,false), "XConcentrationNeg") );
+        vtkwriter->Write(0);
     }
-
-    if (P.get("Ensight.EnsightOut", 0))
-        ensight.Write(0);
-    if (P.get("VTK.VTKOut", 0))
-        vtkwriter.Write(0);
         
-//		massTransp.CheckSolution(Solutioncneg,Solutioncpos,0);
+    // massTransp.CheckSolution(Solutioncneg,Solutioncpos,0);
     double cmean_old = massTransp.MeanDropConcentration();
 
     for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
@@ -265,17 +270,19 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
         massTransp.GetSolutionOnPart( c_out, true , false);
         massTransp.GetSolutionOnPart( c_in, false , false);
 
-        bool ensightoutnow = P.get("Ensight.EnsightOut", 0) && step%P.get("Ensight.EnsightOut", 0)==0;
-        bool vtkoutnow = P.get("VTK.VTKOut", 0) && (step%P.get("VTK.VTKOut", 0)==0 || step < 20);
+        bool ensightoutnow = ensight && step%P.get("Ensight.EnsightOut", 0)==0;
+        bool vtkoutnow = vtkwriter && (step%P.get("VTK.VTKOut", 0)==0 || step < 20);
         if (ensightoutnow)
-            ensight.Write(t);
+            ensight->Write(t);
         if (vtkoutnow)
-            vtkwriter.Write(t);
+            vtkwriter->Write(t);
     }
     std::cout << std::endl;
 
     delete pBnd_c;
     delete pBnd_ct;
+    delete vtkwriter;
+    delete ensight;
 }
 
 void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbnddata, AdapTriangCL& adap)

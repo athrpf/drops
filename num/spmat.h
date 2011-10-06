@@ -25,7 +25,7 @@
 #ifndef DROPS_SPMAT_H
 #define DROPS_SPMAT_H
 
-#define DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP (__GNUC__ >= 4 && !defined(__INTEL_COMPILER))
+#define DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP (__GNUC__ >= 4 || defined(__INTEL_COMPILER) || DROPS_WIN)
 
 #include <iostream>
 #include <valarray>
@@ -34,7 +34,11 @@
 #include <numeric>
 #include <limits>
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+#  ifndef DROPS_WIN
 #    include <tr1/unordered_map>
+#  else
+#    include <unordered_map>
+#  endif
 #else
 #    include <map>
 #endif
@@ -173,16 +177,19 @@ template <typename T>
 }
 
 
+/// \brief Permutes the components of a vector v according to p.
+/// num_components consecutive components are considered as one block (for vector-valued FE). v must have dim(p) * blocksize components.
 template <typename T>
   void
-  permute_Vector (VectorBaseCL<T>& v, const PermutationT& p)
+  permute_Vector (VectorBaseCL<T>& v, const PermutationT& p, Uint blocksize= 1)
 {
-    Assert( v.size() == p.size(),
+    Assert( v.size() == p.size()*blocksize,
         DROPSErrCL( "permute_Vector: v and p have different dimension.\n"), DebugNumericC);
 
-    VectorBaseCL<T> w( v);
-    for (size_t i= 0; i < v.size(); ++i)
-        v[p[i]]= w[i];
+    const VectorBaseCL<T> w( v);
+    for (size_t i= 0; i < p.size(); ++i)
+        for (Uint c= 0; c < blocksize; ++c)
+            v[blocksize*p[i] + c]= w[blocksize*i + c];
 }
 
 /// \brief v[begin..(begin+2)]+= p[0..2]. A service function for the assembly of right-hand sides for vector-valued PDEs.
@@ -435,7 +442,11 @@ public:
     typedef SparseMatBaseCL<T>       spmatT;
     typedef std::pair<size_t, block_type> entryT;
 #if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
-    typedef std::tr1::unordered_map<size_t, block_type> couplT;
+#  ifndef DROPS_WIN
+     typedef std::tr1::unordered_map<size_t, block_type> couplT;
+#  else
+    typedef std::unordered_map<size_t, block_type> couplT;
+#  endif
 #else
     typedef std::map<size_t, block_type> couplT;
 #endif
@@ -501,12 +512,19 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     size_t* rb= _mat->raw_row();
     rb[0]= 0;
 
+#ifndef DROPS_WIN
+    size_t i;
+#else
+    int i;
+#endif
+
     size_t* t_sum= new size_t[omp_get_max_threads()];
 #   pragma omp parallel
     {
 #       pragma omp for
-        for (size_t i= 0; i < block_rows; ++i)
+        for (i= 0; i < block_rows; ++i)
             BlockTraitT::row_nnz( rb + 1, i, _coupl[i].size());
+
         inplace_parallel_partial_sum( rb, rb + _mat->num_rows() + 1, t_sum); 
 #       pragma omp barrier
 #       pragma omp master
@@ -516,7 +534,7 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 #       if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
             std::vector<typename BlockTraitT::sort_pair_type> pv;
 #           pragma omp for
-            for (size_t i= 0; i < block_rows; ++i) {
+            for ( i= 0; i < block_rows; ++i) {
                 pv.resize( _coupl[i].size());
                 std::transform( _coupl[i].begin(), _coupl[i].end(), pv.begin(), &BlockTraitT::pair_copy);
                 std::sort( pv.begin(), pv.end(), less1st<typename BlockTraitT::sort_pair_type>());
@@ -1126,8 +1144,14 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
         size_t i;
         const size_t* rA;
         const size_t* rB;
+#ifndef DROPS_WIN
 #       pragma omp for
-        for (size_t row= 0; row < A.num_rows(); ++row) {
+        for (size_t row= 0; row < A.num_rows(); ++row) 
+#else
+#       pragma omp for
+        for (int row= 0; row < (int)A.num_rows(); ++row) 
+#endif
+        {
             i= 0;
             rA= A.GetFirstCol( row);
             rB= B.GetFirstCol( row);
@@ -1153,8 +1177,14 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
         // Compute the entries of _colind, _val (actual merge).
         size_t iA, iB;
 
+#ifndef DROPS_WIN
         #pragma omp for
-        for (size_t row= 0; row < A.num_rows(); ++row) { // same structure as above
+        for (size_t row= 0; row < A.num_rows(); ++row) 
+#else
+        #pragma omp for
+        for (int row= 0; row < (int)A.num_rows(); ++row) 
+#endif
+        { // same structure as above
             i=    row_beg( row);
             iA= A.row_beg( row);
             iB= B.row_beg( row);
@@ -1327,8 +1357,15 @@ y_Ax(T* __restrict y,
     T sum;
     size_t rowend, nz;
 
+#ifndef DROPS_WIN
+    size_t i;
+#else
+    int i;
+#endif
+
 #   pragma omp parallel for private(sum, rowend, nz)
-    for (size_t i = 0; i < num_rows; i++){
+    for (i = 0; i < num_rows; i++)
+    {
         sum = 0.0;
         rowend = Arow[i+1];
         for (nz= Arow[i]; nz < rowend; ++nz)
@@ -1440,211 +1477,6 @@ add_col_to_vec (const Mat& A, double w, Vec& x, size_t col)
     return x;
 }
 
-
-//=============================================================================
-//  Reverse Cuthill-McKee ordering
-//=============================================================================
-
-/// \brief The first component is the degree of the vertex, the second is its number.
-///
-/// This is used by reverse_cuthill_mckee and its helpers.
-typedef std::pair<size_t, size_t> DegVertT;
-const size_t NoVert= std::numeric_limits<size_t>::max();
-
-/// \brief Traverse the graph starting at v in breadth first preorder.
-///
-/// This is a helper of reverse_cuthill_mckee.  Vertices in each level
-/// are numbered by increasing degree.
-/// \param v The first vertex.
-/// \param M Interpreted as adjacency matrix of the graph; see reverse_cuthill_mckee. Only verticed with p[v] != NoIdx are considered.
-/// \param p Numbering of the vertices.
-/// \param idx Next number to be used.
-/// \param degree The degree of each vertex
-template <typename T>
-  void
-  breadth_first (size_t v, const SparseMatBaseCL<T>& M, PermutationT& p, size_t& idx,
-    std::vector<size_t>& degree)
-{
-    typedef std::deque<size_t> QueueT;
-    QueueT Q;
-
-    // Insert v into queue and number v.
-    Q.push_back( v);
-    p[v]= idx++;
-
-    std::vector<DegVertT> succ;
-    size_t w;
-    while (!Q.empty()) {
-        v= Q.front();
-        Q.pop_front();
-        succ.resize( 0);
-        succ.reserve( M.row_beg( v + 1) - M.row_beg( v));
-        // Find all unnumbered successors of v.
-        for (size_t e= M.row_beg( v); e < M.row_beg( v + 1); ++e) {
-            if (M.val( e) == 0.0 || (w= M.col_ind( e)) == v)
-                continue;
-            if (p[w] == NoVert)
-                succ.push_back( std::make_pair( degree[w], w));
-        }
-        // Number successors by increasing degree and enter into queue.
-        std::sort( succ.begin(), succ.end(), less1st<DegVertT>());
-        for (size_t i= 0; i < succ.size(); ++i) {
-            Q.push_back( succ[i].second);
-            p[succ[i].second]= idx++;
-        }
-    }
-}
-
-/// \brief Find a vertex with high eccentricity.
-///
-/// This is a helper of reverse_cuthill_mckee. It computes (heuristically)
-/// a start-vertex, the distance of which to at least one other vertex
-/// is close to the diameter of of the graph. In a sense, such nodes
-/// are on the boundary of the graph.
-///
-/// After a breadth first traversal a min-degree vertex from the last
-/// level is chosen and the procedure is repeated if its eccentricity
-/// is larger than that of the previous candidate.
-///
-/// \param V The vertices of the (sub-) graph together with their degree.
-/// \param M Interpreted as adjacency matrix of the graph; see reverse_cuthill_mckee.
-/// \param max_iter Maximal number of iteration. Though this heuristic will terminate
-///     after at least |V| steps, this should be a small number like 5.
-template <typename T>
-  size_t
-  pseudo_peripheral_node (std::vector<DegVertT>& V, const SparseMatBaseCL<T>& M,
-    size_t& max_iter)
-{
-    PermutationT p_inv( M.num_rows(), NoVert); // Maps vertex v to its index in V.
-    for (size_t i= 0; i < V.size(); ++i)
-        p_inv[V[i].second]= i;
-
-    // Select a minimal degree vertex.
-    size_t v_old= std::min_element( V.begin(), V.end(), less1st<DegVertT>())->second;
-
-    int l_old= 0;
-    size_t v, w;
-
-    for (size_t iter= 0; iter < max_iter; ++iter) {
-        // Breadth first traversal
-        std::vector<int> level( V.size(), -1); // level[p_inv[v]]==-1 means: v is undiscovered.
-        typedef std::deque<size_t> QueueT;
-        QueueT Q, Qnext;
-
-        // Insert v_old into queue; v_old is in level 0.
-        Qnext.push_back( v_old);
-        level[p_inv[v_old]]= 0;
-
-        do {
-            Q.swap( Qnext);
-            Qnext.clear();
-            for (QueueT::iterator it= Q.begin(); it != Q.end(); ++it) {
-                v= *it;
-                // Find all unnumbered successors of v.
-                for (size_t e= M.row_beg( v); e < M.row_beg( v + 1); ++e) {
-                    if (M.val( e) == 0.0 || (w= M.col_ind( e)) == v)
-                        continue;
-                    if (level[p_inv[w]] == -1) {
-                        Qnext.push_back( w);
-                        level[p_inv[w]]= level[p_inv[v]] + 1;
-                    }
-                }
-            }
-        }
-        while (!Qnext.empty());
-        // Now Q contains the last level. It is not empty, if V is not empty.
-
-        // Select a minimal degree vertex from the last level.
-        std::vector<DegVertT> lastlevel;
-        for (size_t i= 0; i < Q.size(); ++i) {
-            lastlevel.push_back( V[p_inv[Q[i]]]);
-        }
-        v= std::min_element( lastlevel.begin(), lastlevel.end(), less1st<DegVertT>())->second;
-
-        if (level[p_inv[v]] <= l_old) {
-            max_iter= iter;
-            return v_old;
-        }
-        l_old= level[p_inv[v]];
-        v_old= v;
-    }
-    return v_old;
-}
-
-/// \brief Compute a permutation such that M has (in most cases) near
-/// minimal bandwith.
-///
-/// M_in is interpreted as adjacency matrix of a graph with vertices i
-/// from [0...M.num_rows()).  Edge (i, j) exists, iff M_ij != 0.
-///
-/// From the linear algebra standpoint that means that x_i depends on
-/// x_j, so these edges are actually the incoming edges of x_i. We use
-/// this definition because we can traverse the incoming edges (rows)
-/// much faster than the outgoing edges (columns). Thus, this routine
-/// computes the rcm-permutation of M^T. Note, that the bandwith of A and
-/// A^T is identical, so this probably does not matter. If desired the
-/// function can compute the transpose of M and find the corresponding
-/// rcm-permutation. This needs as much storage as an assembly of M.
-///
-/// \param M_in Interpreted as adjacency matrix of the graph.
-/// \param p Contains for each unknown i its new number p[i].
-/// \param use_indegree true: Compute the rcm-permutation of M^T
-///     false: Compute the rcm-permutation of M; this is memory intensive.
-template <typename T>
-void
-reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
-    bool use_indegree= true)
-{
-    if (M_in.num_rows() == NoVert)
-        throw DROPSErrCL( "reverse_cuthill_mckee: Graph is too large.\n");
-    if (M_in.num_rows() != M_in.num_cols())
-        throw DROPSErrCL( "reverse_cuthill_mckee: Matrix is not square.\n");
-
-    size_t N= M_in.num_rows();
-    SparseMatBaseCL<T> const* M;
-    if (use_indegree == true)  M= &M_in;
-    else {
-        SparseMatBaseCL<T>* M2= new SparseMatBaseCL<T>();
-        transpose( M_in, *M2);
-        M= M2;
-    }
-
-    size_t idx= 0;
-    p.assign( N, NoVert);
-
-    std::vector<size_t> degree( N);
-    for (size_t r= 0; r < N; ++r)
-        degree[r]= M->row_beg( r + 1) - M->row_beg( r);
-    std::vector<DegVertT> V;
-    V.reserve( N);
-    for (size_t i= 0; i < N; ++i)
-        V.push_back( std::make_pair( degree[i], i));
-
-    do {
-        // Find a start vertex v.
-        size_t max_iter= 5;
-        size_t v= pseudo_peripheral_node( V, *M, max_iter);
-        std::cout << "reverse_cuthill_mckee: p_p_n iterations: " << max_iter << '\n';
-
-        // Traverse the graph starting with v and number the vertices.
-        breadth_first( v, *M, p, idx, degree);
-
-        V.clear();
-        for (size_t i= 0; i < N; ++i) // Number all components of the graph.
-            if (p[i] == NoVert)
-                V.push_back( std::make_pair( degree[i], i));
-    }
-    while (!V.empty());
-
-    if (use_indegree == false) delete M;
-
-    // Revert the order of the vertices.
-    for (size_t i= 0; i < N; ++i)
-        p[i]= N - 1 - p[i];
-
-    if (idx != N)
-        throw DROPSErrCL( "reverse_cuthill_mckee: Could not number all unkowns.\n");
-}
 
 //*****************************************************************************
 //

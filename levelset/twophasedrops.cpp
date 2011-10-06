@@ -63,6 +63,20 @@ DROPS::ParamCL P;
 namespace DROPS // for Strategy
 {
 
+double GetTimeOffset(){
+    double timeoffset = 0.0;
+    const std::string restartfilename = P.get<std::string>("Restart.Inputfile");
+    if (restartfilename != "none"){
+        const std::string timefilename = restartfilename + "time";
+        std::ifstream f_(timefilename.c_str());
+        f_ >> timeoffset;
+        std::cout << "used time offset file is " << timefilename << std::endl;
+        std::cout << "time offset is " << timeoffset << std::endl;
+    }
+    return timeoffset;
+}
+
+
 void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddata, AdapTriangCL& adap)
 // flow control
 {
@@ -185,16 +199,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     TransportP1CL * massTransp = NULL;
     TransportRepairCL *  transprepair = NULL;
 
-    if (P.get("Transp.DoTransp", 0))
+    if (P.get<int>("Transp.DoTransp"))
     {   
         // CL: the following could be moved outside of strategy to some function like 
         //" InitializeMassTransport(P,MG,Stokes,lset,adap, TransportP1CL * & massTransp,TransportRepairCL * & transprepair)"
-        const DROPS::BndCondT c_bc[6]= {
+        static DROPS::BndCondT c_bc[6]= {
             DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
             DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
         };
-        const DROPS::BndDataCL<>::bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
-        DROPS::BndDataCL<> Bnd_c( 6, c_bc, c_bfun);
+        static DROPS::BndDataCL<>::bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
+        static DROPS::BndDataCL<> Bnd_c( 6, c_bc, c_bfun);
         double D[2] = {P.get<double>("Transp.DiffPos"), P.get<double>("Transp.DiffNeg")};
 
         massTransp = new TransportP1CL( MG, Bnd_c, Stokes.GetBndData().Vel, P.get<double>("Transp.Theta"),
@@ -299,6 +313,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
                                                         P.get<std::string>("Restart.Outputfile"), 
                                                         P.get<int>("Restart.Overwrite"), 
                                                         P.get<int>("Restart.Binary"));
+    Stokes.v.t += GetTimeOffset();
     // Output-Registrations:
     Ensight6OutCL* ensight = NULL;
     if (P.get<int>("Ensight.EnsightOut",0)){
@@ -354,18 +369,21 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         vtkwriter->Write(Stokes.v.t);
     }
 
-    for (int step= 1; step<=P.get<int>("Time.NumSteps"); ++step)
+    int nsteps = P.get<int>("Time.NumSteps");
+    double dt = P.get<double>("Time.StepSize");
+    for (int step= 1; step<=nsteps; ++step)
     {
         std::cout << "============================================================ step " << step << std::endl;
-
+        const double time_old = Stokes.v.t;
+        const double time_new = Stokes.v.t + dt;
         IFInfo.Update( lset, Stokes.GetVelSolution());
-        IFInfo.Write(Stokes.v.t);
+        IFInfo.Write(time_old);
 
         if (P.get("SurfTransp.DoTransp", 0)) surfTransp.InitOld();
         timedisc->DoStep( P.get<int>("Coupling.Iter"));
-        if (massTransp) massTransp->DoStep( step*P.get<double>("Time.StepSize"));
+        if (massTransp) massTransp->DoStep( time_new);
         if (P.get("SurfTransp.DoTransp", 0)) {
-            surfTransp.DoStep( step*P.get<double>("Time.StepSize"));
+            surfTransp.DoStep( time_new);
             BndDataCL<> ifbnd( 0);
             std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, lset.GetBndData(), make_P1Eval(  MG, ifbnd, surfTransp.ic)) << '\n';
         }
@@ -383,9 +401,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         }
 
         if (ensight && step%P.get("Ensight.EnsightOut", 0)==0)
-            ensight->Write( Stokes.v.t);
+            ensight->Write( time_new);
         if (vtkwriter && step%P.get("VTK.VTKOut", 0)==0)
-            vtkwriter->Write(Stokes.v.t);
+            vtkwriter->Write( time_new);
         if (P.get("Restart.Serialization", 0) && step%P.get("Restart.Serialization", 0)==0)
             ser.Write();
     }
@@ -411,6 +429,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 /// The result can be checked when Param-list is written to the output.
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Transp.DoTransp",0);
+    P.put_if_unset<std::string>("Restart.Inputfile","none");
 }
 
 
@@ -482,6 +501,8 @@ int main (int argc, char** argv)
 
     if (P.get("Exp.InitialLSet", std::string("Ellipsoid")) == "Ellipsoid")
       DROPS::EllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"));
+    if  (P.get("Exp.InitialLSet", std::string("Ellipsoid")) == "TwoEllipsoid")
+        DROPS::TwoEllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"), P.get<DROPS::Point3DCL>("Exp.PosDrop2"), P.get<DROPS::Point3DCL>("Exp.RadDrop2"));
 
     DROPS::AdapTriangCL adap( *mg, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"),
                               ((P.get<std::string>("Restart.Inputfile") == "none") ? P.get<int>("AdaptRef.LoadBalStrategy") : -P.get<int>("AdaptRef.LoadBalStrategy")),

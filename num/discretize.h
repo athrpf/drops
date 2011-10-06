@@ -62,9 +62,9 @@ class JumpCL
 class SmoothedJumpCL
 {
   private:
-    const JumpCL     jc;
-    const SmoothFunT smf;
-    const double     eps;
+    JumpCL     jc;
+    SmoothFunT smf;
+    double     eps;
 
   public:
     SmoothedJumpCL (const JumpCL& myjc, const SmoothFunT f, double myeps)

@@ -133,6 +133,8 @@ Point3DCL TwoEllipsoidCL::Radius1_;
 Point3DCL TwoEllipsoidCL::Mitte2_;
 Point3DCL TwoEllipsoidCL::Radius2_;
 
+static DROPS::RegisterScalarFunction regsca_twoellipsoid("TwoEllipsoid", DROPS::TwoEllipsoidCL::DistanceFct);
+
 class InterfaceInfoCL
 {
   private:
@@ -457,7 +459,8 @@ class TwoPhaseStoreCL
     {
         // Create filename
         std::stringstream filename;
-        filename << path_ << ((recoveryStep_++)%numRecoverySteps_);
+        const size_t postfix= numRecoverySteps_==0 ? recoveryStep_++ : (recoveryStep_++)%numRecoverySteps_;
+        filename << path_ << postfix;
         // first master writes time info
         IF_MASTER
             WriteTime( filename.str() + "time");

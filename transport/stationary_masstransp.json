@@ -1,0 +1,84 @@
+//=============================================================
+//    DROPS parameter file for two phase mass transport
+//    simulation: (almost) artificial substance system
+//    stationary interface (no flow simulation)
+//=============================================================
+{
+        // time stepping:
+        "Time":
+        {
+                "NumSteps":             2000,
+                "StepSize":             0.0005,
+                "Scheme":               1
+        },
+    
+        //adaptive refinement:
+        "AdaptRef":
+        {
+                "Freq":                 1,
+                "FinestLevel":          3,
+                "CoarsestLevel":        0,
+                "Width":                0.00045,
+                "RefineStrategy":       1,
+                "LoadBalStrategy":      1,
+                "Partitioner":          1
+        },
+
+        // experimental conditions
+        "Exp":
+        {
+                "RadDrop":              [1e-3, 1e-3, 1e-3 ],
+                "PosDrop":              [10e-3, 10e-3, 10e-3 ],
+                "RadInlet":             0.005
+        },
+
+        "Transp":
+        {
+                "UseNSSol":             0,
+                "DoTransp":             1,
+                "Theta":                1,
+                "Iter":                 200,
+                "Tol":                  1e-15,
+                "DiffPos":              5.8345e-05,
+                "DiffNeg":              2.29e-05,
+                "HPos":                 1.2143,
+                "HNeg":                 1,
+                "IniCPos":              0.01,
+                "IniCNeg":              0,
+                "NitschePenalty":       100,
+                "SDStabilization":      0,
+                "NitscheXFEMStab":      0.01,
+                "Levelset":             "Ellipsoid",             //Only active if UseNSSol == 0
+                "Flow":                 "ZeroVel",               //Only active if UseNSSol == 0
+                "BoundaryType":         "2!2!2!2!2!2",
+                "BoundaryFncs":         "IniCposFct!IniCposFct!IniCposFct!IniCposFct!IniCposFct!IniCposFct",
+                "BoundaryFncst":        "IniCposFct!IniCposFct!IniCposFct!IniCposFct!IniCposFct!IniCposFct"
+        },
+
+        "VTK":
+        {
+
+                "VTKOut":               5,
+                "VTKDir":               "vtk",
+                "VTKName":              "stationary_interface",
+                "Binary":               0
+        },
+
+        //Write out results:
+        "Restart":
+        {
+                "Inputfile":            "none"
+        },
+
+        // Domain boundary and initial condition
+        "DomainCond":
+        {
+                "InitialCond":          0,
+                "GeomType":             1,
+                "InitialFile":          "none",
+                "MeshFile":             "20e-3x20e-3x20e-3@10x10x10",
+                "BoundaryType":         "2!2!2!2!2!2!",
+                "BoundaryFncs":         "ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel"
+        }
+
+}
