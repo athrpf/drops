@@ -185,16 +185,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     TransportP1CL * massTransp = NULL;
     TransportRepairCL *  transprepair = NULL;
 
-    if (P.get("Transp.DoTransp", 0))
+    if (P.get<int>("Transp.DoTransp"))
     {   
         // CL: the following could be moved outside of strategy to some function like 
         //" InitializeMassTransport(P,MG,Stokes,lset,adap, TransportP1CL * & massTransp,TransportRepairCL * & transprepair)"
-        const DROPS::BndCondT c_bc[6]= {
+        static DROPS::BndCondT c_bc[6]= {
             DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
             DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
         };
-        const DROPS::BndDataCL<>::bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
-        DROPS::BndDataCL<> Bnd_c( 6, c_bc, c_bfun);
+        static DROPS::BndDataCL<>::bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
+        static DROPS::BndDataCL<> Bnd_c( 6, c_bc, c_bfun);
         double D[2] = {P.get<double>("Transp.DiffPos"), P.get<double>("Transp.DiffNeg")};
 
         massTransp = new TransportP1CL( MG, Bnd_c, Stokes.GetBndData().Vel, P.get<double>("Transp.Theta"),
