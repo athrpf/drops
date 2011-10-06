@@ -255,7 +255,8 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-  Quad2CL<> rhs, quad_a;
+  Quad2CL<> quad_a;
+  Quad5CL<>  rhs;
   
   double coupM[4][4];
   Quad5CL<> U_Grad[4];
@@ -328,7 +329,12 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
       {
 //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
 //        if (!Coeff_.SpecialRhs)
-        vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
+        Quad5CL<double> fp1(rhs*phiq5[i]);
+        vf.Data[UnknownIdx[i]]+= fp1.quad(absdet);
+        if (SUPG) {
+            Quad5CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
+            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), tf );
+        }
         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
