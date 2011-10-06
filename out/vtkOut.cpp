@@ -100,6 +100,10 @@ void VTKOutCL::NewFile(double time, __UNUSED__ bool writeDistribution)
     AppendTimecode(filename);
     filename+= ".vtu";
     file_.open((dirname_+filename).c_str());
+    if ( !file_){
+        CreateDirectory( dirname_);
+        file_.open((dirname_+filename).c_str());
+    }
     CheckFile( file_);
     PutHeader();
     wrotePointDataLine_= false;
