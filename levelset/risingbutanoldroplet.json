@@ -214,12 +214,13 @@
 // write out results, read in for restart
         "Restart":
         {
-                "Serialization":        0,                 // run serialization (0 = off, 1 = 0n).
+                "Serialization":        0,                 // run serialization (0 = off, n>0 = write every n-th step).
                 "Overwrite":            1,                 // overwrite old output-files or create new ones
-                                                           // for every time step.
+                                                           // for every time step. 
+                                                           // (0 = every step a new file, n>0 generate n files in total)
                 "Inputfile":            "none",            // reads multigrid from deserialization files
                                                            // (to deactivate the reading choose Inputfile = none).
-                "Outputfile":           "mg",              // writes multigrid to serialization files
+                "Outputfile":           "mg/data",         // writes multigrid to serialization files
                                                            // (to deactivate the writing choose Outputfile = none).
                 "Binary":               0                  //
         },

@@ -459,7 +459,8 @@ class TwoPhaseStoreCL
     {
         // Create filename
         std::stringstream filename;
-        filename << path_ << ((recoveryStep_++)%numRecoverySteps_);
+        const size_t postfix= numRecoverySteps_==0 ? recoveryStep_++ : (recoveryStep_++)%numRecoverySteps_;
+        filename << path_ << postfix;
         // first master writes time info
         IF_MASTER
             WriteTime( filename.str() + "time");
