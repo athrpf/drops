@@ -1268,14 +1268,19 @@ void ColorClassesCL::compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL
     std::vector<TetraNumSetT> neighborsets( num_tetra);
 #   pragma omp parallel
     {
+#ifndef DROPS_WIN
+        size_t j;
+#else
+        int j;
+#endif
 #       pragma omp for
-        for (size_t j= 0; j < num_tetra; ++j)
+        for (j= 0; j < num_tetra; ++j)
             for (int i= 0; i < 4; ++i) {
                 const TetraNumVecT& tetra_nums= vertexMap[(begin + j)->GetVertex( i)];
                 neighborsets[j].insert( tetra_nums.begin(), tetra_nums.end());
             }
 #       pragma omp for
-        for (size_t j= 0; j < num_tetra; ++j) {
+        for (j= 0; j < num_tetra; ++j) {
             neighbors[j].resize( neighborsets[j].size());
             std::copy( neighborsets[j].begin(), neighborsets[j].end(), neighbors[j].begin());
         }
@@ -1293,9 +1298,14 @@ void ColorClassesCL::fill_pointer_arrays (
     for (size_t j= 0; j < num_tetra; ++j)
         colors_[color[j]].push_back( &*(begin + j));
 
+#ifndef DROPS_WIN
+    size_t j;
+#else
+    int j;
+#endif
     // tetra sorting for better memory access pattern
     #pragma omp parallel for
-    for (size_t j= 0; j < num_colors(); ++j)
+    for (j= 0; j < num_colors(); ++j)
         sort( colors_[j].begin(), colors_[j].end());
 }
 

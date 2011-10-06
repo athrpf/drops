@@ -128,7 +128,7 @@ template <typename T>
 template <typename T>
 void
 reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
-    bool use_indegree= true)
+    bool use_indegree)
 {
     if (M_in.num_rows() == NoVert)
         throw DROPSErrCL( "reverse_cuthill_mckee: Graph is too large.\n");
