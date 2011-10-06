@@ -1,9 +1,13 @@
 {
-    //#################################
-    //=============================================================
+    //=========================================================================
     //    DROPS parameter file for poissonP{1,2}
-    //    simulation of poisson problem
-    //=============================================================
+    //    simulation of poisson problem:
+    //      In this concrete example we are only interested in a steady
+    //      solution, we have convection, no reaction and a given solution.
+    //      The problem is quasi-1D.
+    //=========================================================================
+
+    //#######################################
     // Options for the iterative Solver
     //#######################################
     "Poisson":
@@ -100,14 +104,14 @@
             // the '!' is the delimiter between those indices.
             // The following indices are allowed:
             // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
-            // NatBC= 23, NoBC= 98, UndefinedBC_= 99
+            // NatBC= 23
             // -> Here: all boundaries are natural boundaries except for the
-            // first part which is of dirichlet type.
+            // first part which is of Dirichlet type.
         "BoundaryFncs":     "One!Zero!Zero!Zero!Zero!Zero"
             // For each boundary domain take a string which describes
             // a function of a function container (s. PoissonCoeff-sect.)
             // -> Here: all boundaries have zero natural boundaries
-            // except for the first part which has dirichlet value 1.
+            // except for the first part which has Dirichlet value 1.
 
     },
 

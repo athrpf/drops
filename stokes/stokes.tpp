@@ -377,8 +377,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const CoeffT& Coeff_, const Stokes
     StokesSystem1Accumulator_P2CL<CoeffT> accu( Coeff_, BndData_, RowIdx, A, M, b, cplA, cplM, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accus( MG_.GetColorClasses( RowIdx.TriangLevel()));
-    //accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+    accumulate( accus, MG_, RowIdx.TriangLevel());
 }
 
 
@@ -532,8 +531,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT& coeff, const Stokes
     System2Accumulator_P2P1CL<CoeffT> accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accus( MG.GetColorClasses( RowIdx->TriangLevel()));
-    //accus( MG.GetTriangTetraBegin( RowIdx->TriangLevel()), MG.GetTriangTetraEnd( RowIdx->TriangLevel()));
+    accumulate( accus, MG, RowIdx->TriangLevel());
 }
 
 template <class CoeffT>
