@@ -228,9 +228,19 @@
                 "GeomType":             1,                 // specifies the used geometry
                                                            // (0 = ReadMeshBuilder, 1 = BrickBuilder).
                 "InitialFile":          "mg/data",         // file prefix when reading data for initial condition.
-                "MeshFile":             "1x1x2@3x3x6",     // mesh file (created by GAMBIT or Netgen,
-                                                           // FLUENT/UNS format) or dimensions of a cuboid
-                                                           // (e.g. 2x3x4@5x6x7)
+                "MeshFile":             "1x1x2@3x3x6",     
+                                                           // mesh file (created by GAMBIT or NETGEN, FLUENT/UNS 
+                                                           // format) or (in case of the BrickBuilder:)
+                                                           // dimensions of a cuboid (e.g. AxBxC@DxExF) with edge
+                                                           // sizes A,B and C in x,y,z direction and a partition into
+                                                           // D/E/F cuboids in x/y/z direction (for initial mesh)
+                                                           // Note that the Brickbuilder genenrates 6 Boundary 
+                                                           // domains with the order: 
+                                                           // - b.dom. 1 has normal in neg. x direction
+                                                           // - b.dom. 2 has normal in pos. x direction
+                                                           // - b.dom. 3 has normal in neg. y direction, etc..
+                                                           // -> Here: a cube which is divived by 3 in x- and 
+                                                           // y-direction and by 6 in z-direction.
                 "BoundaryType":         "0!0!0!0!0!0",     // List of boundary types separated by a !.
                                                            // Each defining a boundary type for one boundary
                                                            // domain ( The following indices may be used:
