@@ -524,36 +524,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\levelset\brick_transp.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\butanol.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\eindhoven.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\film.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\mzi.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\prJump.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\risingbutanoldroplet.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\risingdroplet.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\tc2.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
-    <None Include="..\..\..\levelset\toluol.param">
-      <Filter>levelset\param-files</Filter>
-    </None>
     <None Include="..\..\..\levelset\adaptriang.tpp">
       <Filter>levelset</Filter>
     </None>
@@ -640,6 +610,33 @@
     </None>
     <None Include="..\..\..\num\renumber.tpp">
       <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\levelset\brick_transp.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\butanol.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\eindhoven.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\film.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\mzi.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\prJump.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\risingbutanoldroplet.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\risingdroplet.json">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\toluol.json">
+      <Filter>levelset\param-files</Filter>
     </None>
   </ItemGroup>
 </Project>
