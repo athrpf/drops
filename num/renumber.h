@@ -173,13 +173,16 @@ class IteratedDownwindCL
   private:
     double max_rel_component_size_;
     double weak_edge_ratio_;
+    double crosswind_limit_;
 
   public:
-    explicit IteratedDownwindCL (double max_rel_component_size= 0.05, double weak_edge_ratio= 0.2)
-        : max_rel_component_size_( max_rel_component_size), weak_edge_ratio_( weak_edge_ratio) {}
+    explicit IteratedDownwindCL (double max_rel_component_size= 0.05, double weak_edge_ratio= 0.2, double crosswind_limit= std::cos( M_PI/6.))
+        : max_rel_component_size_( max_rel_component_size), weak_edge_ratio_( weak_edge_ratio),
+          crosswind_limit_( crosswind_limit) {}
     IteratedDownwindCL (const ParamCL& p)
         : max_rel_component_size_( p.get<double>( "MaxRelComponentSize")),
-          weak_edge_ratio_( p.get<double>( "WeakEdgeRatio")) {}
+          weak_edge_ratio_( p.get<double>( "WeakEdgeRatio")),
+          crosswind_limit_( p.get<double>( "CrosswindLimit")) {}
 
     /// \brief Returns a permutation for the unknowns, such that they are arranged from upwind to downwind.
     template <class T>

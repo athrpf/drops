@@ -287,7 +287,6 @@ sort_row_entries (SparseMatBaseCL<T>& M)
 }
 
 /// \brief Counts the edges within the component 'component' (= positive matrix entries between vertices in 'component') and removes the weakest weak_edge_ratio*100 percent of them.
-/// The routine assumes, that the entries of each row of M are sorted by increasing weight. This is contrary to the linear algebra parts of Drops, which assume an ordering according to increasing column index.
 template <class T>
 void remove_weak_edges (SparseMatBaseCL<T>& M, const std::vector<size_t>& component, double weak_edge_ratio)
 {
@@ -309,34 +308,47 @@ void remove_weak_edges (SparseMatBaseCL<T>& M, const std::vector<size_t>& compon
         **it= T();
 }
 
+/// \brief Counts the edges within the component 'component' (= positive matrix entries between vertices in 'component') and removes the weakest weak_edge_ratio*100 percent of them.
+/// The routine assumes, that the entries of each row of M are sorted by increasing weight. This is contrary to the linear algebra parts of Drops, which assume an ordering according to increasing column index.
+template <class T>
+void remove_crosswind_edges (SparseMatBaseCL<T>& M, double crosswind_ratio)
+{
+    for (size_t i= 0; i < M.num_rows(); ++i) {
+        T* val= M.GetFirstVal( i);
+        T* valend= M.GetFirstVal( i + 1);
+        if (val == valend) // empty row
+            continue;
+        const double low_limit= *(valend - 1) * crosswind_ratio; // largest value in row times crosswind_ratio
+        while (val != valend && *val <= low_limit)
+            *val++= T();
+    }
+}
+
 template <class T>
 PermutationT IteratedDownwindCL::downwind_numbering (SparseMatBaseCL<T>& M)
 {
     const size_t dim= M.num_rows();
 
-    // std::cout << "Sorting by weight of the edges...\n";
     sort_row_entries( M);
+    remove_crosswind_edges( M, crosswind_limit_);
 
-    // std::cout << "...numbering in downwind direction...\n";
     TarjanDownwindCL re_num;
     bool have_large_components;
     int counter= 0;
-    // char ccc;
     do {
         have_large_components= false;
-        // WriteToFile( M, "M.txt" , "graph");
-        // std::cin >> ccc;
         re_num.number_connected_components( M);
-        re_num.stats( std::cout);
+        // re_num.stats( std::cout);
         for (size_t c= 0; c < re_num.num_components(); ++c)
             if (re_num.component_size()[c] > max_rel_component_size_*dim) {
-                std::cout << "...component " << c << " has " << re_num.component_size()[c] << " vertices.\n";
-                // std::cout << "...removing the " << weak_edge_ratio*100. << " percent weakest edges.\n";
+                // std::cout << "...component " << c << " has " << re_num.component_size()[c] << " vertices.\n";
+                // std::cout << "...removing the " << weak_edge_ratio_*100. << " percent weakest edges.\n";
                 remove_weak_edges( M, re_num.component( c),  weak_edge_ratio_);
                 have_large_components= true;
             }
         ++counter;
     } while (have_large_components);
+    re_num.stats( std::cout);
     std::cout << "IteratedDownwindCL::downwind_numbering: " << counter << " iterations.\n";
 
     return re_num.permutation();

@@ -355,12 +355,13 @@ InstatNavierStokes2PhaseP2P1CL::nonlinear_accu (MLTetraAccumulatorTupleCL& accus
 
 PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP2CL& lset, IteratedDownwindCL dw)
 {
-    std::cout << "Downwind numbering: Setting indices...\n";
+    std::cout << "InstatNavierStokes2PhaseP2P1CL::downwind_numbering:\n";
+    // std::cout << "...Setting indices...\n";
     MLMatDescCL  matN( &vel_idx, &vel_idx);
     matN.Data.resize( matN.RowIdx->size());
     VelVecDescCL loccplN( &vel_idx);
 
-    std::cout << "...accumulating convection matrix...\n";
+    // std::cout << "...accumulating convection matrix...\n";
     // We are interested in convection, not the (implicit) interfacial term.
     const CoeffCL& coeff= GetCoeff();
     SmoothedJumpCL oldrho= coeff.rho;
@@ -368,7 +369,7 @@ PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP
     SetupNonlinear( &matN, &v, &loccplN, lset, v.t);
     const_cast<SmoothedJumpCL&>( coeff.rho)= oldrho;
 
-    std::cout << "...extracting scalar convection matrix...\n";
+    // std::cout << "...extracting scalar convection matrix...\n";
     const size_t dim= matN.Data.num_rows()/3;
     MatrixCL M;
     SparseMatBuilderCL<> Mb(&M, dim, dim);
@@ -377,17 +378,17 @@ PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP
         for (const size_t* Ncol= matN.Data.GetFinest().GetFirstCol( 3*i),
                          * rowend= matN.Data.GetFinest().GetFirstCol( 3*i + 1);
             Ncol != rowend; ++Ncol, ++Nval)
-            if (*Ncol%3 == 0)
+            if (*Ncol%3 == 0 && *Nval > 0.) // Downwind-Numbering only uses the positive entries -- skip the negative ones to use less memory.
                 Mb( i, *Ncol/3)= *Nval;
     }
     Mb.Build();
 
     const PermutationT& p= dw.downwind_numbering( M);
-    std::cout << "...applying permutation to the fe-basis...\n";
+    // std::cout << "...applying permutation to the fe-basis...\n";
     permute_fe_basis( GetMG(), vel_idx.GetFinest(), p);
-    std::cout << "...applying permutation to the initial velocity...\n";
+    // std::cout << "...applying permutation to the initial velocity...\n";
     permute_Vector( v.Data, p, /*blocksize*/ 3);
-    std::cout << "...downwind numbering finished.\n";
+    // std::cout << "...downwind numbering finished.\n";
 
     return p;
 }
