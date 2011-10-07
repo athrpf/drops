@@ -444,11 +444,18 @@ class TimerCL
 
 
 /// \brief Represents the permutation i-->p[i] on [0, ..., p.size()).
+/// By convention, the empty permutation is the identity.
 typedef std::vector<size_t> PermutationT;
 
 /// \brief Compute the inverse permutation of p, id est pi[p[i]] == i for all i.
+/// By convention, the empty permutation is the identity.
 PermutationT
 invert_permutation (const PermutationT& p);
+
+/// \brief Compute the composition p(q(.))
+/// By convention, the empty permutation is the identity.
+PermutationT
+compose_permutations (const PermutationT& p, const PermutationT& q);
 
 
 /// \brief Output [begin, end) to out, separated by newline.

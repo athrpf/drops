@@ -64,6 +64,22 @@ invert_permutation (const PermutationT& p)
     return pi;
 }
 
+PermutationT
+compose_permutations (const PermutationT& p, const PermutationT& q)
+{
+    if (q.empty())
+        return p;
+    if (p.empty())
+        return q;
+
+    PermutationT ret( p.size());
+    for (size_t i= 0; i < p.size(); ++i)
+        ret[i]= p[q[i]];
+
+    return ret;
+}
+
+
 int CreateDirectory(std::string path)
 /** Used to create directories
     \param path path of new directory
