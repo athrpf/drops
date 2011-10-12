@@ -298,7 +298,7 @@ void remove_weak_edges (SparseMatBaseCL<T>& M, const std::vector<size_t>& compon
             if (*val > T() && std::binary_search( component.begin(), component.end(), *col))
                 edge.push_back( val);
     }
-    std::cout << edge.size() << " edges within the component.\n";
+    // std::cout << edge.size() << " edges within the component.\n";
 
     // Remove the weakest edges
     const size_t weak_edges= weak_edge_ratio*edge.size();
