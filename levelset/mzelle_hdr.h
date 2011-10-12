@@ -427,6 +427,8 @@ class TwoPhaseStoreCL
     Uint                 numRecoverySteps_;
     Uint                 recoveryStep_;
     bool                 binary_;
+    const PermutationT&  vel_downwind_;
+    const PermutationT&  lset_downwind_;
 
     /// \brief Write time info
     void WriteTime( std::string filename)
@@ -450,9 +452,9 @@ class TwoPhaseStoreCL
        *  \param binary save output  binary?
        *  */
     TwoPhaseStoreCL(MultiGridCL& mg, const StokesT& Stokes, const LevelsetP2CL& lset, const TransportP1CL* transp,
-                    const std::string& path, Uint recoverySteps=2, bool binary= false)
+                    const std::string& path, Uint recoverySteps=2, bool binary= false, const PermutationT& vel_downwind= PermutationT(), const PermutationT& lset_downwind= PermutationT())
       : mg_(mg), Stokes_(Stokes), lset_(lset), transp_(transp), path_(path), numRecoverySteps_(recoverySteps),
-        recoveryStep_(0), binary_( binary) {}
+        recoveryStep_(0), binary_( binary), vel_downwind_( vel_downwind), lset_downwind_( lset_downwind){}
 
     /// \brief Write all information in a file
     void Write()
@@ -470,8 +472,12 @@ class TwoPhaseStoreCL
         ser.WriteMG();
 
         // write numerical data
-        WriteFEToFile(Stokes_.v, mg_, filename.str() + "velocity", binary_);
-        WriteFEToFile(lset_.Phi, mg_, filename.str() + "levelset", binary_);
+        VecDescCL vel= Stokes_.v;
+        permute_Vector( vel.Data, invert_permutation( vel_downwind_), 3);
+        WriteFEToFile( vel, mg_, filename.str() + "velocity", binary_);
+        VecDescCL ls= lset_.Phi;
+        permute_Vector( ls.Data, invert_permutation( lset_downwind_));
+        WriteFEToFile( ls, mg_, filename.str() + "levelset", binary_);
         WriteFEToFile(Stokes_.p, mg_, filename.str() + "pressure", binary_, &lset_.Phi); // pass also level set, as p may be extended
         if (transp_) WriteFEToFile(transp_->ct, mg_, filename.str() + "concentrationTransf", binary_);
     }
