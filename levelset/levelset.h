@@ -33,6 +33,7 @@
 #include "levelset/mgobserve.h"
 #include "levelset/surfacetension.h"
 #include "num/interfacePatch.h"
+#include "num/renumber.h"
 #include <vector>
 
 #ifdef _PAR
@@ -117,6 +118,10 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     void SetupSystem( const DiscVelSolT&, const double);
     /// Reparametrization of the level set function.
     void Reparam( int method=03, bool Periodic= false);
+
+    /// \brief Perform downwind numbering
+    template <class DiscVelSolT>
+    PermutationT downwind_numbering (const DiscVelSolT& vel, IteratedDownwindCL dw);
 
     /// returns information about level set function and interface.
     template<class DiscVelSolT>

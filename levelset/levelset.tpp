@@ -199,5 +199,26 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, __UNUSED__ const double 
 #endif
 }
 
+template <class DiscVelSolT>
+PermutationT LevelsetP2CL::downwind_numbering (const DiscVelSolT& vel, IteratedDownwindCL dw)
+{
+    std::cout << "LevelsetP2CL::downwind_numbering:\n";
+    std::cout << "...accumulating convection matrix...\n";
+    // We are interested in convection, not the stabilization.
+    double old_SD= SD_;
+    SD_= 0.;
+    SetupSystem( vel, 0.);
+    SD_= old_SD;
+
+    const PermutationT& p= dw.downwind_numbering( H);
+    std::cout << "...applying permutation to the fe-basis...\n";
+    permute_fe_basis( GetMG(), idx, p);
+    std::cout << "...applying permutation to the initial velocity...\n";
+    permute_Vector( Phi.Data, p);
+    std::cout << "...downwind numbering finished.\n";
+
+    return p;
+}
+
 } // end of namespace DROPS
 
