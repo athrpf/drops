@@ -633,7 +633,7 @@ void permute_fe_basis (MultiGridCL& mg, IdxDescCL& idx, const PermutationT& p)
 {
     const Uint sys= idx.GetIdx();
     const Uint lvl= idx.TriangLevel();
-    const Uint num_components= idx.IsScalar() ? 1 : 3;
+    const Uint num_components= idx.NumUnknownsVertex();
 
    if (idx.IsExtended())
         permute_fe_basis_extended_part( idx.GetXidx(), p, num_components);
