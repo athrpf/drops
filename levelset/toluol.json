@@ -19,13 +19,13 @@
 		"_comment":
 "# flow solver",
 
-		"StokesMethod":		10102,
+		"StokesMethod":		10809,
 		"InnerIter":		1000,
 		"OuterIter":		200,
 		"InnerTol":		0.6,
 		"OuterTol":		1e-10,
-		"PcAIter":		2,
-		"PcATol":		1e-99,
+		"PcAIter":		100,
+		"PcATol":		0.01,
 		"PcSTol":		0.0001,
 		"XFEMStab":		0.1,
 		"Theta":		1
@@ -36,7 +36,14 @@
 		"Nonlinear":		1,
 		"Tol":		5e-10,
 		"Iter":		20,
-		"Reduction":		0.1
+		"Reduction":		0.1,
+                "Downwind":
+                {
+                        "Frequency": 10,         // 0 disables downwind-numbering
+                        "MaxRelComponentSize": 0.05, // maximal cycle size before removing weak edges
+                        "WeakEdgeRatio": 0.2,   // ration of the weak edges to remove for large cycles
+                        "CrosswindLimit": 0.866 // cos(pi/6); smaller convection is not considered
+                }
 	},
 
 	"Levelset":
@@ -49,7 +56,14 @@
 		"SD":		0.1,
 		"CurvDiff":		-1,
 		"VolCorrection":		1,
-		"Theta":		1
+		"Theta":		1,
+                "Downwind":
+                {
+                        "Frequency": 10,         // 0 disables downwind-numbering
+                        "MaxRelComponentSize": 0.05, // maximal cycle size before removing weak edges
+                        "WeakEdgeRatio": 0.2,   // ration of the weak edges to remove for large cycles
+                        "CrosswindLimit": 0.866 // cos(pi/6); smaller convection is not considered
+                }
 	},
 
 	"Coupling":

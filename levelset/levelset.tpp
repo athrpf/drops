@@ -23,6 +23,7 @@
 */
 
 #include <fstream>
+#include "num/accumulator.h"
 
 namespace DROPS
 {
@@ -204,16 +205,14 @@ PermutationT LevelsetP2CL::downwind_numbering (const DiscVelSolT& vel, IteratedD
 {
     std::cout << "LevelsetP2CL::downwind_numbering:\n";
     std::cout << "...accumulating convection matrix...\n";
-    // We are interested in convection, not the stabilization.
-    double old_SD= SD_;
-    SD_= 0.;
-    SetupSystem( vel, 0.);
-    SD_= old_SD;
+    MatrixCL C;
+    DownwindAccu_P2CL accu( *vel.GetBndData(), *vel.GetSolution(), idx, C);
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &accu);
+    accumulate( accus, this->GetMG(), idx.TriangLevel());
 
-    const PermutationT& p= dw.downwind_numbering( H);
-    std::cout << "...applying permutation to the fe-basis...\n";
+    const PermutationT& p= dw.downwind_numbering( C);
     permute_fe_basis( GetMG(), idx, p);
-    std::cout << "...applying permutation to the initial velocity...\n";
     permute_Vector( Phi.Data, p);
     std::cout << "...downwind numbering finished.\n";
 

@@ -50,7 +50,7 @@
                 "Reduction":            0.1,    // reduction of the Oseen residual by this factor.
                 "Downwind":
                 {
-                        "Frequency": 1,         // 0 disables downwind-numbering
+                        "Frequency": 0,         // 0 disables downwind-numbering
                         "MaxRelComponentSize": 0.05, // maximal cycle size before removing weak edges
                         "WeakEdgeRatio": 0.2,   // ration of the weak edges to remove for large cycles
                         "CrosswindLimit": 0.866 // cos(pi/6); smaller convection is not considered
@@ -78,7 +78,7 @@
                                                 // Euler method. Theta = 0.5 results in the Crank-Nicholson scheme.
                "Downwind":
                 {
-                        "Frequency": 1,         // 0 disables downwind-numbering
+                        "Frequency": 0,         // 0 disables downwind-numbering
                         "MaxRelComponentSize": 0.05, // maximal cycle size before removing weak edges
                         "WeakEdgeRatio": 0.2,   // ration of the weak edges to remove for large cycles
                         "CrosswindLimit": 0.866 // cos(pi/6); smaller convection is not considered

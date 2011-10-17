@@ -181,8 +181,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     SetInitialConditions( Stokes, lset, MG, P);
 
     IteratedDownwindCL navstokes_downwind( P.get_child( "NavStokes.Downwind"));
-    if (P.get<int>( "NavStokes.Downwind.Frequency") > 0)
+    if (P.get<int>( "NavStokes.Downwind.Frequency") > 0) {
+        if (StokesSolverFactoryHelperCL().VelMGUsed( P))
+            throw DROPSErrCL( "Strategy: Multigrid-solver and downwind-numbering cannot be used together. Sorry.\n");
         vel_downwind= Stokes.downwind_numbering( lset, navstokes_downwind);
+    }
     IteratedDownwindCL levelset_downwind( P.get_child( "Levelset.Downwind"));
     if (P.get<int>( "Levelset.Downwind.Frequency") > 0)
         lset_downwind= lset.downwind_numbering( Stokes.GetVelSolution(), levelset_downwind);
@@ -378,8 +381,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         vtkwriter->Write(Stokes.v.t);
     }
 
-    if (P.get("Restart.Serialization", 0))
-        ser.Write();
+    // if (P.get("Restart.Serialization", 0))
+    //     ser.Write();
 
     const int nsteps = P.get<int>("Time.NumSteps");
     const double dt = P.get<double>("Time.StepSize");
