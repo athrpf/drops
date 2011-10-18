@@ -221,8 +221,8 @@ class LocalNumbP2CL;
 class DownwindAccu_P2CL : public TetraAccumulatorCL
 {
   private:
-    const BndDataCL<Point3DCL>& BndData;
-    const VecDescCL&           vel;
+    const BndDataCL<Point3DCL>& velBndData;
+    const VecDescCL&            vel;
 
     const IdxDescCL&            idx;
     MatrixCL&                   C;
@@ -235,9 +235,9 @@ class DownwindAccu_P2CL : public TetraAccumulatorCL
     void update_global_system (const LocalNumbP2CL& n, const SMatrixCL<10,10>& loc);
 
   public:
-    DownwindAccu_P2CL (const BndDataCL<Point3DCL>& BndDataArg, const VecDescCL& vel_arg,
+    DownwindAccu_P2CL (const BndDataCL<Point3DCL>& velBndDataArg, const VecDescCL& vel_arg,
                        const IdxDescCL& idxarg, MatrixCL& Carg)
-        : BndData( BndDataArg), vel(vel_arg), idx( idxarg), C( Carg) {}
+        : velBndData( velBndDataArg), vel(vel_arg), idx( idxarg), C( Carg) {}
 
     ///\brief Initializes matrix-builder
     void begin_accumulation ();
@@ -247,6 +247,33 @@ class DownwindAccu_P2CL : public TetraAccumulatorCL
     void visit (const TetraCL& sit);
 
     DownwindAccu_P2CL* clone (int /*tid*/) { return new  DownwindAccu_P2CL( *this); };
+};
+
+/// \brief Setup the P2 mass-matrix.
+class MassAccu_P2CL : public TetraAccumulatorCL
+{
+  private:
+    const IdxDescCL&            idx;
+    MatrixCL&                   M;
+    SparseMatBuilderCL<double>* Mb;
+
+    ///\brief Compute the local matrix in loc.
+    void local_setup (const TetraCL& tet, SMatrixCL<10,10>& loc);
+    ///\brief Update the global system.
+    void update_global_system (const LocalNumbP2CL& n, const SMatrixCL<10,10>& loc);
+
+  public:
+   MassAccu_P2CL (const IdxDescCL& idxarg, MatrixCL& Marg)
+        : idx( idxarg), M( Marg) {}
+
+    ///\brief Initializes matrix-builder
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+
+    MassAccu_P2CL* clone (int /*tid*/) { return new  MassAccu_P2CL( *this); };
 };
 
 

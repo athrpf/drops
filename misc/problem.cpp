@@ -684,4 +684,14 @@ void permute_fe_basis (MultiGridCL& mg, IdxDescCL& idx, const PermutationT& p)
     }
 }
 
+void
+LocalNumbP2CL::assign_dof_only (const TetraCL& s, const IdxDescCL& idx)
+{
+    const Uint sys= idx.GetIdx();
+    for (Uint i= 0; i < 4; ++i)
+        num[i]= s.GetVertex( i)->Unknowns.Exist( sys) ? s.GetVertex( i)->Unknowns( sys) : NoIdx;
+    for(Uint i= 0; i < 6; ++i)
+        num[i+4]= s.GetEdge( i)->Unknowns.Exist( sys) ? s.GetEdge( i)->Unknowns( sys)   : NoIdx;
+}
+
 } // end of namespace DROPS

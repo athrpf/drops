@@ -48,12 +48,11 @@ void DownwindAccu_P2CL::finalize_accumulation ()
 
 void DownwindAccu_P2CL::visit (const TetraCL& tet)
 {
-    SMatrixCL<10,10>     loc;     ///< local matrix
-    LocalNumbP2CL        n;       ///< global numbering of the P2-unknowns
-    LocalP2CL<Point3DCL> vel_loc; ///< local velocity
+    SMatrixCL<10,10>     loc; ///< local matrix
+    LocalNumbP2CL        n;   ///< global numbering of the P2-unknowns
+    LocalP2CL<Point3DCL> vel_loc( tet, vel, velBndData); ///< local velocity
 
-    n.assign( tet, idx, BndData);
-    vel_loc.assign( tet, vel, BndData);
+    n.assign_dof_only( tet, idx);
     local_setup( tet, vel_loc, loc);
     update_global_system( n, loc);
 }
@@ -84,6 +83,56 @@ void DownwindAccu_P2CL::update_global_system (const LocalNumbP2CL& n, const SMat
             for(int j= 0; j < 10; ++j)
                 if (n.WithUnknowns( j)) // dof j is not on a Dirichlet boundary
                     C( n.num[i]/num_components, n.num[j]/num_components)= loc( i, j);
+}
+
+
+void MassAccu_P2CL::begin_accumulation ()
+{
+    std::cout << "entering MassAccu_P2CL::begin_accumulation";
+    const size_t num_unks= idx.NumUnknowns()/idx.NumUnknownsVertex();
+    Mb= new SparseMatBuilderCL<double>( &M, num_unks, num_unks);
+}
+
+void MassAccu_P2CL::finalize_accumulation ()
+{
+    Mb->Build();
+    delete Mb;
+#ifndef _PAR
+    std::cout << ": " << M.num_nonzeros() << " nonzeros in M. ";
+#endif
+    std::cout << '\n';
+}
+
+void MassAccu_P2CL::visit (const TetraCL& tet)
+{
+    SMatrixCL<10,10>     loc;     ///< local matrix
+    LocalNumbP2CL        n;       ///< global numbering of the P2-unknowns
+
+    n.assign_dof_only( tet, idx);
+    local_setup( tet, loc);
+    update_global_system( n, loc);
+}
+
+void MassAccu_P2CL::local_setup (const TetraCL& tet, SMatrixCL<10,10>& loc)
+{
+    const double absdet= tet.GetVolume()*6.;
+    for (Uint i= 0; i < 10; ++i) {
+        for (Uint j= 0; j < 10; ++j) {
+            loc( i, j)= absdet*P2DiscCL::GetMass( i, j);
+         }
+    }
+}
+
+void MassAccu_P2CL::update_global_system (const LocalNumbP2CL& n, const SMatrixCL<10,10>& loc)
+{
+    SparseMatBuilderCL<double>& M= *Mb;
+    const Uint num_components= idx.NumUnknownsVertex();
+
+    for(int i= 0; i < 10; ++i)  // assemble row Numb[i]
+        if (n.WithUnknowns( i)) // dof i is not on a Dirichlet boundary
+            for(int j= 0; j < 10; ++j)
+                if (n.WithUnknowns( j)) // dof j is not on a Dirichlet boundary
+                    M( n.num[i]/num_components, n.num[j]/num_components)= loc( i, j);
 }
 
 } // end of namspace DROPS

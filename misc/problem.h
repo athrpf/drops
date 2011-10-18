@@ -518,6 +518,10 @@ class LocalNumbP2CL
       void
       assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd);
 
+    /// \brief Compute the dof-numbers only.
+    /// Only num is set up.
+    void assign_dof_only (const TetraCL& s, const IdxDescCL& idx);
+
     /// \brief True, iff index i has a dof associated with it.
     bool WithUnknowns(IdxT i) const { return num[i] != NoIdx; }
 };
