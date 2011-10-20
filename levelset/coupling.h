@@ -455,19 +455,19 @@ class CrankNicolsonScheme2PhaseCL: public BaseMethod<LsetSolverT, RelaxationPoli
     double facdt_[3];
     typedef BaseMethod<LsetSolverT, RelaxationPolicyT> base_;
     double dt2_;
-    int step_;
+    int substep_;
 
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                              NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                             double dt, double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, 1.0, 1.0, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
+                             double dt, double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, 0.2*dt*dt, tol, 1.0, 1.0, nonlinear, withProjection, stab), substep_(0) { SetTimeStep(dt); }
 
     ~CrankNicolsonScheme2PhaseCL() {};
 
-    double GetSubTimeStep() const { return facdt_[step_]; }
-    double GetSubTheta()    const { return theta_[step_]; }
-    int    GetSubStep()     const { return step_; }
+    double GetSubTimeStep() const { return facdt_[substep_]; }
+    double GetSubTheta()    const { return theta_[substep_]; }
+    int    GetSubStep()     const { return substep_; }
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
         dt2_= dt;
@@ -475,23 +475,23 @@ class CrankNicolsonScheme2PhaseCL: public BaseMethod<LsetSolverT, RelaxationPoli
     }
 
     void DoSubStep( int maxFPiter= -1) {
-        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Crank Nicolson Method: Substep variant" << step_ << '\n';
+        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Crank Nicolson Method: Substep variant" << substep_ << '\n';
         base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
         base_::DoStep( maxFPiter);
     }
 
     void DoStep( int maxFPiter= -1) {
-        if (step_ == 0) {
+        if (substep_ == 0) {
             DoSubStep( maxFPiter);
-            ++step_;
+            ++substep_;
             DoSubStep( maxFPiter);
-            ++step_;
+            ++substep_;
         }
         else
             DoSubStep( maxFPiter);
     }
 
-    void Update() { step_ = 0; base_::Update(); }
+    void Update() { substep_ = 0; base_::Update(); }
 
 };
 
@@ -510,17 +510,17 @@ class FracStepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT>
     typedef BaseMethod<LsetSolverT, RelaxationPolicyT> base_;
 
     double dt3_;
-    int step_;
+    int substep_;
 
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double dt, double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
+                               double dt, double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, facdt_[0]*dt, tol, 0.5, 0.5, nonlinear, withProjection, stab), dt3_(dt), substep_(0) {}
 
-    double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
-    double GetSubTheta()    const { return theta_[step_]; }
-    int    GetSubStep()     const { return step_; }
+    double GetSubTimeStep() const { return facdt_[substep_]*dt3_; }
+    double GetSubTheta()    const { return theta_[substep_]; }
+    int    GetSubStep()     const { return substep_; }
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
         dt3_= dt;
@@ -528,14 +528,14 @@ class FracStepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT>
 
     void SetTimeStep( double dt, int step = -1) {
         dt3_= dt;
-        if (step>=0) step_= step%3;
+        if (step>=0) substep_= step%3;
     }
 
     void DoSubStep( int maxFPiter= -1) {
-        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << step_ << '\n';
+        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << substep_ << '\n';
         base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
         base_::DoStep( maxFPiter);
-        step_= (step_ + 1)%3;
+        substep_= (substep_ + 1)%3;
     }
 
     void DoStep( int maxFPiter= -1) {
@@ -574,17 +574,17 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT
     using base_::Stokes_;
     using base_::LvlSet_;
     double dt2_;
-    int step_;
+    int substep_;
 
   public:
     Frac2StepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double dt, double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, dt, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
+                               double dt, double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, facdt_[0]*dt, tol, 0.5, 0.5, nonlinear, withProjection, stab), dt2_(dt), substep_(0) {}
 
-    double GetSubTimeStep() const { return facdt_[step_]*dt2_; }
-    double GetSubTheta()    const { return theta_[step_]; }
-    int    GetSubStep()     const { return step_; }
+    double GetSubTimeStep() const { return facdt_[substep_]*dt2_; }
+    double GetSubTheta()    const { return theta_[substep_]; }
+    int    GetSubStep()     const { return substep_; }
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
         dt2_= dt;
@@ -592,14 +592,14 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT
 
     void SetTimeStep( double dt, int step = -1) {
         dt2_= dt;
-        if (step>=0) step_= step%2;
+        if (step>=0) substep_= step%2;
     }
 
     void DoSubStep( int maxFPiter= -1) {
-        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << step_ << '\n';
+        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << substep_ << '\n';
         base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
         base_::DoStep( maxFPiter);
-        step_= (step_ + 1)%2;
+        substep_= (substep_ + 1)%2;
     }
 
     void DoStep( int maxFPiter= -1) {
