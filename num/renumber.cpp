@@ -132,7 +132,7 @@ void MassAccu_P2CL::update_global_system (const LocalNumbP2CL& n, const SMatrixC
         if (n.WithUnknowns( i)) // dof i is not on a Dirichlet boundary
             for(int j= 0; j < 10; ++j)
                 if (n.WithUnknowns( j)) // dof j is not on a Dirichlet boundary
-                    M( n.num[i]/num_components, n.num[j]/num_components)= loc( i, j);
+                    M( n.num[i]/num_components, n.num[j]/num_components)+= loc( i, j);
 }
 
 } // end of namspace DROPS
