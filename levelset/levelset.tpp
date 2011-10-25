@@ -44,9 +44,9 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
     double det, absdet;
-    InterfaceTetraCL tetra;  
+    InterfaceTetraCL tetra;
     InterfaceTriangleCL triangle;
-    
+
     P2DiscCL::GetGradientsOnRef( GradRef);
     maxGradPhi= -1.;
     Volume= 0.;
@@ -124,8 +124,64 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     surfArea*= 0.5;
 }
 
+/// \brief Accumulator to set up the matrices E and H for the level set equation.
 template<class DiscVelSolT>
-void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, __UNUSED__ const double dt)
+class LevelsetAccumulator_P2CL : public TetraAccumulatorCL
+{
+    LevelsetP2CL& ls_;
+    const DiscVelSolT& vel_;
+    const double SD_;
+    SparseMatBuilderCL<double> *bE_, *bH_;
+
+    Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc;
+    Quad5CL<double> u_Grad[10]; // fuer u grad v_i
+    SMatrixCL<3,3> T;
+    LocalNumbP2CL n;
+
+  public:
+    LevelsetAccumulator_P2CL( LevelsetP2CL& ls, const DiscVelSolT& vel, double SD, __UNUSED__ double dt)
+      : ls_(ls), vel_(vel), SD_(SD)
+    { P2DiscCL::GetGradientsOnRef( GradRef); }
+
+    ///\brief Initializes matrix-builders and load-vectors
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+    ///\brief Do setup of E, H on given tetra
+    void visit (const TetraCL&);
+
+    TetraAccumulatorCL* clone (int /*tid*/) { return new LevelsetAccumulator_P2CL ( *this); };
+};
+
+template<class DiscVelSolT>
+void LevelsetAccumulator_P2CL<DiscVelSolT>::begin_accumulation ()
+{
+    const IdxT num_unks= ls_.Phi.RowIdx->NumUnknowns();
+    bE_= new SparseMatBuilderCL<double>(&ls_.E, num_unks, num_unks);
+    bH_= new SparseMatBuilderCL<double>(&ls_.H, num_unks, num_unks);
+
+#ifndef _PAR
+    __UNUSED__ const IdxT allnum_unks= num_unks;
+#else
+    __UNUSED__ const IdxT allnum_unks= DROPS::ProcCL::GlobalSum(num_unks);
+#endif
+    Comment("entering LevelsetAccumulator_P2CL: " << allnum_unks << " levelset unknowns.\n", DebugDiscretizeC);
+}
+
+template<class DiscVelSolT>
+void LevelsetAccumulator_P2CL<DiscVelSolT>::finalize_accumulation ()
+{
+    bE_->Build();
+    delete bE_;
+    bH_->Build();
+    delete bH_;
+#ifndef _PAR
+    Comment(E.num_nonzeros() << " nonzeros in E, "<< H.num_nonzeros() << " nonzeros in H! " << std::endl, DebugDiscretizeC);
+#endif
+}
+
+template<class DiscVelSolT>
+void LevelsetAccumulator_P2CL<DiscVelSolT>::visit (const TetraCL& t)
 /**Sets up the stiffness matrices: <br>
    E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i ) <br>
    H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i ) <br>
@@ -133,71 +189,51 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, __UNUSED__ const double 
    \todo: implementation of other boundary conditions
 */
 {
-    const IdxT num_unks= Phi.RowIdx->NumUnknowns();
-    const Uint lvl= Phi.GetLevel();
+    double det;
+    GetTrafoTr( T, det, t);
+    P2DiscCL::GetGradients( Grad, GradRef, T);
+    const double absdet= std::fabs( det),
+            h_T= std::pow( absdet, 1./3.);
 
-    SparseMatBuilderCL<double> bE(&E, num_unks, num_unks),
-                               bH(&H, num_unks, num_unks);
+    // save information about the edges and verts of the tetra in Numb
+    n.assign( t, *ls_.Phi.RowIdx, ls_.GetBndData());
 
-#ifndef _PAR
-    __UNUSED__ const IdxT allnum_unks= num_unks;
-#else
-    __UNUSED__ const IdxT allnum_unks= DROPS::ProcCL::GlobalSum(num_unks);
-#endif
-    Comment("entering Levelset::SetupSystem: " << allnum_unks << " levelset unknowns.\n", DebugDiscretizeC);
+    // save velocities inside tetra for quadrature in u_loc
+    u_loc.assign( t, vel_);
 
-    // fill value part of matrices
-    Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc;
-    Quad5CL<double> u_Grad[10]; // fuer u grad v_i
-    SMatrixCL<3,3> T;
-    double det, absdet, h_T;
-    LocalNumbP2CL n;
-    
-    P2DiscCL::GetGradientsOnRef( GradRef);
+    for(int i=0; i<10; ++i)
+        u_Grad[i]= dot( u_loc, Grad[i]);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit!=send; ++sit)
-    {
-        GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= std::fabs( det);
-        h_T= std::pow( absdet, 1./3.);
+    double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
+    //const double limit= (h_T*h_T)/dt;
+    const double limit= 1e-3;
+    for(int i=0; i<Quad5DataCL::NumNodesC; ++i)
+        maxV = std::max( maxV, u_loc[i].norm());
+    maxV= std::max( maxV, limit/h_T); // no scaling for extremely small velocities
+    //double maxV= 1; // no scaling
 
-        
-        // save information about the edges and verts of the tetra in Numb
-        n.assign( *sit, *Phi.RowIdx, BndData_);
-        
-        // save velocities inside tetra for quadrature in u_loc
-        u_loc.assign( *sit, vel);
+    SparseMatBuilderCL<double> &bE= *bE_, &bH= *bH_;
+    for(int i=0; i<10; ++i)    // assemble row Numb[i]
+        for(int j=0; j<10; ++j)
+        {
+            // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
+            bE( n.num[i], n.num[j])+= P2DiscCL::GetMass(i,j) * absdet
+                                 + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
 
-        for(int i=0; i<10; ++i)
-            u_Grad[i]= dot( u_loc, Grad[i]);
+            // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
+            bH( n.num[i], n.num[j])+= u_Grad[j].quadP2(i, absdet)
+                                 + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
+        }
+}
 
-        double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
-        //const double limit= (h_T*h_T)/dt;
-        const double limit= 1e-3;
-        for(int i=0; i<Quad5DataCL::NumNodesC; ++i)
-            maxV = std::max( maxV, u_loc[i].norm());
-        maxV= std::max( maxV, limit/h_T); // no scaling for extremely small velocities
-        //double maxV= 1; // no scaling
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            for(int j=0; j<10; ++j)
-            {
-                // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-                bE( n.num[i], n.num[j])+= P2DiscCL::GetMass(i,j) * absdet
-                                     + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
-
-                // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-                bH( n.num[i], n.num[j])+= u_Grad[j].quadP2(i, absdet)
-                                     + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
-            }
-    }
-
-    bE.Build();
-    bH.Build();
-#ifndef _PAR
-    Comment(E.num_nonzeros() << " nonzeros in E, "<< H.num_nonzeros() << " nonzeros in H! " << std::endl, DebugDiscretizeC);
-#endif
+template<class DiscVelSolT>
+void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, __UNUSED__ const double dt)
+/// Setup level set matrices E, H
+{
+    LevelsetAccumulator_P2CL<DiscVelSolT> accu( *this, vel, SD_, dt);
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &accu);
+    accumulate( accus, MG_, Phi.RowIdx->TriangLevel());
 }
 
 template <class DiscVelSolT>
