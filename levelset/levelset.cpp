@@ -36,284 +36,338 @@ inline double SmoothedSign( double x, double alpha)
     return x/std::sqrt(x*x+alpha);
 }
 
-void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, double sigma, VecDescCL& f)
-// computes the integral
-//         sigma \int_\Gamma v n ds
-// used by levelset/prJump.cpp for testing FE pressure spaces.
+/// \brief Base class for all surface tension accumulators
+class SurfTensAccumulatorCL : public TetraAccumulatorCL
+{
+  protected:
+    VecDescCL  SmPhi_;
+    const BndDataCL<>& lsetbnd_;
+    VecDescCL& f;
+    SMatrixCL<3,3> T;
+    InterfaceTriangleCL triangle;
+
+  public:
+    SurfTensAccumulatorCL( const LevelsetP2CL& ls, VecDescCL& f_Gamma)
+     : SmPhi_(ls.Phi), lsetbnd_(ls.GetBndData()), f(f_Gamma)
+    { ls.MaybeSmooth( SmPhi_.Data); }
+
+    void begin_accumulation ()
+    {
+        // uncomment for Geomview output
+        //std::ofstream fil("surf.off");
+        //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+    }
+    void finalize_accumulation()
+    {
+        // uncomment for Geomview output
+        //fil << "}\n";
+    }
+    ///\brief Do setup of f_Gamma on given tetra
+    virtual void visit (const TetraCL&)= 0;
+
+};
+
+/// \brief Accumulator for the (artificial) constant surface force, mainly used for numerical test cases.
+///
+/// Computes the integral
+///         \f[ \sigma \int_\Gamma v \textbf n ds. \f]
+class ConstSurfTensAccumulatorCL : public SurfTensAccumulatorCL
+{
+  private:
+    const double sigma_;
+    const RefRuleCL RegRef_;
+
+    IdxT Numb[14];
+    LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
+    LocalP2CL<> loc_phi;
+
+  public:
+    ConstSurfTensAccumulatorCL( const LevelsetP2CL& ls, VecDescCL& f_Gamma, double sigma)
+     : SurfTensAccumulatorCL( ls, f_Gamma), sigma_(sigma), RegRef_(GetRefRule( RegRefRuleC)) {}
+
+    void visit (const TetraCL&);
+
+    TetraAccumulatorCL* clone (int /*tid*/) { return new ConstSurfTensAccumulatorCL ( *this); };
+};
+
+void ConstSurfTensAccumulatorCL::visit (const TetraCL& t)
 {
     const Uint idx_f= f.RowIdx->GetIdx();
     const bool velXfem= f.RowIdx->IsExtended();
-    IdxT Numb[14];
 
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+    loc_phi.assign( t, SmPhi_, lsetbnd_);
+    triangle.Init( t, loc_phi);
+    if (!triangle.Intersects())
+        return;
 
-    LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
-    LocalP2CL<> loc_phi;
-    SMatrixCL<3,3> T;
-    InterfaceTriangleCL triangle;
+    for (int v=0; v<10; ++v)
+    { // collect data on all DoF
+        const UnknownHandleCL& unk= v<4 ? t.GetVertex(v)->Unknowns : t.GetEdge(v-4)->Unknowns;
+        Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+    }
+    for (int xv=0; xv<4; ++xv)
+    { // collect data on all extended DoF
+        Numb[xv+10]= velXfem && Numb[xv]!=NoIdx ? f.RowIdx->GetXidx()[Numb[xv]] : NoIdx;
+    }
 
-    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
+    if (velXfem)
+        P2RidgeDiscCL::GetExtBasisOnChildren( p1abs_p, p1abs_n, loc_phi);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
-        it!=end; ++it)
+    for (int ch=0; ch<8; ++ch)
     {
-        loc_phi.assign( *it, SmPhi, lsetbnd);
-        triangle.Init( *it, loc_phi);
-        if (!triangle.Intersects())
+        if (!triangle.ComputeForChild(ch)) // no patch for this child
             continue;
 
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
-        }
-        for (int xv=0; xv<4; ++xv)
-        { // collect data on all extended DoF
-            Numb[xv+10]= velXfem && Numb[xv]!=NoIdx ? f.RowIdx->GetXidx()[Numb[xv]] : NoIdx;
-        }
-
-        if (velXfem)
-            P2RidgeDiscCL::GetExtBasisOnChildren( p1abs_p, p1abs_n, loc_phi);
-
-        for (int ch=0; ch<8; ++ch)
-        {
-            if (!triangle.ComputeForChild(ch)) // no patch for this child
-                continue;
-
 //patch.WriteGeom( fil);
 
-            BaryCoordCL BaryPQR, BarySQR;
+        BaryCoordCL BaryPQR, BarySQR;
+        for (int i=0; i<3; ++i)
+        {
+            // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+            BaryPQR+= triangle.GetBary(i);
+            BarySQR+= triangle.GetBary(i+1);
+        }
+        BaryPQR/= 3; BarySQR/= 3;
+
+        Point3DCL n; // senkrecht auf PQ, PR, nach aussen gerichtet...
+        cross_product( n, triangle.GetPoint(1)-triangle.GetPoint(0), triangle.GetPoint(2)-triangle.GetPoint(0));
+        n/= n.norm();
+
+        const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
+        const int find_sign= triangle.GetNumSign( 1) ? 1 : -1;
+        Point3DCL pos_dir;
+        for (Uint i=0; i<4; ++i) // compute vector with positive direction
+        {
+            const Uint vert= data.Vertices[i];
+            if (triangle.GetSign(vert)==find_sign)
+            {
+                const Point3DCL signedPoint= vert<4 ? t.GetVertex(vert)->GetCoord() : GetBaryCenter( *t.GetEdge(vert-4));
+                pos_dir= signedPoint - triangle.GetPoint(0);
+                if (find_sign == -1) pos_dir= -pos_dir;
+                break;
+            }
+        }
+        if (inner_prod( n, pos_dir) < 0) n= -n;
+
+        double val_hat[4];
+        for (int v=0; v<14; ++v)
+        {
+            if (Numb[v]==NoIdx) continue;
+
+            for (Uint k=0; k<triangle.GetNumPoints(); ++k)
+                // values of basis function in P,Q,R,S. Note: p1abs_p==p1abs_n on \f$Gamma_h\f$
+                val_hat[k]= v<10 ? FE_P2CL::H(v,triangle.GetBary(k)) : p1abs_p[v-10][ch](triangle.GetBary(k));
+
+            double v_Bary= v<10 ? FE_P2CL::H(v,BaryPQR) : p1abs_p[v-10][ch](BaryPQR),
+                sum_v= 0;
+            for (int k=0; k<3; ++k)
+                 sum_v+= val_hat[k];
+
+            if (triangle.IsQuadrilateral())
+            {
+                double sum_vSQR= 0;
+                for (int k=1; k<4; ++k)
+                    sum_vSQR+= val_hat[k];
+                sum_v+= triangle.GetAreaFrac() * sum_vSQR;
+                v_Bary+= triangle.GetAreaFrac() * (v<10 ? FE_P2CL::H(v,BarySQR) : p1abs_p[v-10][ch](BarySQR));
+            }
+
+            // Quadraturformel auf Dreieck, exakt bis zum Grad 2
+            const double int_v= (1./12)*sum_v + 0.75 * v_Bary;
+            const double C= sigma_*triangle.GetAbsDet()/2;
             for (int i=0; i<3; ++i)
-            {
-                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= triangle.GetBary(i);
-                BarySQR+= triangle.GetBary(i+1);
-            }
-            BaryPQR/= 3; BarySQR/= 3;
-
-            Point3DCL n; // senkrecht auf PQ, PR, nach aussen gerichtet...
-            cross_product( n, triangle.GetPoint(1)-triangle.GetPoint(0), triangle.GetPoint(2)-triangle.GetPoint(0));
-            n/= n.norm();
-
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            const int find_sign= triangle.GetNumSign( 1) ? 1 : -1;
-            Point3DCL pos_dir;
-            for (Uint i=0; i<4; ++i) // compute vector with positive direction
-            {
-                const Uint vert= data.Vertices[i];
-                if (triangle.GetSign(vert)==find_sign)
-                {
-                    const Point3DCL signedPoint= vert<4 ? it->GetVertex(vert)->GetCoord() : GetBaryCenter( *it->GetEdge(vert-4));
-                    pos_dir= signedPoint - triangle.GetPoint(0);
-                    if (find_sign == -1) pos_dir= -pos_dir;
-                    break;
-                }
-            }
-            if (inner_prod( n, pos_dir) < 0) n= -n;
-
-            double val_hat[4];
-            for (int v=0; v<14; ++v)
-            {
-                if (Numb[v]==NoIdx) continue;
-
-                for (Uint k=0; k<triangle.GetNumPoints(); ++k)
-                    // values of basis function in P,Q,R,S. Note: p1abs_p==p1abs_n on \f$Gamma_h\f$
-                    val_hat[k]= v<10 ? FE_P2CL::H(v,triangle.GetBary(k)) : p1abs_p[v-10][ch](triangle.GetBary(k));
-
-                double v_Bary= v<10 ? FE_P2CL::H(v,BaryPQR) : p1abs_p[v-10][ch](BaryPQR),
-                    sum_v= 0;
-                for (int k=0; k<3; ++k)
-                     sum_v+= val_hat[k];
-
-                if (triangle.IsQuadrilateral())
-                {
-                    double sum_vSQR= 0;
-                    for (int k=1; k<4; ++k)
-                        sum_vSQR+= val_hat[k];
-                    sum_v+= triangle.GetAreaFrac() * sum_vSQR;
-                    v_Bary+= triangle.GetAreaFrac() * (v<10 ? FE_P2CL::H(v,BarySQR) : p1abs_p[v-10][ch](BarySQR));
-                }
-
-                // Quadraturformel auf Dreieck, exakt bis zum Grad 2
-                const double int_v= (1./12)*sum_v + 0.75 * v_Bary;
-                const double C= sigma*triangle.GetAbsDet()/2;
-                for (int i=0; i<3; ++i)
-                    f.Data[Numb[v]+i]-= C * int_v*n[i];
-            }
-        } // Ende der for-Schleife ueber die Kinder
-    }
-//fil << "}\n";
+                f.Data[Numb[v]+i]-= C * int_v*n[i];
+        }
+    } // Ende der for-Schleife ueber die Kinder
 }
 
-void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, double sigma, VecDescCL& f)
-// computes the integral
-//         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
-{
-    const Uint  idx_f=     f.RowIdx->GetIdx();
-    IdxT        Numb[10];
 
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+/// \brief Accumulator for the naive Laplace-Beltrami discretization of the CSF term.
+///
+/// Computes the integral
+///         \f[ \sigma \int_\Gamma \kappa v \textbf n_h ds = \sigma \int_\Gamma P_h\nabla id P_h\nabla v ds \f]
+/// with \f$P_h = I - \textbf n_h\cdot \textbf n_h^T\f$.
+/// Discretization error in \f$ H^1(\Omega)\f$ dual norm has only order 1/2 w.r.t. the grid size at the interface.
+/// Better use the improved Laplace-Beltrami discretization with better discretization order.
+class NaiveLaplaceBeltramiAccuCL : public SurfTensAccumulatorCL
+{
+  private:
+    const double sigma_;
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
-    SMatrixCL<3,3> T;
-    double det;
-    InterfaceTriangleCL triangle;
+    IdxT Numb[10];
 
-    P2DiscCL::GetGradientsOnRef( GradRef);
+  public:
+    NaiveLaplaceBeltramiAccuCL( const LevelsetP2CL& ls, VecDescCL& f_Gamma, double sigma)
+     : SurfTensAccumulatorCL( ls, f_Gamma), sigma_(sigma)
+    { P2DiscCL::GetGradientsOnRef( GradRef); }
 
-    for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
-        it!=end; ++it)
-    {
-        GetTrafoTr( T, det, *it);
-        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+    void visit (const TetraCL&);
 
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
-        }
+    TetraAccumulatorCL* clone (int /*tid*/) { return new NaiveLaplaceBeltramiAccuCL ( *this); };
+};
 
-        triangle.Init( *it, SmPhi, lsetbnd);
-
-        for (int ch=0; ch<8; ++ch)
-        {
-            if (!triangle.ComputeForChild(ch)) // no patch for this child
-                continue;
-
-//patch.WriteGeom( fil);
-
-            BaryCoordCL BaryPQR, BarySQR;
-            for (int i=0; i<3; ++i)
-            {
-                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= triangle.GetBary(i);
-                BarySQR+= triangle.GetBary(i+1);
-            }
-
-            const double C= triangle.GetAbsDet()/6*sigma;  // 1/6 for quad. rule
-
-            for (int v=0; v<10; ++v)
-            {
-                if (Numb[v]==NoIdx) continue;
-
-                LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
-                for (int node=0; node<4; ++node)
-                    gradv[node]= Grad[v][node];
-
-                Point3DCL gr= gradv( BaryPQR); // gr= grad v(P) + grad v(Q) + grad v(R)
-
-                if (triangle.IsQuadrilateral())
-                    gr+= triangle.GetAreaFrac() * gradv( BarySQR);
-                // nun gilt:
-                // gr = [grad v(P)+...] + (a+b-1)[grad v(S)+...]
-
-                for (int i=0; i<3; ++i)
-                {
-                    const double val= inner_prod( gr, triangle.GetGradId(i));
-                    f.Data[Numb[v]+i]-= C *val;
-                }
-            }
-        } // Ende der for-Schleife ueber die Kinder
-    }
-//fil << "}\n";
-}
-
-void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, double sigma, VecDescCL& f)
+void NaiveLaplaceBeltramiAccuCL::visit( const TetraCL& t)
 // computes the integral
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
-  const Uint idx_f=   f.RowIdx->GetIdx();
-  const bool velXfem= f.RowIdx->IsExtended();
-  IdxT       Numb[10];
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+    const Uint  idx_f= f.RowIdx->GetIdx();
+    double det;
 
-  LocalP1CL<Point3DCL> Grad[10], GradRef[10];
-  SMatrixCL<3,3> T;
-  double det;
-  InterfaceTriangleCL triangle;
-  LocalP2CL<> velR_p[4][8], velR_n[4][8]; // for P2R basis on children
-  LocalP2CL<> loc_phi;
+    GetTrafoTr( T, det, t);
+    P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
 
-  P2DiscCL::GetGradientsOnRef( GradRef);
+    for (int v=0; v<10; ++v)
+    { // collect data on all DoF
+        const UnknownHandleCL& unk= v<4 ? t.GetVertex(v)->Unknowns : t.GetEdge(v-4)->Unknowns;
+        Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+    }
 
-  for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
-       it!=end; ++it)
-  {
-    GetTrafoTr( T, det, *it);
+    triangle.Init( t, SmPhi_, lsetbnd_);
+
+    for (int ch=0; ch<8; ++ch)
+    {
+        if (!triangle.ComputeForChild(ch)) // no patch for this child
+            continue;
+
+//patch.WriteGeom( fil);
+
+        BaryCoordCL BaryPQR, BarySQR;
+        for (int i=0; i<3; ++i)
+        {
+            // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+            BaryPQR+= triangle.GetBary(i);
+            BarySQR+= triangle.GetBary(i+1);
+        }
+
+        const double C= triangle.GetAbsDet()/6*sigma_;  // 1/6 for quad. rule
+
+        for (int v=0; v<10; ++v)
+        {
+            if (Numb[v]==NoIdx) continue;
+
+            LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
+            for (int node=0; node<4; ++node)
+                gradv[node]= Grad[v][node];
+
+            Point3DCL gr= gradv( BaryPQR); // gr= grad v(P) + grad v(Q) + grad v(R)
+
+            if (triangle.IsQuadrilateral())
+                gr+= triangle.GetAreaFrac() * gradv( BarySQR);
+            // nun gilt:
+            // gr = [grad v(P)+...] + (a+b-1)[grad v(S)+...]
+
+            for (int i=0; i<3; ++i)
+            {
+                const double val= inner_prod( gr, triangle.GetGradId(i));
+                f.Data[Numb[v]+i]-= C *val;
+            }
+        }
+    } // Ende der for-Schleife ueber die Kinder
+}
+
+/// \brief Accumulator for the improved Laplace-Beltrami discretization of the CSF term.
+///
+/// Computes the integral
+///         \f[ \sigma \int_\Gamma \kappa v \textbf n_h ds = \sigma \int_\Gamma \hat P_h \nabla id \hat P_h\nabla v ds \f]
+/// with \f$\hat P_h = \tilde P_h P_h, P_h = I - \textbf n_h\cdot \textbf n_h^T, \tilde P_h = I - \tilde\textbf n_h\cdot \tilde\textbf n_h^T \f$.
+/// Discretization error in \f$ H^1(\Omega)\f$ dual norm has order 1 w.r.t. the grid size at the interface, numerical experiments even indicate order 1.5.
+class ImprovedLaplaceBeltramiAccuCL : public SurfTensAccumulatorCL
+{
+  private:
+    const double sigma_;
+
+    LocalP1CL<Point3DCL> Grad[10], GradRef[10];
+    IdxT Numb[10];
+    LocalP2CL<> velR_p[4][8], velR_n[4][8]; // for P2R basis on children
+    LocalP2CL<> loc_phi;
+
+  public:
+    ImprovedLaplaceBeltramiAccuCL( const LevelsetP2CL& ls, VecDescCL& f_Gamma, double sigma)
+     : SurfTensAccumulatorCL( ls, f_Gamma), sigma_(sigma)
+    { P2DiscCL::GetGradientsOnRef( GradRef); }
+
+    void visit (const TetraCL&);
+
+    TetraAccumulatorCL* clone (int /*tid*/) { return new ImprovedLaplaceBeltramiAccuCL ( *this); };
+};
+
+void ImprovedLaplaceBeltramiAccuCL::visit ( const TetraCL& t)
+{
+    const Uint idx_f=   f.RowIdx->GetIdx();
+    const bool velXfem= f.RowIdx->IsExtended();
+    double det;
+
+    GetTrafoTr( T, det, t);
     P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
     LocalP1CL<Point3DCL> n;
 
-    loc_phi.assign( *it, SmPhi, lsetbnd);
-    triangle.Init( *it, loc_phi);
+    loc_phi.assign( t, SmPhi_, lsetbnd_);
+    triangle.Init( t, loc_phi);
     for (int v=0; v<10; ++v)
     { // collect data on all DoF
-      const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-      Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
-      for (int k=0; k<4; ++k)
-        n[k]+= triangle.GetPhi(v)*Grad[v][k];
+        const UnknownHandleCL& unk= v<4 ? t.GetVertex(v)->Unknowns : t.GetEdge(v-4)->Unknowns;
+        Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+        for (int k=0; k<4; ++k)
+            n[k]+= triangle.GetPhi(v)*Grad[v][k];
     }
 
     for (int ch=0; ch<8; ++ch)
     {
-      if (!triangle.ComputeForChild(ch)) // no patch for this child
-        continue;
+        if (!triangle.ComputeForChild(ch)) // no patch for this child
+            continue;
 
 //patch.WriteGeom( fil);
-      BaryCoordCL BaryPQR, BarySQR;
-      for (int i=0; i<3; ++i)
-      {
-                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-        BaryPQR+= triangle.GetBary(i);
-        BarySQR+= triangle.GetBary(i+1);
-      }
-      BaryPQR/= 3.;    BarySQR/= 3.;
-
-      typedef SArrayCL<Point3DCL,3> ProjT;
-      GridFunctionCL<ProjT> GradId( ProjT(), 6);  // values in P, Q, R, S, BaryPQR, BarySQR
-      for (int p=0; p<6; ++p)
-      {
-        Point3DCL np= n( p<4 ? triangle.GetBary(p) : p==4 ? BaryPQR : BarySQR);
-        if (np.norm()>1e-8) np/= np.norm();
-        for (int i=0; i<3; ++i)
-          GradId[p][i]= triangle.ApplyProj( std_basis<3>(i+1) - np[i]*np);
-//                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
-      }
-      const double C= triangle.GetAbsDet()*sigma/2.;
-      if (velXfem)
-          P2RidgeDiscCL::GetExtBasisOnChildren( velR_p, velR_n, loc_phi);
-      for (int v=0; v<(velXfem ? 14 : 10); ++v)
-      {
-        const IdxT Numbv= v<10 ? Numb[v] : (velXfem && Numb[v-10]!=NoIdx ? f.RowIdx->GetXidx()[Numb[v-10]] : NoIdx);
-        if (Numbv==NoIdx) continue;
-
-        LocalP1CL<Point3DCL> gradv; // gradv = gradient of hat function for dof v
-        if (v<10) // std basis function
-          for (int node=0; node<4; ++node)
-            gradv[node]= Grad[v][node];
-        else // extended basis function: tangential derivative is the same for pos./neg. part, ie., P_h grad(vx_p) == P_h grad(vx_n). W.l.o.g. take pos. part for computation.
-            P2DiscCL::GetFuncGradient( gradv, velR_p[v-10][ch], Grad);
-
+        BaryCoordCL BaryPQR, BarySQR;
         for (int i=0; i<3; ++i)
         {
-          double intSum= 0; // sum of the integrand in PQR, SQR
-          for (int k=0; k<3; ++k)
-          {
-            intSum+= inner_prod( GradId[k][i], gradv(triangle.GetBary(k)));
-            if (triangle.IsQuadrilateral())
-              intSum+= triangle.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(triangle.GetBary(k+1)));
-          }
-          double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
-          if (triangle.IsQuadrilateral())
-            intBary+= triangle.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
-          f.Data[Numbv+i]-= C *(intSum/12. + 0.75*intBary);
+            // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+            BaryPQR+= triangle.GetBary(i);
+            BarySQR+= triangle.GetBary(i+1);
         }
-      }
+        BaryPQR/= 3.;    BarySQR/= 3.;
+
+        typedef SArrayCL<Point3DCL,3> ProjT;
+        GridFunctionCL<ProjT> GradId( ProjT(), 6);  // values in P, Q, R, S, BaryPQR, BarySQR
+        for (int p=0; p<6; ++p)
+        {
+            Point3DCL np= n( p<4 ? triangle.GetBary(p) : p==4 ? BaryPQR : BarySQR);
+            if (np.norm()>1e-8) np/= np.norm();
+            for (int i=0; i<3; ++i)
+                GradId[p][i]= triangle.ApplyProj( std_basis<3>(i+1) - np[i]*np);
+            //                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
+        }
+        const double C= triangle.GetAbsDet()*sigma_/2.;
+        if (velXfem)
+            P2RidgeDiscCL::GetExtBasisOnChildren( velR_p, velR_n, loc_phi);
+        for (int v=0; v<(velXfem ? 14 : 10); ++v)
+        {
+            const IdxT Numbv= v<10 ? Numb[v] : (velXfem && Numb[v-10]!=NoIdx ? f.RowIdx->GetXidx()[Numb[v-10]] : NoIdx);
+            if (Numbv==NoIdx) continue;
+
+            LocalP1CL<Point3DCL> gradv; // gradv = gradient of hat function for dof v
+            if (v<10) // std basis function
+                for (int node=0; node<4; ++node)
+                    gradv[node]= Grad[v][node];
+            else // extended basis function: tangential derivative is the same for pos./neg. part, ie., P_h grad(vx_p) == P_h grad(vx_n). W.l.o.g. take pos. part for computation.
+                P2DiscCL::GetFuncGradient( gradv, velR_p[v-10][ch], Grad);
+
+            for (int i=0; i<3; ++i)
+            {
+                double intSum= 0; // sum of the integrand in PQR, SQR
+                for (int k=0; k<3; ++k)
+                {
+                    intSum+= inner_prod( GradId[k][i], gradv(triangle.GetBary(k)));
+                    if (triangle.IsQuadrilateral())
+                        intSum+= triangle.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(triangle.GetBary(k+1)));
+                }
+                double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
+                if (triangle.IsQuadrilateral())
+                    intBary+= triangle.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
+                f.Data[Numbv+i]-= C *(intSum/12. + 0.75*intBary);
+            }
+        }
     } // Ende der for-Schleife ueber die Kinder
-  }
-//fil << "}\n";
 }
 
 void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
@@ -353,7 +407,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
 
 void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
     const InterfaceTriangleCL&  triangle, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
-    const Quad5_2DCL<Point3DCL> e[3], double det, VectorCL& f, SurfaceTensionCL& sf)
+    const Quad5_2DCL<Point3DCL> e[3], double det, VectorCL& f, const SurfaceTensionCL& sf)
 {
     if (sf.GetInputMethod() == Sigma_X)
     {
@@ -390,47 +444,54 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     }
 }
 
-void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, VecDescCL& f, SurfaceTensionCL& sf)
+/// \brief Accumulator for the improved Laplace-Beltrami discretization of the CSF term with variable surface tension coefficient.
+class VarImprovedLaplaceBeltramiAccuCL : public SurfTensAccumulatorCL
+{
+  private:
+    const SurfaceTensionCL& sf_;
+
+    LocalP1CL<Point3DCL> GradRef[10], Grad[10];
+    IdxT Numb[10];
+    Quad5_2DCL<Point3DCL> e[3];
+
+  public:
+    VarImprovedLaplaceBeltramiAccuCL( const LevelsetP2CL& ls, VecDescCL& f_Gamma, const SurfaceTensionCL& sigma)
+     : SurfTensAccumulatorCL( ls, f_Gamma), sf_(sigma)
+    {
+        P2DiscCL::GetGradientsOnRef( GradRef);
+        for (int i= 0; i<3; ++i)
+            e[i]= std_basis<3>( i + 1);
+    }
+
+    void visit (const TetraCL&);
+
+    TetraAccumulatorCL* clone (int /*tid*/) { return new VarImprovedLaplaceBeltramiAccuCL ( *this); };
+};
+
+void VarImprovedLaplaceBeltramiAccuCL::visit( const TetraCL& t)
 // computes the integral sigma \int_\Gamma \kappa v n ds = sigma
 // \int_\Gamma grad id grad v ds
 {
     const Uint idx_f= f.RowIdx->GetIdx();
-    IdxT Numb[10];
-    
-// std::ofstream fil("surf.off");
-// fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
-
-    LocalP1CL<Point3DCL> GradRef[10], Grad[10];
-    P2DiscCL::GetGradientsOnRef( GradRef);
-
-    SMatrixCL<3,3> T;
     double det;
-    InterfaceTriangleCL triangle;
 
-    Quad5_2DCL<Point3DCL> e[3];
-    for (int i= 0; i<3; ++i)
-        e[i]= std_basis<3>( i + 1);
+    triangle.Init( t, SmPhi_, lsetbnd_);
 
-    DROPS_FOR_TRIANG_CONST_TETRA( MG, /*default level*/-1, it)
-    {
-    	triangle.Init( *it, SmPhi, lsetbnd);
-
-        for (int v= 0; v < 10; ++v)
-        { // collect data on all DoF
-            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-            Numb[v]= unk.Exist( idx_f) ? unk( idx_f) : NoIdx;
-        }
-        GetTrafoTr( T, det, *it);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-
-        for (int ch= 0; ch < 8; ++ch)
-        {
-        	triangle.ComputeForChild( ch);
-            for (int t= 0; t < triangle.GetNumTriangles(); ++t)
-                SF_ImprovedLaplBeltramiOnTriangle( *it, &triangle.GetBary( t),
-                		triangle, Grad,  Numb, e, triangle.GetAbsDet( t), f.Data, sf);
-        } // Ende der for-Schleife ueber die Kinder
+    for (int v= 0; v < 10; ++v)
+    { // collect data on all DoF
+        const UnknownHandleCL& unk= v<4 ? t.GetVertex(v)->Unknowns : t.GetEdge(v-4)->Unknowns;
+        Numb[v]= unk.Exist( idx_f) ? unk( idx_f) : NoIdx;
     }
+    GetTrafoTr( T, det, t);
+    P2DiscCL::GetGradients( Grad, GradRef, T);
+
+    for (int ch= 0; ch < 8; ++ch)
+    {
+        triangle.ComputeForChild( ch);
+        for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
+            SF_ImprovedLaplBeltramiOnTriangle( t, &triangle.GetBary( tri),
+                    triangle, Grad,  Numb, e, triangle.GetAbsDet( tri), f.Data, sf_);
+    } // Ende der for-Schleife ueber die Kinder
 }
 
 void MarkInterface ( scalar_fun_ptr DistFct, double width, MultiGridCL& mg)
@@ -515,30 +576,31 @@ void LevelsetP2CL::Reparam( int method, bool Periodic)
 
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
-    VecDescCL SmPhi= Phi;
-    if (curvDiff_>0)
-        SmoothPhi( SmPhi.Data, curvDiff_);
+    SurfTensAccumulatorCL* accu;
 
     switch (SF_)
     {
       case SF_LB:
-        SF_LaplBeltrami( MG_, SmPhi, BndData_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+          accu= new NaiveLaplaceBeltramiAccuCL( *this, f, sf_.GetSigma()(std_basis<3>(0), 0.)); break;
       case SF_Const:
-        SF_ConstForce( MG_, SmPhi, BndData_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+          accu= new ConstSurfTensAccumulatorCL( *this, f, sf_.GetSigma()(std_basis<3>(0), 0.)); break;
       case SF_ImprovedLB:
-        SF_ImprovedLaplBeltrami( MG_, SmPhi, BndData_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+          accu= new ImprovedLaplaceBeltramiAccuCL( *this, f, sf_.GetSigma()(std_basis<3>(0), 0.)); break;
       case SF_ImprovedLBVar:
-         SF_ImprovedLaplBeltrami( MG_, SmPhi, BndData_, f, sf_); break;
+          accu= new VarImprovedLaplaceBeltramiAccuCL( *this, f, sf_); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( accu);
+    accumulate( accus, MG_, Phi.RowIdx->TriangLevel());
 }
 
 double LevelsetP2CL::GetVolume( double translation, int l) const
 {
     if (l==0)
         ++l;
-    double Volume= l > 0 ? GetVolume_Composite( translation, l) 
+    double Volume= l > 0 ? GetVolume_Composite( translation, l)
                          : GetVolume_Extrapolation( translation, -l);
 
 #ifdef _PAR
@@ -549,7 +611,7 @@ double LevelsetP2CL::GetVolume( double translation, int l) const
 
 double LevelsetP2CL::GetVolume_Extrapolation( double translation, int l) const
 {
-    double vol = 0.; 
+    double vol = 0.;
     QuadDomainCL qdom;
     DROPS::ExtrapolationToZeroCL extra( l, DROPS::RombergSubdivisionCL());
     // DROPS::ExtrapolationToZeroCL extra( l, DROPS::HarmonicSubdivisionCL());
@@ -567,7 +629,7 @@ double LevelsetP2CL::GetVolume_Extrapolation( double translation, int l) const
 double LevelsetP2CL::GetVolume_Composite( double translation, int l) const
 {
     const PrincipalLatticeCL& lat= PrincipalLatticeCL::instance ( l);
-    double vol = 0.; 
+    double vol = 0.;
     std::valarray<double> ls_values (lat.vertex_size());
     QuadDomainCL qdom;
     LocalP2CL<> loc_phi;
