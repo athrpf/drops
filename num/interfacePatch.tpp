@@ -245,6 +245,10 @@ template <class It>
     // emax->GetVertex( 0)->DebugInfo( std::cout);
     // emax->GetVertex( 1)->DebugInfo( std::cout);
 
+#ifdef _PAR
+    hmin = ProcCL::GlobalMin( hmin);
+    hmax = ProcCL::GlobalMax( hmax);
+#endif
     return std::make_pair( hmin, hmax);
 }
 
