@@ -304,6 +304,14 @@ void WriteFEToFile( const VecDescCL& v, MultiGridCL& mg, std::string filename, b
 /// \pre CreateNumbering of v.RowIdx must have been called before
 void ReadFEFromFile( VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary=false, const VecDescCL* lsetp=0);
 
+/// \brief Write the permutation p (of an IdxDescCL), in a file, named \a filename
+/// The empty permutation is treated as identity.
+void WritePermutationToFile (const PermutationT& p, std::string filename);
+
+/// \brief Read the permutation , stored in \a idx, from a file, named \a filename
+/// The empty permutation is treated as identity.
+void ReadPermutationFromFile (PermutationT& p, std::string filename);
+
 //=====================================================
 //              inline definitions
 //=====================================================

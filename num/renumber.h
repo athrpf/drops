@@ -26,6 +26,7 @@
 #define DROPS_RENUMBER_H
 
 #include "num/spmat.h"
+#include "num/accumulator.h"
 #include "misc/params.h"
 
 namespace DROPS
@@ -104,13 +105,13 @@ reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
 //  Downwind numbering
 //=============================================================================
 
-/// \brief Produce a downwind numbering for the graph of a convection matrix.
+/// \brief Produce a reverse topological sort of the directed graph of a matrix.
 /// The square matrix M is interpreted as graph with vertices 0..M.nom_cols()-1.
-/// There is a directed edge (i,j), iff M_ij > 0.
+/// There is a directed edge (i,j), iff M_ij > 0. (The entries in row i are considered as successors of i).
+///
 /// The strongly connected components of the graph are computed with Tarjan's algorithm.
 /// If there are no cycles in the graph, all components contain exactly one vertex.
-/// The algo discovers the components in downwind direction (actually in upwind direction
-/// of the graph of M^T).
+/// A component is numbered after all of its succsessors are numbered, (i.e. *reverse* of the toplological sort).
 /// The numbering within a component has no further meaning.
 ///
 /// To handle non-trivial components (cycles), use the function downwind_numbering below.
@@ -165,26 +166,116 @@ void
 sort_row_entries (SparseMatBaseCL<T>& M);
 
 /// \brief Returns a permutation for the unknowns, such that they are arranged from upwind to downwind.
-/// The positive entries of M are interpreted as digraph for the flow. That is, M should be a convection matrix, see TarjanDownwindCL.
-/// Large connected comnponents are broken, if they contain more than max_rel_component_size of the vertices. This is done by removing the weak_edge_ratio*100 percent of the weakest edges of the component and iteration of Tarjan's algorithm.
+/// The positive entries of M are interpreted as digraph for the flow. That is,
+/// M should be the negative of a convection matrix, see TarjanDownwindCL.
+///
+/// A priori, FE convection matrices contain many cycles, because all unknowns
+/// in the "downwind cone" have positive matrix entries. These decrease according
+/// to cos(\alpha), where \alpha is the angle between the flow direction and the
+/// ray connecting the unknowns. Therefore only the strongest edges are considered.
+/// These are defined as being greater than crosswind_limit*(greatest row-entry).
+///
+/// Large connected comnponents are broken, if they contain more than max_rel_component_size
+/// of the vertices. This is done by removing the weak_edge_ratio*100 percent of
+/// the weakest edges of the component and iteration of Tarjan's algorithm.
 /// The matrix M is modified in this proccess and must be clear()ed before reuse.
 class IteratedDownwindCL
 {
   private:
     double max_rel_component_size_;
     double weak_edge_ratio_;
+    double crosswind_limit_;
 
   public:
-    explicit IteratedDownwindCL (double max_rel_component_size= 0.05, double weak_edge_ratio= 0.2)
-        : max_rel_component_size_( max_rel_component_size), weak_edge_ratio_( weak_edge_ratio) {}
+    explicit IteratedDownwindCL (double max_rel_component_size= 0.05, double weak_edge_ratio= 0.2, double crosswind_limit= std::cos( M_PI/6.))
+        : max_rel_component_size_( max_rel_component_size), weak_edge_ratio_( weak_edge_ratio),
+          crosswind_limit_( crosswind_limit) {}
     IteratedDownwindCL (const ParamCL& p)
         : max_rel_component_size_( p.get<double>( "MaxRelComponentSize")),
-          weak_edge_ratio_( p.get<double>( "WeakEdgeRatio")) {}
+          weak_edge_ratio_( p.get<double>( "WeakEdgeRatio")),
+          crosswind_limit_( p.get<double>( "CrosswindLimit")) {}
 
     /// \brief Returns a permutation for the unknowns, such that they are arranged from upwind to downwind.
     template <class T>
       PermutationT downwind_numbering (SparseMatBaseCL<T>& M);
 };
+
+
+template <class>
+class BndDataCL;
+
+class IdxDescCL;
+
+template<class T>
+class VecDescBaseCL;
+typedef VecDescBaseCL<VectorCL> VecDescCL;
+
+template<class T>
+class LocalP2CL;
+
+class LocalNumbP2CL;
+
+/// \brief Setup a matrix that records the downwind direction for P2-FE.
+/// C_ij > 0, iff j is upwind of i. That is, (i,j) is an upwind edge.
+/// For vector-valued FE, blocks of NumUnknownsOnVertex() are considered.
+class DownwindAccu_P2CL : public TetraAccumulatorCL
+{
+  private:
+    const BndDataCL<Point3DCL>& velBndData;
+    const VecDescCL&            vel;
+
+    const IdxDescCL&            idx;
+    MatrixCL&                   C;
+    SparseMatBuilderCL<double>* mC;
+
+    ///\brief Compute the local matrix in loc.
+    void local_setup (const TetraCL& tet, const LocalP2CL<Point3DCL>& vel_loc,
+                      SMatrixCL<10,10>& loc);
+    ///\brief Update the global system.
+    void update_global_system (const LocalNumbP2CL& n, const SMatrixCL<10,10>& loc);
+
+  public:
+    DownwindAccu_P2CL (const BndDataCL<Point3DCL>& velBndDataArg, const VecDescCL& vel_arg,
+                       const IdxDescCL& idxarg, MatrixCL& Carg)
+        : velBndData( velBndDataArg), vel(vel_arg), idx( idxarg), C( Carg) {}
+
+    ///\brief Initializes matrix-builder
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+
+    DownwindAccu_P2CL* clone (int /*tid*/) { return new  DownwindAccu_P2CL( *this); };
+};
+
+/// \brief Setup the P2 mass-matrix.
+class MassAccu_P2CL : public TetraAccumulatorCL
+{
+  private:
+    const IdxDescCL&            idx;
+    MatrixCL&                   M;
+    SparseMatBuilderCL<double>* Mb;
+
+    ///\brief Compute the local matrix in loc.
+    void local_setup (const TetraCL& tet, SMatrixCL<10,10>& loc);
+    ///\brief Update the global system.
+    void update_global_system (const LocalNumbP2CL& n, const SMatrixCL<10,10>& loc);
+
+  public:
+   MassAccu_P2CL (const IdxDescCL& idxarg, MatrixCL& Marg)
+        : idx( idxarg), M( Marg) {}
+
+    ///\brief Initializes matrix-builder
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+
+    MassAccu_P2CL* clone (int /*tid*/) { return new  MassAccu_P2CL( *this); };
+};
+
 
 } // end of namspace DROPS
 

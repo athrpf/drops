@@ -621,10 +621,6 @@ class BDinvBTPreCL: public SchurPreBaseCL
     mutable DiagPcCL diagVelPc_, diagSchurPc_;
     typedef ApproximateSchurComplMatrixCL<DiagPcCL,MatrixCL> AppSchurComplMatrixT;
     mutable AppSchurComplMatrixT *BDinvBT_;
-
-    typedef NEGSPcCL SPcT_;
-    SPcT_ spc_;
-    mutable PCGNESolverCL<SPcT_> neSolver_;
     mutable PCGSolverCL<DiagPcCL> solver_;
     const IdxDescCL* pr_idx_;                                   ///< Used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
     double regularize_;
@@ -638,8 +634,8 @@ class BDinvBTPreCL: public SchurPreBaseCL
         : SchurPreBaseCL( 0, 0), L_( L), B_( B), Mvel_( M_vel), M_( M_pr), Bs_( 0),
           Lversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0), tol_(tol),
           diagVelPc_(Dvelinv_), diagSchurPc_(DSchurinv_), BDinvBT_(0),
-          spc_( /*symmetric GS*/ true), neSolver_( spc_, 200, tol_, /*relative*/ true), solver_( diagSchurPc_, 200, tol_, /*relative*/ true),
-          pr_idx_( &pr_idx), regularize_( regularize), lumped_(false) {}
+          solver_( diagSchurPc_, 200,  tol_, /*relative*/ true), pr_idx_( &pr_idx),
+          regularize_( regularize), lumped_(false) {}
 
     BDinvBTPreCL (const BDinvBTPreCL & pc)
         : SchurPreBaseCL( pc.kA_, pc.kM_), L_( pc.L_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
@@ -647,8 +643,8 @@ class BDinvBTPreCL: public SchurPreBaseCL
           Lversion_( pc.Lversion_), Bversion_( pc.Bversion_), Mversion_( pc.Mversion_),
           Dprsqrtinv_( pc.Dprsqrtinv_), Dvelinv_( pc.Dvelinv_), DSchurinv_( pc.DSchurinv_), tol_(pc.tol_),
           diagVelPc_( Dvelinv_), diagSchurPc_( DSchurinv_), BDinvBT_(0),
-          spc_( pc.spc_), neSolver_( spc_, 200, tol_, /*relative*/ true), solver_( diagSchurPc_, 200, tol_, /*relative*/ true),
-          pr_idx_( pc.pr_idx_), regularize_( pc.regularize_), lumped_( pc.lumped_) {}
+          solver_( diagSchurPc_, 200, tol_, /*relative*/ true), pr_idx_( pc.pr_idx_),
+          regularize_( pc.regularize_), lumped_( pc.lumped_) {}
 
     BDinvBTPreCL& operator= (const BDinvBTPreCL&) {
         throw DROPSErrCL( "BDinvBTPreCL::operator= is not permitted.\n");
@@ -691,7 +687,6 @@ template <typename Mat, typename Vec>
         Update();
 
     Vec y( b.size());
-//    solver_.Solve( *Bs_, y, Vec( Dprsqrtinv_*b));
     solver_.Solve( *BDinvBT_, y, Vec( Dprsqrtinv_*b));
     if (solver_.GetIter() == solver_.GetMaxIter())
         std::cout << "BDinvBTPreCL::Apply: BLBT-solve: " << solver_.GetIter()

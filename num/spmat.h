@@ -179,10 +179,13 @@ template <typename T>
 
 /// \brief Permutes the components of a vector v according to p.
 /// num_components consecutive components are considered as one block (for vector-valued FE). v must have dim(p) * blocksize components.
+/// The empty permutation is treated as identity.
 template <typename T>
   void
   permute_Vector (VectorBaseCL<T>& v, const PermutationT& p, Uint blocksize= 1)
 {
+    if (p.empty()) return;
+
     Assert( v.size() == p.size()*blocksize,
         DROPSErrCL( "permute_Vector: v and p have different dimension.\n"), DebugNumericC);
 
@@ -824,6 +827,8 @@ template <typename T>
   void
   SparseMatBaseCL<T>::permute_rows (const PermutationT& p)
 {
+    if (p.empty()) return;
+
     Assert( num_rows() == p.size(),
         DROPSErrCL( "permute_rows: Matrix and Permutation have different dimension.\n"), DebugNumericC);
 
@@ -843,6 +848,8 @@ template <typename T>
   void
   SparseMatBaseCL<T>::permute_columns (const PermutationT& p)
 {
+    if (p.empty()) return;
+
     Assert( num_cols() == p.size(),
         DROPSErrCL( "permute_columns: Matrix and Permutation have different dimension.\n"), DebugNumericC);
 

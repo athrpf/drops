@@ -135,19 +135,25 @@ void BDinvBTPreCL::Update() const
         Dvelinv_= 1.0/LumpInRows(*Mvel_);
     else
         Dvelinv_= 1.0/L_->GetDiag();
-    // note: Dvelinv_ has negative entries for P2-FE (hence, CGNE cannot be used for solving), however, B Dvelinv_ B^T has only positive diagonal entries
+    // The lumped P2-mass-matrix has negative entries. Hence, CGNE cannot be used for solving. However, B Dvelinv_ B^T has only positive diagonal entries
     VectorCL Dprsqrt( std::sqrt( M_->GetDiag()));
     Dprsqrtinv_.resize( M_->num_rows());
     Dprsqrtinv_= 1.0/Dprsqrt;
 
     ScaleRows( *Bs_, Dprsqrtinv_);
-    DSchurinv_.resize( Dprsqrt.size());    
+    DSchurinv_.resize( Dprsqrt.size());
     DSchurinv_= 1.0/Bs_->GetSchurDiag(Dvelinv_);
     delete BDinvBT_;
     BDinvBT_= new AppSchurComplMatrixT( *L_, diagVelPc_, *Bs_);
-    
-    if (regularize_ != 0.)
-        Regularize( *Bs_, *pr_idx_, Dprsqrt, spc_, regularize_);
+    if (regularize_ != 0.) {
+        NEGSPcCL spc;
+        Regularize( *Bs_, *pr_idx_, Dprsqrt, spc, regularize_);
+        // Add a row to Dvelinv_ coresponding to the new column in Bs.
+        VectorCL tmp= Dvelinv_;
+        Dvelinv_.resize(Dvelinv_.size() + 1);
+        Dvelinv_[std::slice( 0, tmp.size(), 1)]= tmp;
+        Dvelinv_[tmp.size()]= 1.;
+    }
 }
 
 BDinvBTPreCL::~BDinvBTPreCL() 

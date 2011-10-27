@@ -33,6 +33,7 @@
 #include "levelset/mgobserve.h"
 #include "levelset/surfacetension.h"
 #include "num/interfacePatch.h"
+#include "num/renumber.h"
 #include <vector>
 
 #ifdef _PAR
@@ -118,17 +119,23 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     /// Reparametrization of the level set function.
     void Reparam( int method=03, bool Periodic= false);
 
+    /// \brief Perform downwind numbering
+    template <class DiscVelSolT>
+    PermutationT downwind_numbering (const DiscVelSolT& vel, IteratedDownwindCL dw);
+
     /// returns information about level set function and interface.
     template<class DiscVelSolT>
     void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& vel_sol, Point3DCL& minCoord, Point3DCL& maxCoord, double& surfArea) const;
     /// returns the maximum and minimum of the gradient of phi
     void   GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) const;
-    /// returns approximate volume of domain where level set function is negative. For l > 0 the level set function is evaluated as a linear FE-function on the principal lattice of order l. 
+    /// returns approximate volume of domain where level set function is negative. For l > 0 the level set function is evaluated as a linear FE-function on the principal lattice of order l.
     /// l = 1 : integration on the tetra itself. l = 2 integration on the regular refinement.
-    /// l < 0 : extrapolation from current level lvl to lvl - l - 1   
+    /// l < 0 : extrapolation from current level lvl to lvl - l - 1
     double GetVolume( double translation= 0, int l= 2) const;
     /// volume correction to ensure no loss or gain of mass. The parameter l is passed to GetVolume().
     double AdjustVolume( double vol, double tol, double surf= 0., int l= 2) const;
+    /// Apply smoothing to \a SmPhi, if curvDiff_ > 0
+    void MaybeSmooth( VectorCL& SmPhi) const { if (curvDiff_>0) SmoothPhi( SmPhi, curvDiff_); }
     /// Set type of surface force.
     void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
     /// Get type of surface force.
@@ -144,7 +151,7 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &BndData_, &MG_); }
     ///@}
-    
+
     ///Set PeriodicDirections
     void SetPeriodicDirections( perDirSetT* pperDirections)
     {

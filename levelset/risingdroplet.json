@@ -47,7 +47,14 @@
                                                 // equation is solved.
                 "Tol":                  1e-10,  // tolerance for the Navier-Stokes solver.
                 "Iter":                 20,     // maximum number of iterations for the Navier-Stokes solver.
-                "Reduction":            0.1     // reduction of the Oseen residual by this factor.
+                "Reduction":            0.1,    // reduction of the Oseen residual by this factor.
+                "Downwind":
+                {
+                        "Frequency": 0,         // 0 disables downwind-numbering
+                        "MaxRelComponentSize": 0.05, // maximal cycle size before removing weak edges
+                        "WeakEdgeRatio": 0.2,   // ration of the weak edges to remove for large cycles
+                        "CrosswindLimit": 0.866 // cos(pi/6); smaller convection is not considered
+                }
         },
 
 // Levelset solver
@@ -65,10 +72,17 @@
                                                 // correction is made and for VolCorrection = 1 it is carried
                                                 // out after each time step and reparameterization of the level
                                                 // set function.
-                "Theta":                1       // controls the implicitness of the theta-scheme for time
+                "Theta":                1,      // controls the implicitness of the theta-scheme for time
                                                 // discretization of the Navier-Stokes and level set equations.
                                                 // Theta = 0 yields the explicit and Theta = 1 the implicit
                                                 // Euler method. Theta = 0.5 results in the Crank-Nicholson scheme.
+               "Downwind":
+                {
+                        "Frequency": 0,         // 0 disables downwind-numbering
+                        "MaxRelComponentSize": 0.05, // maximal cycle size before removing weak edges
+                        "WeakEdgeRatio": 0.2,   // ration of the weak edges to remove for large cycles
+                        "CrosswindLimit": 0.866 // cos(pi/6); smaller convection is not considered
+                }
         },
 
 // coupling of Navier-Stokes and level set
@@ -228,7 +242,7 @@
                 "GeomType":             1,                 // specifies the used geometry
                                                            // (0 = ReadMeshBuilder, 1 = BrickBuilder).
                 "InitialFile":          "mg/data",         // file prefix when reading data for initial condition.
-                "MeshFile":             "1x1x2@3x3x6",     
+                "MeshFile":             "1x1x2@3x3x6",
                                                            // mesh file (created by GAMBIT or NETGEN, FLUENT/UNS 
                                                            // format) or (in case of the BrickBuilder:)
                                                            // dimensions of a cuboid (e.g. AxBxC@DxExF) with edge
@@ -252,5 +266,4 @@
                                                            // Each string defines a function which is taken
                                                            // from a function container during runtime.
         }
-
 }

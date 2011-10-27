@@ -378,5 +378,29 @@ void ReadFEFromFile( VecDescCL& v, MultiGridCL& mg, std::string filename, bool b
     }
 }
 
+/// \brief Write finite element numbering, stored in \a idx, in a file, named \a filename
+/// The empty permutation is treated as identity.
+void WritePermutationToFile (const PermutationT& p, std::string filename)
+{
+    std::ofstream file( filename.c_str());
+    if (!file) throw DROPSErrCL("WritePermutationToFile: Cannot open file "+filename+" for writing.\n");
+    if (p.empty())
+        return;
+    else
+        seq_out( p.begin(), p.end(), file);
+}
+
+/// \brief Read finite element numbering, stored in \a idx, from a file, named \a filename
+/// The empty permutation is treated as identity.
+void ReadPermutationFromFile (PermutationT& p, std::string filename)
+{
+    std::cout << "Read Permutation "<<filename<<std::endl;
+    std::ifstream file( filename.c_str());
+    if (!file) throw DROPSErrCL("ReadPermutationFromFile: Cannot open file "+filename+" for reading.\n");
+    p.clear();
+    size_t i;
+    while (file >> i)
+        p.push_back( i);
+}
 
 } // end of namespace DROPS
