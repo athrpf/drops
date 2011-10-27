@@ -140,6 +140,27 @@ template<class T>
 }
 
 template<class T>
+  template<class BndDataT>
+    inline LocalP2CL<T>&
+    LocalP2CL<T>::assign_on_tetra(const TetraCL& s,
+        const VecDescCL& vd, const BndDataT& bnd)
+{
+    typedef VecDescCL::DataType VecT;
+    typedef DoFHelperCL<value_type, VecT> DoFT;
+    const VecT& v= vd.Data;
+    const Uint idx= vd.RowIdx->GetIdx();
+    for (Uint i= 0; i< NumVertsC; ++i)
+        (*this)[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
+            ? DoFT::get( v, s.GetVertex( i)->Unknowns( idx))
+            : bnd.GetDirBndValue( *s.GetVertex( i), vd.t);
+    for (Uint i= 0; i< NumEdgesC; ++i)
+        (*this)[i+NumVertsC]= !bnd.IsOnDirBnd( *s.GetEdge( i))
+            ? DoFT::get( v, s.GetEdge( i)->Unknowns( idx))
+            : bnd.GetDirBndValue( *s.GetEdge( i), vd.t);
+    return *this;
+}
+
+template<class T>
   template<class P2FunT>
     inline LocalP2CL<T>&
     LocalP2CL<T>::assign(const TetraCL& s, const P2FunT& f)
