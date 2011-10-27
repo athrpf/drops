@@ -52,7 +52,7 @@ void DownwindAccu_P2CL::visit (const TetraCL& tet)
     LocalNumbP2CL        n;   ///< global numbering of the P2-unknowns
     LocalP2CL<Point3DCL> vel_loc( tet, vel, velBndData); ///< local velocity
 
-    n.assign_dof_only( tet, idx);
+    n.assign_indices_only( tet, idx);
     local_setup( tet, vel_loc, loc);
     update_global_system( n, loc);
 }
@@ -108,7 +108,7 @@ void MassAccu_P2CL::visit (const TetraCL& tet)
     SMatrixCL<10,10>     loc;     ///< local matrix
     LocalNumbP2CL        n;       ///< global numbering of the P2-unknowns
 
-    n.assign_dof_only( tet, idx);
+    n.assign_indices_only( tet, idx);
     local_setup( tet, loc);
     update_global_system( n, loc);
 }

@@ -685,13 +685,20 @@ void permute_fe_basis (MultiGridCL& mg, IdxDescCL& idx, const PermutationT& p)
 }
 
 void
-LocalNumbP2CL::assign_dof_only (const TetraCL& s, const IdxDescCL& idx)
+LocalNumbP2CL::assign_indices_only (const TetraCL& s, const IdxDescCL& idx)
 {
     const Uint sys= idx.GetIdx();
     for (Uint i= 0; i < 4; ++i)
         num[i]= s.GetVertex( i)->Unknowns.Exist( sys) ? s.GetVertex( i)->Unknowns( sys) : NoIdx;
     for(Uint i= 0; i < 6; ++i)
         num[i+4]= s.GetEdge( i)->Unknowns.Exist( sys) ? s.GetEdge( i)->Unknowns( sys)   : NoIdx;
+}
+
+LocalNumbP2CL::LocalNumbP2CL(const TetraCL& s, const IdxDescCL& idx)
+/// \param s The tet, from which index-numbers are read.
+/// \param idx The IdxDescCL-object to be used.
+{
+    this->assign_indices_only( s, idx);
 }
 
 } // end of namespace DROPS

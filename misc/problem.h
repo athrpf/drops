@@ -505,12 +505,16 @@ class LocalNumbP2CL
     /// \brief The relevant BndCondT, NoBC in the interior dofs.
     BndCondT bc    [10];
 
-    /// \brief The default constructors leaves everything uninitialized.
+    /// \brief The default constructor leaves everything uninitialized.
     LocalNumbP2CL() {}
     /// \brief Read indices, boundary-segment numbers and boundary conditions
-    ///     from a tetrahedron and a BndDataCL-like object.
+    /// from a tetrahedron and a BndDataCL-like object.
     template<class BndDataT>
       LocalNumbP2CL(const TetraCL&, const IdxDescCL&, const BndDataT&);
+
+    /// \brief Read indices only
+    /// from a tetrahedron.
+    LocalNumbP2CL(const TetraCL&, const IdxDescCL&);
 
     /// \brief Read indices, boundary-segment numbers and boundary conditions
     ///     from a tetrahedron and a BndDataCL-like object.
@@ -518,9 +522,9 @@ class LocalNumbP2CL
       void
       assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd);
 
-    /// \brief Compute the dof-numbers only.
+    /// \brief Compute the indices only.
     /// Only num is set up.
-    void assign_dof_only (const TetraCL& s, const IdxDescCL& idx);
+    void assign_indices_only (const TetraCL& s, const IdxDescCL& idx);
 
     /// \brief True, iff index i has a dof associated with it.
     bool WithUnknowns(IdxT i) const { return num[i] != NoIdx; }
