@@ -71,7 +71,7 @@ ip1check: ip1test
 ip2test: \
     ../tests/interp2.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o ../num/interfacePatch.o \
-    ../num/fe.o ../geom/boundary.o ../misc/utils.o
+    ../num/fe.o ../geom/boundary.o ../misc/utils.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prolongationp2test: \
