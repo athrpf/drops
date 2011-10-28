@@ -99,6 +99,14 @@ const byte OrientOfFaceAr[NumFacesC] = { 1, -1, 1, -1 };
 extern const byte RefRuleAr[];
 extern const byte ChildDataAr[];
 
+/// Data for the transformation matrices of barycentric coordinates from parent to child.
+/// The accessor function SMatrixCL<4,4> parent_to_child_bary (Ubyte ch) is provided in geom/simplex.h.
+extern const byte parent_to_child_bary_ar[];
+
+/// Data for the transformation matrices of barycentric coordinates from child to parent.
+/// Note, that the values must be scaled by 0.5.
+/// The accessor function SMatrixCL<4,4> child_to_parent_bary (Ubyte ch) is provided in geom/simplex.h.
+extern const byte child_to_parent_bary_ar[];
 
 /// Describes a child in a refinement rule
 struct ChildDataCL

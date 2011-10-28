@@ -817,6 +817,24 @@ class Bary2WorldCoordCL
     Point3DCL operator() (const BaryCoordCL& b) const { return mat_*b; }
 };
 
+inline SMatrixCL<4,4> parent_to_child_bary (Ubyte ch)
+{
+    SMatrixCL<4,4> ret( Uninitialized);
+    const size_t pos= ch*16;
+    for (Uint i= 0; i < 16; ++i)
+        ret[i]= parent_to_child_bary_ar[pos + i];
+    return ret;
+}
+
+inline SMatrixCL<4,4> child_to_parent_bary (Ubyte ch)
+{
+    SMatrixCL<4,4> ret( Uninitialized);
+    const size_t pos= ch*16;
+    for (Uint i= 0; i < 16; ++i)
+        ret[i]= 0.5*child_to_parent_bary_ar[pos + i];
+    return ret;
+}
+
 /// \brief Collect the faces of the the children of a refined tetra that refine a given face.
 ///
 /// If the tetra is unrefined, the given face is returned.
