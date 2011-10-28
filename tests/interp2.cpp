@@ -35,49 +35,6 @@
 
 namespace DROPS {
 
-template <class ValueT>
-struct RepairP2DataCL
-{
-    typedef ValueT value_type;
-    typedef std::pair<Ubyte, LocalP2CL<value_type> > ChildDataT;
-    typedef std::vector<ChildDataT> ChildVecT;
-
-    ChildVecT data; ///< tuple of (old child number per topo.h, corresponding numerical P2-data)
-
-    typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
-    void repair (AugmentedDofVecT& dof, VectorCL& newdata) const;
-};
-
-bool is_repaired (double d)           { return !std::isnan( d); }
-// bool is_repaired (const Point3DCL& p) { return is_repaired( p[0]); }
-const double UnrepairedC= std::numeric_limits<double>::quiet_NaN();
-
-template <class ValueT>
-class RepairP2CL
-{
-  public:
-    typedef ValueT value_type;
-
-  private:
-    typedef std::tr1::unordered_map<const TetraCL*, RepairP2DataCL<value_type> > RepairMapT;
-    RepairMapT parent_data_;
-
-    typedef std::tr1::unordered_set<const TetraCL*> TetraSetT;
-    TetraSetT level0_leaves_;
-
-    const MultiGridCL& mg_;
-    const VecDescCL& old_;
-    const BndDataCL<value_type>& bnd_;
-
-    void pre_refine ();
-
-  public:
-    RepairP2CL (const MultiGridCL& mg, const VecDescCL& old, const BndDataCL<value_type>& bnd)
-        : mg_( mg), old_ ( old), bnd_( bnd) { pre_refine(); }
-
-    void repair (VecDescCL& new_vd);
-};
-
 bool
 contained_in_reftetra( const BaryCoordCL& p, double eps= 0.)
 {
@@ -105,205 +62,17 @@ to_child_bary (Uint ch, QRDecompCL<4>& T)
 }
 
 template <class ValueT>
-class TetraRepairP2CL
+struct RepairP2DataCL
 {
-  public:
     typedef ValueT value_type;
+    typedef std::pair<Ubyte, LocalP2CL<value_type> > ChildDataT;
+    typedef std::vector<ChildDataT> ChildVecT;
+
+    ChildVecT data; ///< tuple of (old child number per topo.h, corresponding numerical P2-data)
+
     typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
-
-  private:
-          VecDescCL& new_vd_;
-    const VecDescCL& old_vd_;
-    const BndDataCL<value_type>& bnd_;
-    BaryCoordCL p2_dof_[10];
-
-    AugmentedDofVecT collect_unrepaired_dofs (const TetraCL& t);
-
-  public:
-    TetraRepairP2CL (VecDescCL& new_vd, const VecDescCL& old_vd, const BndDataCL<value_type>& bnd)
-        : new_vd_( new_vd), old_vd_( old_vd), bnd_( bnd) {
-        for (Uint i= 0; i < NumVertsC; ++i)
-            p2_dof_[i]= std_basis<4>( i + 1);
-        for (Uint i= 0; i < NumEdgesC; ++i)
-            p2_dof_[i + NumVertsC]= 0.5*(std_basis<4>( VertOfEdge( i, 0) + 1) + std_basis<4>( VertOfEdge( i, 1) + 1));
-    }
-
-    void unchanged_refinement    (const TetraCL& t); ///< use data from t for copying
-    void regular_leaf_refinement (const TetraCL& t); ///< use data from t for repair
-    void unrefinement            (const TetraCL& t, const RepairP2DataCL<ValueT>& t_data);  ///< use repair-data from the tetra itself
-    void changed_refinement      (const TetraCL& t, const RepairP2DataCL<ValueT>& p_data);  ///< use repair-data from the parent
-    void genuine_refinement      (const TetraCL& t, const RepairP2DataCL<ValueT>& gp_data); ///< use repair-data from the grand-parent
+    void repair (AugmentedDofVecT& dof, VectorCL& newdata) const;
 };
-
-template <class ValueT>
-  void
-  RepairP2CL<ValueT>::pre_refine ()
-{
-    Uint lvl= old_.RowIdx->TriangLevel();
-    LocalP2CL<value_type> lp2;
-    DROPS_FOR_TRIANG_CONST_TETRA( mg_, lvl, it) {
-        if (!it->IsUnrefined())
-            continue;
-        if (it->GetLevel() > 0) {
-            // These could be deleted by the refinement algo
-            /// \todo To store less, one can add " && (it->IsMarkedForRemovement() || !it->IsRegular())"
-            const TetraCL* p= it->GetParent();
-            const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &*it) - p->GetChildBegin();
-            const RefRuleCL& rule= p->GetRefData();
-            lp2.assign_on_tetra( *it, old_, bnd_);
-            parent_data_[p].data.push_back( std::make_pair( rule.Children[ch], lp2));
-        }
-        else {
-            // Leaves in level 0 can give birth to children, which cannot easily be distinguished from tetras, which just remained over one refinement step, cf. case (1) and (2b) in repair(). We memoize the leaves in level 0 as they tend to be fewer.
-            level0_leaves_.insert( &*it);
-        }
-    }
-}
-
-template <class ValueT>
-  void
-  RepairP2CL<ValueT>::repair (VecDescCL& new_vd)
-{
-    const Uint lvl= new_vd.RowIdx->TriangLevel();
-    Assert( lvl == old_.RowIdx->TriangLevel() || lvl ==  old_.RowIdx->TriangLevel() - 1,
-        DROPSErrCL( "RepairP2CL<ValueT>::repair: Different levels\n"), DebugNumericC);
-    if (lvl == old_.RowIdx->TriangLevel() - 1)
-        std::cout << "old level: " << old_.RowIdx->TriangLevel() << " mg_.GetLastLevel(): " << mg_.GetLastLevel() << '\n';
-
-    VectorCL& newdata= new_vd.Data;
-    newdata= UnrepairedC;
-
-    TetraRepairP2CL<value_type> repair_on_tetra( new_vd, old_, bnd_);
-
-    DROPS_FOR_TRIANG_CONST_TETRA( mg_, lvl, it) {
-        if (parent_data_.count( &*it) == 1) {
-            // *it was the parent of a leaf, which resided in a positive grid-level.
-            // --> unrefinement took place and newrule == 0.
-            repair_on_tetra.unrefinement( *it, parent_data_[&*it]);
-        } // From here on, *it has no parent-data itself.
-        else if (it->GetLevel() == 0) {
-            // If *it had arrived in the triangulation via coarsening, it would have had parent-data. It would have been handled in the preceding case. It has already been present in the old triangulation.
-            repair_on_tetra.unchanged_refinement( *it);
-        }
-        else { // *it has no parent-data and it->GetLevel() > 0
-            const TetraCL* p= it->GetParent();
-            if (parent_data_.count( p) == 1) {
-                // p has children in level lvl before and after the refinement-algo.
-                repair_on_tetra.changed_refinement( *it, parent_data_[p]);
-            }
-            else { // *it has no repair-data, it->GetLevel() > 0, and p has no repair-data
-                // 1) *it is a tetra, that was already refined before the ref-algo. Then, there is no repair-data and all data is still available from *it.
-                // 2) *it has been created from a leaf, which was refined. 
-                //     a) If it->GetLevel() > 1, there is repair-data on p->GetParent(). This distinguishes (2a) from (1) and (2b).
-                //     b) If it->GetLevel() == 1, the leaf was in grid level 0. And there is no grand-parent. This cannot be destinguished from (1), if lvl == 1. We use a set of all level-0-tetras before the refinement to decide, which case is at hand. All data is however available on the parent in grid-level 0.
-                if ((p->GetLevel() > 0 && parent_data_.count( p->GetParent()) == 1))
-                    repair_on_tetra.genuine_refinement( *it, parent_data_[p->GetParent()]); // Case (2a).
-                else if (level0_leaves_.count( p) == 1)
-                    repair_on_tetra.regular_leaf_refinement( *it); // Case (2b).
-                else // Case (1)
-                    repair_on_tetra.unchanged_refinement( *it);
-            }
-        }
-    }
-}
-
-template <class ValueT>
-  typename TetraRepairP2CL<ValueT>::AugmentedDofVecT
-  TetraRepairP2CL<ValueT>::collect_unrepaired_dofs (const TetraCL& t)
-{
-    LocalNumbP2CL n_new( t, *new_vd_.RowIdx);
-    AugmentedDofVecT dof;
-    dof.reserve( 10);
-    for (Uint i= 0; i < 10; ++i)
-        if (n_new.WithUnknowns( i) && !is_repaired( new_vd_.Data[n_new.num[i]]))
-            dof.push_back( std::make_pair( n_new.num[i], p2_dof_[i]));
-    return dof;
-}
-
-template <class ValueT>
-void TetraRepairP2CL<ValueT>::unchanged_refinement (const TetraCL& t)
-{
-    const VectorCL& olddata= old_vd_.Data;
-          VectorCL& newdata= new_vd_.Data;
-    LocalNumbP2CL n_old( t, *old_vd_.RowIdx);
-    LocalNumbP2CL n_new( t, *new_vd_.RowIdx);
-    for (Uint i= 0; i < 10; ++i)
-        if (n_new.WithUnknowns( i) && !is_repaired( newdata[n_new.num[i]])) {
-            Assert( n_old.WithUnknowns( i), DROPSErrCL( "TetraRepairP2CL::unchanged_refinement: "
-                "Old and new function must use the same boundary-data-types.\n"), DebugNumericC);
-            const value_type& tmp= DoFHelperCL<value_type, VectorCL>::get( olddata, n_old.num[i]);
-            DoFHelperCL<value_type, VectorCL>::set( newdata, n_new.num[i], tmp);
-        }
-}
-
-template <class ValueT>
-void TetraRepairP2CL<ValueT>::regular_leaf_refinement (const TetraCL& t)
-{
-    typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
-    const AugmentedDofVecT& dof= collect_unrepaired_dofs( t);
-    if (dof.empty())
-        return;
-
-    SMatrixCL<4,4> T( Uninitialized);
-    const TetraCL* p= t.GetParent();
-    const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &t) - p->GetChildBegin();
-    to_parent_bary( p->GetRefData().Children[ch], T);
-
-    LocalP2CL<value_type> oldp2;
-    oldp2.assign_on_tetra( *p, old_vd_, bnd_);
-    for (AugmentedDofVecT::const_iterator d= dof.begin(); d != dof.end(); ++d)
-        DoFHelperCL<value_type, VectorCL>::set( new_vd_.Data, d->first, oldp2( T*d->second));
-}
-
-template <class ValueT>
-void TetraRepairP2CL<ValueT>::genuine_refinement (const TetraCL& t, const RepairP2DataCL<ValueT>& repairdata)
-{
-    typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
-    AugmentedDofVecT dof= collect_unrepaired_dofs( t);
-    if (dof.empty())
-        return;
-
-    SMatrixCL<4,4> T( Uninitialized);
-    const TetraCL* p= t.GetParent();
-    const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &t) - p->GetChildBegin();
-    to_parent_bary( p->GetRefData().Children[ch], T);
-    const TetraCL* gp= p->GetParent();
-    const Ubyte gpch= std::find( gp->GetChildBegin(), gp->GetChildEnd(), p) - gp->GetChildBegin();
-    SMatrixCL<4,4> S( Uninitialized);
-    to_parent_bary( gp->GetRefData().Children[gpch], S);
-    for (AugmentedDofVecT::iterator d= dof.begin(); d != dof.end(); ++d)
-        d->second= S*(T*d->second);
-    repairdata.repair( dof, new_vd_.Data);
-}
-
-template <class ValueT>
-void TetraRepairP2CL<ValueT>::unrefinement (const TetraCL& t, const RepairP2DataCL<ValueT>& repairdata)
-{
-    AugmentedDofVecT dof= collect_unrepaired_dofs( t);
-    if (dof.empty())
-        return;
-
-    QRDecompCL<4> T;
-    BaryCoordCL tmp;
-    typedef typename RepairP2DataCL<value_type>::ChildVecT ChildVecT;
-    repairdata.repair( dof, new_vd_.Data);
-}
-
-template <class ValueT>
-void TetraRepairP2CL<ValueT>::changed_refinement (const TetraCL& t, const RepairP2DataCL<ValueT>& repairdata)
-{
-    AugmentedDofVecT dof= collect_unrepaired_dofs( t);
-    if (dof.empty())
-        return;
-
-    const TetraCL* p= t.GetParent();
-    const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &t) - p->GetChildBegin();
-    SMatrixCL<4,4> to_parent( Uninitialized);
-    to_parent_bary( p->GetRefData().Children[ch], to_parent);
-    for (AugmentedDofVecT::iterator d= dof.begin(); d != dof.end(); ++d)
-        d->second= to_parent*d->second;
-    repairdata.repair( dof, new_vd_.Data);
-}
 
 template <class ValueT>
 void RepairP2DataCL<ValueT>::repair (AugmentedDofVecT& dof, VectorCL& newdata) const
@@ -326,6 +95,252 @@ void RepairP2DataCL<ValueT>::repair (AugmentedDofVecT& dof, VectorCL& newdata) c
     }
     if (!dof.empty())
         throw DROPSErrCL("RepairP2DataCL::repair: Could not locate all new dof.\n");
+}
+
+bool is_repaired (double d) { return !std::isnan( d); }
+
+const double UnrepairedDofC= std::numeric_limits<double>::quiet_NaN();
+
+/// \brief Repair a P2-FE-function after refinement.
+///
+/// The repair works as follows:
+/// Before the refinement-algo, but after all marks for the refinement-algo have
+/// been set, the data from all tetras, which could be deleted, are saved in
+/// RepairP2Data-structs. To access these, the address of the parent is used,
+/// because the refinement-algo does not remove a parent.
+/// 
+/// Tetras, which could be removed are
+///     1) those with a mark for removement and level > 0,
+///     2) irregular leaves (which always have level > 0).
+/// 
+/// There are 4 ways in which the refinement-algo can modify a tetra t in
+/// triangulation l. The helpers of repair() below correspond correspond to these.
+///     1) Deletion: t is removed and its parent p is now in l. The repair-data on p
+/// (which is now in l) identifies this situation.
+/// 
+///     2) No change: t remains in l. This comes in two flavors: a) t is in lvl 0 and
+/// there is no repair-data for l. b) t is in a higher level and there is no
+/// repair-data on the parent and the grand-parent. (b) is determined as default
+/// after ausschliessen (1), (2a), (3), (4).
+/// 
+///     3) Changed refinement of parent: t is deleted, but p is refined differently
+/// again. The repair-data on the parent identifies this situation.
+/// 
+///     4) Refinement of t (or its regular replacement, if t was irregular), where the
+/// children c are in l: a) If there is a grand-parent gp, this identifies the
+/// situation. Its repair-data is used. b) t is in grid-level 1. There is no
+/// grand-parent to decide, whether t was just created or unchanged as in case (2).
+/// The tie is broken by recording the leave-tetras in level 0 in pre_refine(). If
+/// the parent of t is such a leaf, then t is newly created, otherwise it remained
+/// unchanged.
+template <class ValueT>
+class RepairP2CL
+{
+  public:
+    typedef ValueT value_type;
+
+  private:
+    typedef std::tr1::unordered_map<const TetraCL*, RepairP2DataCL<value_type> > RepairMapT;
+    typedef std::tr1::unordered_set<const TetraCL*>                              TetraSetT;
+    typedef std::vector<std::pair<size_t,BaryCoordCL> >                          AugmentedDofVecT;
+
+    RepairMapT parent_data_;
+    TetraSetT  level0_leaves_;
+
+    BaryCoordCL p2_dof_[10];
+
+    const MultiGridCL& mg_;
+    const VecDescCL& old_vd_;
+    const BndDataCL<value_type>& bnd_;
+
+    VecDescCL* new_vd_;
+
+    void pre_refine ();
+
+    AugmentedDofVecT collect_unrepaired_dofs (const TetraCL& t); ///< collect dofs with !is_repaired.
+    void unchanged_refinement    (const TetraCL& t); ///< use data from t for copying
+    void regular_leaf_refinement (const TetraCL& t); ///< use data from t for repair
+    void unrefinement            (const TetraCL& t, const RepairP2DataCL<ValueT>& t_data);  ///< use repair-data from the tetra itself
+    void changed_refinement      (const TetraCL& t, const RepairP2DataCL<ValueT>& p_data);  ///< use repair-data from the parent
+    void genuine_refinement      (const TetraCL& t, const RepairP2DataCL<ValueT>& gp_data); ///< use repair-data from the grand-parent
+
+  public:
+    RepairP2CL (const MultiGridCL& mg, const VecDescCL& old, const BndDataCL<value_type>& bnd);
+
+    void repair (VecDescCL& new_vd);
+};
+
+template <class ValueT>
+  RepairP2CL<ValueT>::RepairP2CL (const MultiGridCL& mg, const VecDescCL& old, const BndDataCL<value_type>& bnd)
+        : mg_( mg), old_vd_ ( old), bnd_( bnd)
+{
+    for (Uint i= 0; i < NumVertsC; ++i)
+        p2_dof_[i]= std_basis<4>( i + 1);
+    for (Uint i= 0; i < NumEdgesC; ++i)
+        p2_dof_[i + NumVertsC]= 0.5*(std_basis<4>( VertOfEdge( i, 0) + 1) + std_basis<4>( VertOfEdge( i, 1) + 1));
+
+    pre_refine();
+}
+
+template <class ValueT>
+  void
+  RepairP2CL<ValueT>::pre_refine ()
+{
+    Uint lvl= old_vd_.RowIdx->TriangLevel();
+    LocalP2CL<value_type> lp2;
+    DROPS_FOR_TRIANG_CONST_TETRA( mg_, lvl, it) {
+        if (!it->IsUnrefined())
+            continue;
+        if (it->GetLevel() > 0) {
+            // These could be deleted by the refinement algo
+            /// \todo To store less, one can add " && (it->IsMarkedForRemovement() || !it->IsRegular())"
+            const TetraCL* p= it->GetParent();
+            const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &*it) - p->GetChildBegin();
+            const RefRuleCL& rule= p->GetRefData();
+            lp2.assign_on_tetra( *it, old_vd_, bnd_);
+            parent_data_[p].data.push_back( std::make_pair( rule.Children[ch], lp2));
+        }
+        else {
+            // Leaves in level 0 can give birth to children, which cannot easily be distinguished from tetras, which just remained over one refinement step, cf. case (2) and (4b) in repair(). We memoize the leaves in level 0, as they tend to be few.
+            level0_leaves_.insert( &*it);
+        }
+    }
+}
+
+template <class ValueT>
+  void
+  RepairP2CL<ValueT>::repair (VecDescCL& new_vd)
+{
+    new_vd_= &new_vd;
+
+    const Uint lvl= new_vd_->RowIdx->TriangLevel();
+    Assert( lvl == old_vd_.RowIdx->TriangLevel() || lvl ==  old_vd_.RowIdx->TriangLevel() - 1,
+        DROPSErrCL( "RepairP2CL<ValueT>::repair: Different levels\n"), DebugNumericC);
+    if (lvl == old_vd_.RowIdx->TriangLevel() - 1)
+        std::cout << "old level: " << old_vd_.RowIdx->TriangLevel() << " mg_.GetLastLevel(): " << mg_.GetLastLevel() << '\n';
+
+    VectorCL& newdata= new_vd_->Data;
+    newdata= UnrepairedDofC;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( mg_, lvl, t) {
+        if (parent_data_.count( &*t) == 1) // Case 1
+            unrefinement( *t, parent_data_[&*t]);
+        // From here on, t has no parent-data itself.
+        else if (t->GetLevel() == 0) // Case 2
+            // If t had arrived in the triangulation via coarsening, it would have had parent-data.
+            unchanged_refinement( *t);
+        else { // t has no parent-data and t->GetLevel() > 0
+            const TetraCL* p= t->GetParent();
+            if (parent_data_.count( p) == 1) // Case 3
+                changed_refinement( *t, parent_data_[p]);
+            else { // t has no repair-data, t->GetLevel() > 0, and p has no repair-data
+                if ((p->GetLevel() > 0 && parent_data_.count( p->GetParent()) == 1))
+                    genuine_refinement( *t, parent_data_[p->GetParent()]); // Case (4a).
+                else if (level0_leaves_.count( p) == 1)
+                    regular_leaf_refinement( *t); // Case (4b).
+                else // Case (2)
+                    unchanged_refinement( *t);
+            }
+        }
+    }
+}
+
+template <class ValueT>
+  typename RepairP2CL<ValueT>::AugmentedDofVecT
+  RepairP2CL<ValueT>::collect_unrepaired_dofs (const TetraCL& t)
+{
+    LocalNumbP2CL n_new( t, *new_vd_->RowIdx);
+    AugmentedDofVecT dof;
+    dof.reserve( 10);
+    for (Uint i= 0; i < 10; ++i)
+        if (n_new.WithUnknowns( i) && !is_repaired( new_vd_->Data[n_new.num[i]]))
+            dof.push_back( std::make_pair( n_new.num[i], p2_dof_[i]));
+    return dof;
+}
+
+template <class ValueT>
+void RepairP2CL<ValueT>::unchanged_refinement (const TetraCL& t)
+{
+    const VectorCL& olddata= old_vd_.Data;
+          VectorCL& newdata= new_vd_->Data;
+    LocalNumbP2CL n_old( t, *old_vd_.RowIdx);
+    LocalNumbP2CL n_new( t, *new_vd_->RowIdx);
+    for (Uint i= 0; i < 10; ++i)
+        if (n_new.WithUnknowns( i) && !is_repaired( newdata[n_new.num[i]])) {
+            Assert( n_old.WithUnknowns( i), DROPSErrCL( "TetraRepairP2CL::unchanged_refinement: "
+                "Old and new function must use the same boundary-data-types.\n"), DebugNumericC);
+            const value_type& tmp= DoFHelperCL<value_type, VectorCL>::get( olddata, n_old.num[i]);
+            DoFHelperCL<value_type, VectorCL>::set( newdata, n_new.num[i], tmp);
+        }
+}
+
+template <class ValueT>
+void RepairP2CL<ValueT>::regular_leaf_refinement (const TetraCL& t)
+{
+    typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
+    const AugmentedDofVecT& dof= collect_unrepaired_dofs( t);
+    if (dof.empty())
+        return;
+
+    SMatrixCL<4,4> T( Uninitialized);
+    const TetraCL* p= t.GetParent();
+    const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &t) - p->GetChildBegin();
+    to_parent_bary( p->GetRefData().Children[ch], T);
+
+    LocalP2CL<value_type> oldp2;
+    oldp2.assign_on_tetra( *p, old_vd_, bnd_);
+    for (AugmentedDofVecT::const_iterator d= dof.begin(); d != dof.end(); ++d)
+        DoFHelperCL<value_type, VectorCL>::set( new_vd_->Data, d->first, oldp2( T*d->second));
+}
+
+template <class ValueT>
+void RepairP2CL<ValueT>::genuine_refinement (const TetraCL& t, const RepairP2DataCL<ValueT>& repairdata)
+{
+    typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
+    AugmentedDofVecT dof= collect_unrepaired_dofs( t);
+    if (dof.empty())
+        return;
+
+    SMatrixCL<4,4> T( Uninitialized);
+    const TetraCL* p= t.GetParent();
+    const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &t) - p->GetChildBegin();
+    to_parent_bary( p->GetRefData().Children[ch], T);
+    const TetraCL* gp= p->GetParent();
+    const Ubyte gpch= std::find( gp->GetChildBegin(), gp->GetChildEnd(), p) - gp->GetChildBegin();
+    SMatrixCL<4,4> S( Uninitialized);
+    to_parent_bary( gp->GetRefData().Children[gpch], S);
+    for (AugmentedDofVecT::iterator d= dof.begin(); d != dof.end(); ++d)
+        d->second= S*(T*d->second);
+    repairdata.repair( dof, new_vd_->Data);
+}
+
+template <class ValueT>
+void RepairP2CL<ValueT>::unrefinement (const TetraCL& t, const RepairP2DataCL<ValueT>& repairdata)
+{
+    AugmentedDofVecT dof= collect_unrepaired_dofs( t);
+    if (dof.empty())
+        return;
+
+    QRDecompCL<4> T;
+    BaryCoordCL tmp;
+    typedef typename RepairP2DataCL<value_type>::ChildVecT ChildVecT;
+    repairdata.repair( dof, new_vd_->Data);
+}
+
+template <class ValueT>
+void RepairP2CL<ValueT>::changed_refinement (const TetraCL& t, const RepairP2DataCL<ValueT>& repairdata)
+{
+    AugmentedDofVecT dof= collect_unrepaired_dofs( t);
+    if (dof.empty())
+        return;
+
+    const TetraCL* p= t.GetParent();
+    const Ubyte ch= std::find( p->GetChildBegin(), p->GetChildEnd(), &t) - p->GetChildBegin();
+    SMatrixCL<4,4> to_parent( Uninitialized);
+    to_parent_bary( p->GetRefData().Children[ch], to_parent);
+    for (AugmentedDofVecT::iterator d= dof.begin(); d != dof.end(); ++d)
+        d->second= to_parent*d->second;
+    repairdata.repair( dof, new_vd_->Data);
 }
 
 } // end of namespace DROPS
