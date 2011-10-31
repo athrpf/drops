@@ -45,8 +45,8 @@ typedef std::vector<std::pair<size_t,BaryCoordCL> > AugmentedDofVecT;
 
 /// \brief Decide whether a barycentric point is in the closed reference tetra.
 /// Optionally, a component-wise error can be specified.
-bool
-contained_in_reftetra( const BaryCoordCL& p, double eps= 0.)
+inline bool
+contained_in_reference_tetra (const BaryCoordCL& p, double eps= 0.)
 {
     return p[0] >= -eps  && p[1] >= -eps && p[2] >= -eps && p[3] >= -eps;
 }
@@ -85,7 +85,7 @@ struct RepairP2DataCL
 ///     2) No change: t remains in l. This comes in two flavors: a) t is in lvl 0 and
 /// there is no repair-data for l. b) t is in a higher level and there is no
 /// repair-data on the parent and the grand-parent. (b) is determined as default
-/// after ausschliessen (1), (2a), (3), (4).
+/// after ruling out (1), (2a), (3), (4).
 /// 
 ///     3) Changed refinement of parent: t is deleted, but p is refined differently
 /// again. The repair-data on the parent identifies this situation.
@@ -97,6 +97,15 @@ struct RepairP2DataCL
 /// The tie is broken by recording the leave-tetras in level 0 in pre_refine(). If
 /// the parent of t is such a leaf, then t is newly created, otherwise it remained
 /// unchanged.
+///
+/// The algorithm is optimal in the sense, that the repaired data is always a
+/// quadratic interpolant on the new triangulation of the original data (in contrast
+/// to the earlier approaches used in Drops). Further, in cases (2) and (4), the
+/// original function is interpolated exactly.
+///
+/// In principle, this class could use the accumulator-pattern (e.g., as base-class).
+/// As this slightly complicates its use and because repair is performed seldom,
+/// we leave this as future work.
 template <class ValueT>
 class RepairP2CL
 {
@@ -112,17 +121,14 @@ class RepairP2CL
 
     BaryCoordCL p2_dof_[10]; ///< The bary-coordinates of the P2-dof.
 
-    const MultiGridCL& mg_;
-    const VecDescCL& old_vd_;
-    const BndDataCL<value_type>& bnd_;
+    const MultiGridCL& mg_;            ///< Multigrid to operate on
+    const VecDescCL& old_vd_;          ///< original data to be repaired
+    const BndDataCL<value_type>& bnd_; ///< boundary-data for the old and new VecDescCL
 
-    VecDescCL* new_vd_; ///< VecDescCL to be repaired; set in repair().
+    VecDescCL* new_vd_;                ///< VecDescCL to be repaired; set in repair().
+    std::vector<bool> repair_needed_;   ///< Memoize dof that must be repaired.
 
-     /// \brief Saves data from possibly deleted tetras in parent_data_ and level0_leaves_.
-    void pre_refine ();
-
-    static const double UnrepairedDofC; ///< constant to mark unrepaired values; a quiet NaN.
-    bool repair_needed (double d) { return std::isnan( d); }
+    bool repair_needed (size_t dof) { return repair_needed_[dof]; }
 
     AugmentedDofVecT collect_unrepaired_dofs (const TetraCL& t); ///< collect dofs with repair_needed().
     void unchanged_refinement    (const TetraCL& t); ///< use data from t for copying
@@ -132,8 +138,15 @@ class RepairP2CL
     void genuine_refinement      (const TetraCL& t, const RepairP2DataCL<ValueT>& gp_data); ///< use repair-data from the grand-parent
 
   public:
+    /// \brief Initializes the data to be repaired on mg and calls pre_refine().
     RepairP2CL (const MultiGridCL& mg, const VecDescCL& old, const BndDataCL<value_type>& bnd);
 
+    /// \brief Saves data from possibly deleted tetras in parent_data_ and level0_leaves_.
+    void pre_refine ();
+
+    /// \brief Repair old_vd with the help of the saved data and store the result in new_vd.
+    /// new_vd is assumed to contain a valid numbering and a vector of corresponding size.
+    /// The new numbering must use the same boundary-data as the old one.
     void repair (VecDescCL& new_vd);
 };
 

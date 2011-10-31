@@ -37,7 +37,7 @@ void RepairP2DataCL<ValueT>::repair (AugmentedDofVecT& dof, VectorCL& newdata) c
         d= dof.begin();
         while (d != dof.end()) {
             tmp= to_old_child*d->second;
-            if (contained_in_reftetra( tmp)) {
+            if (contained_in_reference_tetra( tmp, 8*std::numeric_limits<double>::epsilon())) {
                 DoFHelperCL<value_type, VectorCL>::set( newdata, d->first, old_ch->second( tmp));
                 d= dof.erase( d);
             }
@@ -51,9 +51,6 @@ void RepairP2DataCL<ValueT>::repair (AugmentedDofVecT& dof, VectorCL& newdata) c
 
 
 /// RepairP2CL
-
-template <class ValueT>
-const double RepairP2CL<ValueT>::UnrepairedDofC= std::numeric_limits<double>::quiet_NaN();
 
 template <class ValueT>
   RepairP2CL<ValueT>::RepairP2CL (const MultiGridCL& mg, const VecDescCL& old, const BndDataCL<value_type>& bnd)
@@ -71,6 +68,10 @@ template <class ValueT>
   void
   RepairP2CL<ValueT>::pre_refine ()
 {
+    parent_data_.clear();
+    level0_leaves_.clear();
+    repair_needed_.clear();
+
     Uint lvl= old_vd_.RowIdx->TriangLevel();
     LocalP2CL<value_type> lp2;
     DROPS_FOR_TRIANG_CONST_TETRA( mg_, lvl, it) {
@@ -100,7 +101,7 @@ template <class ValueT>
     AugmentedDofVecT dof;
     dof.reserve( 10);
     for (Uint i= 0; i < 10; ++i)
-        if (n_new.WithUnknowns( i) && repair_needed( new_vd_->Data[n_new.num[i]]))
+        if (n_new.WithUnknowns( i) && repair_needed( n_new.num[i]))
             dof.push_back( std::make_pair( n_new.num[i], p2_dof_[i]));
     return dof;
 }
@@ -197,7 +198,7 @@ template <class ValueT>
         std::cout << "old level: " << old_vd_.RowIdx->TriangLevel() << " mg_.GetLastLevel(): " << mg_.GetLastLevel() << '\n';
 
     VectorCL& newdata= new_vd_->Data;
-    newdata= UnrepairedDofC;
+    repair_needed_.resize( newdata.size(), true);
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg_, lvl, t) {
         if (parent_data_.count( &*t) == 1) // Case 1
