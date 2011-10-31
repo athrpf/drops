@@ -32,6 +32,7 @@
 #include "levelset/mgobserve.h"
 #include "misc/params.h"
 #include "num/MGsolver.h"
+#include "num/fe_repair.h"
 #include "misc/bndmap.h"
 
 namespace DROPS
@@ -261,9 +262,10 @@ class VelocityRepairCL : public MGObserverCL
 {
   private:
     InstatStokes2PhaseP2P1CL& stokes_;
+    std::auto_ptr<RepairP2CL<Point3DCL> > p2repair_;
 
   public:
-    VelocityRepairCL ( InstatStokes2PhaseP2P1CL& stokes)
+    VelocityRepairCL (InstatStokes2PhaseP2P1CL& stokes)
         : stokes_( stokes) {}
     void pre_refine  ();
     void post_refine ();

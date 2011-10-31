@@ -103,17 +103,16 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& Coeff, 
 //*****************************************************************************
 //                               VelocityRepairCL
 //*****************************************************************************
-#ifndef _PAR
 inline void VelocityRepairCL::pre_refine()
-  /// do nothing
-{ }
-#else
-inline void VelocityRepairCL::pre_refine()
-  /// tell parallel multigrid about velocities
 {
+#ifndef _PAR
+    p2repair_= std::auto_ptr<RepairP2CL<Point3DCL> >(
+        new RepairP2CL<Point3DCL>( stokes_.GetMG(), stokes_.v, stokes_.GetBndData().Vel));
+#else
+    /// tell parallel multigrid about velocities
     GetPMG().AttachTo( &stokes_.v, &stokes_.GetBndData().Vel);
-}
 #endif
+}
 
 inline void
   VelocityRepairCL::post_refine ()
@@ -131,11 +130,11 @@ inline void
         throw DROPSErrCL( "VelocityRepairCL::post_refine: Sorry, not yet implemented.");
     }
     loc_v.SetIdx( &loc_vidx);
-#ifdef _PAR
+#ifndef _PAR
+    p2repair_->repair( loc_v);
+#else
     GetPMG().HandleNewIdx(&stokes_.vel_idx, &loc_v);
-#endif
     RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
-#ifdef _PAR
     GetPMG().CompleteRepair( &loc_v);
 #endif
     v.Clear( v.t);

@@ -30,6 +30,7 @@
 #include "num/solver.h"
 #include "num/bndData.h"
 #include "num/fe.h"
+#include "num/fe_repair.h"
 #include "levelset/mgobserve.h"
 #include "levelset/surfacetension.h"
 #include "num/interfacePatch.h"
@@ -174,6 +175,7 @@ class LevelsetRepairCL : public MGObserverCL
 {
   private:
     LevelsetP2CL& ls_;
+    std::auto_ptr<RepairP2CL<double> > p2repair_;
 
   public:
     /// \brief Construct a levelset repair class
