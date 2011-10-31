@@ -106,7 +106,7 @@ int CheckResult(DROPS::P2EvalCL<double, BndCL,
     const DROPS::MultiGridCL& mg= fun.GetMG();
     const DROPS::Uint trilevel= fun.GetLevel();
     if (om!=SILENT) std::cout << "Verts:" << std::endl;
-    double diff, emaxdiff= 0., vmaxdiff= 0., vval= 1., eval;
+    double diff, emaxdiff= 0., vmaxdiff= 0., vval= 1., eval= 1.;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),
          theend= mg.GetTriangVertexEnd( trilevel); sit!=theend; ++sit) {
         diff= fun.val( *sit) - f( sit->GetCoord());
