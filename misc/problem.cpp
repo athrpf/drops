@@ -181,23 +181,19 @@ IdxT IdxDescCL::GetExclusiveNumUnknowns(const MultiGridCL &mg, int lvl) const
 {
     IdxT ret=0;
     // If there are unknowns on vertices, the proc with the smallest proc-id
-    // who owns a master copy of the vertex counts the unknowns of the chosen
-    // vertex.
+    // who owns a PrioHasUnk copy of the vertex/edge/tetra counts the unknowns.
     if (NumUnknownsVertex())
         for (MultiGridCL::const_TriangVertexIteratorCL it(mg.GetTriangVertexBegin(lvl)), end(mg.GetTriangVertexEnd(lvl)); it != end; ++it)
-            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()))
-                if (it->IsExclusive())
-                    ret += NumUnknownsVertex();
+            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()) && it->IsExclusive( PrioHasUnk))
+                ret += NumUnknownsVertex();
     if (NumUnknownsEdge())
         for (MultiGridCL::const_TriangEdgeIteratorCL it(mg.GetTriangEdgeBegin(lvl)), end(mg.GetTriangEdgeEnd(lvl)); it != end; ++it)
-            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()))
-                if (it->IsExclusive())
-                    ret += NumUnknownsEdge();
+            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()) && it->IsExclusive( PrioHasUnk))
+                ret += NumUnknownsEdge();
     if (NumUnknownsTetra())
         for (MultiGridCL::const_TriangTetraIteratorCL it(mg.GetTriangTetraBegin(lvl)), end(mg.GetTriangTetraEnd(lvl)); it != end; ++it)
-            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()))
-                if (it->IsExclusive())
-                    ret += NumUnknownsTetra();
+            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()) && it->IsExclusive( PrioHasUnk))
+                ret += NumUnknownsTetra();
     return ret;
 }
 
