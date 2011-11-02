@@ -683,6 +683,7 @@
     <ClInclude Include="..\..\..\num\directsolver.h" />
     <ClInclude Include="..\..\..\num\discretize.h" />
     <ClInclude Include="..\..\..\num\fe.h" />
+    <ClInclude Include="..\..\..\num\fe_repair.h" />
     <ClInclude Include="..\..\..\num\hypre.h" />
     <ClInclude Include="..\..\..\num\interfacePatch.h" />
     <ClInclude Include="..\..\..\num\MGsolver.h" />
@@ -824,6 +825,7 @@
     <None Include="..\..\..\navstokes\navstokes.tpp" />
     <None Include="..\..\..\num\discretize.tpp" />
     <None Include="..\..\..\num\fe.tpp" />
+    <None Include="..\..\..\num\fe_repair.tpp" />
     <None Include="..\..\..\num\interfacePatch.tpp" />
     <None Include="..\..\..\num\MGsolver.tpp" />
     <None Include="..\..\..\num\parlanczos.tpp" />

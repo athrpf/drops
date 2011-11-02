@@ -522,6 +522,9 @@
     <ClInclude Include="..\..\..\num\renumber.h">
       <Filter>num</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\num\fe_repair.h">
+      <Filter>num</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\levelset\adaptriang.tpp">
@@ -637,6 +640,9 @@
     </None>
     <None Include="..\..\..\levelset\toluol.json">
       <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\num\fe_repair.tpp">
+      <Filter>num</Filter>
     </None>
   </ItemGroup>
 </Project>
