@@ -126,9 +126,10 @@ class RepairP2CL
     const BndDataCL<value_type>& bnd_; ///< boundary-data for the old and new VecDescCL
 
     VecDescCL* new_vd_;                ///< VecDescCL to be repaired; set in repair().
-    std::vector<bool> repair_needed_;   ///< Memoize dof that must be repaired.
+    std::vector<bool> repair_needed_;   ///< Memoize dof that must be repaired. Used only in repair() and its helpers.
 
-    bool repair_needed (size_t dof) { return repair_needed_[dof]; }
+    bool repair_needed    (size_t dof) { return repair_needed_[dof]; }
+    void mark_as_repaired (size_t dof) { repair_needed_[dof]= false; }
 
     AugmentedDofVecT collect_unrepaired_dofs (const TetraCL& t); ///< collect dofs with repair_needed().
     void unchanged_refinement    (const TetraCL& t); ///< use data from t for copying

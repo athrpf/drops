@@ -101,8 +101,10 @@ template <class ValueT>
     AugmentedDofVecT dof;
     dof.reserve( 10);
     for (Uint i= 0; i < 10; ++i)
-        if (n_new.WithUnknowns( i) && repair_needed( n_new.num[i]))
+        if (n_new.WithUnknowns( i) && repair_needed( n_new.num[i])) {
             dof.push_back( std::make_pair( n_new.num[i], p2_dof_[i]));
+            mark_as_repaired( n_new.num[i]); // All callers will repair all dofs or else throw an exception.
+        }
     return dof;
 }
 
@@ -114,11 +116,12 @@ void RepairP2CL<ValueT>::unchanged_refinement (const TetraCL& t)
     LocalNumbP2CL n_old( t, *old_vd_.RowIdx);
     LocalNumbP2CL n_new( t, *new_vd_->RowIdx);
     for (Uint i= 0; i < 10; ++i)
-        if (n_new.WithUnknowns( i) && repair_needed( newdata[n_new.num[i]])) {
+        if (n_new.WithUnknowns( i) && repair_needed( n_new.num[i])) {
             Assert( n_old.WithUnknowns( i), DROPSErrCL( "TetraRepairP2CL::unchanged_refinement: "
                 "Old and new function must use the same boundary-data-types.\n"), DebugNumericC);
             const value_type& tmp= DoFHelperCL<value_type, VectorCL>::get( olddata, n_old.num[i]);
             DoFHelperCL<value_type, VectorCL>::set( newdata, n_new.num[i], tmp);
+            mark_as_repaired( n_new.num[i]);
         }
 }
 
