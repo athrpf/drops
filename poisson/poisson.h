@@ -42,6 +42,9 @@ typedef BndDataCL<> PoissonBndDataCL;
 typedef double  (*instat_scalar_fun_ptr)( const Point3DCL&, double);
 typedef double  (*scalar_fun_scalar_ptr)( const Point3DCL&);
 
+double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
+scalar_instat_fun_ptr f1, scalar_instat_fun_ptr f2, double t, bool H1)
+
 class StripTimeCL
 // converts time dependent function to one, that is time independent.
 // i.e.:  scalar_instat_fun_ptr  -->  scalar_fun_ptr
@@ -135,8 +138,6 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL(&x, &GetBndData(), &GetMG()); }
-    double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
-    scalar_instat_fun_ptr f1, scalar_instat_fun_ptr f2, double t, bool H1)
 };
 
 template <class Coeff>
