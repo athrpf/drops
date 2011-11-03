@@ -135,6 +135,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL(&x, &GetBndData(), &GetMG()); }
+    double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
+    scalar_instat_fun_ptr f1, scalar_instat_fun_ptr f2, double t, bool H1)
 };
 
 template <class Coeff>

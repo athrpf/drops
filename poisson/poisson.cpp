@@ -59,5 +59,45 @@ double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const Poisso
     return maxdiff;
 }
 
+double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
+scalar_instat_fun_ptr f1, scalar_instat_fun_ptr f2, double t, bool H1)
+{
+    VecDescCL vf1, vf2;
+    vf1.SetIdx(&Idx);
+    vf2.SetIdx(&Idx);
+
+    double ret;
+    const Uint lvl = vf1.GetLevel(),
+               idx = vf1.RowIdx->GetIdx();
+    IdxT UnknownIdx[4];
+    for (MultiGridCL::const_TriangTetraIteratorCL
+            sit=const_cast<const MultiGridCL&>(mg).GetTriangTetraBegin(lvl),
+            send=const_cast<const MultiGridCL&>(mg).GetTriangTetraEnd(lvl);
+            sit != send; ++sit)
+    {
+        for(int i=0; i<4; ++i)
+        {
+            UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
+                    : NoIdx;
+        }
+        for(int i=0; i<4; ++i)
+        {
+            if (UnknownIdx[i] != NoIdx)  //not on a dirichlet boundary condition
+            {
+                vf1.Data[UnknownIdx[i]] = f1(sit->GetVertex(i)->GetCoord(), t);
+                vf2.Data[UnknownIdx[i]] = f2(sit->GetVertex(i)->GetCoord(), t);
+            }
+        }
+    }
+    if(H1)
+    {
+        ret = dot(M.Data*vf1.Data, vf2.Data) + dot(A.Data* vf1.Data, vf2.Data);
+    }
+    else
+        ret = dot(M.Data*vf1.Data, vf2.Data);
+
+    return ret;
+}
+
 
 } // end of namespace DROPS
