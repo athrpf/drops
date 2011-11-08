@@ -78,7 +78,7 @@ static PyObject* drops_L2_scalar_prod(PyObject* self, PyObject* args)
   DROPS::MLMatDescCL& A = prob.A;
   DROPS::MLMatDescCL& M = prob.M;
 
-  idx.Set(1);
+  idx.SetFE( DROPS::P1_FE);
   prob.CreateNumbering(MG.GetLastLevel(), &idx);
 
   // Matrizen mit Index idx (Zeilen und Spalten)
