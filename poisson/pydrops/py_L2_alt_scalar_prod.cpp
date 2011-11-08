@@ -74,9 +74,9 @@ static PyObject* drops_L2_scalar_prod(PyObject* self, PyObject* args)
   DROPS::PoissonP1CL<CoeffStatGradientCoeff> prob(brick, pcl, bdata, 0);
 
   DROPS::MultiGridCL& MG= prob.GetMG();
-  DROPS::IdxDescCL& idx= prob.idx;
-  DROPS::MatDescCL& A = prob.A;
-  DROPS::MatDescCL& M = prob.M;
+  DROPS::MLIdxDescCL& idx= prob.idx;
+  DROPS::MLMatDescCL& A = prob.A;
+  DROPS::MLMatDescCL& M = prob.M;
 
   idx.Set(1);
   prob.CreateNumbering(MG.GetLastLevel(), &idx);
@@ -85,7 +85,7 @@ static PyObject* drops_L2_scalar_prod(PyObject* self, PyObject* args)
   A.SetIdx(&idx, &idx);
   M.SetIdx(&idx, &idx);
 
-  prob.SetupInstatSystem(A, M, prob.t);
+  prob.SetupInstatSystem(A, M, prob.x.t);
 
   PyInterpolationFunctor u_fun(u, nx, ny, nz, nt, lx, ly, lz, tmax);
   PyInterpolationFunctor v_fun(v, nx, ny, nz, nt, lx, ly, lz, tmax);

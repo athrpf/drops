@@ -79,11 +79,11 @@ static PyObject* drops_gradient_stat(PyObject *self, PyObject *args)
 
 
   DROPS::MultiGridCL& MG= prob.GetMG();
-  DROPS::IdxDescCL& idx= prob.idx;
+  DROPS::MLIdxDescCL& idx= prob.idx;
   DROPS::VecDescCL& x= prob.x;
   DROPS::VecDescCL& b= prob.b;
-  DROPS::MatDescCL& A= prob.A;
-  DROPS::MatDescCL& M= prob.M;
+  DROPS::MLMatDescCL& A= prob.A;
+  DROPS::MLMatDescCL& M= prob.M;
   DROPS::VecDescCL dummy;
   DROPS::VecDescCL b1,b2;
   idx.Set(1, 0, 0, 0);
@@ -100,14 +100,14 @@ static PyObject* drops_gradient_stat(PyObject *self, PyObject *args)
   // Matrizen mit Index idx (Zeilen und Spalten)
   A.SetIdx(&idx, &idx);
   M.SetIdx(&idx, &idx);
-  prob.SetupInstatSystem(A, M, prob.t);
+  prob.SetupInstatSystem(A, M, prob.x.t);
 
   PyInterpolationFunctor u_fun(u, nx, ny, nz, 0, lx, ly, lz, 0.0);
   PyInterpolationFunctor psi_fun(psi, nx, ny, nz, 0, lx, ly, lz, 0.0);
 
   // Set up RHS
   prob.SetupL2ProjGrad(b1, u_fun, psi_fun, NULL);
-  prob.SetupInstatRhs( b2, b2, prob.t, dummy, prob.t); // Randwerte
+  prob.SetupInstatRhs( b2, b2, prob.t, dummy, prob.x.t); // Randwerte
   b.Data=b1.Data+b2.Data;
 
   //initialise solver
@@ -181,11 +181,11 @@ PyObject* drops_sensitivity_stat(PyObject *self, PyObject *args)
   DROPS::PoissonP1CL<PoissonCoeffCL> prob(brick.get_brick(), pcl, brick.get_bdata());
 
   DROPS::MultiGridCL& MG= prob.GetMG();
-  DROPS::IdxDescCL& idx= prob.idx;
+  DROPS::MLIdxDescCL& idx= prob.idx;
   DROPS::VecDescCL& x= prob.x;
   DROPS::VecDescCL& b= prob.b;
-  DROPS::MatDescCL& A= prob.A;
-  DROPS::MatDescCL& M= prob.M;
+  DROPS::MLMatDescCL& A= prob.A;
+  DROPS::MLMatDescCL& M= prob.M;
 
   DROPS::VecDescCL cplA, dummy;
 
@@ -202,7 +202,7 @@ PyObject* drops_sensitivity_stat(PyObject *self, PyObject *args)
   // Matrizen mit Index idx (Zeilen und Spalten)
   A.SetIdx(&idx, &idx);
   M.SetIdx(&idx, &idx);
-  prob.SetupInstatSystem(A, M, prob.t);
+  prob.SetupInstatSystem(A, M, prob.x.t);
   prob.SetupInstatRhs( cplA, dummy, 0, dummy, 0);
   PyInterpolationFunctor u_fun(u, nx, ny, nz, 0, lx, ly, lz, 0.0);
   PyInterpolationFunctor a_tilde_fun(a_tilde, nx, ny, nz, 0, lx, ly, lz, 0.0);
