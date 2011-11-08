@@ -299,10 +299,10 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         {
             Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
             Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*Coeff::Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
+            coupA[i][j]+=StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
             
             coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-            coupM[i][j]+= StrM.quad(absdet)*Coeff::Sta_Coeff(GetBaryCenter(*sit),tA); //SUPG term
+            coupM[i][j]+= StrM.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA); //SUPG term
         }
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
@@ -333,7 +333,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         vf.Data[UnknownIdx[i]]+= fp1.quad(absdet);
         if (SUPG) {
             Quad5CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
-            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), tf );
+            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff_.Sta_Coeff( GetBaryCenter(*sit), tf );
         }
         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
