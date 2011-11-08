@@ -115,7 +115,7 @@ static PyObject* drops_gradient_stat(PyObject *self, PyObject *args)
   DROPS::PCG_SsorCL solver(pc, maxiter, tol);
 
   // Set up matrix
-  DROPS::MatrixCL K;
+  DROPS::MLMatrixCL K;
   K.LinComb(1., A.Data, 1., M.Data);
   //solve
   solver.Solve(K, x.Data, b.Data);
