@@ -28,14 +28,15 @@
 #include "misc/params.h"
 #include <sstream>
 
+
 namespace DROPS{
 
-typedef double    (*scalar_fun_ptr)       (const Point3DCL&);
-typedef Point3DCL (*vector_fun_ptr)       (const Point3DCL&);
-typedef double    (*instat_scalar_fun_ptr)(const Point3DCL&, double);
-typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);  
-  
-  
+  //typedef double    (*scalar_fun_ptr)       (const Point3DCL&);
+  //typedef Point3DCL (*vector_fun_ptr)       (const Point3DCL&);
+//typedef double    (*instat_scalar_fun_ptr)(const Point3DCL&, double);
+//typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);
+
+
 /// \brief Coefficients of the Poisson problem
 /** The coefficients of the Poisson problem are:
     \f$ - \alpha \cdot \Delta u + Vel.(\nabla u) +q \cdot u = f \f$
@@ -53,7 +54,7 @@ class PoissonCoeffCL
   public:
     //reaction
     static instat_scalar_fun_ptr q;
-    
+
     static double alpha;
 
     //source
@@ -64,7 +65,7 @@ class PoissonCoeffCL
     static instat_scalar_fun_ptr Solution;
     //velocity
     static instat_vector_fun_ptr Vel;
-  
+
     PoissonCoeffCL( ParamCL& P){
         C_=P;
         int nz_;
@@ -91,11 +92,11 @@ class PoissonCoeffCL
         double h=dx_/(nx_*std::pow(2, Ref_));
         return h;
     }
-    static double Sta_Coeff(const DROPS::Point3DCL& p, double t) 
+    static double Sta_Coeff(const DROPS::Point3DCL& p, double t)
     {//Stabilization coefficient
         double h  =h_Value();
-        double Pec=0.;        
-        Pec=Vel(p, t).norm()*h/(2.*alpha);  //compute mesh Peclet number  
+        double Pec=0.;
+        Pec=Vel(p, t).norm()*h/(2.*alpha);  //compute mesh Peclet number
         if (Pec<=1)
             return 0.0;
         else
@@ -104,10 +105,10 @@ class PoissonCoeffCL
     static void Show_Pec()
     {
         double U=9.81*1.e3*dy_*dy_/(2*C_.get<double>("Exp.Mu"));
-      
+
         const char line[] ="----------------------------------------------------------------------------------\n";
         std::cout<<line<<"The estimate of Peclet number is: "<<U*h_Value()/(2.*C_.get<double>("PoissonCoeff.Diffusion"))<<std::endl;
-    }    
+    }
 };
 
 template<class ParamsT>

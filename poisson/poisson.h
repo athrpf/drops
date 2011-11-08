@@ -39,11 +39,9 @@ namespace DROPS
 
 typedef BndSegDataCL<> PoissonBndSegDataCL;
 typedef BndDataCL<> PoissonBndDataCL;
-typedef double  (*instat_scalar_fun_ptr)( const Point3DCL&, double);
-typedef double  (*scalar_fun_scalar_ptr)( const Point3DCL&);
 
-double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
-scalar_instat_fun_ptr f1, scalar_instat_fun_ptr f2, double t, bool H1)
+ double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
+		   instat_scalar_fun_ptr f1, instat_scalar_fun_ptr f2, double t, bool H1);
 
 class StripTimeCL
 // converts time dependent function to one, that is time independent.
@@ -162,7 +160,7 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     VecDescCL   x;
     VecDescCL   b;
     MLMatDescCL A;
-    
+
     MLMatDescCL U;  //Convection matrix
     MLMatDescCL M;  //Mass matrix
     VecDescCL   vU; //Coupling with convection matrix
@@ -181,22 +179,22 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     // set up matrices and rhs
     void SetupSystem         ( MLMatDescCL&, VecDescCL&, bool SUPG=false) const;
-    
+
     ///  \brief set up matrices for instatProblem
     void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
-    
+
     void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG=false) const;
-    
+
     //Set up convection
-    void SetupConvection( MLMatDescCL&, VecDescCL&, double) const; 
-    
+    void SetupConvection( MLMatDescCL&, VecDescCL&, double) const;
+
     //Set up initial value
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
     // check computed solution, etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
     double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-    
+
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
     double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
 

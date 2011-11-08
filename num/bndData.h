@@ -29,6 +29,8 @@
 #include "geom/multigrid.h"
 #include "geom/boundary.h"
 
+#include <boost/function.hpp>
+
 namespace DROPS
 {
 
@@ -105,7 +107,8 @@ template<class BndValT = double>
 class BndSegDataCL: public BndCondInfoCL
 {
   public:
-    typedef BndValT (*bnd_val_fun)( const Point3DCL&, double);
+  //typedef BndValT (*bnd_val_fun)( const Point3DCL&, double);
+  typedef boost::function< BndValT ( const Point3DCL&, double) > bnd_val_fun;
 
   private:
     bnd_val_fun  bnd_val_;

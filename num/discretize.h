@@ -27,6 +27,8 @@
 
 #include <cstring>
 
+#include <boost/function.hpp>
+
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 #include "misc/container.h"
@@ -35,11 +37,12 @@
 namespace DROPS
 {
 
-typedef double    (*scalar_fun_ptr)       (const Point3DCL&);
-typedef Point3DCL (*vector_fun_ptr)       (const Point3DCL&);
-typedef double    (*instat_scalar_fun_ptr)(const Point3DCL&, double);
-typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);
-typedef bool      (*match_fun)        (const Point3DCL&, const Point3DCL&);
+  typedef boost::function<double (const Point3DCL&)> scalar_fun_ptr;
+  typedef boost::function<Point3DCL (const Point3DCL&)> vector_fun_ptr;
+  typedef boost::function<double (const Point3DCL&, double)> instat_scalar_fun_ptr;
+  //typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);
+  typedef boost::function<Point3DCL (const Point3DCL&, double)> instat_vector_fun_ptr;
+  typedef bool      (*match_fun)        (const Point3DCL&, const Point3DCL&);
 
 typedef double    (*SmoothFunT)           (double,double);
 typedef SMatrixCL<3, 3> (*instat_matrix_fun_ptr) (const Point3DCL&, double);
@@ -103,7 +106,8 @@ class GridFunctionCL: public std::valarray<T>
   public:
     typedef T value_type;
     typedef std::valarray<T> base_type;
-    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+  //typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+  typedef boost::function< value_type (const Point3DCL&, double) > instat_fun_ptr;
 
   protected:
     typedef GridFunctionCL<T> self_;

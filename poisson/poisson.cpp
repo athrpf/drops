@@ -60,7 +60,7 @@ double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const Poisso
 }
 
 double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
-scalar_instat_fun_ptr f1, scalar_instat_fun_ptr f2, double t, bool H1)
+instat_scalar_fun_ptr f1, instat_scalar_fun_ptr f2, double t, bool H1)
 {
     VecDescCL vf1, vf2;
     vf1.SetIdx(&Idx);
