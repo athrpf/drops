@@ -234,7 +234,61 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
     }
   }
 }
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, instat_scalar_fun_ptr Psi, instat_scalar_fun_ptr flux, double t) const
+{
+  r.Clear(t);
+  const Uint lvl = r.GetLevel(),
+             idx = r.RowIdx->GetIdx();
+  Point3DCL G[4];
 
+  double det;
+  double absdet;
+  IdxT UnknownIdx[4];
+  const double int_vi= 1./24; //1/120+1/4*2/15
+
+//
+
+  for (MultiGridCL::const_TriangTetraIteratorCL
+    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
+    sit != send; ++sit)
+  {
+    P1DiscCL::GetGradients(G,det,*sit);
+    absdet= std::fabs(det);
+
+    Point3DCL gradT, gradPsi;
+
+    for(int i=0; i<4; ++i)
+    {
+      gradT+= G[i]*T(sit->GetVertex(i)->GetCoord(), t);
+      gradPsi+= G[i]*Psi(sit->GetVertex(i)->GetCoord(), t);
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
+                                                            : NoIdx;
+    }
+
+    for(int i=0; i<4;++i)    // assemble row i
+    {
+      if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
+      {
+        r.Data[UnknownIdx[i]]-= int_vi*inner_prod( gradT, gradPsi)*absdet;
+        if (flux)
+        {
+	        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
+	          for (int f=0; f < 3; ++f)
+	            if ( sit->IsBndSeg(FaceOfVert(i, f)) )
+	           {
+	              Point3DCL n;
+	              sit->GetOuterNormal(FaceOfVert(i, f), n);
+	              r.Data[UnknownIdx[i]]+=
+                  Quad2D(*sit, FaceOfVert(i, f), i, Psi, t) * flux(sit->GetVertex(i)->GetCoord(), t);
+            }
+         }
+
+      }
+    }
+  }
+}
 template <class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG) const
 /// Sets up the time dependent right hand sides including couplings
