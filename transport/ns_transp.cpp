@@ -128,7 +128,7 @@ void  OnlyTransportStrategy( MultiGridCL& MG, LsetBndDataCL& lsetbnddata, AdapTr
 
     cBndDataCL *pBnd_c, *pBnd_ct;
     DROPS::BuildBoundaryData( &MG, pBnd_c,  P.get<std::string>("Transp.BoundaryType","21!2!21!21!21!21"), P.get<std::string>("Transp.BoundaryFncs","Zero!Dirichlet!Zero!Zero!Zero!Zero"));
-    DROPS::BuildBoundaryData( &MG, pBnd_ct, P.get<std::string>("Transp.BoundaryType","21!2!21!21!21!21"), P.get<std::string>("Transp.BoundaryFncs_t","Zero!Dirichlett!Zero!Zero!Zero!Zero"));
+    DROPS::BuildBoundaryData( &MG, pBnd_ct, P.get<std::string>("Transp.BoundaryType","21!2!21!21!21!21"), P.get<std::string>("Transp.BoundaryFncst","Zero!Dirichlett!Zero!Zero!Zero!Zero"));
     cBndDataCL & Bnd_c(*pBnd_c);
     cBndDataCL & Bnd_ct(*pBnd_ct); 
    
@@ -306,7 +306,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 
     cBndDataCL *pBnd_c, *pBnd_ct;
     DROPS::BuildBoundaryData( &MG, pBnd_c,  P.get<std::string>("Transp.BoundaryType","2!2!2!2!2!2"), P.get<std::string>("Transp.BoundaryFncs","Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet!Dirichlet"));
-    DROPS::BuildBoundaryData( &MG, pBnd_ct, P.get<std::string>("Transp.BoundaryType","2!2!2!2!2!2"), P.get<std::string>("Transp.BoundaryFncs","Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett"));
+    DROPS::BuildBoundaryData( &MG, pBnd_ct, P.get<std::string>("Transp.BoundaryType","2!2!2!2!2!2"), P.get<std::string>("Transp.BoundaryFncst","Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett!Dirichlett"));
     cBndDataCL & Bnd_c(*pBnd_c);
     cBndDataCL & Bnd_ct(*pBnd_ct); 
     
