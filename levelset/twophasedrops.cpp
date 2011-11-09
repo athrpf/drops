@@ -85,8 +85,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     DROPS::MatchMap & matchmap = DROPS::MatchMap::getInstance();
 
 
-    bool is_periodic = P.get("Exp.UsePerMatching", 0) > 0;
-    match_fun periodic_match = is_periodic ? matchmap[P.get("Exp.PerMatching", std::string("periodicx"))] : 0;
+    bool is_periodic = P.get("Exp.PeriodicBnds", 0) > 0;
+    match_fun periodic_match = is_periodic ? matchmap[P.get("Exp.PeriodicMatching", std::string("periodicx"))] : 0;
 
     MultiGridCL& MG= Stokes.GetMG();
 
@@ -117,19 +117,19 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         std::istringstream brick_info( mesh);
         brick_info >> dx[0] >> dx[1] >> dx[2] ;
         int n = 0;
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicx" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicy" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicz")
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicx" || P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicy" || P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicz")
             n = 1;
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxy" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxz" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicyz")
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicxy" || P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicxz" || P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicyz")
             n = 2;
         LevelsetP2CL::perDirSetT pdir(n);
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicx") pdir[0][0] = dx[0];
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicy") pdir[0][1] = dx[1];
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicz") pdir[0][2] = dx[2];
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxy") {pdir[0][0] = dx[0]; pdir[1][1] = dx[1];}
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxz") {pdir[0][0] = dx[0]; pdir[1][2] = dx[2];}
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicyz") {pdir[0][1] = dx[1]; pdir[1][2] = dx[2];}
-        if (P.get("Exp.PerMatching", std::string("periodicx")) != "periodicx" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicy" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicz" &&
-          P.get("Exp.PerMatching", std::string("periodicx")) != "periodicxy" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicxz" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicyz"){
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicx") pdir[0][0] = dx[0];
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicy") pdir[0][1] = dx[1];
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicz") pdir[0][2] = dx[2];
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicxy") {pdir[0][0] = dx[0]; pdir[1][1] = dx[1];}
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicxz") {pdir[0][0] = dx[0]; pdir[1][2] = dx[2];}
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) == "periodicyz") {pdir[0][1] = dx[1]; pdir[1][2] = dx[2];}
+        if (P.get("Exp.PeriodicMatching", std::string("periodicx")) != "periodicx" && P.get("Exp.PeriodicMatching", std::string("periodicx")) != "periodicy" && P.get("Exp.PeriodicMatching", std::string("periodicx")) != "periodicz" &&
+          P.get("Exp.PeriodicMatching", std::string("periodicx")) != "periodicxy" && P.get("Exp.PeriodicMatching", std::string("periodicx")) != "periodicxz" && P.get("Exp.PeriodicMatching", std::string("periodicx")) != "periodicyz"){
             std::cout << "WARNING: could not set periodic directions! Reparametrization can not work correctly now!" << std::endl;
             std::cout << "Press any key to continue" << std::endl; getchar();
         }
@@ -514,8 +514,8 @@ int main (int argc, char** argv)
     std::cout << P << std::endl;
 
     DROPS::MatchMap & matchmap = DROPS::MatchMap::getInstance();
-    bool is_periodic = P.get("Exp.UsePerMatching", 0) > 0;
-    DROPS::match_fun periodic_match = is_periodic ? matchmap[P.get("Exp.PerMatching", std::string("periodicx"))] : 0;
+    bool is_periodic = P.get("Exp.PeriodicBnds", 0) > 0;
+    DROPS::match_fun periodic_match = is_periodic ? matchmap[P.get("Exp.PeriodicMatching", std::string("periodicx"))] : 0;
 
     DROPS::MultiGridCL* mg= 0;
     typedef DROPS::BndDataCL<DROPS::Point3DCL> VelBndDataCL;

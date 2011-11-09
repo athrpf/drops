@@ -98,7 +98,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
 // flow control
 {
   
-    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[P.get("Exp.PerMatching", std::string("periodicxz"))];
+    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[P.get("Exp.PeriodicMatching", std::string("periodicxz"))];
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL* lidx= &lset.idx;
@@ -350,8 +350,8 @@ int main (int argc, char** argv)
     param.close();
     std::cout << P << std::endl;
 
-    //DIDNT FIND A PARAM WITH PerMatching, so I didnt know the type
-    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[P.get("Exp.PerMatching", std::string("periodicxz"))];
+    //DIDNT FIND A PARAM WITH PeriodicMatching, so I didnt know the type
+    DROPS::match_fun periodic_match = DROPS::MatchMap::getInstance()[P.get("Exp.PeriodicMatching", std::string("periodicxz"))];
     
     typedef DROPS::TwoPhaseFlowCoeffCL            CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL MyStokesCL;
