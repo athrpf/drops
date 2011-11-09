@@ -56,7 +56,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 
 
 template<class Coeff>
-void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
+void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
                    IdxDescCL& RowIdx, IdxDescCL& ColIdx, bool SUPG)
 // Sets up the stiffness matrix and right hand side
 {
@@ -79,14 +79,14 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
       phi[i][i]=1.;
     }
     Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
-    //Quad2CL<> quad_a;
+    Quad2CL<> quad_a;
         for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
              sit != send; ++sit)
         {
             P1DiscCL::GetGradients(G,det,*sit);
             absdet= std::fabs(det);
-            //quad_a.assign( *sit, &Coeff::DiffusionCoeff, 0.0);                  //for variable diffusion coefficient
-            //const double int_a= quad_a.quad( absdet);
+            quad_a.assign( *sit, Coeff_.alpha, 0.0);                  //for variable diffusion coefficient
+            const double int_a= quad_a.quad( absdet);
             if(SUPG)
             {    
                 Quad5CL<Point3DCL> u(*sit,Coeff::Vel,0.);
@@ -99,7 +99,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
                 {
                     // dot-product of the gradients
 
-                    coup[i][j]=  Coeff::alpha*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
+                    coup[i][j] = inner_prod( G[i], G[j])*int_a; //diffusion
                     coup[i][j]+= P1DiscCL::Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
                     if(SUPG)
                     {
@@ -334,8 +334,8 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
 
-    //quad_a.assign( *sit, Coeff_.alpha, tA);
-    const double int_a=  Coeff_.alpha * absdet / 6.0;
+    quad_a.assign( *sit, Coeff_.alpha, tA);
+    const double int_a=  quad_a.quad(absdet);
     if(SUPG)
     {
         Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
@@ -433,8 +433,8 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
         P1DiscCL::GetGradients(G,det,*sit);
         absdet= std::fabs(det);
 
-        //quad_a.assign( *sit, Coeff_.alpha, tA);
-        const double int_a= Coeff_.alpha/6.0 * absdet;//quad_a.quad( absdet);
+        quad_a.assign( *sit, Coeff_.alpha, t);
+        const double int_a= quad_a.quad( absdet);
         
         if(SUPG)
         {
