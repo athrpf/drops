@@ -51,7 +51,7 @@
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":        1,                          //Diffusion coefficient
+        "Diffusion":        "One",                          //Diffusion coefficient
             // -> Here: a = 1
         "Reaction":         "Example3_Reaction",        //Reaction term [q] with the name "Example1_Reaction"
             // -> Here: q = 0

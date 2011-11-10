@@ -55,7 +55,7 @@ class PoissonCoeffCL
     //reaction
     static instat_scalar_fun_ptr q;
 
-    static double alpha;
+    static instat_scalar_fun_ptr alpha;
 
     //source
     static instat_scalar_fun_ptr f;
@@ -78,7 +78,7 @@ class PoissonCoeffCL
         brick_info >> dx_ >> dy_ >> dz_ >> nx_ >> ny_ >> nz_;
         DROPS::InScaMap & scamap = DROPS::InScaMap::getInstance();
         q = scamap[P.get<std::string>("PoissonCoeff.Reaction")];
-        alpha = P.get<double>("PoissonCoeff.Diffusion");
+        alpha = scamap[P.get<std::string>("PoissonCoeff.Diffusion")];
         f = scamap[P.get<std::string>("PoissonCoeff.Source")];
         Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
         InitialCondition = scamap[P.get<std::string>("PoissonCoeff.InitialVal")];
@@ -96,7 +96,7 @@ class PoissonCoeffCL
     {//Stabilization coefficient
         double h  =h_Value();
         double Pec=0.;
-        Pec=Vel(p, t).norm()*h/(2.*alpha);  //compute mesh Peclet number
+        Pec=Vel(p, t).norm()*h/(2.*alpha(p, t));  //compute mesh Peclet number
         if (Pec<=1)
             return 0.0;
         else
@@ -129,7 +129,7 @@ int PoissonCoeffCL<ParamsT>::Ref_;
 template<class ParamsT>
 instat_scalar_fun_ptr PoissonCoeffCL<ParamsT>::q;
 template<class ParamsT>
-double PoissonCoeffCL<ParamsT>::alpha;
+instat_scalar_fun_ptr PoissonCoeffCL<ParamsT>::alpha;
 template<class ParamsT>
 instat_scalar_fun_ptr PoissonCoeffCL<ParamsT>::f;
 template<class ParamsT>
