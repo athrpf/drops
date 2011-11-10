@@ -4,6 +4,8 @@
 
 # variables:
 
+DROPS_ROOT=..
+
 DIR = stokes
 
 EXEC = sdrops sdropsP2 errorestimator
@@ -34,7 +36,7 @@ sdropsP2: \
     ../misc/bndmap.o ../geom/bndVelFunctions.o ../stokes/stokesCoeff.o ../geom/principallattice.o \
     ../geom/reftetracut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
-	
+
 errorestimator: \
     ../stokes/errorestimator.o ../geom/boundary.o ../geom/builder.o  ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o  ../num/interfacePatch.o \

@@ -4,6 +4,8 @@
 
 # variables:
 
+DROPS_ROOT=..
+
 DIR = navstokes
 
 EXEC = nsdrops nsdrops_begehung insdrops insadrops

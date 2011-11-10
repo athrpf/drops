@@ -2,7 +2,6 @@
 #   c o m m o n   r u l e s   for all local makefiles   #
 #########################################################
 
-#DROPS_ROOT = ..
 
 
 all: $(EXEC)

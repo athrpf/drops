@@ -75,7 +75,10 @@ matlab/ipfilm:\
 	$(CXX) $(CXXFLAGS) matlab/ipfilm.cpp -o $@ $^ $(LFLAGS)
 
 
-clean: matlab/clean
+clean: matlab/clean pydrops/clean
 
 matlab/clean:
 	cd matlab && $(MAKE) clean
+
+pydrops/clean:
+	cd pydrops && $(MAKE) clean
