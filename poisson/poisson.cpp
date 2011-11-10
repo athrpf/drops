@@ -91,10 +91,10 @@ double Py_product(MultiGridCL& mg, MLIdxDescCL& Idx, MLMatDescCL& A, MLMatDescCL
     }
     if(H1)
     {
-        ret = dot(M.Data*vf1.Data, vf2.Data) + dot(A.Data* vf1.Data, vf2.Data);
+        ret = dot(M.Data.GetFinest()*vf1.Data, vf2.Data) + dot(A.Data.GetFinest()* vf1.Data, vf2.Data);
     }
     else
-        ret = dot(M.Data*vf1.Data, vf2.Data);
+        ret = dot(M.Data.GetFinest()*vf1.Data, vf2.Data);
 
     return ret;
 }
