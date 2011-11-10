@@ -4,6 +4,8 @@
 
 # variables:
 
+DROPS_ROOT = ..
+
 DIR = geom
 
 EXEC =

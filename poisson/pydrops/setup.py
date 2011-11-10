@@ -41,7 +41,7 @@ drops_module = Extension('drops', sources=['py_interpolation.cpp',
                                   'drops_utils.hpp',
                                   '../../poisson.h',
                                   '../../poisson.cpp',
-                                  '../../instatpoisson.tpp',
+                                  '../../poisson.tpp',
                                   '../../integrTime.h',
                                   '../../../num/solver.h'],
                          extra_compile_args=['-W','-Wall','-pedantic', '-O0', '-g', '-fopenmp'])

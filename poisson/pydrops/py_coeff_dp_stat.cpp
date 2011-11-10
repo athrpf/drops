@@ -18,7 +18,7 @@
 namespace DROPS {
   void coeff_stat(Journalist& jnlst, MassTransferBrick& brick, PoissonCoeffCL& pcl, SolutionContainer* sol_container, double tol, int maxiter)
   {
-    InstatPoissonP1CL<PoissonCoeffCL>
+    PoissonP1CL<PoissonCoeffCL>
       Poisson(brick.get_brick(), pcl, brick.get_bdata(), 0);
 
     MultiGridCL& MG= Poisson.GetMG();

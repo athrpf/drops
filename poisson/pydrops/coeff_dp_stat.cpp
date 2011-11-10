@@ -497,10 +497,10 @@ namespace DROPS
 {
 
 template<class Coeff>
-void Strategy(InstatPoissonP1CL<Coeff>& Poisson, int Flag_pr, int Flag_bc,
+void Strategy(PoissonP1CL<Coeff>& Poisson, int Flag_pr, int Flag_bc,
   			  double tol, int maxiter)
 {
-  typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
+  typedef PoissonP1CL<Coeff> MyPoissonCL;
 
   MultiGridCL& MG= Poisson.GetMG();
   IdxDescCL& idx= Poisson.idx;
@@ -573,9 +573,9 @@ static void coeff_ip_stat( double tol, int iter, int Flag_bc, int Flag_pr)
     e2[1]= C.ly_;
     e3[2]= C.lz_;
 
-    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL>
-      InstatPoissonOnBrickCL;
-    typedef InstatPoissonOnBrickCL MyPoissonCL;
+    typedef DROPS::PoissonP1CL<PoissonCoeffCL>
+      PoissonOnBrickCL;
+    typedef PoissonOnBrickCL MyPoissonCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, C.nx_, C.ny_, C.nz_);
     //setup boundary
@@ -590,10 +590,10 @@ static void coeff_ip_stat( double tol, int iter, int Flag_bc, int Flag_pr)
       { false, true,   // Gamma_in, Gamma_out
         true, InterfaceBCType,     // Gamma_h (wall), Gamma_r (surface)
         true, true };  // Gamma_r, Gamma_r
-    const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
 	{ &Inflow, &Zero, &Zero, InterfaceBCType ? &InterfaceFlux : &InterfaceValue, &Zero, &Zero};
 
-    DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
+    DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
 

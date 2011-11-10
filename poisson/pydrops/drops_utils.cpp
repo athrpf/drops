@@ -5,8 +5,8 @@
 
 MassTransferBrick::MassTransferBrick(int nx, int ny, int nz,
 				     double lx, double ly, double lz,
-				     DROPS::InstatPoissonBndDataCL::bnd_val_fun inlet_concentration,
-				     DROPS::InstatPoissonBndDataCL::bnd_val_fun interface_concentration)
+				     DROPS::PoissonBndDataCL::bnd_val_fun inlet_concentration,
+				     DROPS::PoissonBndDataCL::bnd_val_fun interface_concentration)
   :
   nx_(nx), ny_(ny), nz_(nz),
   lx_(lx), ly_(ly), lz_(lz),
@@ -26,10 +26,10 @@ MassTransferBrick::MassTransferBrick(int nx, int ny, int nz,
       true, true };    // Gamma_r, Gamma_r
 
   Zero zero;
-  const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+  const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
 	{inlet_concentration, zero, zero, interface_concentration, zero, zero};
 
-  bdata_ = new DROPS::InstatPoissonBndDataCL(6, isneumann, bnd_fun);
+  bdata_ = new DROPS::PoissonBndDataCL(6, isneumann, bnd_fun);
 }
 
 MassTransferBrick::~MassTransferBrick()

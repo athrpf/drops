@@ -4,6 +4,8 @@
 
 # variables:
 
+DROPS_ROOT = ..
+
 DIR = poisson
 
 EXEC = poissonP2 poissonP1

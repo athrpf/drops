@@ -4,6 +4,8 @@
 
 # variables:
 
+DROPS_ROOT = ..
+
 DIR = misc
 
 EXEC = compensight

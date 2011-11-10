@@ -14,6 +14,16 @@ PACKAGES = $(SERPACKAGES) $(PARPACKAGES)
 BUILDPACKAGES = $(if $(PAR_BUILD),$(PARPACKAGES),$(SERPACKAGES))
 
 # rules:
+pydrops: pydrops_deps
+	cd poisson/pydrops; python setup.py build
+
+pydrops_deps:
+	cd misc; $(MAKE) problem.o utils.o
+	cd geom; $(MAKE) topo.o multigrid.o boundary.o builder.o
+	cd num; $(MAKE) discretize.o unknowns.o
+	cd out; $(MAKE) output.o
+	cd poisson; $(MAKE) poisson.o
+	cd poisson/pydrops; $(MAKE) drops_utils.o py_coeff_dp_stat.o py_source.o py_kdelta_psi.o
 
 default: dep all
 
@@ -95,9 +105,8 @@ ParMetis:
 	cd $(PARMETIS_HOME) && gmake clean && \
 	gmake COPTIONS="$(OPTFLAGS)" CC="$(ARCH_CC)" LD="$(ARCH_CC)"
 
-HYPRE:	
+HYPRE:
 	cd $(HYPRE_HOME) && gmake install
 
 .PHONY: all clean distclean distclean_dox default dep deldepend doc stat topo check
 
-	
