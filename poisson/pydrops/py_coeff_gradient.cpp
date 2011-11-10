@@ -86,7 +86,7 @@ static PyObject* drops_gradient_stat(PyObject *self, PyObject *args)
   DROPS::MLMatDescCL& M= prob.M;
   DROPS::VecDescCL dummy;
   DROPS::VecDescCL b1,b2;
-  idx.Set(1, 0, 0, 0);
+  idx.SetFE( DROPS::P1_FE);
 
   // erzeuge Nummerierung zu diesem Index
   prob.CreateNumbering(MG.GetLastLevel(), &idx);
@@ -107,7 +107,7 @@ static PyObject* drops_gradient_stat(PyObject *self, PyObject *args)
 
   // Set up RHS
   prob.SetupL2ProjGrad(b1, u_fun, psi_fun, NULL);
-  prob.SetupInstatRhs( b2, b2, prob.t, dummy, prob.x.t); // Randwerte
+  prob.SetupInstatRhs( b2, b2, prob.x.t, dummy, prob.x.t); // Randwerte
   b.Data=b1.Data+b2.Data;
 
   //initialise solver
@@ -115,7 +115,7 @@ static PyObject* drops_gradient_stat(PyObject *self, PyObject *args)
   DROPS::PCG_SsorCL solver(pc, maxiter, tol);
 
   // Set up matrix
-  DROPS::MatrixCL K;
+  DROPS::MLMatrixCL K;
   K.LinComb(1., A.Data, 1., M.Data);
   //solve
   solver.Solve(K, x.Data, b.Data);
@@ -189,7 +189,7 @@ PyObject* drops_sensitivity_stat(PyObject *self, PyObject *args)
 
   DROPS::VecDescCL cplA, dummy;
 
-  idx.Set(1, 0, 0, 0);
+  idx.SetFE(DROPS::P1_FE);
 
   // erzeuge Nummerierung zu diesem Index
   prob.CreateNumbering(MG.GetLastLevel(), &idx);

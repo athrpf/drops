@@ -116,6 +116,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     /// \brief Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t= 0.) const;
 
+    void SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, instat_scalar_fun_ptr Psi, instat_scalar_fun_ptr flux, double t= 0.) const;
+    
     /// \brief Set initial value
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
