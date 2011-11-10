@@ -151,10 +151,6 @@
                 "RadInlet":             0.005,                     // radius of the circular intake.
                 "InflowFreq":           0,                         // inflow frequency.
                 "InflowAmpl":           0,                         // inflow amplitude.
-                "PeriodicBnds":         0,                         // Use periodic boundary conditions? 
-                                                                   // (default: '0')
-                "PeriodicMatching":     "periodicx",               // (inactive here!) matching function 
-                                                                   // identifier for periodic boundaries
                 "InitialLSet":          "Ellipsoid",               // choose a LevelSet function you want 
                                                                    // to start with (default: 'Ellipsoid')
                 "VolumeForce":          "ZeroVel"                  // r.h.s. force of navier stokes
@@ -228,6 +224,8 @@
 // domain, boundary and initial conditions
         "DomainCond":
         {
+                "PeriodicMatching":     "none",            // matching function 
+                                                           // identifier for periodic boundaries
                 "InitialCond":          0,                 // initial conditions (0 = zero, 1/2 = stationary
                                                            // flow with/without droplet, -1 = read from file).
                 "GeomType":             1,                 // specifies the used geometry

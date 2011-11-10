@@ -45,7 +45,7 @@
                 "HNeg":                 1,
                 "IniCPos":              0.01,
                 "IniCNeg":              0,
-                "NitschePenalty":       100,
+                "NitschePenalty":       5,
                 "SDStabilization":      0,
                 "NitscheXFEMStab":      0.01,
                 "Levelset":             "Ellipsoid",             //Only active if UseNSSol == 0

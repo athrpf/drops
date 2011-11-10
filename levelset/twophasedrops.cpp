@@ -85,8 +85,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     DROPS::MatchMap & matchmap = DROPS::MatchMap::getInstance();
 
 
-    bool is_periodic = P.get("Exp.UsePerMatching", 0) > 0;
-    match_fun periodic_match = is_periodic ? matchmap[P.get("Exp.PerMatching", std::string("periodicx"))] : 0;
+    bool is_periodic = P.get<std::string>("DomainCond.PeriodicMatching", "none") != "none";
+    match_fun periodic_match = is_periodic ? matchmap[P.get("DomainCond.PeriodicMatching", std::string("periodicx"))] : 0;
 
     MultiGridCL& MG= Stokes.GetMG();
 
@@ -117,19 +117,19 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
         std::istringstream brick_info( mesh);
         brick_info >> dx[0] >> dx[1] >> dx[2] ;
         int n = 0;
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicx" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicy" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicz")
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicx" || P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicy" || P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicz")
             n = 1;
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxy" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxz" || P.get("Exp.PerMatching", std::string("periodicx")) == "periodicyz")
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicxy" || P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicxz" || P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicyz")
             n = 2;
         LevelsetP2CL::perDirSetT pdir(n);
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicx") pdir[0][0] = dx[0];
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicy") pdir[0][1] = dx[1];
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicz") pdir[0][2] = dx[2];
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxy") {pdir[0][0] = dx[0]; pdir[1][1] = dx[1];}
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicxz") {pdir[0][0] = dx[0]; pdir[1][2] = dx[2];}
-        if (P.get("Exp.PerMatching", std::string("periodicx")) == "periodicyz") {pdir[0][1] = dx[1]; pdir[1][2] = dx[2];}
-        if (P.get("Exp.PerMatching", std::string("periodicx")) != "periodicx" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicy" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicz" &&
-          P.get("Exp.PerMatching", std::string("periodicx")) != "periodicxy" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicxz" && P.get("Exp.PerMatching", std::string("periodicx")) != "periodicyz"){
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicx") pdir[0][0] = dx[0];
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicy") pdir[0][1] = dx[1];
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicz") pdir[0][2] = dx[2];
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicxy") {pdir[0][0] = dx[0]; pdir[1][1] = dx[1];}
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicxz") {pdir[0][0] = dx[0]; pdir[1][2] = dx[2];}
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) == "periodicyz") {pdir[0][1] = dx[1]; pdir[1][2] = dx[2];}
+        if (P.get("DomainCond.PeriodicMatching", std::string("periodicx")) != "periodicx" && P.get("DomainCond.PeriodicMatching", std::string("periodicx")) != "periodicy" && P.get("DomainCond.PeriodicMatching", std::string("periodicx")) != "periodicz" &&
+          P.get("DomainCond.PeriodicMatching", std::string("periodicx")) != "periodicxy" && P.get("DomainCond.PeriodicMatching", std::string("periodicx")) != "periodicxz" && P.get("DomainCond.PeriodicMatching", std::string("periodicx")) != "periodicyz"){
             std::cout << "WARNING: could not set periodic directions! Reparametrization can not work correctly now!" << std::endl;
             std::cout << "Press any key to continue" << std::endl; getchar();
         }
@@ -211,7 +211,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
     if (P.get<int>("Transp.DoTransp"))
     {
-        // CL: the following could be moved outside of strategy to some function like 
+        // CL: the following could be moved outside of strategy to some function like
         //" InitializeMassTransport(P,MG,Stokes,lset,adap, TransportP1CL * & massTransp,TransportRepairCL * & transprepair)"
         static DROPS::BndCondT c_bc[6]= {
             DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
@@ -321,8 +321,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
     // for serialization of geometry and numerical data
     TwoPhaseStoreCL<InstatNavierStokes2PhaseP2P1CL> ser(MG, Stokes, lset, massTransp,
-                                                        P.get<std::string>("Restart.Outputfile"), 
-                                                        P.get<int>("Restart.Overwrite"), 
+                                                        P.get<std::string>("Restart.Outputfile"),
+                                                        P.get<int>("Restart.Overwrite"),
                                                         P.get<int>("Restart.Binary"),
                                                         vel_downwind, lset_downwind);
     Stokes.v.t += GetTimeOffset();
@@ -331,7 +331,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     if (P.get<int>("Ensight.EnsightOut",0)){
         // Initialize Ensight6 output
         std::string ensf( P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase"));
-        ensight = new Ensight6OutCL( P.get<std::string>("Ensight.EnsCase") + ".case", 
+        ensight = new Ensight6OutCL( P.get<std::string>("Ensight.EnsCase") + ".case",
                                      P.get<int>("Time.NumSteps")/P.get("Ensight.EnsightOut", 0)+1,
                                      P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
         ensight->Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(), P.get<std::string>("Ensight.GeomName"),
@@ -361,9 +361,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     // writer for vtk-format
     VTKOutCL * vtkwriter = NULL;
     if (P.get<int>("VTK.VTKOut",0)){
-        vtkwriter = new VTKOutCL(adap.GetMG(), "DROPS data", 
+        vtkwriter = new VTKOutCL(adap.GetMG(), "DROPS data",
                                  P.get<int>("Time.NumSteps")/P.get("VTK.VTKOut", 0)+1,
-                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), 
+                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"),
                                  P.get<int>("VTK.Binary"));
         vtkwriter->Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
         vtkwriter->Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
@@ -465,7 +465,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 } // end of namespace DROPS
 
 
-/// \brief Set Default parameters here s.t. they are initialized. 
+/// \brief Set Default parameters here s.t. they are initialized.
 /// The result can be checked when Param-list is written to the output.
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Transp.DoTransp",0);
@@ -514,12 +514,12 @@ int main (int argc, char** argv)
     std::cout << P << std::endl;
 
     DROPS::MatchMap & matchmap = DROPS::MatchMap::getInstance();
-    bool is_periodic = P.get("Exp.UsePerMatching", 0) > 0;
-    DROPS::match_fun periodic_match = is_periodic ? matchmap[P.get("Exp.PerMatching", std::string("periodicx"))] : 0;
+    bool is_periodic = P.get<std::string>("DomainCond.PeriodicMatching", "none") != "none";
+    DROPS::match_fun periodic_match = is_periodic ? matchmap[P.get<std::string>("DomainCond.PeriodicMatching", "periodicx")] : 0;
 
     DROPS::MultiGridCL* mg= 0;
     typedef DROPS::BndDataCL<DROPS::Point3DCL> VelBndDataCL;
-    typedef DROPS::BndDataCL<double>    PrBndDataCL; 
+    typedef DROPS::BndDataCL<double>    PrBndDataCL;
     VelBndDataCL *velbnddata = 0;
     PrBndDataCL *prbnddata = 0;
     DROPS::LsetBndDataCL* lsetbnddata= 0;
@@ -546,18 +546,22 @@ int main (int argc, char** argv)
     std::cout << "and levelset." << std::endl;
     DROPS::StokesBndDataCL bnddata(*velbnddata,*prbnddata);
 
-    if (P.get("Exp.InitialLSet", std::string("Ellipsoid")) == "Ellipsoid")
-      DROPS::EllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"));
-    if  (P.get("Exp.InitialLSet", std::string("Ellipsoid")) == "TwoEllipsoid")
+    std::string InitialLSet= P.get("Exp.InitialLSet", std::string("Ellipsoid"));
+    if (InitialLSet == "Ellipsoid")
+        DROPS::EllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"));
+    if  (InitialLSet == "TwoEllipsoid")
         DROPS::TwoEllipsoidCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"), P.get<DROPS::Point3DCL>("Exp.PosDrop2"), P.get<DROPS::Point3DCL>("Exp.RadDrop2"));
-
+    if (InitialLSet.find("Cylinder")==0) {
+        DROPS::CylinderCL::Init( P.get<DROPS::Point3DCL>("Exp.PosDrop"), P.get<DROPS::Point3DCL>("Exp.RadDrop"), InitialLSet[8]-'X');
+        P.put("Exp.InitialLSet", InitialLSet= "Cylinder");
+    }
     DROPS::AdapTriangCL adap( *mg, P.get<double>("AdaptRef.Width"), P.get<int>("AdaptRef.CoarsestLevel"), P.get<int>("AdaptRef.FinestLevel"),
                               ((P.get<std::string>("Restart.Inputfile") == "none") ? P.get<int>("AdaptRef.LoadBalStrategy") : -P.get<int>("AdaptRef.LoadBalStrategy")),
                               P.get<int>("AdaptRef.Partitioner"));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (P.get("Restart.Inputfile", std::string("none")) == "none")
-        adap.MakeInitialTriang( * DROPS::ScaMap::getInstance()[P.get("Exp.InitialLSet", std::string("Ellipsoid"))]);
+        adap.MakeInitialTriang( * DROPS::ScaMap::getInstance()[InitialLSet]);
 
     std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 #ifdef _PAR
