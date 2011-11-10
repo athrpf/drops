@@ -19,8 +19,8 @@ pydrops: pydrops_deps
 
 pydrops_deps:
 	cd misc; $(MAKE) problem.o utils.o
-	cd geom; $(MAKE) topo.o multigrid.o boundary.o builder.o
-	cd num; $(MAKE) discretize.o unknowns.o
+	cd geom; $(MAKE) topo.o multigrid.o boundary.o builder.o simplex.o
+	cd num; $(MAKE) discretize.o unknowns.o interfacePatch.o fe.o
 	cd out; $(MAKE) output.o
 	cd poisson; $(MAKE) poisson.o
 	cd poisson/pydrops; $(MAKE) drops_utils.o py_coeff_dp_stat.o py_source.o py_kdelta_psi.o
