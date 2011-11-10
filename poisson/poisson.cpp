@@ -59,8 +59,8 @@ double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const Poisso
     return maxdiff;
 }
 
-double Py_product(MultiGridCL& mg, IdxDescCL& Idx, MatDescCL& A, MatDescCL& M,
-instat_scalar_fun_ptr f1, instat_scalar_fun_ptr f2, double t, bool H1)
+double Py_product(MultiGridCL& mg, MLIdxDescCL& Idx, MLMatDescCL& A, MLMatDescCL& M,
+		   instat_scalar_fun_ptr f1, instat_scalar_fun_ptr f2, double t, bool H1)
 {
     VecDescCL vf1, vf2;
     vf1.SetIdx(&Idx);
