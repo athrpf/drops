@@ -2,7 +2,7 @@
 #   c o m m o n   r u l e s   for all local makefiles   #
 #########################################################
 
-DROPS_ROOT = ..
+#DROPS_ROOT = ..
 
 
 all: $(EXEC)
@@ -26,25 +26,25 @@ doc:
 	cd $(DROPS_ROOT) && $(MAKE) doc
 
 # .cpp -> .o
-../%.o: ../%.cpp
+${DROPS_ROOT}/%.o: ${DROPS_ROOT}/%.cpp
 ifeq ($(CXX),mex)
-	$(CXX) $(CXXFLAGS) -outdir ../$(*D) -c ../$*.cpp
+	$(CXX) $(CXXFLAGS) -outdir ${DROPS_ROOT}/$(*D) -c ${DROPS_ROOT}/$*.cpp
 else
-	$(CXX) $(CXXFLAGS) -o ../$*.o -c ../$*.cpp
+	$(CXX) $(CXXFLAGS) -o ${DROPS_ROOT}/$*.o -c ${DROPS_ROOT}/$*.cpp
 endif
 
 # override implicit c++ rule
 %.o: %.cpp
 
 # local objectfiles get auto-prefix:
-$(OBJ): %.o: ../$(DIR)/%.o
+$(OBJ): %.o: ${DROPS_ROOT}/$(DIR)/%.o
 
 .PHONY: all clean distclean dep default doc
 
 
 # include settings from the config file drops.conf:
-include ../drops.conf
+include ${DROPS_ROOT}/drops.conf
 
 # include global dependencies
--include ../$(DEPFILE)
+-include ${DROPS_ROOT}/$(DEPFILE)
 

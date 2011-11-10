@@ -76,9 +76,9 @@ using std::string;
 namespace DROPS
 {
   template<class Coeff>
-  void InstatStrategy(Journalist& jnlst, DROPS::scalar_instat_fun_ptr& initial, InstatPoissonP1CL<Coeff>& Poisson, SolutionContainer* sol_container, int nt, double dt, double theta, double tol, int maxiter, int Flag_SUPG)
+  void InstatStrategy(Journalist& jnlst, DROPS::scalar_instat_fun_ptr& initial, PoissonP1CL<Coeff>& Poisson, SolutionContainer* sol_container, int nt, double dt, double theta, double tol, int maxiter, int Flag_SUPG)
   {
-    typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
+    typedef PoissonP1CL<Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
     IdxDescCL& idx= Poisson.idx;
@@ -128,7 +128,7 @@ namespace DROPS
     // Zeitdiskretisierung mit one-step-theta-scheme
     // theta=1 -> impl. Euler
     // theta=0.5 -> Crank-Nicholson
-    InstatPoissonThetaSchemeCL<MyPoissonCL, SolverT>
+    PoissonThetaSchemeCL<MyPoissonCL, SolverT>
       ThetaScheme(Poisson, solver, theta, true, Flag_SUPG==1);  //first bool(convection), second bool(stabilization)
     ThetaScheme.SetTimeStep(dt);
 
@@ -170,7 +170,7 @@ namespace DROPS
 // create Problem (Multigrid, BndData and Coeff) and call Strategy(...)
 void source_dp(Journalist& jnlst, MassTransferBrick& brick, PoissonCoeffCL& pcl, SolutionContainer* sol_container, DROPS::scalar_instat_fun_ptr initial, int nt, double dt, double theta, double tol, int iter, int Flag_pr, int Flag_bc, int Flag_SUPG)
 {
-  DROPS::InstatPoissonP1CL<PoissonCoeffCL> prob(brick.get_brick(), pcl, brick.get_bdata(), Flag_pr & AdjFlagC);           //Adjoint problem
+  DROPS::PoissonP1CL<PoissonCoeffCL> prob(brick.get_brick(), pcl, brick.get_bdata(), Flag_pr & AdjFlagC);           //Adjoint problem
   DROPS::InstatStrategy(jnlst, initial, prob, sol_container, nt, dt, theta, tol, iter, Flag_SUPG);
   return;
 }
