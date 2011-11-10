@@ -19,11 +19,11 @@ namespace DROPS {
 
     double get_scalarprod() const {return scalar_prod_;}
 
-    virtual void set_solution(const DROPS::InstatPoissonP1CL<PoissonCoeffCL>& poisson, double t)
+    virtual void set_solution(const DROPS::PoissonP1CL<PoissonCoeffCL>& poisson, double t)
     {
       const VecDescCL& psi = poisson.x;
       VecDescCL kdelta;
-      IdxDescCL idx= poisson.idx;
+      MLIdxDescCL idx= poisson.idx;
       kdelta.SetIdx(&idx);
       poisson.SetupGradSrc(kdelta, u_, dalpha_, NULL);
       scalar_prod_ = dot(kdelta.Data, psi.Data);

@@ -22,15 +22,15 @@ namespace DROPS {
       Poisson(brick.get_brick(), pcl, brick.get_bdata(), 0);
 
     MultiGridCL& MG= Poisson.GetMG();
-    IdxDescCL& idx= Poisson.idx;
+    MLIdxDescCL& idx= Poisson.idx;
     VecDescCL& x= Poisson.x;
     VecDescCL& b= Poisson.b;
-    MatDescCL& A= Poisson.A;
-    MatDescCL& M= Poisson.M;
+    MLMatDescCL& A= Poisson.A;
+    MLMatDescCL& M= Poisson.M;
 
     VecDescCL cplA, dummy;
 
-    idx.Set(1);
+    idx.SetFE(DROPS::P1_FE);
     // erzeuge Nummerierung zu diesem Index
     Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
 
@@ -48,7 +48,7 @@ namespace DROPS {
     jnlst << "max. Num. GMRES-Iterations: " << maxiter << "\n";
 
     // stationaerer Anteil
-    Poisson.SetupInstatSystem(A, M, Poisson.t);
+    Poisson.SetupInstatSystem(A, M, Poisson.x.t);
     if (false) {
       Poisson.SetupInstatRhs( cplA, dummy, 0, dummy, 0);
       //Poisson.SetupGradSrc(b, directproblem_solution, perturbation, NULL);

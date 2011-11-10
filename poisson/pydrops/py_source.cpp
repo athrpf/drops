@@ -76,25 +76,19 @@ using std::string;
 namespace DROPS
 {
   template<class Coeff>
-  void InstatStrategy(Journalist& jnlst, DROPS::scalar_instat_fun_ptr& initial, PoissonP1CL<Coeff>& Poisson, SolutionContainer* sol_container, int nt, double dt, double theta, double tol, int maxiter, int Flag_SUPG)
+  void InstatStrategy(Journalist& jnlst, DROPS::instat_scalar_fun_ptr& initial, PoissonP1CL<Coeff>& Poisson, SolutionContainer* sol_container, int nt, double dt, double theta, double tol, int maxiter, int Flag_SUPG)
   {
     typedef PoissonP1CL<Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
-    IdxDescCL& idx= Poisson.idx;
+    MLIdxDescCL& idx= Poisson.idx;
     VecDescCL& x= Poisson.x;
     VecDescCL& b= Poisson.b;
-    MatDescCL& A= Poisson.A;
-    MatDescCL& M= Poisson.M;
-    MatDescCL& U= Poisson.U;
+    MLMatDescCL& A= Poisson.A;
+    MLMatDescCL& M= Poisson.M;
+    MLMatDescCL& U= Poisson.U;
 
-    //SUPG
-    MatDescCL& M_SD=Poisson.M_SD;
-    MatDescCL& U_SD=Poisson.U_SD;
-    VecDescCL& vM_SD=Poisson.vM_SD;
-    VecDescCL& vU_SD=Poisson.vU_SD;
-
-    idx.Set(1);
+    idx.SetFE(DROPS::P1_FE);
     // erzeuge Nummerierung zu diesem Index
     Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
 
@@ -106,19 +100,13 @@ namespace DROPS
     M.SetIdx(&idx, &idx);
     U.SetIdx(&idx, &idx);
 
-    //SUPG
-    vM_SD.SetIdx(&idx);
-    vU_SD.SetIdx(&idx);
-    M_SD.SetIdx(&idx, &idx);
-    U_SD.SetIdx(&idx, &idx);
-
     jnlst << "Number of Unknowns: " << (int)x.Data.size() << "\n";
     jnlst << "Theta: " <<  theta << "\n";
     jnlst << "Tolerance GMRES: " << tol <<"\t";
     jnlst << "max. Num. GMRES-Iterations: " << maxiter << "\n";
 
     // stationaerer Anteil
-    Poisson.SetupInstatSystem(A, M, Poisson.t);
+    Poisson.SetupInstatSystem(A, M, Poisson.x.t);
 
     //parameters about solver?
     SSORPcCL pc(1.0);
@@ -128,7 +116,7 @@ namespace DROPS
     // Zeitdiskretisierung mit one-step-theta-scheme
     // theta=1 -> impl. Euler
     // theta=0.5 -> Crank-Nicholson
-    PoissonThetaSchemeCL<MyPoissonCL, SolverT>
+    InstatPoissonThetaSchemeCL<MyPoissonCL, SolverT>
       ThetaScheme(Poisson, solver, theta, true, Flag_SUPG==1);  //first bool(convection), second bool(stabilization)
     ThetaScheme.SetTimeStep(dt);
 
@@ -152,7 +140,7 @@ namespace DROPS
 	  MaxIter= solver.GetIter();
 	if (MaxRes<=solver.GetResid())
 	  MaxRes= solver.GetResid();
-	sol_container->set_solution(Poisson, Poisson.t);
+	sol_container->set_solution(Poisson, Poisson.x.t);
       }
     average/= nt;
     jnlst << "Num. Iterations in average: " << average << "\n";
@@ -161,14 +149,13 @@ namespace DROPS
     jnlst << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 
     A.Reset(); M.Reset(); U.Reset();
-    b.Reset(); U_SD.Reset(); M_SD.Reset();
-    vU_SD.Reset(); vM_SD.Reset();
+    b.Reset(); 
   }
 
 } // end of namespace DROPS
 
 // create Problem (Multigrid, BndData and Coeff) and call Strategy(...)
-void source_dp(Journalist& jnlst, MassTransferBrick& brick, PoissonCoeffCL& pcl, SolutionContainer* sol_container, DROPS::scalar_instat_fun_ptr initial, int nt, double dt, double theta, double tol, int iter, int Flag_pr, int Flag_bc, int Flag_SUPG)
+void source_dp(Journalist& jnlst, MassTransferBrick& brick, PoissonCoeffCL& pcl, SolutionContainer* sol_container, DROPS::instat_scalar_fun_ptr initial, int nt, double dt, double theta, double tol, int iter, int Flag_pr, int Flag_bc, int Flag_SUPG)
 {
   DROPS::PoissonP1CL<PoissonCoeffCL> prob(brick.get_brick(), pcl, brick.get_bdata(), Flag_pr & AdjFlagC);           //Adjoint problem
   DROPS::InstatStrategy(jnlst, initial, prob, sol_container, nt, dt, theta, tol, iter, Flag_SUPG);
