@@ -195,8 +195,9 @@ public:
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
   //
-  double GetInitial( const DROPS::Point3DCL& p) const
+  double GetInitial( const DROPS::Point3DCL& p, double t) const
   {
+    t=0.;
     return C0_[GetNum(p)];
   };
   //boundary functions
@@ -216,7 +217,7 @@ public:
     DROPS::FaceCL* face= face_map_[key];
 
     if (face == NULL) {//non-barycenter
-      ret= B_Int_[GetNum(p,t,3)];
+      ret= B_Inter_[GetNum(p,t,3)];
     } else {
       ret= 1./3.*(B_Int_[GetNum(face->GetVertex(0)->GetCoord(),t,3)]+B_Int_[GetNum(face->GetVertex(1)->GetCoord(),t,3)]+B_Int_[GetNum(face->GetVertex(2)->GetCoord(),t,3)]);
     }
@@ -225,10 +226,10 @@ public:
   //y=0: if dirichlet condition is active
   double GetInterfaceValue( const DROPS::Point3DCL& p, double t) const
   {
-    return B_Int_[GetNum(p,t,3)];
+    return B_Inter_[GetNum(p,t,3)];
   };
   //rhs
-  double GetRhs( const DROPS::Point3DCL& p, double t) const
+  double GetSource( const DROPS::Point3DCL& p, double t) const
   {
     double ret;
 
@@ -246,7 +247,7 @@ public:
     return ret;
   };
   //coefficient functions
-  double GetA( const DROPS::Point3DCL& p, double t) const
+  double GetDiffusion( const DROPS::Point3DCL& p, double t) const
   {
     double ret;
 
@@ -277,7 +278,7 @@ public:
   }
 
   //Check the input matrices
-  void Init( const ParamCL& P, const double* C0, const double* B_in, const double* F, const double* Dw, const double* B_Inter, double* c_sol)
+  void Init( const ParamCL& P, const double* C0, const double* B_in, const double* F, const double* Dw, const double* B_Inter, double* C_sol)
   {
     Nx_= P.get<int>("DomainCond.nx")+1;Ny_= P.get<int>("DomainCond.ny")+1; Nz_= P.get<int>("DomainCond.nz")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
