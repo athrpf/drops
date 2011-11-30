@@ -57,9 +57,17 @@
 #include "num/parprecond.h"             // various parallel preconditioners
 #endif
 
+#include "pyconnect.h"
+
 using namespace std;
 
+PythonConnectCL PyC;
+
 const char line[] ="----------------------------------------------------------------------------------\n";
+
+double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
+double Inflow(const DROPS::Point3DCL& p, double t) { return PyC.GetInflow(p,t); }
+double Interface(const DROPS::Point3DCL& p, double t) { return PyC.GetInterfaceFlux(p,t); }
 
 namespace DROPS
 {
@@ -303,8 +311,9 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 } // end of namespace DROPS
 
 //the main function
-void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Diffusion);
+void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Dw, double* C_sol);
 {    
+        PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
     DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
@@ -332,9 +341,10 @@ void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b
           true,  false,             // wall, interface
           true,  true };            // in Z direction  
           
-        DROPS::PoisssonCoeffCL<DROPS::ParamCL> PoissonCoeff(param);
+        DROPS::PoisssonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, PyC.GetDiffusion, PyC.GetSource, PyC.Initial);
+        
         const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-        { param.c_in_, &Zero, &Zero, param.c_surface_, &Zero, &Zero};
+        { &Inflow, &Zero, &Zero, &Interface, &Zero, &Zero};
 
         DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
