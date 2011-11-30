@@ -23,8 +23,8 @@
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
-#include "geom/geomselect.h"                                                  
-//#include "misc/bndmap.h"                //include function container          
+#include "geom/geomselect.h"
+//#include "misc/bndmap.h"                //include function container
 
 // include numeric computing!
 #include "num/fe.h"
@@ -63,11 +63,22 @@ using namespace std;
 
 PythonConnectCL PyC;
 
+double GetInitial(const DROPS::Point3DCL& p, double t)
+{
+  return PyC.GetInitial(p,t);
+}
+double GetDiffusion(const DROPS::Point3DCL& p, double t){return PyC.GetDiffusion(p,t);}
+double GetSource(const DROPS::Point3DCL& p, double t){return PyC.GetSource(p,t);}
+double GetInflow(const DROPS::Point3DCL& p, double t){return PyC.GetInflow(p,t);}
+double GetInterfaceFlux( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceFlux(p,t);}
+double GetInterfaceValue( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceValue(p,t);}
+
+
 const char line[] ="----------------------------------------------------------------------------------\n";
 
 double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
 double Inflow(const DROPS::Point3DCL& p, double t) { return PyC.GetInflow(p,t); }
-double Interface(const DROPS::Point3DCL& p, double t) { return PyC.GetInterfaceFlux(p,t); }
+//double Interface(const DROPS::Point3DCL& p, double t) { return PyC.GetInterfaceFlux(p,t); }
 
 namespace DROPS
 {
@@ -99,7 +110,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         if(P.get<int>("PoissonCoeff.Stabilization"))
         {
             CoeffCL::Show_Pec();
-            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
+            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;
         }
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
@@ -142,7 +153,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 
         do{
             timer.Reset();
-            std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
+            //std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
             MG.Refine();
 
             Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // create numbering for this idx
@@ -201,7 +212,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 }
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
-template<class CoeffCL>
+  template<class CoeffCL>
 void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 {
     // time measurements
@@ -280,7 +291,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
         Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     else
         SolveStatProblem( Poisson, *solver, P);
-        
+
     if(P.get<int>("Time.NumSteps")!=0)
     {
         //CoeffCL::Show_Pec();
@@ -311,8 +322,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 } // end of namespace DROPS
 
 //the main function
-void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Dw, double* C_sol);
-{    
+void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Dw, double* C_sol)
+{
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
     DROPS::ProcInitCL procinit(&argc, &argv);
@@ -334,17 +345,17 @@ void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b
 
         //create geometry
         DROPS::MultiGridCL* mg= 0;
-        DROPS::PoissonBndDataCL* bdata = 0;
-        
+        //DROPS::PoissonBndDataCL* bdata = 0;
+
         const bool isneumann[6]=
         { false, true,              // inlet, outlet
           true,  false,             // wall, interface
-          true,  true };            // in Z direction  
-          
-        DROPS::PoisssonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, PyC.GetDiffusion, PyC.GetSource, PyC.Initial);
-        
+          true,  true };            // in Z direction
+
+        DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
+
         const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Inflow, &Zero, &Zero, &Interface, &Zero, &Zero};
+        { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
 
         DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
@@ -354,10 +365,10 @@ void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b
 
         DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
         // Setup the problem
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
+        //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
 
         // Setup the problem
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, *bdata);
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
 
 #ifdef _PAR
         // Set parallel data structures
@@ -390,14 +401,71 @@ void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b
         mg->SizeInfo(cout);
 
         // Solve the problem
-        DROPS::Strategy( prob);
-        std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
-        
+	DROPS::Strategy( prob, P);
+        //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+
         delete mg;
-        delete bdata;
-        return 0;
+        //delete bdata;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
-    
-  return;
+}
+
+int main(int argc, char** argv)
+{
+  try {
+    using namespace DROPS;
+    ParamCL P;
+
+    std::ifstream param;
+    if (argc!=2){
+      std::cout << "Using default parameter file: poissonex1.json\n";
+      param.open( "poissonex1.json");
+    }
+    else
+      param.open( argv[1]);
+    if (!param){
+      std::cerr << "error while opening parameter file\n";
+      return 1;
+    }
+    param >> P;
+    param.close();
+    std::cout << P << std::endl;
+
+    // set up data structure to represent a poisson problem
+    // ---------------------------------------------------------------------
+    std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+    int Nx, Ny, Nz, Ns, Nt, N;
+    Nx = P.get<double>("DomainCond.nx")+1;
+    Ny = P.get<double>("DomainCond.ny")+1;
+    Nz = P.get<double>("DomainCond.nz")+1;
+    Ns = Nx*Ny*Nz;
+    Nt = P.get<double>("DomainCond.nt")+1;
+    N  = Ns*Nt;
+    double* C0 = new double[Ns];
+    for (int k=0;k<Ns; ++k) {
+      C0[k] = 1.0;
+    }
+    double* b_in = new double[Ny*Nz*Nt];
+    for (int k=0; k<Ny*Nz*Nt; ++k) {
+      b_in[k] = 1.0;
+    }
+    double* b_interface = new double[Nx*Nz*Nt];
+    for (int k=0; k<Nx*Nz*Nt; ++k) {
+      b_interface[k] = 2.0;
+    }
+    double* source = new double[N];
+    double* Dw = new double[N];
+    for (int k=0; k<N; ++k) {
+      source[k] = 0.5;
+      Dw[k] = 0.01;
+    }
+    convection_diffusion(P, C0, b_in, b_interface, source, Dw, NULL);
+
+    delete[] C0;
+    delete[] b_in;
+    delete[] b_interface;
+    delete[] source;
+    return 0;
+  }
+  catch (DROPS::DROPSErrCL err) { err.handle(); }
 }

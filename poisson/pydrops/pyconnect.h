@@ -43,7 +43,7 @@ class PythonConnectCL
 
  private:
   int Nx_, Ny_, Nz_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
-  double dx_, dy_, dz_;
+  double dx_, dy_, dz_, dt_;
   double D_mol_;
 
   const double *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
@@ -69,19 +69,19 @@ class PythonConnectCL
   int GetNum( const DROPS::Point3DCL& p, double t, int seg) const
   {
     if (seg == 0 || seg == 1){//yoz
-      return (rd(p[2]/dz_)*Ny_ + rd(p[1]/dy_) + rd(t/C.dt_)*Ny_*Nz_);
+      return (rd(p[2]/dz_)*Ny_ + rd(p[1]/dy_) + rd(t/dt_)*Ny_*Nz_);
     }
     if (seg == 2 || seg == 3){//xoz
-      return (rd(p[2]/dz_)*Nx_ + rd(p[0]/dx_) + rd(t/C.dt_)*Nx_*Nz_);
+      return (rd(p[2]/dz_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nx_*Nz_);
     }
     if (seg == 4 || seg == 5){//xoy
-      return (rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/C.dt_)*Nx_*Ny_);
+      return (rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nx_*Ny_);
     }
   }
   //
   int GetNum( const DROPS::Point3DCL& p, double t=0.) const
   {
-    return (rd(p[2]/dz_)*Nxy_ + rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/C.dt_)*Nxyz_);
+    return (rd(p[2]/dz_)*Nxy_ + rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nxyz_);
   }
  public:
   PythonConnectCL()
@@ -195,19 +195,19 @@ class PythonConnectCL
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
   //
-  double GetInitial( const DROPS::Point3DCL& p, double t) const
+   double GetInitial( const DROPS::Point3DCL& p, double t)
   {
     t=0.;
     return C0_[GetNum(p)];
   };
   //boundary functions
   //x=0;
-  double GetInflow( const DROPS::Point3DCL& p, double t) const
+   double GetInflow( const DROPS::Point3DCL& p, double t)
   {
     return B_in_[GetNum(p,t,0)];
   };
   //y=0: if neumann condition is active
-  double GetInterfaceFlux( const DROPS::Point3DCL& p, double t) const
+   double GetInterfaceFlux( const DROPS::Point3DCL& p, double t)
   {
     double ret;
 
@@ -219,17 +219,17 @@ class PythonConnectCL
     if (face == NULL) {//non-barycenter
       ret= B_Inter_[GetNum(p,t,3)];
     } else {
-      ret= 1./3.*(B_Int_[GetNum(face->GetVertex(0)->GetCoord(),t,3)]+B_Int_[GetNum(face->GetVertex(1)->GetCoord(),t,3)]+B_Int_[GetNum(face->GetVertex(2)->GetCoord(),t,3)]);
+      ret= 1./3.*(B_Inter_[GetNum(face->GetVertex(0)->GetCoord(),t,3)]+B_Inter_[GetNum(face->GetVertex(1)->GetCoord(),t,3)]+B_Inter_[GetNum(face->GetVertex(2)->GetCoord(),t,3)]);
     }
     return ret;
   };
   //y=0: if dirichlet condition is active
-  double GetInterfaceValue( const DROPS::Point3DCL& p, double t) const
+   double GetInterfaceValue( const DROPS::Point3DCL& p, double t) const
   {
     return B_Inter_[GetNum(p,t,3)];
   };
   //rhs
-  double GetSource( const DROPS::Point3DCL& p, double t) const
+   double GetSource( const DROPS::Point3DCL& p, double t) const
   {
     double ret;
 
@@ -247,7 +247,7 @@ class PythonConnectCL
     return ret;
   };
   //coefficient functions
-  double GetDiffusion( const DROPS::Point3DCL& p, double t) const
+   double GetDiffusion( const DROPS::Point3DCL& p, double t) const
   {
     double ret;
 
@@ -256,10 +256,10 @@ class PythonConnectCL
     DROPS::TetraCL* tetra= tetra_map_[key];
 
     if (tetra == NULL) {//non-barycenter
-      ret=a_[GetNum(p,t)]+a_mol_;
+      ret=Dw_[GetNum(p,t)]+D_mol_;
     }else {
-      ret = 0.25*(a_[GetNum(tetra->GetVertex(0)->GetCoord(),t)]+a_[GetNum(tetra->GetVertex(1)->GetCoord(),t)]+
-		  a_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+a_[GetNum(tetra->GetVertex(3)->GetCoord(),t)])  + a_mol_;
+      ret = 0.25*(Dw_[GetNum(tetra->GetVertex(0)->GetCoord(),t)]+Dw_[GetNum(tetra->GetVertex(1)->GetCoord(),t)]+
+		  Dw_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+Dw_[GetNum(tetra->GetVertex(3)->GetCoord(),t)])  + D_mol_;
     }
     return ret;
   };
@@ -267,7 +267,7 @@ class PythonConnectCL
   template<class P1EvalT>
     void SetSol3D( const P1EvalT& sol, double t)
     {
-      const int num= (rd(t/C.dt_)-1)*Nxyz_; // omit initial time step in output
+      const int num= (rd(t/dt_)-1)*Nxyz_; // omit initial time step in output
       double *out= C3D_+num;
 
       DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
@@ -278,7 +278,7 @@ class PythonConnectCL
     }
 
   //Check the input matrices
-  void Init( const ParamCL& P, const double* C0, const double* B_in, const double* F, const double* Dw, const double* B_Inter, double* C_sol)
+  void Init( const DROPS::ParamCL& P, const double* C0, const double* B_in, const double* F, const double* Dw, const double* B_Inter, double* c_sol)
   {
     Nx_= P.get<int>("DomainCond.nx")+1;Ny_= P.get<int>("DomainCond.ny")+1; Nz_= P.get<int>("DomainCond.nz")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
@@ -290,7 +290,7 @@ class PythonConnectCL
     B_in_ = B_in;
     F_    = F;
     Dw_    = Dw;
-    D_mol_ = P.D_mol_;
+    D_mol_ = P.get<double>("PoissonCoeff.Dmol");
     B_Inter_= B_Inter;
 
 
