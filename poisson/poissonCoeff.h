@@ -86,6 +86,27 @@ class PoissonCoeffCL
         Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         Ref_=P.get<int>("DomainCond.RefineSteps");
     }
+    PoissonCoeffCL( ParamCL& P, instat_scalar_fun_ptr diffusion, instat_scalar_fun_ptr source, instat_scalar_fun_ptr init){
+        C_=P;
+        int nz_;
+        double dz_;
+        dx_= P.get<double>("DomainCond.lx"));
+        dy_= P.get<double>("DomainCond.ly"));
+        dz_= P.get<double>("DomainCond.lz"));
+        nx_= P.get<int>("DomainCond.nx"));
+        ny_= P.get<int>("DomainCond.ny"));
+        nz_= P.get<int>("DomainCond.nz"));
+        DROPS::InScaMap & scamap = DROPS::InScaMap::getInstance();
+        q = scamap[P.get<std::string>("PoissonCoeff.Reaction")];
+        alpha = diffusion;
+        f = source;
+        Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
+        InitialCondition = init;
+        DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
+        Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
+        Ref_=P.get<int>("DomainCond.RefineSteps");
+    }
+    
     //Only used for flat film case
     static double h_Value()
     {//mesh size in flow direction
