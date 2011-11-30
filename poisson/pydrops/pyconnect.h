@@ -19,7 +19,7 @@
  *
  *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
-*/
+ */
 
 #ifndef PYCONNECT_H
 #define PYCONNECT_H
@@ -41,7 +41,7 @@ class PythonConnectCL
   typedef std::map<cmp_key, DROPS::FaceCL*>  FACE_MAP;
   typedef std::map<cmp_key, DROPS::TetraCL*> TETRA_MAP;
 
-private:
+ private:
   int Nx_, Ny_, Nz_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_;
   double D_mol_;
@@ -83,15 +83,15 @@ private:
   {
     return (rd(p[2]/dz_)*Nxy_ + rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/C.dt_)*Nxyz_);
   }
-public:
+ public:
   PythonConnectCL()
-  {
-    Nx_=Ny_=Nz_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
-    dx_=dy_=dz_=0.0;
+    {
+      Nx_=Ny_=Nz_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
+      dx_=dy_=dz_=0.0;
 
-    face_map_.clear();
-    tetra_map_.clear();
-  }
+      face_map_.clear();
+      tetra_map_.clear();
+    }
   void SetMG( DROPS::MultiGridCL* MG) { MG_= MG; }
   //
   static void ClearMaps() {
@@ -104,7 +104,7 @@ public:
     std::cout<<"SETTING FACE MAP" <<std::endl;
     DROPS::Uint lvl= MG_->GetLastLevel();
     for(DROPS::MultiGridCL::TriangFaceIteratorCL
-      fit=MG_->GetTriangFaceBegin(lvl), fend=MG_->GetTriangFaceEnd(lvl);
+	  fit=MG_->GetTriangFaceBegin(lvl), fend=MG_->GetTriangFaceEnd(lvl);
         fit != fend;++fit) {
       DROPS::FaceCL& face = *fit;
 
@@ -152,7 +152,7 @@ public:
     std::cout<<"SETTING TETRA MAP"<<std::endl;
     DROPS::Uint lvl= MG_->GetLastLevel();
     for(DROPS::MultiGridCL::TriangTetraIteratorCL
-      tit=MG_->GetTriangTetraBegin(lvl), tend=MG_->GetTriangTetraEnd(lvl);
+	  tit=MG_->GetTriangTetraBegin(lvl), tend=MG_->GetTriangTetraEnd(lvl);
         tit != tend; ++tit) {
       DROPS::TetraCL& tetra = *tit;
 
@@ -162,7 +162,7 @@ public:
 
       tetra_map_[key]= &tetra;
     }
-    std::cout<<"TETRA MAP SET"<<std::endl;    
+    std::cout<<"TETRA MAP SET"<<std::endl;
   }
   static void DumpTetraMap()
   {
@@ -241,7 +241,7 @@ public:
       ret=F_[GetNum(p,t)];
     }else {
       ret = 0.25*(F_[GetNum(tetra->GetVertex(0)->GetCoord(),t)]+F_[GetNum(tetra->GetVertex(1)->GetCoord(),t)]+
-          F_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+F_[GetNum(tetra->GetVertex(3)->GetCoord(),t)]) ;
+		  F_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+F_[GetNum(tetra->GetVertex(3)->GetCoord(),t)]) ;
     }
 
     return ret;
@@ -259,23 +259,23 @@ public:
       ret=a_[GetNum(p,t)]+a_mol_;
     }else {
       ret = 0.25*(a_[GetNum(tetra->GetVertex(0)->GetCoord(),t)]+a_[GetNum(tetra->GetVertex(1)->GetCoord(),t)]+
-          a_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+a_[GetNum(tetra->GetVertex(3)->GetCoord(),t)])  + a_mol_;
+		  a_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+a_[GetNum(tetra->GetVertex(3)->GetCoord(),t)])  + a_mol_;
     }
     return ret;
   };
 
   template<class P1EvalT>
-  void SetSol3D( const P1EvalT& sol, double t)
-  {
-    const int num= (rd(t/C.dt_)-1)*Nxyz_; // omit initial time step in output
-    double *out= C3D_+num;
+    void SetSol3D( const P1EvalT& sol, double t)
+    {
+      const int num= (rd(t/C.dt_)-1)*Nxyz_; // omit initial time step in output
+      double *out= C3D_+num;
 
-    DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
-      {
-    out[GetNum( sit->GetCoord())]= sol.val( *sit);
-      }
+      DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
+	{
+	  out[GetNum( sit->GetCoord())]= sol.val( *sit);
+	}
 
-  }
+    }
 
   //Check the input matrices
   void Init( const ParamCL& P, const double* C0, const double* B_in, const double* F, const double* Dw, const double* B_Inter, double* C_sol)
@@ -297,8 +297,10 @@ public:
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
-}
+};
 
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
+
+#endif
