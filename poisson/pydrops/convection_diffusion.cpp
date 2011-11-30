@@ -23,8 +23,8 @@
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
-#include "geom/geomselect.h"                                                  //??
-#include "misc/bndmap.h"                //include function container          //??
+#include "geom/geomselect.h"                                                  
+//#include "misc/bndmap.h"                //include function container          
 
 // include numeric computing!
 #include "num/fe.h"
@@ -303,52 +303,91 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 } // end of namespace DROPS
 
 //the main function
-void convection_diffusion(DROPS::ParamCL& param, double* C0, double* b_in, double* b_interface, double* source, double* Diff);
-{
+void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Diffusion);
+{    
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit;
+#endif
     try
     {
-        DROPS::Point3DCL null(0.0);
-        DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
-        e1[0]= param.get<double>("Geom.lx");
-        e2[1]= param.get<double>("Geom.ly");
-        e3[2]= param.get<double>("Geom.lz");
-        
-        //create geometry
-        DROPS::PoissonBndDataCL* bdata = 0;
-        //In poissonP1.cpp we use builddomain function
-        DROPS::BrickBuilderCL brick(null, e1, e2, e3, param.get<int>("Geom.nx"), param.get<int>("Geom.nx"),param.get<int>("Geom.nx"),);
+    // time measurements
+#ifndef _PAR
+        DROPS::TimerCL timer;
+#else
+        DROPS::ParTimerCL timer;
+#endif
 
+        // set up data structure to represent a poisson problem
+        // ---------------------------------------------------------------------
+        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+        timer.Reset();
+
+        //create geometry
+        DROPS::MultiGridCL* mg= 0;
+        DROPS::PoissonBndDataCL* bdata = 0;
+        
         const bool isneumann[6]=
         { false, true,              // inlet, outlet
           true,  false,             // wall, interface
-          true,  true };            //  
+          true,  true };            // in Z direction  
           
-        DROPS::PoisssonCoeffCL<DROPS::ParamCL> PoissonCoef(param);
+        DROPS::PoisssonCoeffCL<DROPS::ParamCL> PoissonCoeff(param);
         const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
         { param.c_in_, &Zero, &Zero, param.c_surface_, &Zero, &Zero};
 
         DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
+
+        //only for measuring cell, not used here
+        double r = 1;
+        std::string serfile = "none";
+
+        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
         // Setup the problem
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoef, *bdata);
-        DROPS::MultiGridCL& mg = prob.GetMG();
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
+
+        // Setup the problem
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, *bdata);
+
+#ifdef _PAR
+        // Set parallel data structures
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+        pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+        DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
+        lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
+        lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
+#endif
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
+        // ---------------------------------------------------------------------
+        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+        timer.Reset();
         // Create new tetrahedra
-        for ( int ref=1; ref <= param.get<int>("Geom.Refinement"); ++ref){
+        for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
             std::cout << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();
         }
+        // do loadbalancing
+#ifdef _PAR
+        lb.DoMigration();
+#endif
+
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
 
         // Solve the problem
         DROPS::Strategy( prob);
         std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+        
         delete mg;
         delete bdata;
         return 0;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
-
+    
   return;
 }
