@@ -31,7 +31,7 @@
 #include "misc/problem.h"
 #include "num/spmat.h"
 #include "num/interfacePatch.h"
-#include "misc/KDtree.h"
+#include "misc/kd-tree/tree.h"
 #ifdef _PAR
 #  include "parallel/interface.h"
 #  include "parallel/exchange.h"
@@ -541,10 +541,10 @@ class DirectDistanceCL : public PropagateCL
     typedef PropagateCL base;
 
   protected:
-    KDTreeCL<double>* kdTree_;      ///< k-d tree to search for nearest neighbors
-    size_t            numNeigh_;    ///< number of neighbors
-    VectorCL          front_;       ///< coordinates of frontier vertices and perpendicular feet
-    VectorCL          vals_;        ///< values of phi on frontier vertices and perpendicular feet
+    KDTree::TreeCL<double, 3>* kdTree_;      ///< k-d tree to search for nearest neighbors
+    size_t                     numNeigh_;    ///< number of neighbors
+    VectorCL                   front_;       ///< coordinates of frontier vertices and perpendicular feet
+    VectorCL                   vals_;        ///< values of phi on frontier vertices and perpendicular feet
 
     /// \brief Initialize the vectors front_ and vals_
     void InitFrontVector();

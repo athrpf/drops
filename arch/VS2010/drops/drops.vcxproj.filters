@@ -53,6 +53,9 @@
     <Filter Include="surfactant\param-files">
       <UniqueIdentifier>{1a1b53c4-3d2a-442f-9a25-c7796d4476e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="misc\kd-tree">
+      <UniqueIdentifier>{b02f982f-a5bc-4ad7-8afb-0534b3906d1e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\geom\boundary.cpp">
@@ -285,6 +288,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\num\quadrature.cpp">
       <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\tests\reparam.cpp">
+      <Filter>target</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -524,6 +530,36 @@
     </ClInclude>
     <ClInclude Include="..\..\..\num\fe_repair.h">
       <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\bounding_box.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\bucket.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\doc.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\kd_tree_utils.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\metric.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\node.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\result.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\search.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\tree.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\tree_builder.h">
+      <Filter>misc\kd-tree</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

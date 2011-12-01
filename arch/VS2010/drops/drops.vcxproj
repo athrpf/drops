@@ -649,6 +649,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\tests\reparam.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\geom\boundary.h" />
@@ -671,6 +672,16 @@
     <ClInclude Include="..\..\..\levelset\twophaseutils.h" />
     <ClInclude Include="..\..\..\misc\bndmap.h" />
     <ClInclude Include="..\..\..\misc\container.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\bounding_box.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\bucket.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\doc.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\kd_tree_utils.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\metric.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\node.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\result.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\search.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\tree.h" />
+    <ClInclude Include="..\..\..\misc\kd-tree\tree_builder.h" />
     <ClInclude Include="..\..\..\misc\KDtree.h" />
     <ClInclude Include="..\..\..\misc\params.h" />
     <ClInclude Include="..\..\..\misc\problem.h" />
