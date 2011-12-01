@@ -26,6 +26,7 @@ default: ClrScr
 convdiff:\
     ../../geom/boundary.o ../../geom/builder.o ../../out/ensightOut.o\
     ../../geom/simplex.o ../../geom/multigrid.o ../../num/unknowns.o ../../geom/topo.o \
+    ../../poisson/poissonCoeff.o\
     ../../poisson/poisson.o ../../misc/problem.o ../../misc/utils.o ../../out/output.o \
     ../../num/fe.o ../../num/discretize.o ../../num/interfacePatch.o ../../geom/geomselect.o\
     ../../misc/params.o \
