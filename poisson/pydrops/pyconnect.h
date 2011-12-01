@@ -283,7 +283,7 @@ class PythonConnectCL
     Nx_= P.get<int>("DomainCond.nx")+1;Ny_= P.get<int>("DomainCond.ny")+1; Nz_= P.get<int>("DomainCond.nz")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
-    dx_= P.get<int>("DomainCond.lx")/(Nx_-1); dy_= P.get<int>("DomainCond.ly")/(Ny_-1); dz_= P.get<int>("DomainCond.lz")/(Nz_-1);
+    dx_= P.get<double>("DomainCond.lx")/(Nx_-1); dy_= P.get<double>("DomainCond.ly")/(Ny_-1); dz_= P.get<double>("DomainCond.lz")/(Nz_-1);
 
     // Save the matrix input arguments.
     C0_   = C0;
@@ -291,6 +291,7 @@ class PythonConnectCL
     F_    = F;
     Dw_    = Dw;
     D_mol_ = P.get<double>("PoissonCoeff.Dmol");
+    dt_    = P.get<double>("Time.StepSize");
     B_Inter_= B_Inter;
 
 

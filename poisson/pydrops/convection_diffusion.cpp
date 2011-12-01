@@ -24,7 +24,7 @@
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
 #include "geom/geomselect.h"
-//#include "misc/bndmap.h"                //include function container
+#include "misc/bndmap.h"                //include function container
 
 // include numeric computing!
 #include "num/fe.h"
@@ -62,6 +62,8 @@
 using namespace std;
 
 PythonConnectCL PyC;
+
+DROPS::ParamCL P;
 
 double GetInitial(const DROPS::Point3DCL& p, double t)
 {
@@ -414,7 +416,6 @@ int main(int argc, char** argv)
 {
   try {
     using namespace DROPS;
-    ParamCL P;
 
     std::ifstream param;
     if (argc!=2){
@@ -435,11 +436,11 @@ int main(int argc, char** argv)
     // ---------------------------------------------------------------------
     std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
     int Nx, Ny, Nz, Ns, Nt, N;
-    Nx = P.get<double>("DomainCond.nx")+1;
-    Ny = P.get<double>("DomainCond.ny")+1;
-    Nz = P.get<double>("DomainCond.nz")+1;
+    Nx = P.get<int>("DomainCond.nx")+1;
+    Ny = P.get<int>("DomainCond.ny")+1;
+    Nz = P.get<int>("DomainCond.nz")+1;
     Ns = Nx*Ny*Nz;
-    Nt = P.get<double>("DomainCond.nt")+1;
+    Nt = P.get<int>("Time.NumSteps")+1;
     N  = Ns*Nt;
     double* C0 = new double[Ns];
     for (int k=0;k<Ns; ++k) {
