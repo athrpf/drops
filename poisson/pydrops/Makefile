@@ -8,7 +8,7 @@ DROPS_ROOT=../..
 
 DIR = poisson/pydrops
 
-EXEC =
+EXEC = convdiff
 
 DELETE = $(EXEC)
 
