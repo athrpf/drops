@@ -85,8 +85,8 @@
         "InitialFile":      "none",
             //file prefix when reading data for initial condition
             // -> Here: no initial data is read from outside
-        "lx":      2.0,
-        "ly":      2.0,
+        "lx":              1.0,
+        "ly":              1.0,
         "lz":              1.0,
         "nx":              4,
         "ny":              4,
