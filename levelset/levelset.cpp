@@ -594,6 +594,8 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     TetraAccumulatorTupleCL accus;
     accus.push_back( accu);
     accumulate( accus, MG_, Phi.RowIdx->TriangLevel());
+
+    delete accu;
 }
 
 double LevelsetP2CL::GetVolume( double translation, int l) const
