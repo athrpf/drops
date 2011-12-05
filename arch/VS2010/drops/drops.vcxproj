@@ -412,7 +412,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\misc\KDtree.cpp" />
     <ClCompile Include="..\..\..\misc\params.cpp" />
     <ClCompile Include="..\..\..\misc\problem.cpp" />
     <ClCompile Include="..\..\..\misc\utils.cpp" />
@@ -682,7 +681,6 @@
     <ClInclude Include="..\..\..\misc\kd-tree\search.h" />
     <ClInclude Include="..\..\..\misc\kd-tree\tree.h" />
     <ClInclude Include="..\..\..\misc\kd-tree\tree_builder.h" />
-    <ClInclude Include="..\..\..\misc\KDtree.h" />
     <ClInclude Include="..\..\..\misc\params.h" />
     <ClInclude Include="..\..\..\misc\problem.h" />
     <ClInclude Include="..\..\..\misc\utils.h" />
@@ -831,7 +829,6 @@
     <None Include="..\..\..\levelset\risingbutanoldroplet.json" />
     <None Include="..\..\..\levelset\risingdroplet.json" />
     <None Include="..\..\..\levelset\toluol.json" />
-    <None Include="..\..\..\misc\KDtree.tpp" />
     <None Include="..\..\..\navstokes\instatnavstokes2phase.tpp" />
     <None Include="..\..\..\navstokes\navstokes.tpp" />
     <None Include="..\..\..\num\discretize.tpp" />

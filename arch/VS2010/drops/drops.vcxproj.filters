@@ -109,9 +109,6 @@
     <ClCompile Include="..\..\..\levelset\surfTens.cpp">
       <Filter>target</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\misc\KDtree.cpp">
-      <Filter>misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\misc\params.cpp">
       <Filter>misc</Filter>
     </ClCompile>
@@ -340,9 +337,6 @@
       <Filter>levelset</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\misc\container.h">
-      <Filter>misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\misc\KDtree.h">
       <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\misc\params.h">
@@ -574,9 +568,6 @@
     </None>
     <None Include="..\..\..\levelset\levelset.tpp">
       <Filter>levelset</Filter>
-    </None>
-    <None Include="..\..\..\misc\KDtree.tpp">
-      <Filter>misc</Filter>
     </None>
     <None Include="..\..\..\navstokes\instatnavstokes2phase.tpp">
       <Filter>navstokes</Filter>
