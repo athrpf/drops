@@ -324,7 +324,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 } // end of namespace DROPS
 
 //the main function
-void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Dw, double* C_sol)
+void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
 {
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
@@ -442,30 +442,18 @@ int main(int argc, char** argv)
     Ns = Nx*Ny*Nz;
     Nt = P.get<int>("Time.NumSteps")+1;
     N  = Ns*Nt;
-    double* C0 = new double[Ns];
-    for (int k=0;k<Ns; ++k) {
-      C0[k] = 1.0;
-    }
-    double* b_in = new double[Ny*Nz*Nt];
-    for (int k=0; k<Ny*Nz*Nt; ++k) {
-      b_in[k] = 1.0;
-    }
-    double* b_interface = new double[Nx*Nz*Nt];
-    for (int k=0; k<Nx*Nz*Nt; ++k) {
-      b_interface[k] = 2.0;
-    }
-    double* source = new double[N];
-    double* Dw = new double[N];
-    for (int k=0; k<N; ++k) {
-      source[k] = 0.5;
-      Dw[k] = 0.01;
-    }
-    convection_diffusion(P, C0, b_in, b_interface, source, Dw, NULL);
+    PdeFunction C0(Nx,Ny,Nz,1);
+    C0.set_value(1.0);
+    PdeFunction b_in(1,Ny,Nz,Nt);
+    b_in.set_value(1.0);
+    PdeFunction b_interface(Nx,1,Nz,Nt);
+    b_interface.set_value(2.0);
+    PdeFunction source(Nx,Ny,Nz,Nt);
+    source.set_value(0.5);
+    PdeFunction Dw(Nx,Ny,Nz,Nt);
+    Dw.set_value(0.001);
+    convection_diffusion(P, C0.get_data(), b_in.get_data(), b_interface.get_data(), source.get_data(), Dw.get_data(), NULL);
 
-    delete[] C0;
-    delete[] b_in;
-    delete[] b_interface;
-    delete[] source;
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

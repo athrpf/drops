@@ -304,4 +304,30 @@ DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
 
+class PdeFunction {
+private:
+  int nx, ny, nz, nt;
+  int N;
+  double* data;
+public:
+
+  PdeFunction(int nx_, int ny_, int nz_, int nt_) :
+    nx(nx_), ny(ny_), nz(nz_), nt(nt_)
+  {
+    N = nx*ny*nz*nt;
+    data = new double[nx*ny*nz*nt];
+    set_value(0.0);
+  }
+
+  ~PdeFunction(){ delete[] data;}
+
+  const double* get_data() const {return data;}
+
+  void set_value(double value) {
+    for (int k=0; k<N; ++k) {
+      data[k] = value;
+    }
+  }
+};
+
 #endif
