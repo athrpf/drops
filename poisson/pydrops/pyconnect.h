@@ -312,7 +312,7 @@ private:
 public:
 
   PdeFunction(int nx_, int ny_, int nz_, int nt_) :
-    nx(nx_), ny(ny_), nz(nz_), nt(nt_)
+    nx(nx_), ny(ny_), nz(nz_), nt(nt_), data(NULL)
   {
     N = nx*ny*nz*nt;
     data = new double[nx*ny*nz*nt];
@@ -329,5 +329,9 @@ public:
     }
   }
 };
+
+PythonConnectCL PyC;
+
+DROPS::ParamCL P;
 
 #endif
