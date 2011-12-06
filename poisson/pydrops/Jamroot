@@ -57,11 +57,11 @@ install convenient_copy
 
 # A little "rule" (function) to clean up the syntax of declaring tests
 # of these extension modules.
-#local rule run-test ( test-name : sources + )
-#{
-#    import testing ;
-#    testing.make-test run-pyd : $(sources) : : $(test-name) ;
-#}
+local rule run-test ( test-name : sources + )
+{
+    import testing ;
+    testing.make-test run-pyd : $(sources) : : $(test-name) ;
+}
 
 # Declare test targets
-#run-test hello : drops hello.py ;
+run-test hello : drops dropstest.py ;

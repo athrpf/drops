@@ -328,6 +328,15 @@ public:
       data[k] = value;
     }
   }
+
+  bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const {
+    bool retval = false;
+    if (Nx==nx && Ny==ny && Nz==nz && Nt==nt) {
+      retval = true;
+    }
+    Nx = nx; Ny = ny; Nz = nz; Nt = nt;
+    return retval;
+  }
 };
 
 PythonConnectCL PyC;

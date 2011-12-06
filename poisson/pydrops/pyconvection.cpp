@@ -4,7 +4,24 @@
 #include "pyconnect.h"
 #include "convection_diffusion.cpp"
 
-int py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_interface, PdeFunction& source, PdeFunction& Dw)
+bool check_dimension(const PdeFunction& f, int Nx, int Ny, int Nz, int Nt)
+{
+  return f.get_dimensions(Nx, Ny, Nz, Nt);
+}
+
+bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, const PdeFunction& b_in, const PdeFunction& b_interface, const PdeFunction& source, const PdeFunction& Dw)
+{
+  if (check_dimension(C0, Nx, Ny, Nz, 1) &&
+      check_dimension(b_in, 1, Ny, Nz, Nt) &&
+      check_dimension(b_interface, Nx, 1, Nz, Nt) &&
+      check_dimension(source, Nx, Ny, Nz, Nt) &&
+      check_dimension(Dw, Nx, Ny, Nz, Nt)) {
+    return true;
+  }
+  return false;
+}
+
+bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_interface, PdeFunction& source, PdeFunction& Dw)
 {
   try {
     using namespace DROPS;
@@ -33,22 +50,18 @@ int py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_i
     Ns = Nx*Ny*Nz;
     Nt = P.get<int>("Time.NumSteps")+1;
     N  = Ns*Nt;
-    PdeFunction C0(Nx,Ny,Nz,1);
-    C0.set_value(1.0);
-    PdeFunction b_in(1,Ny,Nz,Nt);
-    b_in.set_value(1.0);
-    PdeFunction b_interface(Nx,1,Nz,Nt);
-    b_interface.set_value(2.0);
-    PdeFunction source(Nx,Ny,Nz,Nt);
-    source.set_value(0.5);
-    PdeFunction Dw(Nx,Ny,Nz,Nt);
-    Dw.set_value(0.001);
-    convection_diffusion(P, C0.get_data(), b_in.get_data(), b_interface.get_data(), source.get_data(), Dw.get_data(), NULL);
 
-    return 0;
+    if (check_dimensions(Nx,Ny,Nz,Nt,C0,b_in,b_interface,source,Dw)) {
+      convection_diffusion(P, C0.get_data(), b_in.get_data(), b_interface.get_data(), source.get_data(), Dw.get_data(), NULL);
+    }
+    else {
+      return false;
+    }
+    return true;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+
 
 BOOST_PYTHON_MODULE(drops)
 {
