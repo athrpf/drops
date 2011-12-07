@@ -323,7 +323,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 } // end of namespace DROPS
 
 //the main function
-void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
+//void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
+void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
