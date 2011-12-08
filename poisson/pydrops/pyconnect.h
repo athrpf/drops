@@ -31,6 +31,14 @@
 #include <string>
 #include <sstream>
 
+class PdeFunction {
+public:
+  /// Return the function value at the given grid point.
+  virtual double operator()(int nx, int ny, int nz, int nt) const=0;
+  /** Set inputs to values in this PdeFunction. Return true, if the values that were passed in match those of the grid underlying this function. */
+  virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const=0;
+};
+
 inline int rd( double d) { return static_cast<int>( d+0.5); }                   // rounding
 
 class PythonConnectCL
@@ -46,7 +54,7 @@ class PythonConnectCL
   double dx_, dy_, dz_, dt_;
   double D_mol_;
 
-  const double *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
+  const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
@@ -82,6 +90,13 @@ class PythonConnectCL
   int GetNum( const DROPS::Point3DCL& p, double t=0.) const
   {
     return (rd(p[2]/dz_)*Nxy_ + rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nxyz_);
+  }
+
+  bool GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
+    ix = rd(p[0]/dx_);
+    iy = rd(p[1]/dy_);
+    iz = rd(p[2]/dz_);
+    it = rd(t/dt_);
   }
  public:
   PythonConnectCL()
@@ -198,13 +213,17 @@ class PythonConnectCL
    double GetInitial( const DROPS::Point3DCL& p, double t)
   {
     t=0.;
-    return C0_[GetNum(p)];
+    int ix, iy, iz, it;
+    GetNum(p,t,ix,iy,iz,it);
+    return (*C0_)(ix,iy,iz,it);
   };
   //boundary functions
   //x=0;
    double GetInflow( const DROPS::Point3DCL& p, double t)
   {
-    return B_in_[GetNum(p,t,0)];
+    int ix, iy, iz, it;
+    GetNum(p,t,ix,iy,iz,it);
+    return (*B_in_)(ix,iy,iz,it);
   };
   //y=0: if neumann condition is active
    double GetInterfaceFlux( const DROPS::Point3DCL& p, double t)
@@ -217,16 +236,28 @@ class PythonConnectCL
     DROPS::FaceCL* face= face_map_[key];
 
     if (face == NULL) {//non-barycenter
-      ret= B_Inter_[GetNum(p,t,3)];
+      int ix, iy, iz, it;
+      GetNum(p,t,ix,iy,iz,it);
+      ret = (*B_Inter_)(ix,0,iz,it);
+      //ret= B_Inter_[GetNum(p,t,3)];
     } else {
-      ret= 1./3.*(B_Inter_[GetNum(face->GetVertex(0)->GetCoord(),t,3)]+B_Inter_[GetNum(face->GetVertex(1)->GetCoord(),t,3)]+B_Inter_[GetNum(face->GetVertex(2)->GetCoord(),t,3)]);
+      int ix1,iy1, iz1,it1;
+      GetNum(face->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
+      int ix2,iy2,iz2,it2;
+      GetNum(face->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
+      int ix3,iy3,iz3,it3;
+      GetNum(face->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
+      iy1 = 0; iy2 = 0; iy3 = 0;
+      ret= 1./3.*((*B_Inter_)(ix1,iy1,iz1,it1)+(*B_Inter_)(ix2,iy2,iz2,it2)+(*B_Inter_)(ix3,iy3,iz3,it3));
     }
     return ret;
   };
   //y=0: if dirichlet condition is active
    double GetInterfaceValue( const DROPS::Point3DCL& p, double t) const
   {
-    return B_Inter_[GetNum(p,t,3)];
+    int ix, iy,iz, it;
+    GetNum(p,t,ix,iy,iz,it);
+    return (*B_Inter_)(ix,0,iz,it);
   };
   //rhs
    double GetSource( const DROPS::Point3DCL& p, double t) const
@@ -238,10 +269,20 @@ class PythonConnectCL
     DROPS::TetraCL* tetra= tetra_map_[key];
 
     if (tetra == NULL) {//non-barycenter
-      ret=F_[GetNum(p,t)];
-    }else {
-      ret = 0.25*(F_[GetNum(tetra->GetVertex(0)->GetCoord(),t)]+F_[GetNum(tetra->GetVertex(1)->GetCoord(),t)]+
-		  F_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+F_[GetNum(tetra->GetVertex(3)->GetCoord(),t)]) ;
+      int ix1,iy1,iz1,it1;
+      GetNum(p,t,ix1,iy1,iz1,it1);
+      ret=(*F_)(ix1,iy1,iz1,it1);
+    } else {
+      int ix1,iy1, iz1,it1;
+      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
+      int ix2,iy2,iz2,it2;
+      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
+      int ix3,iy3,iz3,it3;
+      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
+      int ix4,iy4,iz4,it4;
+      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
+      ret = 0.25*((*F_)(ix1,iy1,iz1,it1)+(*F_)(ix2,iy2,iz2,it2)+
+		  (*F_)(ix3,iy3,iz3,it3)+(*F_)(ix4,iy4,iz4,it4));
     }
 
     return ret;
@@ -256,10 +297,20 @@ class PythonConnectCL
     DROPS::TetraCL* tetra= tetra_map_[key];
 
     if (tetra == NULL) {//non-barycenter
-      ret=Dw_[GetNum(p,t)]+D_mol_;
+      int ix1,iy1, iz1,it1;
+      GetNum(p,t,ix1,iy1,iz1,it1);
+      ret=(*Dw_)(ix1,iy1,iz1,it1)+D_mol_;
     }else {
-      ret = 0.25*(Dw_[GetNum(tetra->GetVertex(0)->GetCoord(),t)]+Dw_[GetNum(tetra->GetVertex(1)->GetCoord(),t)]+
-		  Dw_[GetNum(tetra->GetVertex(2)->GetCoord(),t)]+Dw_[GetNum(tetra->GetVertex(3)->GetCoord(),t)])  + D_mol_;
+      int ix1,iy1, iz1,it1;
+      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
+      int ix2,iy2,iz2,it2;
+      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
+      int ix3,iy3,iz3,it3;
+      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
+      int ix4,iy4,iz4,it4;
+      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
+      ret = 0.25*((*Dw_)(ix1,iy1,iz1,it1)+(*Dw_)(ix2,iy2,iz2,it2)+
+		  (*Dw_)(ix3,iy3,iz3,it3)+(*Dw_)(ix4,iy4,iz4,it4)) + D_mol_;
     }
     return ret;
   };
@@ -278,7 +329,7 @@ class PythonConnectCL
     }
 
   //Check the input matrices
-  void Init( const DROPS::ParamCL& P, const double* C0, const double* B_in, const double* F, const double* Dw, const double* B_Inter, double* c_sol)
+  void Init( const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
   {
     Nx_= P.get<int>("DomainCond.nx")+1;Ny_= P.get<int>("DomainCond.ny")+1; Nz_= P.get<int>("DomainCond.nz")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
@@ -303,5 +354,10 @@ class PythonConnectCL
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
+
+
+PythonConnectCL PyC;
+
+DROPS::ParamCL P;
 
 #endif

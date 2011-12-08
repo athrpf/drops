@@ -57,13 +57,12 @@
 #include "num/parprecond.h"             // various parallel preconditioners
 #endif
 
-#include "pyconnect.h"
+#include "convection_diffusion.h"
 
 using namespace std;
 
-PythonConnectCL PyC;
+const char line[] ="----------------------------------------------------------------------------------\n";
 
-DROPS::ParamCL P;
 
 double GetInitial(const DROPS::Point3DCL& p, double t)
 {
@@ -76,7 +75,7 @@ double GetInterfaceFlux( const DROPS::Point3DCL& p, double t){return PyC.GetInte
 double GetInterfaceValue( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceValue(p,t);}
 
 
-const char line[] ="----------------------------------------------------------------------------------\n";
+
 
 double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
 double Inflow(const DROPS::Point3DCL& p, double t) { return PyC.GetInflow(p,t); }
@@ -324,7 +323,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 } // end of namespace DROPS
 
 //the main function
-void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b_interface, double* source, double* Dw, double* C_sol)
+//void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
+void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
@@ -412,61 +412,3 @@ void convection_diffusion(DROPS::ParamCL& P, double* C0, double* b_in, double* b
     catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 
-int main(int argc, char** argv)
-{
-  try {
-    using namespace DROPS;
-
-    std::ifstream param;
-    if (argc!=2){
-      std::cout << "Using default parameter file: poissonex1.json\n";
-      param.open( "poissonex1.json");
-    }
-    else
-      param.open( argv[1]);
-    if (!param){
-      std::cerr << "error while opening parameter file\n";
-      return 1;
-    }
-    param >> P;
-    param.close();
-    std::cout << P << std::endl;
-
-    // set up data structure to represent a poisson problem
-    // ---------------------------------------------------------------------
-    std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
-    int Nx, Ny, Nz, Ns, Nt, N;
-    Nx = P.get<int>("DomainCond.nx")+1;
-    Ny = P.get<int>("DomainCond.ny")+1;
-    Nz = P.get<int>("DomainCond.nz")+1;
-    Ns = Nx*Ny*Nz;
-    Nt = P.get<int>("Time.NumSteps")+1;
-    N  = Ns*Nt;
-    double* C0 = new double[Ns];
-    for (int k=0;k<Ns; ++k) {
-      C0[k] = 1.0;
-    }
-    double* b_in = new double[Ny*Nz*Nt];
-    for (int k=0; k<Ny*Nz*Nt; ++k) {
-      b_in[k] = 1.0;
-    }
-    double* b_interface = new double[Nx*Nz*Nt];
-    for (int k=0; k<Nx*Nz*Nt; ++k) {
-      b_interface[k] = 2.0;
-    }
-    double* source = new double[N];
-    double* Dw = new double[N];
-    for (int k=0; k<N; ++k) {
-      source[k] = 0.5;
-      Dw[k] = 0.01;
-    }
-    convection_diffusion(P, C0, b_in, b_interface, source, Dw, NULL);
-
-    delete[] C0;
-    delete[] b_in;
-    delete[] b_interface;
-    delete[] source;
-    return 0;
-  }
-  catch (DROPS::DROPSErrCL err) { err.handle(); }
-}
