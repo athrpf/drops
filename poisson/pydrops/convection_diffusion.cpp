@@ -58,6 +58,7 @@
 #endif
 
 #include "convection_diffusion.h"
+#include <math.h>
 
 using namespace std;
 
