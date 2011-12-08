@@ -21,8 +21,8 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
  */
 
-#ifndef PYCONNECT_H
-#define PYCONNECT_H
+#ifndef PYCONNECT_ME_H
+#define PYCONNECT_ME_H
 
 #include "misc/container.h"
 #include "geom/multigrid.h"
@@ -347,5 +347,8 @@ class PythonConnectCL
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
+
+PythonConnectCL PyC;
+DROPS::ParamCL P;
 
 #endif
