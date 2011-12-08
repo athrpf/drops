@@ -45,7 +45,7 @@ bool numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw
   P.put<int>("DomainCond.lx", lx);
   P.put<int>("DomainCond.ly", ly);
   P.put<int>("DomainCond.lz", lz);
-  P.put<int>("PoissonCoeff.Reaction", 0.0);
+  P.put<std::string>("PoissonCoeff.Reaction", "Zero");
   P.put<int>("Poisson.SolutionIsKnown",0);
   P.put<int>("DomainCond.RefineSteps", 0);
   //std::stringstream MeshFile;
