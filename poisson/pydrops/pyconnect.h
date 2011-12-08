@@ -348,9 +348,4 @@ DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
 
-
-PythonConnectCL PyC;
-
-DROPS::ParamCL P;
-
 #endif

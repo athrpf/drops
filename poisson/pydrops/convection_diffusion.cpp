@@ -57,13 +57,14 @@
 #include "num/parprecond.h"             // various parallel preconditioners
 #endif
 
-#include "convection_diffusion.h"
+#include "pyconnect.h"
 #include <math.h>
 
 using namespace std;
 
-const char line[] ="----------------------------------------------------------------------------------\n";
+PythonConnectCL PyC;
 
+DROPS::ParamCL P;
 
 double GetInitial(const DROPS::Point3DCL& p, double t)
 {
@@ -74,7 +75,6 @@ double GetSource(const DROPS::Point3DCL& p, double t){return PyC.GetSource(p,t);
 double GetInflow(const DROPS::Point3DCL& p, double t){return PyC.GetInflow(p,t);}
 double GetInterfaceFlux( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceFlux(p,t);}
 double GetInterfaceValue( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceValue(p,t);}
-
 
 
 
