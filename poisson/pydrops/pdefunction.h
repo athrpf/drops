@@ -1,17 +1,7 @@
 #ifndef PDEFUNCTION_H
 #define PDEFUNCTION_H
 
-#include <boost/python.hpp>
-#include <boost/python/numeric.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/extract.hpp>
-#include "misc/params.h"
-#include <boost/shared_ptr.hpp>
-
-#include "pyconnect.h"
-#include "convection_diffusion.cpp"
-
-
+#include "num/discretize.h"
 
 class PdeFunction {
 public:
@@ -21,71 +11,19 @@ public:
   virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const=0;
 };
 
-
-//
-class PyPdeFunction : public PdeFunction {
-private:
-  int nx, ny, nz, nt;
-  boost::python::numeric::array data;
-public:
-
-  PyPdeFunction(boost::python::numeric::array& data_) : data(data_)
-  {
-    using namespace boost::python;
-    tuple t = extract<tuple>(data.attr("shape"));
-    assert(len(t)==4);
-    nx = boost::python::extract<int>(t[0]);
-    ny = boost::python::extract<int>(t[1]);
-    nz = boost::python::extract<int>(t[2]);
-    nt = boost::python::extract<int>(t[3]);
-  }
-
-
-  virtual ~PyPdeFunction(){}
-
-  virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const {
-    bool retval = false;
-    if (Nx==nx && Ny==ny && Nz==nz && Nt==nt) {
-      retval = true;
-    }
-    Nx = nx; Ny = ny; Nz = nz; Nt = nt;
-    return retval;
-  }
-
-  virtual double operator()(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
-    using namespace boost::python;
-    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>(data[t]);
-  }
-
-  double at(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
-    using namespace boost::python;
-    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>(data[t]);
-  }
-};
-
-
 //For testing use, construct from function
 class TestPdeFunction : public PdeFunction {
+
 private:
   int nx_, ny_, nz_, nt_;
   double dx_, dy_, dz_, dt_;
-  instat_scalar_fun_ptr f_;
+  DROPS::instat_scalar_fun_ptr f_;
 public:
-  TestPdeFunction( DROPS::ParamCL p, instat_scalar_fun_ptr f) : f_(f)
+  TestPdeFunction( DROPS::ParamCL P, DROPS::instat_scalar_fun_ptr f) : f_(f)
   {
-      nx_ = P.get<int>("DomainCond.nx") * pow(2, P.get<int>("RefineSteps")) +1;
-      ny_ = P.get<int>("DomainCond.ny") * pow(2, P.get<int>("RefineSteps")) +1;
-      nz_ = P.get<int>("DomainCond.nz") * pow(2, P.get<int>("RefineSteps")) +1;
+      nx_ = P.get<int>("DomainCond.nx") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
+      ny_ = P.get<int>("DomainCond.ny") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
+      nz_ = P.get<int>("DomainCond.nz") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
       nt_ = P.get<int>("Time.NumSteps") +1;
       
       dx_ = P.get<double>("DomainCond.lx")/(nx_ -1);
@@ -105,16 +43,16 @@ public:
     p[0] = ix * dx_;
     p[1] = iy * dy_;
     p[2] = iz * dz_;
-    return f(p, t);
+    return f_(p, t);
   }
   virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const {
     bool retval = false;
-    if (Nx==nx && Ny==ny && Nz==nz && Nt==nt) {
+    if (Nx==nx_ && Ny==ny_ && Nz==nz_ && Nt==nt_) {
       retval = true;
     }
-    Nx = nx; Ny = ny; Nz = nz; Nt = nt;
+    Nx = nx_; Ny = ny_; Nz = nz_; Nt = nt_;
     return retval;
   }    
-}
+};
 
 #endif

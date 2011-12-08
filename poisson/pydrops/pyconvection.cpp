@@ -8,7 +8,55 @@
 #include "pyconnect.h"
 #include "convection_diffusion.cpp"
 
+class PyPdeFunction : public PdeFunction {
+private:
+  int nx, ny, nz, nt;
+  boost::python::numeric::array data;
+public:
 
+  PyPdeFunction(boost::python::numeric::array& data_) : data(data_)
+  {
+    using namespace boost::python;
+    tuple t = extract<tuple>(data.attr("shape"));
+    assert(len(t)==4);
+    nx = boost::python::extract<int>(t[0]);
+    ny = boost::python::extract<int>(t[1]);
+    nz = boost::python::extract<int>(t[2]);
+    nt = boost::python::extract<int>(t[3]);
+  }
+
+
+  virtual ~PyPdeFunction(){}
+
+  virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const {
+    bool retval = false;
+    if (Nx==nx && Ny==ny && Nz==nz && Nt==nt) {
+      retval = true;
+    }
+    Nx = nx; Ny = ny; Nz = nz; Nt = nt;
+    return retval;
+  }
+
+  virtual double operator()(int ix, int iy, int iz, int it) const {
+    assert (ix>=0 && ix<nx);
+    assert (iy>=0 && iy<ny);
+    assert (iz>=0 && iz<nz);
+    assert (it>=0 && it<nt);
+    using namespace boost::python;
+    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
+    return extract<double>(data[t]);
+  }
+
+  double at(int ix, int iy, int iz, int it) const {
+    assert (ix>=0 && ix<nx);
+    assert (iy>=0 && iy<ny);
+    assert (iz>=0 && iz<nz);
+    assert (it>=0 && it<nt);
+    using namespace boost::python;
+    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
+    return extract<double>(data[t]);
+  }
+};
 
 /*
 bool get_array(boost::python::numeric::array& a) {
