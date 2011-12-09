@@ -62,6 +62,9 @@
 
 using namespace std;
 
+PythonConnectCL PyC;
+DROPS::ParamCL P;
+
 std::string line = "----------------\n";
 
 
