@@ -30,9 +30,21 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
 
 using namespace boost::python::numeric;
 
-bool numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, double uN, double Dmol,
+array& numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, double uN, double Dmol,
 				double lx, double ly, double lz,
 				double dt, double theta, bool flag_pr, bool flag_bc, bool flag_supg) {
+  // 1. Read parameter file
+  std::ifstream param;
+  std::cout << "Using default parameter file: poissonex1.json\n";
+  param.open( "poissonex1.json");
+  /*    else
+	param.open( argv[1]);
+	if (!param){
+	std::cerr << "error while opening parameter file\n";
+	return 1;
+	}*/
+  param >> P;
+  param.close();
   using namespace boost::python;
   tuple t = extract<tuple>(source.attr("shape"));
   int nx = extract<int>(t[0]);
@@ -48,20 +60,24 @@ bool numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw
   P.put<std::string>("PoissonCoeff.Reaction", "Zero");
   P.put<int>("Poisson.SolutionIsKnown",0);
   P.put<int>("DomainCond.RefineSteps", 0);
-  //std::stringstream MeshFile;
-  //MeshFile << lx << "x" << ly << "x" << lz << "@" << nx << "x" << ny << "x" << nz;
-  //P.put<std::string>("DomainCond.MeshFile",MeshFile.str());
+  std::stringstream MeshFile;
+  MeshFile << lx << "x" << ly << "x" << lz << "@" << nx-1 << "x" << ny-1 << "x" << nz-1; // meshfile takes number of intervals, not grid points
+  P.put<std::string>("DomainCond.MeshFile",MeshFile.str().c_str());
   P.put<std::string>("DomainCond.BoundaryType","0!2!2!0!2!2");
   P.put<int>("DomainCond.GeomType", 1);
 
   P.put<double>("PoissonCoeff.Dmol", Dmol);
-  P.put<bool>("PoissonCoeff.Stabilization", flag_supg);
+  //P.put<std::string>("PoissonCoeff.Solution", "");
+  P.put<int>("PoissonCoeff.Stabilization", flag_supg);
 
-  P.put<int>("Time.NumSteps", nt);
+  P.put<int>("Time.NumSteps", nt-1); // again, number of intervals
   P.put<double>("Time.StepSize", dt);
   P.put<int>("Time.Scheme", 1);
   P.put<double>("Time.Theta", 1.0);
-  P.put<bool>("Time.Convection", true);
+  P.put<int>("Time.Convection", true);
+
+  /* Print out parameters */
+  std::cout << P << std::endl;
 
   /* Convert numpy arrays to PyPdeFunctions */
   typedef const PdeFunction* PdeFunPtr;
@@ -83,11 +99,11 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
     std::cout << "Using default parameter file: poissonex1.json\n";
     param.open( "poissonex1.json");
     /*    else
-      param.open( argv[1]);
-    if (!param){
-      std::cerr << "error while opening parameter file\n";
-      return 1;
-      }*/
+	  param.open( argv[1]);
+	  if (!param){
+	  std::cerr << "error while opening parameter file\n";
+	  return 1;
+	  }*/
     param >> P;
     param.close();
     std::cout << P << std::endl;
@@ -119,13 +135,13 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
 
 BOOST_PYTHON_MODULE(drops)
 {
-    using namespace boost::python;
-    boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
-    def("convection_diffusion", numpy_convection_diffusion);
-    //def("get_array", &get_array);
-    //def("setArray", &setArray);
+  using namespace boost::python;
+  boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
+  def("convection_diffusion", numpy_convection_diffusion);
+  //def("get_array", &get_array);
+  //def("setArray", &setArray);
 
-    class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
-      .def(init<numeric::array&>())
-      .def("at",&PyPdeFunction::at);
+  class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
+    .def(init<numeric::array&>())
+    .def("at",&PyPdeFunction::at);
 }
