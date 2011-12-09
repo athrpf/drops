@@ -101,6 +101,9 @@ class PoissonCoeffCL
         alpha = diffusion;
         f = source;
         //f = scamap[P.get<std::string>("PoissonCoeff.Source")];
+        if (P.get<int >("Poisson.SolutionIsKnown")==0)
+        Solution = scamap["Zero"];
+        else
         Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
         InitialCondition = init;
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
