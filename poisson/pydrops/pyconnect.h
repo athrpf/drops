@@ -31,6 +31,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <math.h>
 
 inline int rd( double d) { return static_cast<int>( d+0.5); }                   // rounding
 
@@ -324,10 +325,23 @@ class PythonConnectCL
   //Check the input matrices
   void Init( const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
   {
-    Nx_= P.get<int>("DomainCond.nx")+1;Ny_= P.get<int>("DomainCond.ny")+1; Nz_= P.get<int>("DomainCond.nz")+1;
+    int refinesteps_;
+    double lx_, ly_, lz_;
+    int nx_, ny_, nz_;
+    refinesteps_= P.get<int>("DomainCond.RefineSteps");
+    
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
+    size_t idx_;
+    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+        mesh[idx_]= ' ';
+    std::istringstream brick_info( mesh);
+    brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
+    Nx_ = nx_ * pow (2, refinesteps_);
+    Ny_ = ny_ * pow (2, refinesteps_);
+    Nz_ = nz_ * pow (2, refinesteps_);
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
-    dx_= P.get<double>("DomainCond.lx")/(Nx_-1); dy_= P.get<double>("DomainCond.ly")/(Ny_-1); dz_= P.get<double>("DomainCond.lz")/(Nz_-1);
+    dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
 
     // Save the matrix input arguments.
     C0_   = C0;
