@@ -406,7 +406,13 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         mg->SizeInfo(cout);
 
         // Solve the problem
-	DROPS::Strategy( prob, P);
+        
+              //prepare MC
+        PyC.SetMG(mg);
+        PythonConnectCL::ClearMaps();
+        PythonConnectCL::setFaceMap();
+        PythonConnectCL::setTetraMap();
+	    DROPS::Strategy( prob, P);
         //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
         delete mg;

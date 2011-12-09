@@ -423,8 +423,13 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
 
+        PyC.SetMG(mg);
+        PythonConnectCL::ClearMaps();
+        PythonConnectCL::setFaceMap();
+        PythonConnectCL::setTetraMap();
+
         // Solve the problem
-	DROPS::Strategy( prob, P);
+	    DROPS::Strategy( prob, P);
         //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
         delete mg;
@@ -452,6 +457,8 @@ int main(int argc, char** argv)
     param >> P;
     param.close();
     std::cout << P << std::endl;
+    
+    
     
     
     instat_scalar_fun_ptr initial;
