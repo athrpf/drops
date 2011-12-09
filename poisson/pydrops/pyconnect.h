@@ -336,9 +336,9 @@ class PythonConnectCL
         mesh[idx_]= ' ';
     std::istringstream brick_info( mesh);
     brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
-    Nx_ = nx_ * pow (2, refinesteps_);
-    Ny_ = ny_ * pow (2, refinesteps_);
-    Nz_ = nz_ * pow (2, refinesteps_);
+    Nx_ = nx_ * pow (2, refinesteps_)+1;
+    Ny_ = ny_ * pow (2, refinesteps_)+1;
+    Nz_ = nz_ * pow (2, refinesteps_)+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
@@ -361,8 +361,5 @@ class PythonConnectCL
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
-
-PythonConnectCL PyC;
-DROPS::ParamCL P;
 
 #endif

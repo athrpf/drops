@@ -21,15 +21,26 @@ private:
 public:
   TestPdeFunction( DROPS::ParamCL P, DROPS::instat_scalar_fun_ptr f) : f_(f)
   {
-      nx_ = P.get<int>("DomainCond.nx") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
-      ny_ = P.get<int>("DomainCond.ny") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
-      nz_ = P.get<int>("DomainCond.nz") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
-      nt_ = P.get<int>("Time.NumSteps") +1;
-
-      dx_ = P.get<double>("DomainCond.lx")/(nx_ -1);
-      dy_ = P.get<double>("DomainCond.ly")/(ny_ -1);
-      dz_ = P.get<double>("DomainCond.lz")/(nz_ -1);
-      dt_ = P.get<double>("Time.StepSize");
+      
+      
+    int refinesteps;
+    double lx, ly, lz;
+    int nx, ny, nz;
+    refinesteps= P.get<int>("DomainCond.RefineSteps");
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
+    size_t idx_;
+    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+        mesh[idx_]= ' ';
+    std::istringstream brick_info( mesh);
+    brick_info >> lx >> ly >> lz >> nx >> ny >> nz;
+    nx_ = nx * pow (2, refinesteps)+1;
+    ny_ = ny * pow (2, refinesteps)+1;
+    nz_ = nz * pow (2, refinesteps)+1;
+    dx_= lx/(nx_-1); 
+    dy_= ly/(ny_-1); 
+    dz_= lz/(nz_-1);
+    dt_ = P.get<double>("Time.StepSize");
+    nt_ = P.get<double>("Time.NumSteps")+1;
   }
 
   virtual double operator()(int ix, int iy, int iz, int it) const {
