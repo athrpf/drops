@@ -58,15 +58,16 @@
 #endif
 
 #include "pyconnect.h"
+#include "pdefunction.h"
 #include <math.h>
 
 using namespace std;
 
+const char line[] ="----------------------------------------------------------------------------------\n";
+
 PythonConnectCL PyC;
+
 DROPS::ParamCL P;
-
-std::string line = "----------------\n";
-
 
 double GetInitial(const DROPS::Point3DCL& p, double t)
 {
@@ -369,10 +370,9 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         std::string serfile = "none";
 
         DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+        
         // Setup the problem
         //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-
-        // Setup the problem
         DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
 
 #ifdef _PAR

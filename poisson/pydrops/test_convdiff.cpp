@@ -171,7 +171,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // create numbering for this idx
             std::cout << "new triangLevel: " << Poisson.idx.TriangLevel() << std::endl;
             Poisson.b.SetIdx( new_idx);                              // tell b about numbering
-            new_x->SetIdx( new_idx);                                 // second vector with the same idx
+            new_x->SetIdx( new_idx);                    			 // second vector with the same idx
 
             std::cout << line << "Problem size\no number of unknowns             " << new_x->Data.size() << std::endl;
 
@@ -388,10 +388,9 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         std::string serfile = "none";
 
         DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
-
-        //DROPS::BuildBoundaryData( mg, bdata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
-
+        
         // Setup the problem
+        //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
         DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
 
 #ifdef _PAR
@@ -425,7 +424,7 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         mg->SizeInfo(cout);
 
         // Solve the problem
-    DROPS::Strategy( prob, P);
+	DROPS::Strategy( prob, P);
         //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
         delete mg;
