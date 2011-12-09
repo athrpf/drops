@@ -62,9 +62,8 @@
 
 using namespace std;
 
-PythonConnectCL PyC;
+std::string line = "----------------\n";
 
-DROPS::ParamCL P;
 
 double GetInitial(const DROPS::Point3DCL& p, double t)
 {

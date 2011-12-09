@@ -25,7 +25,7 @@ public:
       ny_ = P.get<int>("DomainCond.ny") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
       nz_ = P.get<int>("DomainCond.nz") * pow(2, P.get<int>("DomainCond.RefineSteps")) +1;
       nt_ = P.get<int>("Time.NumSteps") +1;
-      
+
       dx_ = P.get<double>("DomainCond.lx")/(nx_ -1);
       dy_ = P.get<double>("DomainCond.ly")/(ny_ -1);
       dz_ = P.get<double>("DomainCond.lz")/(nz_ -1);
@@ -52,7 +52,7 @@ public:
     }
     Nx = nx_; Ny = ny_; Nz = nz_; Nt = nt_;
     return retval;
-  }    
+  }
 };
 
 #endif

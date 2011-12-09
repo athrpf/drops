@@ -2,70 +2,13 @@
 #include <boost/python/numeric.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/extract.hpp>
-#include "misc/params.h"
 #include <boost/shared_ptr.hpp>
+
+#include "misc/params.h"
 
 #include "pyconnect.h"
 #include "convection_diffusion.cpp"
-
-class PyPdeFunction : public PdeFunction {
-private:
-  int nx, ny, nz, nt;
-  boost::python::numeric::array data;
-public:
-
-  PyPdeFunction(boost::python::numeric::array& data_) : data(data_)
-  {
-    using namespace boost::python;
-    tuple t = extract<tuple>(data.attr("shape"));
-    assert(len(t)==4);
-    nx = boost::python::extract<int>(t[0]);
-    ny = boost::python::extract<int>(t[1]);
-    nz = boost::python::extract<int>(t[2]);
-    nt = boost::python::extract<int>(t[3]);
-  }
-
-
-  virtual ~PyPdeFunction(){}
-
-  virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const {
-    bool retval = false;
-    if (Nx==nx && Ny==ny && Nz==nz && Nt==nt) {
-      retval = true;
-    }
-    Nx = nx; Ny = ny; Nz = nz; Nt = nt;
-    return retval;
-  }
-
-  virtual double operator()(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
-    using namespace boost::python;
-    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>(data[t]);
-  }
-
-  double at(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
-    using namespace boost::python;
-    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>(data[t]);
-  }
-};
-
-/*
-bool get_array(boost::python::numeric::array& a) {
-  std::cout << "got an array\n" ;
-  std::cout << "shape[0] = " << boost::python::extract<int>(data.getshape()[0]);
-  std::cout << boost::python::extract<double>(a[boost::python::make_tuple(0,0,0,0)]) << std::endl;
-  return true;
-}
-*/
+#include "pypdefunction.h"
 
 bool check_dimension(const PdeFunction& f, int Nx, int Ny, int Nz, int Nt)
 {
@@ -87,26 +30,27 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
 
 using namespace boost::python::numeric;
 
-bool numpy_convection_diffusion(array& C0, array& b_in, array& b_interface, array& source, array& Dw, double uN, double Dmol,
-			   double lx, double ly, double lz,
-			   double dt, double theta, bool flag_pr, bool flag_bc, bool flag_supg) {
-  //P.put<int>("DomainCond.nx", nx);
-//  P.put<int>("DomainCond.ny", ny);
-//  P.put<int>("DomainCond.nz", nz);
-//  P.put<int>("DomainCond.lx", lx);
-//  P.put<int>("DomainCond.ly", ly);
-//  P.put<int>("DomainCond.lz", lz);
-  //  P.put<int>("Poisson.SolutionIsKnown",0);
+bool numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, double uN, double Dmol,
+				double lx, double ly, double lz,
+				double dt, double theta, bool flag_pr, bool flag_bc, bool flag_supg) {
   using namespace boost::python;
   tuple t = extract<tuple>(source.attr("shape"));
   int nx = extract<int>(t[0]);
   int ny = extract<int>(t[1]);
   int nz = extract<int>(t[2]);
   int nt = extract<int>(t[3]);
+  P.put<int>("DomainCond.nx", nx);
+  P.put<int>("DomainCond.ny", ny);
+  P.put<int>("DomainCond.nz", nz);
+  P.put<int>("DomainCond.lx", lx);
+  P.put<int>("DomainCond.ly", ly);
+  P.put<int>("DomainCond.lz", lz);
+  P.put<std::string>("PoissonCoeff.Reaction", "Zero");
+  P.put<int>("Poisson.SolutionIsKnown",0);
   P.put<int>("DomainCond.RefineSteps", 0);
-  std::stringstream MeshFile;
-  MeshFile << lx << "x" << ly << "x" << lz << "@" << nx << "x" << ny << "x" << nz;
-  P.put<std::string>("DomainCond.MeshFile",MeshFile.str());
+  //std::stringstream MeshFile;
+  //MeshFile << lx << "x" << ly << "x" << lz << "@" << nx << "x" << ny << "x" << nz;
+  //P.put<std::string>("DomainCond.MeshFile",MeshFile.str());
   P.put<std::string>("DomainCond.BoundaryType","0!2!2!0!2!2");
   P.put<int>("DomainCond.GeomType", 1);
 
@@ -121,9 +65,9 @@ bool numpy_convection_diffusion(array& C0, array& b_in, array& b_interface, arra
 
   /* Convert numpy arrays to PyPdeFunctions */
   typedef const PdeFunction* PdeFunPtr;
-  PdeFunPtr C0f(new PyPdeFunction(C0));
-  PdeFunPtr b_inf(new PyPdeFunction(b_in));
-  PdeFunPtr b_interfacef(new PyPdeFunction(b_interface));
+  PdeFunPtr C0f(new PyPdeBoundaryFunction(C0,3));
+  PdeFunPtr b_inf(new PyPdeBoundaryFunction(b_in,0));
+  PdeFunPtr b_interfacef(new PyPdeBoundaryFunction(b_interface,1));
   PdeFunPtr sourcef(new PyPdeFunction(source));
   PdeFunPtr Dwf(new PyPdeFunction(Dw));
   convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, NULL);
