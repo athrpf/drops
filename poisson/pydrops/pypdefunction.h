@@ -103,8 +103,8 @@ public:
   }
 
   double at(int ix, int iy, int iz, int it) const {
-    std::cout << "reading boundary function " << ix << ","  << iy << ","  << iz << ","  << it << std::endl;
-    std::cout << "size is " << nx << ","  << ny << ","  << nz << ","  << nt << std::endl;
+    //std::cout << "reading boundary function " << ix << ","  << iy << ","  << iz << ","  << it << std::endl;
+    //std::cout << "size is " << nx << ","  << ny << ","  << nz << ","  << nt << std::endl;
     using namespace boost::python;
     tuple t;
     if (dead_dim==0) {
@@ -123,7 +123,7 @@ public:
       assert (it>=0 && it<nt);
       t = make_tuple<int,int,int>(ix,iy,it);
     } else if(dead_dim==3) {
-      std::cout << "evaluating initial value\n";
+      //std::cout << "evaluating initial value\n";
       assert (ix>=0 && ix<nx);
       assert (iy>=0 && iy<ny);
       assert (iz>=0 && iz<nz);
