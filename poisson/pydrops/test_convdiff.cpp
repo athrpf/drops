@@ -58,9 +58,12 @@
 #endif
 
 #include "pyconnect.h"
+#include "pdefunction.h"
 #include <math.h>
 
 using namespace std;
+
+const char line[] ="----------------------------------------------------------------------------------\n";
 
 PythonConnectCL PyC;
 
@@ -450,40 +453,25 @@ int main(int argc, char** argv)
     param >> P;
     param.close();
     std::cout << P << std::endl;
-
+    
+    
+    instat_scalar_fun_ptr initial;
+    instat_scalar_fun_ptr rhs;
+    instat_scalar_fun_ptr bnd;
+    instat_scalar_fun_ptr diffusion;
+    initial = One;
+    bnd     = One;
+    rhs     = Source_test;
+    diffusion = Zero;
     // set up data structure to represent a poisson problem
     // ---------------------------------------------------------------------
-    std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
-    int Nx, Ny, Nz, Ns, Nt, N;
-    Nx = P.get<int>("DomainCond.nx")+1;
-    Ny = P.get<int>("DomainCond.ny")+1;
-    Nz = P.get<int>("DomainCond.nz")+1;
-    Ns = Nx*Ny*Nz;
-    Nt = P.get<int>("Time.NumSteps")+1;
-    N  = Ns*Nt;
-    double Dx, Dy, Dz, Dt;
-    Dx = P.get<double>("DomainCond.lx")/P.get<int>("DomainCond.nx");
-    Dy = P.get<double>("DomainCond.ly")/P.get<int>("DomainCond.ny");
-    Dz = P.get<double>("DomainCond.lz")/P.get<int>("DomainCond.nz");
-    Dt = P.get<double>("Time.StepSize");
-    double* C0 = new double[Ns];
-    for (int k=0;k<Ns; ++k) {
-      C0[k] = 1.0;
-    }
-    double* b_in = new double[Ny*Nz*Nt];
-    for (int k=0; k<Ny*Nz*Nt; ++k) {
-      b_in[k] = 1.0;
-    }
-    double* b_interface = new double[Nx*Nz*Nt];
-    for (int k=0; k<Nx*Nz*Nt; ++k) {
-      b_interface[k] = 1.0;
-    }
-    double* source = new double[N];
-    double* Dw = new double[N];
-    for (int k=0; k<N; ++k) {
-      Dw[k] = 0.0;
-    }
-    for (int kt=0; kt<Nt; kt++)
+    typedef const PdeFunction* PdeFunPtr;
+    PdeFunPtr C0(new TestPdeFunction(P,initial));
+    PdeFunPtr b_in(new TestPdeFunction(P,bnd));
+    PdeFunPtr b_interface(new TestPdeFunction(P, bnd));
+    PdeFunPtr source(new TestPdeFunction(P, rhs));
+    PdeFunPtr Dw(new TestPdeFunction(P, diffusion));
+/*    for (int kt=0; kt<Nt; kt++)
         for (int kz=0; kz<Nz; kz++)
            for (int ky=0; ky<Ny; ky++)
               for (int kx=0; kx<Nx; kx++)
@@ -493,7 +481,7 @@ int main(int argc, char** argv)
                    p[1]= ky*Dy;
                    p[2]= kz*Dz;
                   source[kx+ky*Nx+kz*Nx*Ny+kt*Ns] =  Source_test(p, kt * Dt);
-              }
+              }*/
 
     convection_diffusion(P, C0, b_in, b_interface, source, Dw, NULL);
 

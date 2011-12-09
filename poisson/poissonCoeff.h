@@ -90,16 +90,20 @@ class PoissonCoeffCL
         C_=P;
         int nz_;
         double dz_;
-        dx_= P.get<double>("DomainCond.lx");
-        dy_= P.get<double>("DomainCond.ly");
-        dz_= P.get<double>("DomainCond.lz");
-        nx_= P.get<int>("DomainCond.nx");
-        ny_= P.get<int>("DomainCond.ny");
-        nz_= P.get<int>("DomainCond.nz");
+        std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
+        size_t idx_;
+        while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+            mesh[idx_]= ' ';
+        std::istringstream brick_info( mesh);
+        brick_info >> dx_ >> dy_ >> dz_ >> nx_ >> ny_ >> nz_;
         DROPS::InScaMap & scamap = DROPS::InScaMap::getInstance();
-        q = scamap[P.get<std::string>("PoissonCoeff.Reaction")];
+        q = scamap["Zero"];
         alpha = diffusion;
         f = source;
+        //f = scamap[P.get<std::string>("PoissonCoeff.Source")];
+        if (P.get<int >("Poisson.SolutionIsKnown")==0)
+        Solution = scamap["Zero"];
+        else
         Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
         InitialCondition = init;
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();

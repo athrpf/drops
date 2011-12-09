@@ -34,7 +34,7 @@
         "SmoothingSteps":   1,      //for Multigrid: number of Smoothing steps;
         "NumLvl":           -1,     //for Multigird: number of used levels (-1 = all)
         "Relax":            1,      //Relaxation factor
-        "SolutionIsKnown":  1       //Is the solution known/can we measure an exact error? 1 = true, 0 = false
+        "SolutionIsKnown":  1      //Is the solution known/can we measure an exact error? 1 = true, 0 = false
     },
 
     //#######################################
@@ -49,8 +49,20 @@
     //############################################
     "PoissonCoeff":
     {
-        "Dmol":        1.0,                              // molecular Diffusion coefficient
-        "Stabilization":    0
+        "Diffusion":        "One",                              //Diffusion coefficient
+            // -> Here: a = 1
+        //"Reaction":             "Example1_Reaction",        //Reaction term [q] with the name "Example1_Reaction"
+            // -> Here: q = 0
+        "Solution":             "Example1_Solution",        //Solution of poisson problem [u] has the name "Example1_Solution"
+            // -> Here: u = 1 + 64 xyz *(1-x)*(1-y)*(1-z)
+        "Source":           "Example1_Source",              //Right hand side of PDE [f]
+            // -> Here: f = 128*(xy(1-x)(1-y)+xz(1-x)(1-z)+yz(1-y)(1-z))
+        "Flowfield":        "Example1_Flowfield",           //Convection velocity of PDE [b]
+            // -> Here: b = (0,0,0)
+        //"InitialVal":       "Example1_InitialValue",        //Initial value of the pde [u(t=0)]
+            // -> Here: u(t=0) = 1
+        "Stabilization":    0,
+        "Dmol":        1.0                               // molecular Diffusion coefficient
     },
 
     //############################################
@@ -73,12 +85,6 @@
 	    //        "InitialFile":      "none",
             //file prefix when reading data for initial condition
             // -> Here: no initial data is read from outside
-	    //        "lx":              1.0,
-	    //        "ly":              1.0,
-	    //        "lz":              1.0,
-	    //        "nx":              10,
-	    //        "ny":              10,
-	    //        "nz":              10,
         "MeshFile":         "1x1x1@4x4x4",
             //mesh file (created by GAMBIT or NETGEN, FLUENT/UNS format)
             // or (in case of the BrickBuilder:)
@@ -111,7 +117,7 @@
     "Time":
     {
         "StepSize":       1,       //time step size
-        "NumSteps":       10,      // number of time steps
+        "NumSteps":       0,      // number of time steps
         "Scheme":         1,       //time disc. method: 1= theta scheme, 2=fractional step
         "Theta":          1,       //For theta scheme: parameter theta
         "Convection":     0        //Do we have convection? -> Here: no
