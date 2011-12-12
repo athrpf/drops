@@ -483,24 +483,39 @@ int main(int argc, char** argv)
     PdeFunPtr b_interface(new TestPdeFunction(P, bnd));
     PdeFunPtr source(new TestPdeFunction(P, rhs));
     PdeFunPtr Dw(new TestPdeFunction(P, diffusion));
-/*    for (int kt=0; kt<Nt; kt++)
-        for (int kz=0; kz<Nz; kz++)
-           for (int ky=0; ky<Ny; ky++)
-              for (int kx=0; kx<Nx; kx++)
-              {
-                  DROPS::Point3DCL p;
-                   p[0]= kx*Dx;
-                   p[1]= ky*Dy;
-                   p[2]= kz*Dz;
-                  source[kx+ky*Nx+kz*Nx*Ny+kt*Ns] =  Source_test(p, kt * Dt);
-              }*/
+    
+    double lx, ly, lz;
+    int nx, ny, nz;
+    int refinesteps= P.get<int>("DomainCond.RefineSteps");
+    
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
+    size_t idx_;
+    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+        mesh[idx_]= ' ';
+    std::istringstream brick_info( mesh);
+    brick_info >> lx >> ly>> lz >> nx >> ny >> nz;
+    int Nx = nx * pow (2, refinesteps)+1;
+    int Ny = ny * pow (2, refinesteps)+1;
+    int Nz = nz * pow (2, refinesteps)+1;
+    int Nxyz= Nx*Ny*Nz;
+    double* C_sol;
+    if(P.get<double>("Time.NumSteps")==0)
+        C_sol=new double[Nxyz];
+    else
+    {
+      int nt = P.get<double>("Time.NumSteps");
+      int Ns= Nxyz*nt;
+        C_sol=new double[Ns];
+    }
+    
 
-    convection_diffusion(P, C0, b_in, b_interface, source, Dw, NULL);
+    convection_diffusion(P, C0, b_in, b_interface, source, Dw, C_sol);
 
     delete[] C0;
     delete[] b_in;
     delete[] b_interface;
     delete[] source;
+    delete[] C_sol;
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
