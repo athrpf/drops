@@ -1,3 +1,6 @@
+#include "Python.h"
+#include "numpy/arrayobject.h"	/* NumPy header */
+
 #include <boost/python.hpp>
 #include <boost/python/numeric.hpp>
 #include <boost/python/tuple.hpp>
@@ -30,7 +33,7 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
 
 using namespace boost::python::numeric;
 
-array& numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, double uN, double Dmol,
+array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, double uN, double Dmol,
 				double lx, double ly, double lz,
 				double dt, double theta, bool flag_pr, bool flag_bc, bool flag_supg) {
   // 1. Read parameter file
@@ -86,8 +89,13 @@ array& numpy_convection_diffusion(array& C0, array& b_in, array& source, array& 
   PdeFunPtr b_interfacef(new PyPdeBoundaryFunction(b_interface,1));
   PdeFunPtr sourcef(new PyPdeFunction(source));
   PdeFunPtr Dwf(new PyPdeFunction(Dw));
+
+  npy_intp* c_sol_dim = new npy_intp[4];
+  c_sol_dim[0] = nx; c_sol_dim[1] = ny; c_sol_dim[2] = nz; c_sol_dim[3] = nt;
+  boost::python::object obj(handle<>(PyArray_SimpleNew(4, c_sol_dim, PyArray_DOUBLE)));
+  array solution = extract<boost::python::numeric::array>(obj);
   convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, NULL);
-  return true;
+  return solution;
 }
 
 bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_interface, PdeFunction& source, PdeFunction& Dw)
@@ -135,6 +143,7 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
 
 BOOST_PYTHON_MODULE(drops)
 {
+  import_array();		/* Initialize the Numarray module. */
   using namespace boost::python;
   boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
   def("convection_diffusion", numpy_convection_diffusion);
