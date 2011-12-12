@@ -2,9 +2,10 @@ import drops
 from numpy import sin, pi, ones, zeros, mgrid
 from matplotlib.pylab import *
 
-Nx = 10
-Ny = 10
-Nz = 10
+f = 2
+Nx = 10*f
+Ny = 10*f
+Nz = 10*f
 Nt = 1
 
 lx = 1.
@@ -20,11 +21,13 @@ Y = Ymesh.astype(float)/Ny*ly
 Z = Zmesh.astype(float)/Nz*lz
 T = Tmesh.astype(float)/Nt*tmax
 
-D = ones([Nx, Ny, Nz, Nt])
+D = 100*ones([Nx, Ny, Nz, Nt])
+
+c = 1 + sin(X/lx*pi/2)*(1-sin((ly-Y)/ly*pi/2))
 
 C0 = zeros([Nx, Ny, Nz])
-b_in = ones([Ny, Nz, Nt])
-b_interface = 2*ones([Nx, Nz, Nt])
+b_in = c[0,:,:,:]
+b_interface = c[:,-1,:,:]
 source = D *( -(pi/2/lx)**2*sin(pi/2*X/lx)*(1-sin(pi/2*(ly-Y)/ly)) + (pi/2/ly)**2*sin(pi/2*X/lx)*sin(pi/2*(ly-Y)/ly))
 
 Dmol = 0.
@@ -35,7 +38,10 @@ flag_supg = False
 
 retval =  drops.convection_diffusion(C0,  b_in, source, D, b_interface, uN, Dmol, lx, ly, lz, dt, theta, flag_pr, flag_bc, flag_supg)
 
-c = 1 + sin(X/lx*pi/2)*(1-sin((ly-Y)/ly*pi/2))
-err = retval - c
+dV  = lx*ly*lz/(Nx-1)/(Ny-1)/(Nz-1)
+err = (retval - c)*dV
+if -1.2345 in c:
+    print 'err'
 print linalg.norm(err)
-print retval
+#print retval
+#print source
