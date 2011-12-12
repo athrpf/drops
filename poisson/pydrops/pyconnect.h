@@ -310,16 +310,26 @@ class PythonConnectCL
   };
 
   template<class P1EvalT>
-    void SetSol3D( const P1EvalT& sol, double t)
+    void SetSol3D( const P1EvalT& sol, double t)  //Instationary problem
     {
-      const int num= (rd(t/dt_)-1)*Nxyz_; // omit initial time step in output
-      double *out= C3D_+num;
+      const int num= (rd(t/dt_)-1)*Nxyz_;  //omit initial time step in output
+      double *out= C3D_+num;               //don't like this way
 
       DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
 	{
 	  out[GetNum( sit->GetCoord())]= sol.val( *sit);
 	}
 
+    }
+  template<class P1EvalT>
+    void SetSol3D( const P1EvalT& sol)          //Stationary problem
+    {
+        double *out= C3D_;
+
+        DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
+        {
+            out[GetNum( sit->GetCoord())]= sol.val( *sit);
+        }
     }
 
   //Check the input matrices

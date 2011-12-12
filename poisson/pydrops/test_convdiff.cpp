@@ -132,6 +132,8 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #else
         double realresid = Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data), false);
 #endif
+        //Setup solution for python interface
+        PyC.SetSol3D(Poisson.GetSolution());
         std::cout << " o Solved system with:\n"
                   << "   - time          " << timer.GetTime()   << " s\n"
                   << "   - iterations    " << solver.GetIter()  << '\n'
@@ -194,6 +196,8 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             timer.Reset();
             solver.Solve( Poisson.A.Data, new_x->Data, Poisson.b.Data);
             timer.Stop();
+            //Setup solution for python interface
+            PyC.SetSol3D(Poisson.GetSolution());
             double realresid = norm( VectorCL(Poisson.A.Data*new_x->Data-Poisson.b.Data));
             std::cout << " o Solved system with:\n"
                       << "   - time          " << timer.GetTime()   << " s\n"
@@ -314,6 +318,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
             timer.Reset();
             std::cout << line << "Step: " << step << std::endl;
             ThetaScheme.DoStep( Poisson.x);
+            //Setup solutions for python interface
+            PyC.SetSol3D(Poisson.GetSolution(), Poisson.x.t);
 
             timer.Stop();
             std::cout << " o Solved system with:\n"
