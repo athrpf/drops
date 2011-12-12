@@ -57,9 +57,9 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   P.put<int>("DomainCond.nx", nx);
   P.put<int>("DomainCond.ny", ny);
   P.put<int>("DomainCond.nz", nz);
-  P.put<int>("DomainCond.lx", lx);
-  P.put<int>("DomainCond.ly", ly);
-  P.put<int>("DomainCond.lz", lz);
+  P.put<double>("DomainCond.lx", lx);
+  P.put<double>("DomainCond.ly", ly);
+  P.put<double>("DomainCond.lz", lz);
   P.put<std::string>("PoissonCoeff.Reaction", "Zero");
   P.put<int>("Poisson.SolutionIsKnown",0);
   P.put<int>("DomainCond.RefineSteps", 0);
@@ -92,9 +92,12 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
 
   npy_intp* c_sol_dim = new npy_intp[4];
   c_sol_dim[0] = nx; c_sol_dim[1] = ny; c_sol_dim[2] = nz; c_sol_dim[3] = nt;
-  boost::python::object obj(handle<>(PyArray_SimpleNew(4, c_sol_dim, PyArray_DOUBLE)));
+  PyArrayObject* newarray = (PyArrayObject*) PyArray_New(&PyArray_Type, 4, c_sol_dim, PyArray_DOUBLE, NULL, NULL, 0, NPY_F_CONTIGUOUS, NULL);
+  boost::python::object obj(handle<>((PyObject*)newarray));
+  double* solution_ptr = (double*)newarray->data;
+  for (int k=0; k<nx*ny*nz*nt; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
   array solution = extract<boost::python::numeric::array>(obj);
-  convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, NULL);
+  convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_ptr);
   return solution;
 }
 
