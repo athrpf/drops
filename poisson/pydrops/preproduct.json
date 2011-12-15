@@ -50,8 +50,11 @@
     {
         "Diffusion":     "One",                       //Diffusion coefficient
             // -> Here: a = 1
+        "Reaction":             "Example1_Reaction",        //Reaction term [q] with the name "Example1_Reaction"
         "Source":        "Zero",       //Right hand side of PDE [f]
-        "Flowfield":     "Zero",       //Convection velocity of PDE [b]
+        "Flowfield":     "Example1_Flowfield",       //Convection velocity of PDE [b]
+        "InitialVal":    "Zero",        //Initial value of the pde [u(t=0)]
+        "Solution":      "Zero",        //Solution of poisson problem [u] has the name "Example1_Solution"
         "Stabilization":   0
     },
 
@@ -61,7 +64,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      2,
+        "RefineSteps":      3,
             //initial refinement: how often is the mesh refined
             // -> Here: four times refinement
         "GeomType":     1,
@@ -75,7 +78,7 @@
         "InitialFile":      "none",
             //file prefix when reading data for initial condition
             // -> Here: no initial data is read from outside
-        "MeshFile":     "1x1x1@1x1x1",
+        "MeshFile":     "1x1x1@4x4x4",
             //mesh file (created by GAMBIT or NETGEN, FLUENT/UNS format)
             // or (in case of the BrickBuilder:)
             // dimensions of a cuboid (e.g. AxBxC@DxExF) with edge
@@ -86,7 +89,7 @@
             // b.dom. 2 has normal in pos. x direction
             // b.dom. 3 has normal in neg. y direction, etc..
             // -> Here: a cube.
-        "BoundaryType":     "0!0!0!0!0!0",
+        "BoundaryType":     "21!21!21!21!21!21",
             //Boundary conditions for each boundary domain
             // are prescribes by a type and a function. Thus
             // each boundary domain gets an index.
@@ -95,7 +98,7 @@
             // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
             // NatBC= 23
             // -> Here: all boundaries are Dirichlet boundaries.
-        "BoundaryFncs":     "Zero!Zero!Zero!Zero!Zero!Zero"
+        "BoundaryFncs":     "One!One!One!One!One!One"
             // For each boundary domain take a string which describes
             // a function of a function container (s. PoissonCoeff-sect.)
             // -> Here: all boundaries have Dirichlet value exp(t)exp(x+y+z) (s. solution).

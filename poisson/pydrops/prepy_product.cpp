@@ -69,6 +69,11 @@ PythonConnectCL PyC;
 
 DROPS::ParamCL P;
 
+double GetProductF1(const DROPS::Point3DCL& p, double t){return PyC.GetProductF1(p,t);}
+double GetProductF2(const DROPS::Point3DCL& p, double t){return PyC.GetProductF2(p,t);}
+//for testing
+double One(const DROPS::Point3DCL&, double) { return 1.0; }
+
 namespace DROPS
 {
 
@@ -138,8 +143,99 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 
 } // end of namespace DROPS
 
-void prepy_product(DROPS::ParamCL& P, PoissonP1CL<>& Poisson)
+template<class CoeffCL>
+void prepy_product(DROPS::ParamCL& P, DROPS::PoissonP1CL<CoeffCL>& Poisson)
 {
   Strategy(Poisson, P);      
 }
+
+int main(int argc, char** argv)
+{
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit;
+#endif
+    try
+    {
+    // time measurements
+#ifndef _PAR
+        DROPS::TimerCL timer;
+#else
+        DROPS::ParTimerCL timer;
+#endif
+
+        std::ifstream param;
+        if (argc!=2){
+            std::cout << "Using default parameter file: preproduct.json\n";
+            param.open( "preproduct.json");
+        }
+        else
+            param.open( argv[1]);
+        if (!param){
+            std::cerr << "error while opening parameter file\n";
+            return 1;
+        }
+        param >> P;
+        param.close();
+        std::cout << P << std::endl;
+
+        // set up data structure to represent a poisson problem
+        // ---------------------------------------------------------------------
+        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+        timer.Reset();
+
+        //create geometry
+        DROPS::MultiGridCL* mg= 0;
+        DROPS::PoissonBndDataCL* bdata = 0;
+
+        //only for measuring cell, not used here
+        double r = 1;
+        std::string serfile = "none";
+
+        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+
+        DROPS::BuildBoundaryData( mg, bdata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
+
+        // Setup the problem
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);    
+      
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+
+        // Refine the grid
+        // ---------------------------------------------------------------------
+        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+        timer.Reset();
+        // Create new tetrahedra
+        for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
+            std::cout << " refine (" << ref << ")\n";
+            DROPS::MarkAll( *mg);
+            mg->Refine();
+        }
+        
+        prepy_product(P, prob);                  //Setup System 
+
+        DROPS::instat_scalar_fun_ptr f1;
+        DROPS::instat_scalar_fun_ptr f2;
+        DROPS::instat_scalar_fun_ptr test;
+        test = One;
+        
+        typedef PdeFunction* PdeFunPtr;
+        PdeFunPtr PDEf1(new TestPdeFunction(P,test));
+        PdeFunPtr PDEf2(new TestPdeFunction(P,test));
+        PyC.Init(P);                             //Inital Pyc
+        PyC.SetProductFun(PDEf1, PDEf2);         //initalize two functions
+        f1 = GetProductF1;                       //get function 1
+        f2 = GetProductF2;                       //get function 2
+    
+        double result = DROPS::Py_product( prob.GetMG(), prob.idx, prob.A, prob.M, f1, f2, 0., false);
+        std::cout<<"The result of py_product is"<<result<<std::endl;
+
+        delete[] PDEf1;
+        delete[] PDEf2;
+        return 0;
+  }
+  catch (DROPS::DROPSErrCL err) { err.handle(); }
+}
+
 
