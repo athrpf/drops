@@ -50,7 +50,7 @@ class PythonConnectCL
 
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
-  PdeFunction *f1_, f2_;
+  PdeFunction *f1_, *f2_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -348,7 +348,7 @@ class PythonConnectCL
         }
     }
     
-    void SetProductFun(PdeFunction* f1 PdeFunction* f2)
+    void SetProductFun(PdeFunction* f1, PdeFunction* f2)
     {
       f1_ = f1;
       f2_ = f2;    
