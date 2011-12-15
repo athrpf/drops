@@ -93,6 +93,37 @@ Point3DCL EllipsoidCL::Radius_;
 
 static DROPS::RegisterScalarFunction regsca_ellipsoid("Ellipsoid", DROPS::EllipsoidCL::DistanceFct);
 
+/// \brief Represents a cylinder with ellipsoidal cross section
+class CylinderCL
+{
+  private:
+    static Point3DCL Mitte_;
+    static Point3DCL Radius_;  ///< stores radii of ellipse and axis length (latter stored in entry given by axisDir_)
+    static Usint     axisDir_; ///< direction of axis (one of 0,1,2)
+
+  public:
+    CylinderCL( const Point3DCL& Mitte, const Point3DCL& RadiusLength, Usint axisDir)
+    { Init( Mitte, RadiusLength, axisDir); }
+    static void Init( const Point3DCL& Mitte, const Point3DCL& RadiusLength, Usint axisDir)
+    { Mitte_= Mitte;    Radius_= RadiusLength;    axisDir_= axisDir; }
+    static double DistanceFct( const Point3DCL& p)
+    {
+        Point3DCL d= p - Mitte_;
+        const double avgRad= std::sqrt(Radius_[0]*Radius_[1]*Radius_[2]/Radius_[axisDir_]);
+        d/= Radius_;
+        d[axisDir_]= 0;
+        return std::abs( avgRad)*d.norm() - avgRad;
+    }
+    static double GetVolume() { return M_PI*Radius_[0]*Radius_[1]*Radius_[2]; }
+    static Point3DCL& GetCenter() { return Mitte_; }
+};
+
+Point3DCL CylinderCL::Mitte_;
+Point3DCL CylinderCL::Radius_;
+Usint     CylinderCL::axisDir_;
+
+static DROPS::RegisterScalarFunction regsca_cylinder("Cylinder", DROPS::CylinderCL::DistanceFct);
+
 // collision setting (rising butanol droplet in water)
 //  RadDrop1 =  1.50e-3  1.500e-3  1.50e-3
 //  PosDrop1 =  6.00e-3  3.000e-3  6.00e-3
@@ -445,7 +476,7 @@ class TwoPhaseStoreCL
        *  the geometric as well as the numerical data.
        *  \param recoverySteps number of backup steps before overwriting files
        *  \param mg Multigrid
-       *  \param Stokes Stokes flow field 
+       *  \param Stokes Stokes flow field
        *  \param lset Level Set field
        *  \param transp mass transport concentration field
        *  \param path location for storing output
