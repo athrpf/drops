@@ -8,7 +8,7 @@ DROPS_ROOT=../..
 
 DIR = poisson/pydrops
 
-EXEC = convdiff test_convdiff
+EXEC = convdiff test_convdiff prepy_product
 
 DELETE = $(EXEC)
 
@@ -55,6 +55,17 @@ test_convdiff:\
     ../../out/vtkOut.o ../../misc/bndmap.o ../../geom/bndScalarFunctions.o\
     ../../geom/bndVelFunctions.o
 	$(CXX) $(CXXFLAGS) -o test_convdiff $^ test_convdiff.cpp
+    
+prepy_product:\
+    ../../geom/boundary.o ../../geom/builder.o ../../out/ensightOut.o\
+    ../../geom/simplex.o ../../geom/multigrid.o ../../num/unknowns.o ../../geom/topo.o \
+    ../../poisson/poissonCoeff.o\
+    ../../poisson/poisson.o ../../misc/problem.o ../../misc/utils.o ../../out/output.o \
+    ../../num/fe.o ../../num/discretize.o ../../num/interfacePatch.o ../../geom/geomselect.o\
+    ../../misc/params.o \
+    ../../out/vtkOut.o ../../misc/bndmap.o ../../geom/bndScalarFunctions.o\
+    ../../geom/bndVelFunctions.o
+	$(CXX) $(CXXFLAGS) -o prepy_product $^ prepy_product.cpp
 
 # include common rules:
 include $(DROPS_ROOT)/Make.common

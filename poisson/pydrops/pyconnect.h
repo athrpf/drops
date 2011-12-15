@@ -408,6 +408,8 @@ class PythonConnectCL
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1); 
+    
+    dt_= P.get<double>("Time.StepSize");
   }
   
 };
