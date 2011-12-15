@@ -40,7 +40,7 @@ namespace DROPS
 typedef BndSegDataCL<> PoissonBndSegDataCL;
 typedef BndDataCL<> PoissonBndDataCL;
 
- double Py_product(MultiGridCL& mg, MLIdxDescCL& Idx, MLMatDescCL& A, MLMatDescCL& M,
+double Py_product(MultiGridCL& mg, MLIdxDescCL& Idx, MLMatDescCL& A, MLMatDescCL& M,
 		   instat_scalar_fun_ptr f1, instat_scalar_fun_ptr f2, double t, bool H1);
 
 class StripTimeCL
