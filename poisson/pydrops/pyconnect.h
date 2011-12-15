@@ -50,6 +50,7 @@ class PythonConnectCL
 
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
+  PdeFunction *f1_, f2_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -204,6 +205,21 @@ class PythonConnectCL
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
   //
+  
+  double GetProductF1( const DROPS::Point3DCL& p, double t)
+  {
+    int ix, iy, iz, it;
+    GetNum(p,t,ix,iy,iz,it);
+    return (*f1_)(ix,iy,iz,it);
+  };
+  
+  double GetProductF2( const DROPS::Point3DCL& p, double t)
+  {
+    int ix, iy, iz, it;
+    GetNum(p,t,ix,iy,iz,it);
+    return (*f2_)(ix,iy,iz,it);
+  };
+  
    double GetInitial( const DROPS::Point3DCL& p, double t)
   {
     t=0.;
@@ -331,6 +347,12 @@ class PythonConnectCL
             out[GetNum( sit->GetCoord())]= sol.val( *sit);
         }
     }
+    
+    void SetProductFun(PdeFunction* f1 PdeFunction* f2)
+    {
+      f1_ = f1;
+      f2_ = f2;    
+    }
 
   //Check the input matrices
   void Init( const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
@@ -366,6 +388,28 @@ class PythonConnectCL
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
+  
+  void Init(const DROPS::ParamCL& P) 
+  {
+    int refinesteps_;
+    double lx_, ly_, lz_;
+    int nx_, ny_, nz_;
+    refinesteps_= P.get<int>("DomainCond.RefineSteps");
+    
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
+    size_t idx_;
+    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+        mesh[idx_]= ' ';
+    std::istringstream brick_info( mesh);
+    brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
+    Nx_ = nx_ * pow (2, refinesteps_)+1;
+    Ny_ = ny_ * pow (2, refinesteps_)+1;
+    Nz_ = nz_ * pow (2, refinesteps_)+1;
+    Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
+    Nxyz_= Nxy_*Nz_;
+    dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1); 
+  }
+  
 };
 
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
