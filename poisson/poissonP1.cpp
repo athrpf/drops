@@ -104,7 +104,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         }
         if(P.get<int>("PoissonCoeff.Stabilization"))
         {
-            CoeffCL::Show_Pec();
+            //CoeffCL::Show_Pec();
             std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
         }
         timer.Reset();
