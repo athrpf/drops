@@ -94,7 +94,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #endif
 
     if ( !doErrorEstimate) {
-        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("PoissonCoeff.Stabilization"));
+        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
         if(P.get<int>("Time.Convection"))
         {
             Poisson.vU.SetIdx( &Poisson.idx);
@@ -102,7 +102,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
         }
-        if(P.get<int>("PoissonCoeff.Stabilization"))
+        if(P.get<int>("Stabilization.SUPG"))
         {
             //CoeffCL::Show_Pec();
             std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
@@ -265,7 +265,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("PoissonCoeff.Stabilization") );
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -315,7 +315,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     {
         //CoeffCL::Show_Pec();
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("Time.Convection"), P.get<int>("PoissonCoeff.Stabilization"));
+        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("Time.Convection"), P.get<int>("Stabilization.SUPG"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
             timer.Reset();
@@ -347,6 +347,12 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
 } // end of namespace DROPS
 
+/// \brief Set Default parameters here s.t. they are initialized.
+/// The result can be checked when Param-list is written to the output.
+void SetMissingParameters(DROPS::ParamCL& P){
+    P.put_if_unset<int>("Stabilization.SUPG",0);
+}
+
 int main (int argc, char** argv)
 {
 #ifdef _PAR
@@ -375,6 +381,7 @@ int main (int argc, char** argv)
         }
         param >> P;
         param.close();
+        //SetMissingParameters(P);
         std::cout << P << std::endl;
 
         // set up data structure to represent a poisson problem

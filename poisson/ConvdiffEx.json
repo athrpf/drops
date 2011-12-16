@@ -61,9 +61,8 @@
             // -> Here: f = 1
         "Flowfield":        "Example3_Flowfield",       //Convection velocity of PDE [b]
             // -> Here: b = (1,0,0)
-        "InitialVal":       "Example3_InitialValue",    // -> Here: u(t=0) = 1
+        "InitialVal":       "Example3_InitialValue"     // -> Here: u(t=0) = 1
             //Initial value of the pde [u(t=0)]
-        "Stabilization":    0
     },
 
     //############################################

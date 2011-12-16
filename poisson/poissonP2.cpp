@@ -140,7 +140,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     timer.Reset();
     
     if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0., P.get<int>("PoissonCoeff.Stabilization"));    //IntationarySystem
+        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0.);    //IntationarySystem
     else
     {
         Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem

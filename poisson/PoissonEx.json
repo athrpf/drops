@@ -59,9 +59,8 @@
             // -> Here: f = 128*(xy(1-x)(1-y)+xz(1-x)(1-z)+yz(1-y)(1-z))
         "Flowfield":        "Example1_Flowfield",           //Convection velocity of PDE [b]
             // -> Here: b = (0,0,0)
-        "InitialVal":       "Example1_InitialValue",        //Initial value of the pde [u(t=0)]
+        "InitialVal":       "Example1_InitialValue"         //Initial value of the pde [u(t=0)]
             // -> Here: u(t=0) = 1
-        "Stabilization":    0
     },
 
     //############################################

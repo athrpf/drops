@@ -60,9 +60,8 @@
             // -> Here: f = -2 exp(t)*(exp(x+y+z)
         "Flowfield":     "Example2_Flowfield",    //Convection velocity of PDE [b]
             // -> Here: b = (0,0,0)
-        "InitialVal":    "Example2_Solution",     // -> Here: u(t=0) = exp(x+y+z)
+        "InitialVal":    "Example2_Solution"      // -> Here: u(t=0) = exp(x+y+z)
             //Initial value of the pde [u(t=0)]
-        "Stabilization":      0
     },
 
     //############################################
