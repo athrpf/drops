@@ -98,6 +98,12 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   for (int k=0; k<nx*ny*nz*nt; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
   array solution = extract<boost::python::numeric::array>(obj);
   convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_ptr);
+
+  delete C0f;
+  delete b_inf;
+  delete b_interfacef;
+  delete sourcef;
+  delete Dwf;
   return solution;
 }
 
@@ -143,6 +149,8 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
   return false;
 }
 
+#include "prepy_product.cpp"
+
 
 BOOST_PYTHON_MODULE(drops)
 {
@@ -152,6 +160,9 @@ BOOST_PYTHON_MODULE(drops)
   def("convection_diffusion", numpy_convection_diffusion);
   //def("get_array", &get_array);
   //def("setArray", &setArray);
+
+  def("setup_scalar_product_matrices", setup_sp_matrices);
+  def("scalar_product", numpy_scalar_product);
 
   class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
     .def(init<numeric::array&>())
