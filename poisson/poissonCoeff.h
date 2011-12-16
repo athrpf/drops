@@ -77,7 +77,10 @@ class PoissonCoeffCL
         Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
         InitialCondition = scamap[P.get<std::string>("PoissonCoeff.InitialVal")];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
-        Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
+        if(P.get<int>("Time.Convection")==0)
+            Vel = vecmap["ZeroVel"];
+        else    
+            Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         Ref_=P.get<int>("DomainCond.RefineSteps");
     }
     //Only used for flat film case
