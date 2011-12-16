@@ -60,8 +60,9 @@
             // -> Here: f = -2 exp(t)*(exp(x+y+z)
         "Flowfield":     "Example2_Flowfield",    //Convection velocity of PDE [b]
             // -> Here: b = (0,0,0)
-        "InitialVal":    "Example2_Solution"      // -> Here: u(t=0) = exp(x+y+z)
+        "InitialVal":    "Example2_Solution",      // -> Here: u(t=0) = exp(x+y+z)
             //Initial value of the pde [u(t=0)]
+        "Convection":   0       //Do we have convection? -> Here: no
     },
 
     //############################################
@@ -119,8 +120,7 @@
         "StepSize":     0.01,   //time step size
         "NumSteps":     100,    //number of timesteps. -> Here: >0, i.e. instationary setup
         "Scheme":       1,      //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":        1,      //For theta scheme: parameter theta
-        "Convection":   0       //Do we have convection? -> Here: no
+        "Theta":        1     //For theta scheme: parameter theta
     },
 
     //#################################

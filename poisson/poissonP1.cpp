@@ -95,7 +95,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 
     if ( !doErrorEstimate) {
         Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
-        if(P.get<int>("Time.Convection"))
+        if(P.get<int>("PoissonCoeff.Convection"))
         {
             Poisson.vU.SetIdx( &Poisson.idx);
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
@@ -315,7 +315,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     {
         //CoeffCL::Show_Pec();
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("Time.Convection"), P.get<int>("Stabilization.SUPG"));
+        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
             timer.Reset();
@@ -381,7 +381,7 @@ int main (int argc, char** argv)
         }
         param >> P;
         param.close();
-        //SetMissingParameters(P);
+        SetMissingParameters(P);
         std::cout << P << std::endl;
 
         // set up data structure to represent a poisson problem

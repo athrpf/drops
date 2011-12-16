@@ -144,7 +144,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     else
     {
         Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem
-        if(P.get<int>("Time.Convection"))
+        if(P.get<int>("PoissonCoeff.Convection"))
           {
             Poisson.vU.SetIdx( &Poisson.idx); 
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);                 //Setupconvection
@@ -227,7 +227,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 
     if (P.get<int>("Time.NumSteps") != 0){
         InstatPoissonThetaSchemeCL<PoissonP2CL<CoeffCL>, PoissonSolverBaseCL>
-           ThetaScheme(Poisson, *solver, P.get<double>("Time.Theta"), P.get<double>("Time.Convection"));
+           ThetaScheme(Poisson, *solver, P.get<double>("Time.Theta"), P.get<double>("PoissonCoeff.Convection"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize"));
    
         for ( int step = 1; step <= P.get<int>("Time.NumSteps"); ++step)
