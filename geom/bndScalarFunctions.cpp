@@ -45,10 +45,10 @@ double tid_One( const Point3DCL&) { return 1.; }
 //========================================================================
 //                   Registrierung der Funktionen
 //========================================================================
-  static RegisterScalarFunction regscazero("Zero", instat_scalar_fun_ptr(Zero));
-  static RegisterScalarFunction regtidscazero("Zero", scalar_fun_ptr(tid_Zero));
-  static RegisterScalarFunction regscaone("One", instat_scalar_fun_ptr(One));
-  static RegisterScalarFunction regtidscaone("One", scalar_fun_ptr(tid_One));
+  static RegisterScalarFunction regscazero("Zero", Zero);
+  static RegisterScalarFunction regtidscazero("Zero", tid_Zero);
+  static RegisterScalarFunction regscaone("One", One);
+  static RegisterScalarFunction regtidscaone("One", tid_One);
 
 }//end namespace DROPS
 #endif /* BNDSCALARFUNCTIONS_H_ */

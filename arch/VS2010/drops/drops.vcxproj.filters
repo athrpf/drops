@@ -53,6 +53,9 @@
     <Filter Include="surfactant\param-files">
       <UniqueIdentifier>{1a1b53c4-3d2a-442f-9a25-c7796d4476e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="misc\kd-tree">
+      <UniqueIdentifier>{b02f982f-a5bc-4ad7-8afb-0534b3906d1e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\geom\boundary.cpp">
@@ -105,9 +108,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\levelset\surfTens.cpp">
       <Filter>target</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\misc\KDtree.cpp">
-      <Filter>misc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\misc\params.cpp">
       <Filter>misc</Filter>
@@ -286,6 +286,9 @@
     <ClCompile Include="..\..\..\num\quadrature.cpp">
       <Filter>num</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\tests\reparam.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\geom\boundary.h">
@@ -334,9 +337,6 @@
       <Filter>levelset</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\misc\container.h">
-      <Filter>misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\misc\KDtree.h">
       <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\misc\params.h">
@@ -522,6 +522,39 @@
     <ClInclude Include="..\..\..\num\renumber.h">
       <Filter>num</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\num\fe_repair.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\bounding_box.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\bucket.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\doc.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\kd_tree_utils.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\metric.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\node.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\result.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\search.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\tree.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\kd-tree\tree_builder.h">
+      <Filter>misc\kd-tree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\levelset\adaptriang.tpp">
@@ -535,9 +568,6 @@
     </None>
     <None Include="..\..\..\levelset\levelset.tpp">
       <Filter>levelset</Filter>
-    </None>
-    <None Include="..\..\..\misc\KDtree.tpp">
-      <Filter>misc</Filter>
     </None>
     <None Include="..\..\..\navstokes\instatnavstokes2phase.tpp">
       <Filter>navstokes</Filter>
@@ -637,6 +667,9 @@
     </None>
     <None Include="..\..\..\levelset\toluol.json">
       <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\num\fe_repair.tpp">
+      <Filter>num</Filter>
     </None>
   </ItemGroup>
 </Project>

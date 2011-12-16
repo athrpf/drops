@@ -25,6 +25,8 @@
 //#define MINPACK
 
 #include "levelset/fastmarch.h"
+#include "misc/kd-tree/tree_builder.h"
+#include "misc/kd-tree/search.h"
 #include "num/solver.h"
 #include <fstream>
 #include <cstring>
@@ -1456,7 +1458,9 @@ void DirectDistanceCL::BuildKDTree()
     \pre InitFrontVector has to be called
  */
 {
-    kdTree_= new KDTreeCL<double>( Addr(front_), front_.size()/3, 3, true);
+    kdTree_= new KDTree::TreeCL<double,3>();
+    KDTree::TreeBuilderCL<double, 3> kd_tree_builder( *kdTree_);
+    kd_tree_builder.build( front_);
 }
 
 void DirectDistanceCL::DetermineDistances()
@@ -1470,13 +1474,13 @@ void DirectDistanceCL::DetermineDistances()
             double newPhi= std::numeric_limits<double>::max();
             const Point3DCL coord= data_.coord[dof];
             for (ReparamDataCL::perDirSetT::const_iterator dir= data_.perDir.begin(), end= data_.perDir.end(); dir!=end; ++dir) {
-                KDTreeResultVectorCL<double> e;
                 const Point3DCL p= coord + *dir;
-                std::vector<double> qv( p.begin(), p.end());
-                kdTree_->GetNNearest( qv, numNeigh_, e);
-                // check for smallest distance in neighbor vertices
-                for ( int n=0; n<(int)e.size(); ++n) {
-                    newPhi= std::min( newPhi, std::sqrt( e[n].Distance)+vals_[ e[n].Index]);
+                typedef KDTree::SearchNearestNeighborsCL<2,double,3,12> SearcherT;
+                SearcherT searcher( *kdTree_, Addr(p), numNeigh_);
+                searcher.search();
+                SearcherT::result_type result= searcher.result();
+                for ( size_t n=0; n<result.size(); ++n){
+                    newPhi= std::min( newPhi, result[n].distance() + vals_[ kdTree_->get_orig(result[n].get_idx())]);
                 }
             }
 #pragma omp critical
@@ -1488,9 +1492,7 @@ void DirectDistanceCL::DetermineDistances()
 void DirectDistanceCL::DisplayMem() const
 {
     const size_t memFront= front_.size()*8, memVals= vals_.size()*8;
-    const size_t memPerKDInterval=2*8;
-    const size_t memPerKDNode= 4+3*8+2*4+2*memPerKDInterval+2*8;
-    const size_t memKDTree= front_.size()*(8+memPerKDNode);
+    const size_t memKDTree= kdTree_->memory();
     const size_t memData= (8+3*8+1)* data_.phi.Data.size();
     const size_t memByte= memData+memFront+memVals+memKDTree;
     const double mem=double(memByte)/1024/1024;

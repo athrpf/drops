@@ -139,6 +139,11 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
                   << "   - iterations    " << solver.GetIter()  << '\n'
                   << "   - residuum      " << solver.GetResid() << '\n'
                   << "   - real residuum " << realresid         << std::endl;
+        if(solver.GetResid() > P.get<double>("Poisson.Tol"))
+        {  
+            std::cout <<"The residual is bigger than tolerence ...\n";
+            abort();
+        }
         if (P.get<int>("Poisson.SolutionIsKnown")) {
             std::cout << line << "Check result against known solution ...\n";
             Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
@@ -204,6 +209,11 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
                       << "   - iterations    " << solver.GetIter()  << '\n'
                       << "   - residuum      " << solver.GetResid() << '\n'
                       << "   - real residuum " << realresid         << std::endl;
+            if(solver.GetResid() > P.get<double>("Poisson.Tol"))
+            {  
+                std::cout <<"The residual is bigger than tolerence ...\n";
+                abort();
+            }
             Poisson.A.Reset();
             Poisson.b.Reset();
             if (P.get<int>("Poisson.SolutionIsKnown")) {
@@ -326,6 +336,11 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
                       << "   - time          " << timer.GetTime()    << " s\n"
                       << "   - iterations    " << solver->GetIter()  << '\n'
                       << "   - residuum      " << solver->GetResid() << '\n';
+            if(solver->GetResid() > P.get<double>("Poisson.Tol"))
+            {  
+                std::cout <<"The residual is bigger than tolerence ...\n";
+                abort();
+            }
 
             if (P.get("Poisson.SolutionIsKnown", 0)) {
                 std::cout << line << "Check result against known solution ...\n";
