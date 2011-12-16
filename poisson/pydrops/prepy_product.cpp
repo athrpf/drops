@@ -17,29 +17,29 @@
  * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Copyright 2009 LNM/SC RWTH Aachen, Germany
-*/
+ * Copyright 2011 LNM/SC RWTH Aachen, Germany, AVT.PT RWTH Aachen
+ */
 
- // include geometric computing
+// include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
 #include "geom/geomselect.h"
 #include "misc/bndmap.h"                //include function container
 
-// include numeric computing!
+// include numeric computing
 #include "num/fe.h"
 #include "num/solver.h"
 #include "num/MGsolver.h"
 #include "poisson/integrTime.h"
 #include "num/poissonsolverfactory.h"
 
- // include problem class
+// include problem class
 #include "misc/params.h"
 #include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "num/bndData.h"
 
- // include standards
+// include standards
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -63,43 +63,76 @@
 
 using namespace std;
 
-const char line[] ="----------------------------------------------------------------------------------\n";
+typedef DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > PoissonProblem;
 
-PythonConnectCL PyC;
+//const char line[] ="----------------------------------------------------------------------------------\n";
 
-DROPS::ParamCL P;
+class PyScalarProductConnector {
+public:
+  void set_properties(const DROPS::ParamCL& P, PoissonProblem* prob_)
+  {
+    prob = prob_;
+    nx = P.get<int>("DomainCond.nx");
+    ny = P.get<int>("DomainCond.ny");
+    nz = P.get<int>("DomainCond.nz");
+    nt = P.get<int>("DomainCond.nt");
+    double lx = P.get<double>("DomainCond.lx");
+    double ly = P.get<double>("DomainCond.ly");
+    double lz = P.get<double>("DomainCond.lz");
+    double tmax = P.get<double>("DomainCond.tmax");
+    dx = lx/(nx-1); dy = ly/(ny-1); dz = lz/(nz-1);
+    dt = nt>1 ? tmax/(nt-1) : 1.0;
+    //cout << "set_properties tmax, it = " << tmax << ","<< nt << ","<< dt <<","<< endl;
+  }
 
-double GetProductF1(const DROPS::Point3DCL& p, double t){return PyC.GetProductF1(p,t);}
-double GetProductF2(const DROPS::Point3DCL& p, double t){return PyC.GetProductF2(p,t);}
-//for testing
-double One(const DROPS::Point3DCL&, double) { return 1.0; }
+  void SetProductFun(const PdeFunction* pdefun1_, const PdeFunction* pdefun2_) {
+    pdefun1 = pdefun1_;
+    pdefun2 = pdefun2_;
+  }
 
-namespace DROPS
+  const PdeFunction* pdefun1;
+  const PdeFunction* pdefun2;
+
+  void getnum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it)
+  {
+    ix=rd(p[0]/dx); iy=rd(p[1]/dy); iz=rd(p[2]/dz); it=rd(t/dt);
+    //cout << "getnum t, it = " << t << "," << it << ","<< dt <<","<< endl;
+  }
+  PoissonProblem* prob;
+
+  int nx, ny, nz, nt; // number of grid points
+  double dx, dy, dz, dt;
+private:
+};
+
+PyScalarProductConnector PySpC;
+
+double fun1(const DROPS::Point3DCL& p, double t)
 {
-
-/// \brief Strategy to solve the Poisson problem on a given triangulation
-template<class CoeffCL>
-void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
+  int ix, iy, iz, it;
+  PySpC.getnum(p, t, ix, iy, iz, it);
+  (*(PySpC.pdefun1))(ix, iy, iz, it);
+}
+double fun2(const DROPS::Point3DCL& p, double t)
 {
-    // time measurements
-#ifndef _PAR
-    TimerCL timer;
-#else
-    ParTimerCL timer;
-#endif
+  int ix, iy, iz, it;
+  PySpC.getnum(p, t, ix, iy, iz, it);
+  PySpC.pdefun2->operator()(ix, iy, iz, it);
+}
 
+
+//DROPS::ParamCL P_sp; // Parameter object for scalar product - does this one really have to be global?
+
+namespace DROPS {
+  void ScalarProductSetup( PoissonProblem& Poisson, ParamCL& P)
+  {
     // the triangulation
     MultiGridCL& mg= Poisson.GetMG();
 
-    // connection triangulation and vectors
-    // -------------------------------------------------------------------------
-    std::cout << line << "Connecting triangulation and matrices/vectors ...\n";
-    timer.Reset();
-
-    Poisson.idx.SetFE( P1_FE);                                  // set quadratic finite elements
+    Poisson.idx.SetFE( P1_FE);                                  // set quadratic finite elements ??? P1 is quadratic ???
     //see class for explanation: template didnt work
     if ( PoissonSolverFactoryHelperCL().MGUsed(P))
-        Poisson.SetNumLvl ( mg.GetNumLevel());
+      Poisson.SetNumLvl ( mg.GetNumLevel());
     Poisson.CreateNumbering( mg.GetLastLevel(), &Poisson.idx);  // number vertices and edges
     Poisson.b.SetIdx( &Poisson.idx);                            // tell b about numbering
     Poisson.x.SetIdx( &Poisson.idx);                            // tell x about numbering
@@ -107,135 +140,102 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
     Poisson.M.SetIdx( &Poisson.idx, &Poisson.idx);              // tell M about numbering
     Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);
 
-    timer.Stop();
-    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+    /* std::vector<size_t> UnkOnProc( 1);
+       UnkOnProc[0]  = Poisson.x.Data.size();
+       IdxT numUnk   = Poisson.x.Data.size(),
+       numAccUnk= Poisson.x.Data.size(); */
 
-
-    // display problem size
-    // -------------------------------------------------------------------------
-    std::cout << line << "Problem size\n";
-#ifdef _PAR
-    std::vector<size_t> UnkOnProc= ProcCL::Gather( Poisson.x.Data.size(), 0);
-    const IdxT numUnk   = Poisson.idx.GetGlobalNumUnknowns( mg),
-               numAccUnk= std::accumulate(UnkOnProc.begin(), UnkOnProc.end(), 0);
-#else
-    std::vector<size_t> UnkOnProc( 1);
-    UnkOnProc[0]  = Poisson.x.Data.size();
-    IdxT numUnk   = Poisson.x.Data.size(),
-         numAccUnk= Poisson.x.Data.size();
-#endif
-    std::cout << " o number of unknowns             " << numUnk    << '\n'
-              << " o number of accumulated unknowns " << numAccUnk << '\n'
-              << " o number of unknowns on proc\n";
-    for (size_t i=0; i<UnkOnProc.size(); ++i)
-        std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
-
-    // discretize (setup linear equation system)
-    // -------------------------------------------------------------------------
-    std::cout << line << "Discretize (setup linear equation system) ...\n";
-
-    timer.Reset();
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0, 0 );
-    timer.Stop();
-    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-
-}
-
-} // end of namespace DROPS
-
-template<class CoeffCL>
-void prepy_product(DROPS::ParamCL& P, DROPS::PoissonP1CL<CoeffCL>& Poisson)
-{
-  Strategy(Poisson, P);      
-}
-
-int main(int argc, char** argv)
-{
-#ifdef _PAR
-    DROPS::ProcInitCL procinit(&argc, &argv);
-    DROPS::ParMultiGridInitCL pmginit;
-#endif
-    try
-    {
-    // time measurements
-#ifndef _PAR
-        DROPS::TimerCL timer;
-#else
-        DROPS::ParTimerCL timer;
-#endif
-
-        std::ifstream param;
-        if (argc!=2){
-            std::cout << "Using default parameter file: preproduct.json\n";
-            param.open( "preproduct.json");
-        }
-        else
-            param.open( argv[1]);
-        if (!param){
-            std::cerr << "error while opening parameter file\n";
-            return 1;
-        }
-        param >> P;
-        param.close();
-        std::cout << P << std::endl;
-
-        // set up data structure to represent a poisson problem
-        // ---------------------------------------------------------------------
-        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
-        timer.Reset();
-
-        //create geometry
-        DROPS::MultiGridCL* mg= 0;
-        DROPS::PoissonBndDataCL* bdata = 0;
-
-        //only for measuring cell, not used here
-        double r = 1;
-        std::string serfile = "none";
-
-        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
-
-        DROPS::BuildBoundaryData( mg, bdata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
-
-        // Setup the problem
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);    
-      
-        timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-
-        // Refine the grid
-        // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
-        timer.Reset();
-        // Create new tetrahedra
-        for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
-            std::cout << " refine (" << ref << ")\n";
-            DROPS::MarkAll( *mg);
-            mg->Refine();
-        }
-        
-        prepy_product(P, prob);                  //Setup System 
-
-        DROPS::instat_scalar_fun_ptr f1;
-        DROPS::instat_scalar_fun_ptr f2;
-        DROPS::instat_scalar_fun_ptr test;
-        test = One;
-        
-        typedef PdeFunction* PdeFunPtr;
-        PdeFunPtr PDEf1(new TestPdeFunction(P,test));
-        PdeFunPtr PDEf2(new TestPdeFunction(P,test));
-        PyC.Init(P);                             //Inital Pyc
-        PyC.SetProductFun(PDEf1, PDEf2);         //initalize two functions
-        f1 = GetProductF1;                       //get function 1
-        f2 = GetProductF2;                       //get function 2
-    
-        double result = DROPS::Py_product( prob.GetMG(), prob.idx, prob.A, prob.M, f1, f2, 0., false);
-        std::cout<<"The result of py_product is"<<result<<std::endl;
-
-        delete[] PDEf1;
-        delete[] PDEf2;
-        return 0;
+    Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0, 0 );
   }
-  catch (DROPS::DROPSErrCL err) { err.handle(); }
+
+}
+/** Set up the matrices for calculating scalar products.
+ *
+ *  Takes number of grid points and lengths of the box
+ */
+int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, double lz, double tmax, bool h1)
+{
+  DROPS::ParamCL P;
+  try
+    {
+      P.put<int>("DomainCond.nx", nx);
+      P.put<int>("DomainCond.ny", ny);
+      P.put<int>("DomainCond.nz", nz);
+      P.put<int>("DomainCond.nt", nt);
+      P.put<double>("DomainCond.lx", lx);
+      P.put<double>("DomainCond.ly", ly);
+      P.put<double>("DomainCond.lz", lz);
+      P.put<double>("DomainCond.tmax", tmax);
+      P.put<int>("DomainCond.RefineSteps", 0);
+      stringstream MeshFile;
+      MeshFile << lx << "x" << ly << "x" << lz << "@" << nx-1 << "x" << ny-1 << "x" << nz-1; // meshfile takes number of intervals, not grid points
+      P.put<string>("DomainCond.MeshFile",MeshFile.str().c_str());
+      if (h1) {
+	P.put<string>("PoissonCoeff.Diffusion", "One");
+      } else {
+	P.put<string>("PoissonCoeff.Diffusion", "Zero");
+      }
+      P.put<string>("PoissonCoeff.Source", "Zero");
+      P.put<string>("PoissonCoeff.Solution", "Zero");
+      P.put<string>("PoissonCoeff.InitialVal", "Zero");
+      //P.put<string>("PoissonCoeff.Flowfield", "Zero");
+      P.put<int>("Poisson.Method", 303);
+
+      std::cout << P << std::endl;
+
+      // set up data structure to represent a poisson problem
+      // ---------------------------------------------------------------------
+      std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+
+      //create geometry
+      DROPS::MultiGridCL* mg= 0;
+      DROPS::PoissonBndDataCL* bdata = 0;
+
+      int geomtype = 1; double r = 1; std::string serfile = "none";
+      DROPS::BuildDomain( mg, MeshFile.str(), geomtype, serfile, r);
+
+      std::string boundaryfuncs = "Zero!Zero!Zero!Zero!Zero!Zero";
+      std::string boundarytype  = "0!2!2!0!2!2";
+      DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs);
+
+      // Setup the problem
+      PoissonProblem* prob = new PoissonProblem( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
+      ScalarProductSetup(*prob, P);
+
+      PySpC.set_properties(P, prob);    //Initalize PythonConnector
+    }  catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 
+#include "pypdefunction.h"
+using namespace boost::python;
+numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
+  typedef PdeFunction* PdeFunPtr;
+  PdeFunction* vf = new PyPdeFunction(v);
+  PdeFunction* wf = new PyPdeFunction(w);
 
+  int nx=PySpC.nx, ny=PySpC.ny, nz=PySpC.nz, nt=PySpC.nt;
+  assert(vf->get_dimensions(nx, ny, nz, nt));
+  assert(wf->get_dimensions(nx, ny, nz, nt));
+  cout << "nt = " << nt << endl;
+
+  PySpC.SetProductFun(vf, wf); //initalize two functions
+
+  // croate output object
+  npy_intp* output_dim = new npy_intp[1];
+  output_dim[0] = nt;
+  PyArrayObject* retval = (PyArrayObject*) PyArray_New(&PyArray_Type, 1, output_dim, PyArray_DOUBLE, NULL, NULL, 0, NPY_C_CONTIGUOUS, NULL);
+  object obj(handle<>((PyObject*)retval));
+  double* solution_ptr = (double*)retval->data;
+
+  PoissonProblem* prob = PySpC.prob;
+  for (int timestep=0; timestep<nt; ++timestep) {
+    cout << "hans : " << timestep*PySpC.dt << endl;
+    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, fun1, fun2, timestep*PySpC.dt, false);
+    std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
+  }
+  array solution = extract<numeric::array>(obj);
+
+  delete vf;
+  delete wf;
+  return solution;
+}
