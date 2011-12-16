@@ -31,11 +31,6 @@
 
 namespace DROPS{
 
-  //typedef double    (*scalar_fun_ptr)       (const Point3DCL&);
-  //typedef Point3DCL (*vector_fun_ptr)       (const Point3DCL&);
-//typedef double    (*instat_scalar_fun_ptr)(const Point3DCL&, double);
-//typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);
-
 
 /// \brief Coefficients of the Poisson problem
 /** The coefficients of the Poisson problem are:
