@@ -1,3 +1,6 @@
+#ifndef __PYPDEFUNCTION_HPP__
+#define __PYPDEFUNCTION_HPP__
+
 class PyPdeFunction : public PdeFunction {
 private:
   int nx, ny, nz, nt;
@@ -132,3 +135,5 @@ public:
     return extract<double>(data[t]);
   }
 };
+
+#endif
