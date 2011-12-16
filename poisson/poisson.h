@@ -39,8 +39,6 @@ namespace DROPS
 
 typedef BndSegDataCL<> PoissonBndSegDataCL;
 typedef BndDataCL<> PoissonBndDataCL;
-typedef double  (*instat_scalar_fun_ptr)( const Point3DCL&, double);
-typedef double  (*scalar_fun_scalar_ptr)( const Point3DCL&);
 
 class StripTimeCL
 // converts time dependent function to one, that is time independent.

@@ -22,6 +22,7 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
+#include "poisson/poissonCoeff.h"
 #include "misc/bndmap.h"
 #include "misc/params.h"
 
