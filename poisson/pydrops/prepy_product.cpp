@@ -179,7 +179,7 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       P.put<string>("PoissonCoeff.Solution", "Zero");
       P.put<string>("PoissonCoeff.InitialVal", "Zero");
       P.put<string>("PoissonCoeff.Reaction", "Zero");
-      P.put<string>("PoissonCoeff.Flowfield", "Example1_Flowfield");
+      P.put<int>("PoissonCoeff.Convection", 0);
       P.put<int>("Poisson.Method", 303);
 
       std::cout << P << std::endl;
@@ -217,7 +217,6 @@ numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
   int nx=PySpC.nx, ny=PySpC.ny, nz=PySpC.nz, nt=PySpC.nt;
   assert(vf->get_dimensions(nx, ny, nz, nt));
   assert(wf->get_dimensions(nx, ny, nz, nt));
-  cout << "nt = " << nt << endl;
 
   PySpC.SetProductFun(vf, wf); //initalize two functions
 
@@ -230,7 +229,6 @@ numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
 
   PoissonProblem* prob = PySpC.prob;
   for (int timestep=0; timestep<nt; ++timestep) {
-    cout << "hans : " << timestep*PySpC.dt << endl;
     solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, fun1, fun2, timestep*PySpC.dt, false);
     std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
   }
