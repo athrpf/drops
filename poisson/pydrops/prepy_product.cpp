@@ -178,7 +178,8 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       P.put<string>("PoissonCoeff.Source", "Zero");
       P.put<string>("PoissonCoeff.Solution", "Zero");
       P.put<string>("PoissonCoeff.InitialVal", "Zero");
-      //P.put<string>("PoissonCoeff.Flowfield", "Zero");
+      P.put<string>("PoissonCoeff.Reaction", "Zero");
+      P.put<string>("PoissonCoeff.Flowfield", "Example1_Flowfield");
       P.put<int>("Poisson.Method", 303);
 
       std::cout << P << std::endl;
