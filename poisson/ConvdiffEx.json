@@ -63,7 +63,7 @@
             // -> Here: b = (1,0,0)
         "InitialVal":       "Example3_InitialValue",    // -> Here: u(t=0) = 1
             //Initial value of the pde [u(t=0)]
-        "Stabilization":    0
+        "Convection":   1                               //Do we have convection? -> Here: yes
     },
 
     //############################################
@@ -123,8 +123,7 @@
         "StepSize":     1,   //time step size
         "NumSteps":     0,   //number of timesteps. -> Here: =0, i.e. stationary setup
         "Scheme":       1,   //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":        1,   //For theta scheme: parameter theta
-        "Convection":   1    //Do we have convection? -> Here: yes
+        "Theta":        1    //For theta scheme: parameter theta
     },
 
     //#################################

@@ -48,17 +48,18 @@
     {
         "Diffusion":        0.01,                              //Diffusion coefficient
             // -> Here: a = 1
-        "Reaction":             "SUPG_Reaction",        //Reaction term [q] with the name "Example1_Reaction"
+        "Reaction":             "SUPG_Reaction",               //Reaction term [q] with the name "Example1_Reaction"
             // -> Here: q = 0
-        "Solution":             "SUPG_Solution",        //Solution of poisson problem [u] has the name "Example1_Solution"
-            // -> Here: u = 1 + 64 xyz *(1-x)*(1-y)*(1-z)
-        "Source":           "SUPG_Source",              //Right hand side of PDE [f]
-            // -> Here: f = 128*(xy(1-x)(1-y)+xz(1-x)(1-z)+yz(1-y)(1-z))
-        "Flowfield":        "SUPG_Flowfield",           //Convection velocity of PDE [b]
-            // -> Here: b = (0,0,0)
-        "InitialVal":       "Zero",                    //Initial value of the pde [u(t=0)]
-            // -> Here: u(t=0) = 1
-        "Stabilization":    1
+        "Solution":             "SUPG_Solution",               //Solution of poisson problem [u] has the name "Example1_Solution"
+        "Source":               "SUPG_Source",                 //Right hand side of PDE [f]
+        "Flowfield":            "SUPG_Flowfield",              //Convection velocity of PDE [b]
+        "InitialVal":           "Zero",                        //Initial value of the pde [u(t=0)]
+            // -> Here: u(t=0) = 0
+        "Convection":     1        //Do we have convection? -> Here: no
+    },
+    "Stabilization":
+    {
+        "SUPG":             1
     },
 
     //############################################
@@ -67,7 +68,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      2,
+        "RefineSteps":      4,
             //initial refinement: how often is the mesh refined
             // -> Here: two times refinement
         "GeomType":         1,
@@ -115,8 +116,7 @@
         "StepSize":       1,       //time step size
         "NumSteps":       0,       //number of timesteps. -> Here: 0, i.e. stationary setup
         "Scheme":         1,       //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":          1,       //For theta scheme: parameter theta
-        "Convection":     1        //Do we have convection? -> Here: no
+        "Theta":          1       //For theta scheme: parameter theta
     },
 
 	// experimental conditions
@@ -127,17 +127,6 @@
 		"Mu":		1.00412,
 		"Cp":		1500,
 		"Lambda":	0.26
-	},
-
-	// Ensight settings
-	"Ensight":
-	{
-		"EnsightOut":		1, 	 //Ensight output
-		"EnsCase":		"FilmTemp", 	 //name of Ensight Case
-		"EnsDir":		"ensight", 	 //local directory for Ensight files
-		"GeomName":		"test", 	 //name for the geometry
-		"MasterOut":		1, 	 //only master writes out ensight files
-		"Binary":		1 	 //write out ensight files in binary format
 	},
 
     //#################################
