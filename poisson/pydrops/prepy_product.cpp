@@ -178,7 +178,8 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       P.put<string>("PoissonCoeff.Source", "Zero");
       P.put<string>("PoissonCoeff.Solution", "Zero");
       P.put<string>("PoissonCoeff.InitialVal", "Zero");
-      //P.put<string>("PoissonCoeff.Flowfield", "Zero");
+      P.put<string>("PoissonCoeff.Reaction", "Zero");
+      P.put<string>("PoissonCoeff.Flowfield", "Example1_Flowfield");
       P.put<int>("Poisson.Method", 303);
 
       std::cout << P << std::endl;
@@ -195,7 +196,7 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       DROPS::BuildDomain( mg, MeshFile.str(), geomtype, serfile, r);
 
       std::string boundaryfuncs = "Zero!Zero!Zero!Zero!Zero!Zero";
-      std::string boundarytype  = "0!2!2!0!2!2";
+      std::string boundarytype  = "0!21!21!0!21!21";
       DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs);
 
       // Setup the problem
