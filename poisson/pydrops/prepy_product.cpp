@@ -196,7 +196,7 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       DROPS::BuildDomain( mg, MeshFile.str(), geomtype, serfile, r);
 
       std::string boundaryfuncs = "Zero!Zero!Zero!Zero!Zero!Zero";
-      std::string boundarytype  = "0!2!2!0!2!2";
+      std::string boundarytype  = "0!21!21!0!21!21";
       DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs);
 
       // Setup the problem
