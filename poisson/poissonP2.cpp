@@ -140,11 +140,11 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     timer.Reset();
     
     if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0., P.get<int>("PoissonCoeff.Stabilization"));    //IntationarySystem
+        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0.);    //IntationarySystem
     else
     {
         Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem
-        if(P.get<int>("Time.Convection"))
+        if(P.get<int>("PoissonCoeff.Convection"))
           {
             Poisson.vU.SetIdx( &Poisson.idx); 
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);                 //Setupconvection
@@ -227,7 +227,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 
     if (P.get<int>("Time.NumSteps") != 0){
         InstatPoissonThetaSchemeCL<PoissonP2CL<CoeffCL>, PoissonSolverBaseCL>
-           ThetaScheme(Poisson, *solver, P.get<double>("Time.Theta"), P.get<double>("Time.Convection"));
+           ThetaScheme(Poisson, *solver, P.get<double>("Time.Theta"), P.get<double>("PoissonCoeff.Convection"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize"));
    
         for ( int step = 1; step <= P.get<int>("Time.NumSteps"); ++step)
@@ -276,7 +276,7 @@ int main (int argc, char** argv)
         std::ifstream param;
         if (argc!=2){
             std::cout << "Using default parameter file: poissonex1.json\n";
-            param.open( "poissonex1.json");
+            param.open( "PoissonEx.json");
         }
         else
             param.open( argv[1]);

@@ -26,6 +26,7 @@
 
 #include "misc/container.h"
 #include "misc/params.h"
+#include "misc/bndmap.h"
 #include <sstream>
 
 
@@ -78,7 +79,10 @@ class PoissonCoeffCL
         Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
         InitialCondition = scamap[P.get<std::string>("PoissonCoeff.InitialVal")];
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
-        Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
+        if(P.get<int>("PoissonCoeff.Convection")==0)
+            Vel = vecmap["ZeroVel"];
+        else    
+            Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         Ref_=P.get<int>("DomainCond.RefineSteps");
     }
     PoissonCoeffCL( ParamCL& P, instat_scalar_fun_ptr diffusion, instat_scalar_fun_ptr source, instat_scalar_fun_ptr init){
