@@ -15,6 +15,8 @@ tmax = 0.
 dt = 0.1
 theta = 1.0
 
+drops.setup_scalar_product_matrices(Nx, Ny, Nz, Nt, lx, ly, lz, tmax, False)
+
 Xmesh, Ymesh, Zmesh, Tmesh = mgrid[0:Nx,0:Ny,0:Nz,0:Nt]
 X = Xmesh.astype(float)/Nx*lx
 Y = Ymesh.astype(float)/Ny*ly
@@ -39,9 +41,13 @@ flag_supg = False
 retval =  drops.convection_diffusion(C0,  b_in, source, D, b_interface, uN, Dmol, lx, ly, lz, dt, theta, flag_pr, flag_bc, flag_supg)
 
 dV  = lx*ly*lz/(Nx-1)/(Ny-1)/(Nz-1)
-err = (retval - c)*dV
+err = ((retval - c)*dV)**2
+print np.sqrt(np.sum(err))
 if -1.2345 in c:
     print 'err'
+
+sperr = drops.scalar_product(err, err)
 print linalg.norm(err)
+print sperr
 #print retval
 #print source

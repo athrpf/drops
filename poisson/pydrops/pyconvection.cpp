@@ -66,7 +66,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   std::stringstream MeshFile;
   MeshFile << lx << "x" << ly << "x" << lz << "@" << nx-1 << "x" << ny-1 << "x" << nz-1; // meshfile takes number of intervals, not grid points
   P.put<std::string>("DomainCond.MeshFile",MeshFile.str().c_str());
-  P.put<std::string>("DomainCond.BoundaryType","0!2!2!0!2!2");
+  P.put<std::string>("DomainCond.BoundaryType","2!21!21!2!21!21");
   P.put<int>("DomainCond.GeomType", 1);
 
   P.put<double>("PoissonCoeff.Dmol", Dmol);
