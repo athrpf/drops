@@ -5,7 +5,7 @@
 import python ;
 import toolset : using ;
 using gcc
-     : "g++"
+     :
      :
      : <cxxflags>-W <cxxflags>-Wall <cxxflags>-pedantic <cxxflags>-O0 <cxxflags>-g <cxxflags>-fopenmp <cxxflags>-fPIC <linkflags>-fopenmp
      ;
