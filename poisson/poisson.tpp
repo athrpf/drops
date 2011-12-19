@@ -184,6 +184,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
 
+//Source term for sensitivity problem
 template <class Coeff>
 void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t) const
 {
@@ -234,6 +235,8 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
     }
   }
 }
+
+//Gradient problem for IA2
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, instat_scalar_fun_ptr Psi, instat_scalar_fun_ptr flux, double t) const
 {
@@ -245,7 +248,7 @@ void PoissonP1CL<Coeff>::SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, 
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-  const double int_vi= 1./24; //1/120+1/4*2/15
+  const double int_vi= 1./24; //1/120+1/4*2/15             NOT SO GOOD 
 
 //
 
@@ -563,14 +566,16 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
 
           if (UnknownIdx[i] == NoIdx) continue; // vertex i is on a Dirichlet boundary -> no test function
 
-          const Quad2CL<> u_Gradi( dot( u, Quad2CL<Point3DCL>( G[i])));
+          const Quad3CL<> u_Gradi( dot( u, Quad3CL<Point3DCL>( G[i])));
           for(int j=0; j<4; ++j)
           {
-            const double coupl= u_Gradi.quadP1( j, absdet);
+            const Quad3CL<double> resq3( phiq3[j] * u_Gradi);
+            double res = resq3.quad(absdet);  
+            //const double coupl= u_Gradi.quadP1( j, absdet);
             if (UnknownIdx[j] != NoIdx)  // vertex j is not on a Dirichlet boundary
-              U( UnknownIdx[i], UnknownIdx[j])+= coupl;
+              U( UnknownIdx[i], UnknownIdx[j])+= res;
             else // coupling with vertex j on right-hand-side
-              if (vU != 0) vU->Data[ UnknownIdx[i]]-= coupl* BndData_.GetDirBndValue(*sit->GetVertex(j), t);
+              if (vU != 0) vU->Data[ UnknownIdx[i]]-= res* BndData_.GetDirBndValue(*sit->GetVertex(j), t);
           }
         }
     }

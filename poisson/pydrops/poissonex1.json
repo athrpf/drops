@@ -62,7 +62,8 @@
         //"InitialVal":       "Example1_InitialValue",        //Initial value of the pde [u(t=0)]
             // -> Here: u(t=0) = 1
         "Stabilization":    0,
-        "Dmol":        1.0                               // molecular Diffusion coefficient
+        "Dmol":        1.0,                               // molecular Diffusion coefficient
+        "Adjoint":     0
     },
 
     //############################################

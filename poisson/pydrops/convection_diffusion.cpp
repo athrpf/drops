@@ -347,11 +347,15 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 
 } // end of namespace DROPS
 
-//the main function
+void SetMissingParameters(DROPS::ParamCL& P){
+    P.put_if_unset<int>("Stabilization.SUPG",0);
+    P.put_if_unset<int>("PoissonCoeff.Adjoint", 0);    
+}
 //void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
 void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
+        SetMissingParameters(P);
 #ifdef _PAR
     DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
@@ -394,7 +398,7 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         
         // Setup the problem
         //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, P.get<int>("PoissonCoeff.Adjoint")==1);
 
 #ifdef _PAR
         // Set parallel data structures
