@@ -67,7 +67,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 {
     static bool first = true;
     static double dx, dy;
-    static double Rho, Mu;   //density, viscosity
+    double Nu; // kinematic viscosity
     //dirty hack
     if (first){
         std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
@@ -76,14 +76,13 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
             mesh[idx_]= ' ';
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy;
-        Rho = P.get<double>("Exp.Rho");
-        Mu  = P.get<double>("Exp.Mu");
+        Nu  = P.get<double>("PoissonCoeff.KinematicViscosity");
         first = false;
     }
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
-        U= Rho*9.81*dy*dy/2/Mu;  //U=gh^2/(2*nu)
+        U= Nu*9.81*dy*dy/2;  //U=gh^2/(2*nu)
     ret[0]= U*(2-d)*d;
     ret[1]=0.;
     ret[2]=0.;
