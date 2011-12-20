@@ -47,10 +47,11 @@ class PythonConnectCL
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   double D_mol_;
+  bool   adjoint_;
 
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
-  PdeFunction *f1_, *f2_;
+  const PdeFunction *presol_, *DelPsi_;
   bool adjoint_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
@@ -206,19 +207,17 @@ class PythonConnectCL
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
   //
-
-  double GetProductF1( const DROPS::Point3DCL& p, double t)
+  double GetPresol( const DROPS::Point3DCL& p, double t)
   {
     int ix, iy, iz, it;
     GetNum(p,t,ix,iy,iz,it);
-    return (*f1_)(ix,iy,iz,it);
+    return (*presol_)(ix,iy,iz,it);
   };
-
-  double GetProductF2( const DROPS::Point3DCL& p, double t)
+  double GetDelPsi( const DROPS::Point3DCL& p, double t)
   {
     int ix, iy, iz, it;
     GetNum(p,t,ix,iy,iz,it);
-    return (*f2_)(ix,iy,iz,it);
+    return (*DelPsi_)(ix,iy,iz,it);
   };
 
    double GetInitial( const DROPS::Point3DCL& p, double t)
@@ -331,17 +330,17 @@ class PythonConnectCL
     {
       double *out;
       if (adjoint_) {
-	const int num = (Nt_-rd(t/dt_)-1)*Nxyz_;
-	out = C3D_+num;
+	  const int num = (Nt_-rd(t/dt_)-1)*Nxyz_;    //flip solution back
+	  out = C3D_+num;
       } else {
-	const int num= (rd(t/dt_)-1)*Nxyz_;  // omit initial time step in output
-	out= C3D_+num;               //don't like this way
+	  const int num= (rd(t/dt_)-1)*Nxyz_;         // omit initial time step in output
+	  out= C3D_+num;                              //don't like this way
       }
 
       DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
-	{
-	  out[GetNum( sit->GetCoord())]= sol.val( *sit);
-	}
+	  {
+        out[GetNum( sit->GetCoord())]= sol.val( *sit);
+	  }
 
     }
   template<class P1EvalT>
@@ -353,12 +352,6 @@ class PythonConnectCL
         {
             out[GetNum( sit->GetCoord())]= sol.val( *sit);
         }
-    }
-
-    void SetProductFun(PdeFunction* f1, PdeFunction* f2)
-    {
-      f1_ = f1;
-      f2_ = f2;
     }
 
   //Check the input matrices
@@ -391,14 +384,18 @@ class PythonConnectCL
     Dw_    = Dw;
     D_mol_ = P.get<double>("PoissonCoeff.Dmol");
     dt_    = P.get<double>("Time.StepSize");
+    Nt_    = P.get<int>("Time.NumSteps")+1;
     B_Inter_= B_Inter;
 
-
+    std::string adstr ("IA1Adjoint");
+    std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+    adjoint_ = (adstr.compare(IAProbstr)==0);
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
 
-  void Init(const DROPS::ParamCL& P)
+  void Init( const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F,
+                    const PdeFunction* presol, const PdeFunction* DelPsi,const PdeFunction* Dw,  double* c_sol)
   {
     int refinesteps_;
     double lx_, ly_, lz_;
@@ -418,7 +415,17 @@ class PythonConnectCL
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
 
-    dt_= P.get<double>("Time.StepSize");
+    B_in_   = B_in;
+    B_Inter_= B_Inter;
+    F_      = F;
+    presol_ = presol;
+    DelPsi_  = DelPsi;
+    Dw_     = Dw;
+    D_mol_  = P.get<double>("PoissonCoeff.Dmol");
+    dt_     = P.get<double>("Time.StepSize");
+
+    // Set the output pointer to the output arguments.
+    C3D_ = c_sol;
   }
 
 };

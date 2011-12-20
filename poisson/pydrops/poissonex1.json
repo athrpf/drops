@@ -63,7 +63,7 @@
             // -> Here: u(t=0) = 1
         "Dmol":        1.0,                               // molecular Diffusion coefficient
         "Convection":       0,        //Do we have convection? -> Here: no
-        "Adjoint":          0
+        "IAProb":           "IA1Direct"                     //IA1Direct, IA1Adjoint, IA2Direct, IA2Sense, IA2Gradient
     },
     "Stabilization":
     {
