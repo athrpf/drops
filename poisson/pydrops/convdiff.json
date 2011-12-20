@@ -52,9 +52,12 @@
         "Dmol":  1,
         "Solution":         "Zero",                         //Solution of poisson problem
         "Flowfield":        "Example1_Flowfield",           //Convection velocity of PDE [b]
-        "Stabilization":    0
+        "Convection":       0        //Do we have convection? -> Here: no
     },
-
+    "Stabilization":
+    {
+        "SUPG":             0
+    },
     //############################################
     // Description of Geometry and mesh parameters
     // and Boundary conditions
@@ -96,8 +99,7 @@
         "StepSize":       0.1,       //time step size
         "NumSteps":       10,       //number of timesteps. -> Here: 0, i.e. stationary setup
         "Scheme":         1,       //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":          1,       //For theta scheme: parameter theta
-        "Convection":     0        //Do we have convection? -> Here: no
+        "Theta":          1       //For theta scheme: parameter theta
     },
 
     //#################################
