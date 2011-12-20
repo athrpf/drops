@@ -72,12 +72,13 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   P.put<double>("PoissonCoeff.Dmol", Dmol);
   //P.put<std::string>("PoissonCoeff.Solution", "");
   P.put<int>("PoissonCoeff.Stabilization", flag_supg);
+  P.put<int>("PoissonCoeff.Convection", 1);
+  P.put<string>("PoissonCoeff.Flowfield", "Nusselt");
 
   P.put<int>("Time.NumSteps", nt-1); // again, number of intervals
   P.put<double>("Time.StepSize", dt);
   P.put<int>("Time.Scheme", 1);
   P.put<double>("Time.Theta", 1.0);
-  P.put<int>("Time.Convection", true);
 
   /* Print out parameters */
   std::cout << P << std::endl;
@@ -106,7 +107,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   delete Dwf;
   return solution;
 }
-
+/*
 bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_interface, PdeFunction& source, PdeFunction& Dw)
 {
   try {
@@ -147,7 +148,7 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
   return false;
-}
+}*/
 
 #include "prepy_product.cpp"
 
