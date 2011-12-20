@@ -73,6 +73,7 @@ double GetInitial(const DROPS::Point3DCL& p, double t)
 {
   return PyC.GetInitial(p,t);
 }
+
 double GetDiffusion(const DROPS::Point3DCL& p, double t){return PyC.GetDiffusion(p,t);}
 double GetSource(const DROPS::Point3DCL& p, double t){return PyC.GetSource(p,t);}
 double GetInflow(const DROPS::Point3DCL& p, double t){return PyC.GetInflow(p,t);}
@@ -349,9 +350,9 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
-    P.put_if_unset<int>("PoissonCoeff.Adjoint", 0);    
+    P.put_if_unset<std::string>("PoissonCoeff.IAProb", "IA1Direct");    
 }
-//void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
+//mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
@@ -398,7 +399,104 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         
         // Setup the problem
         //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, P.get<int>("PoissonCoeff.Adjoint")==1);
+        std::string adstr ("IA1Adjoint");
+        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
+
+#ifdef _PAR
+        // Set parallel data structures
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+        pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+        DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
+        lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
+        lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
+#endif
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+
+        // Refine the grid
+        // ---------------------------------------------------------------------
+        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+        timer.Reset();
+        // Create new tetrahedra
+        for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
+            std::cout << " refine (" << ref << ")\n";
+            DROPS::MarkAll( *mg);
+            mg->Refine();
+        }
+        // do loadbalancing
+#ifdef _PAR
+        lb.DoMigration();
+#endif
+
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        mg->SizeInfo(cout);
+
+        //prepare MC
+        PyC.SetMG(mg);
+        PythonConnectCL::ClearMaps();
+        PythonConnectCL::setFaceMap();
+        PythonConnectCL::setTetraMap();
+
+        // Solve the problem
+	    DROPS::Strategy( prob, P);
+        //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+
+        delete mg;
+        //delete bdata;
+    }
+    catch (DROPS::DROPSErrCL err) { err.handle(); }
+}
+
+//Used to solve a direct, sensetivity, adjoint and gradient problem in IA2; source for direct and adjoint; presol for sensetivity and gradient; DelPsi for sensetivity and gradient
+void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* presol, const PdeFunction* DelPsi, const PdeFunction* Dw, double* C_sol)
+{
+        PyC.Init(P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);
+        SetMissingParameters(P);
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit;
+#endif
+    try
+    {
+    // time measurements
+#ifndef _PAR
+        DROPS::TimerCL timer;
+#else
+        DROPS::ParTimerCL timer;
+#endif
+
+        // set up data structure to represent a poisson problem
+        // ---------------------------------------------------------------------
+        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+        timer.Reset();
+
+        //create geometry
+        DROPS::MultiGridCL* mg= 0;
+        //DROPS::PoissonBndDataCL* bdata = 0;
+
+        const bool isneumann[6]=
+        { false, true,              // inlet, outlet
+          true,  false,             // wall, interface
+          true,  true };            // in Z direction
+
+        DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
+
+        const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
+
+        DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
+
+        //only for measuring cell, not used here
+        double r = 1;
+        std::string serfile = "none";
+
+        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+        
+        // Setup the problem
+        //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
 
 #ifdef _PAR
         // Set parallel data structures

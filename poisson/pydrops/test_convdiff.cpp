@@ -356,9 +356,9 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
-    P.put_if_unset<int>("PoissonCoeff.Adjoint", 0);    
+    P.put_if_unset<std::string>("PoissonCoeff.IAProb", "IA1Direct");    
 }
-//void convection_diffusion(DROPS::ParamCL& P, const double* C0, const double* b_in, const double* b_interface, const double* source, const double* Dw, double* C_sol)
+//mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
         PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
@@ -416,7 +416,9 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         
         // Setup the problem
         //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, P.get<int>("PoissonCoeff.Adjoint")==1);
+        std::string adstr ("IA1Adjoint");
+        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
 
 #ifdef _PAR
         // Set parallel data structures
