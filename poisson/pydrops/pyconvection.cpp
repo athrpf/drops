@@ -68,7 +68,8 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
 
   P.put<double>("PoissonCoeff.Dmol", Dmol);
   //P.put<std::string>("PoissonCoeff.Solution", "");
-  P.put<int>("PoissonCoeff.Stabilization", flag_supg);
+  P.put<int>("Stabilization.SUPG", flag_supg);
+  P.put<int>("PoissonCoeff.Adjoint", (int)flag_pr);
   P.put<int>("PoissonCoeff.Convection", 1);
   P.put<string>("PoissonCoeff.Flowfield", "Nusselt");
 

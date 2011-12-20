@@ -205,21 +205,21 @@ class PythonConnectCL
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
   //
-  
+
   double GetProductF1( const DROPS::Point3DCL& p, double t)
   {
     int ix, iy, iz, it;
     GetNum(p,t,ix,iy,iz,it);
     return (*f1_)(ix,iy,iz,it);
   };
-  
+
   double GetProductF2( const DROPS::Point3DCL& p, double t)
   {
     int ix, iy, iz, it;
     GetNum(p,t,ix,iy,iz,it);
     return (*f2_)(ix,iy,iz,it);
   };
-  
+
    double GetInitial( const DROPS::Point3DCL& p, double t)
   {
     t=0.;
@@ -328,8 +328,15 @@ class PythonConnectCL
   template<class P1EvalT>
     void SetSol3D( const P1EvalT& sol, double t)  //Instationary problem
     {
-      const int num= (rd(t/dt_)-1)*Nxyz_;  //omit initial time step in output
-      double *out= C3D_+num;               //don't like this way
+      bool adjoint = P.get<int>("PoissonCoeff.Adjoint");
+      double *out;
+      if (adjoint) {
+	const int num = (Nt_-rd(t/dt_)-1)*Nxyz_;
+	out = C3D_+num;
+      } else {
+	const int num= (rd(t/dt_)-1)*Nxyz_;  // omit initial time step in output
+	out= C3D_+num;               //don't like this way
+      }
 
       DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
 	{
@@ -347,11 +354,11 @@ class PythonConnectCL
             out[GetNum( sit->GetCoord())]= sol.val( *sit);
         }
     }
-    
+
     void SetProductFun(PdeFunction* f1, PdeFunction* f2)
     {
       f1_ = f1;
-      f2_ = f2;    
+      f2_ = f2;
     }
 
   //Check the input matrices
@@ -361,7 +368,7 @@ class PythonConnectCL
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
     refinesteps_= P.get<int>("DomainCond.RefineSteps");
-    
+
     std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx_;
     while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
@@ -388,14 +395,14 @@ class PythonConnectCL
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
-  
-  void Init(const DROPS::ParamCL& P) 
+
+  void Init(const DROPS::ParamCL& P)
   {
     int refinesteps_;
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
     refinesteps_= P.get<int>("DomainCond.RefineSteps");
-    
+
     std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx_;
     while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
@@ -407,11 +414,11 @@ class PythonConnectCL
     Nz_ = nz_ * pow (2, refinesteps_)+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
-    dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1); 
-    
+    dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
+
     dt_= P.get<double>("Time.StepSize");
   }
-  
+
 };
 
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
