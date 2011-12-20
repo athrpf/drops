@@ -44,13 +44,14 @@ class PythonConnectCL
   typedef std::map<cmp_key, DROPS::TetraCL*> TETRA_MAP;
 
  private:
-  int Nx_, Ny_, Nz_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
+  int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   double D_mol_;
 
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
   PdeFunction *f1_, *f2_;
+  bool adjoint_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -96,7 +97,7 @@ class PythonConnectCL
  public:
   PythonConnectCL()
     {
-      Nx_=Ny_=Nz_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
+      Nx_=Ny_=Nz_=Nt_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
       dx_=dy_=dz_=0.0;
 
       face_map_.clear();
@@ -328,9 +329,8 @@ class PythonConnectCL
   template<class P1EvalT>
     void SetSol3D( const P1EvalT& sol, double t)  //Instationary problem
     {
-      bool adjoint = P.get<int>("PoissonCoeff.Adjoint");
       double *out;
-      if (adjoint) {
+      if (adjoint_) {
 	const int num = (Nt_-rd(t/dt_)-1)*Nxyz_;
 	out = C3D_+num;
       } else {
@@ -368,6 +368,7 @@ class PythonConnectCL
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
     refinesteps_= P.get<int>("DomainCond.RefineSteps");
+    adjoint_ = P.get<int>("PoissonCoeff.Adjoint");
 
     std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx_;
@@ -378,6 +379,7 @@ class PythonConnectCL
     Nx_ = nx_ * pow (2, refinesteps_)+1;
     Ny_ = ny_ * pow (2, refinesteps_)+1;
     Nz_ = nz_ * pow (2, refinesteps_)+1;
+    Nt_ = P.get<int>("Time.NumSteps")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
