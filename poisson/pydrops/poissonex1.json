@@ -61,9 +61,13 @@
             // -> Here: b = (0,0,0)
         //"InitialVal":       "Example1_InitialValue",        //Initial value of the pde [u(t=0)]
             // -> Here: u(t=0) = 1
-        "Stabilization":    0,
         "Dmol":        1.0,                               // molecular Diffusion coefficient
-        "Adjoint":     0
+        "Convection":       0,        //Do we have convection? -> Here: no
+        "Adjoint":          0
+    },
+    "Stabilization":
+    {
+        "SUPG":             0
     },
 
     //############################################
@@ -120,8 +124,7 @@
         "StepSize":       1,       //time step size
         "NumSteps":       0,      // number of time steps
         "Scheme":         1,       //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":          1,       //For theta scheme: parameter theta
-        "Convection":     0        //Do we have convection? -> Here: no
+        "Theta":          1       //For theta scheme: parameter theta
     },
 
     //#################################

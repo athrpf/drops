@@ -111,18 +111,18 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #endif
 
     if ( !doErrorEstimate) {
-        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("PoissonCoeff.Stabilization"));
-        if(P.get<int>("Time.Convection"))
+        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
+        if(P.get<int>("PoissonCoeff.Convection"))
         {
             Poisson.vU.SetIdx( &Poisson.idx);
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
         }
-        if(P.get<int>("PoissonCoeff.Stabilization"))
+        if(P.get<int>("Stabilization.SUPG"))
         {
             //CoeffCL::Show_Pec();
-            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;
+            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
         }
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
@@ -296,7 +296,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("PoissonCoeff.Stabilization") );
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -322,7 +322,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
     {
         //CoeffCL::Show_Pec();
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("Time.Convection"), P.get<int>("PoissonCoeff.Stabilization"));
+        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
             timer.Reset();
@@ -353,6 +353,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 }
 
 } // end of namespace DROPS
+
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
     P.put_if_unset<int>("PoissonCoeff.Adjoint", 0);    
@@ -447,6 +448,7 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
 
+        //prepare MC
         PyC.SetMG(mg);
         PythonConnectCL::ClearMaps();
         PythonConnectCL::setFaceMap();

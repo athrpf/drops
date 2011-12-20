@@ -22,7 +22,6 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
