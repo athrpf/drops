@@ -50,7 +50,7 @@ class PythonConnectCL
 
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
-  PdeFunction *f1_, *f2_;
+  const PdeFunction *presol_, *DelPsi_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -206,18 +206,18 @@ class PythonConnectCL
   }
   //
   
-  double GetProductF1( const DROPS::Point3DCL& p, double t)
+  double GetPresol( const DROPS::Point3DCL& p, double t)
   {
     int ix, iy, iz, it;
     GetNum(p,t,ix,iy,iz,it);
-    return (*f1_)(ix,iy,iz,it);
+    return (*presol_)(ix,iy,iz,it);
   };
   
-  double GetProductF2( const DROPS::Point3DCL& p, double t)
+  double GetDelPsi( const DROPS::Point3DCL& p, double t)
   {
     int ix, iy, iz, it;
     GetNum(p,t,ix,iy,iz,it);
-    return (*f2_)(ix,iy,iz,it);
+    return (*DelPsi_)(ix,iy,iz,it);
   };
   
    double GetInitial( const DROPS::Point3DCL& p, double t)
@@ -347,12 +347,6 @@ class PythonConnectCL
             out[GetNum( sit->GetCoord())]= sol.val( *sit);
         }
     }
-    
-    void SetProductFun(PdeFunction* f1, PdeFunction* f2)
-    {
-      f1_ = f1;
-      f2_ = f2;    
-    }
 
   //Check the input matrices
   void Init( const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
@@ -388,8 +382,8 @@ class PythonConnectCL
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
-  
-  void Init(const DROPS::ParamCL& P) 
+  void Init( const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F, 
+                    const PdeFunction* presol, const PdeFunction* DelPsi,const PdeFunction* Dw,  double* c_sol)
   {
     int refinesteps_;
     double lx_, ly_, lz_;
@@ -409,7 +403,18 @@ class PythonConnectCL
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1); 
     
-    dt_= P.get<double>("Time.StepSize");
+    B_in_   = B_in;
+    B_Inter_= B_Inter;
+    F_      = F;
+    presol_ = presol;
+    DelPsi_  = DelPsi;
+    Dw_     = Dw;
+    D_mol_  = P.get<double>("PoissonCoeff.Dmol");
+    dt_     = P.get<double>("Time.StepSize");
+    
+    // Set the output pointer to the output arguments.
+    C3D_ = c_sol;
+
   }
   
 };
