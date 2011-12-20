@@ -33,13 +33,10 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
 
 using namespace boost::python::numeric;
 
-array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, double uN, double Dmol,
-				double lx, double ly, double lz,
-				double dt, double theta, bool flag_pr, bool flag_bc, bool flag_supg) {
+array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, string json_filename) {
   // 1. Read parameter file
   std::ifstream param;
-  std::cout << "Using default parameter file: poissonex1.json\n";
-  param.open( "poissonex1.json");
+  param.open(json_filename.c_str());
   /*    else
 	param.open( argv[1]);
 	if (!param){
@@ -54,29 +51,14 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   int ny = extract<int>(t[1]);
   int nz = extract<int>(t[2]);
   int nt = extract<int>(t[3]);
-  P.put<double>("DomainCond.lx", lx);
-  P.put<double>("DomainCond.ly", ly);
-  P.put<double>("DomainCond.lz", lz);
   P.put<std::string>("PoissonCoeff.Reaction", "Zero");
   P.put<int>("Poisson.SolutionIsKnown",0);
   P.put<int>("DomainCond.RefineSteps", 0);
-  std::stringstream MeshFile;
-  MeshFile << lx << "x" << ly << "x" << lz << "@" << nx-1 << "x" << ny-1 << "x" << nz-1; // meshfile takes number of intervals, not grid points
-  P.put<std::string>("DomainCond.MeshFile",MeshFile.str().c_str());
   P.put<std::string>("DomainCond.BoundaryType","2!21!21!2!21!21");
   P.put<int>("DomainCond.GeomType", 1);
 
-  P.put<double>("PoissonCoeff.Dmol", Dmol);
-  //P.put<std::string>("PoissonCoeff.Solution", "");
-  P.put<int>("Stabilization.SUPG", flag_supg);
-  P.put<int>("PoissonCoeff.Adjoint", (int)flag_pr);
-  P.put<int>("PoissonCoeff.Convection", 1);
-  P.put<string>("PoissonCoeff.Flowfield", "Nusselt");
-
-  P.put<int>("Time.NumSteps", nt-1); // again, number of intervals
-  P.put<double>("Time.StepSize", dt);
-  P.put<int>("Time.Scheme", 1);
-  P.put<double>("Time.Theta", 1.0);
+  int nt_test = P.get<int>("Time.NumSteps"); // again, number of intervals
+  assert(nt_test==nt-1);
 
   /* Print out parameters */
   std::cout << P << std::endl;
