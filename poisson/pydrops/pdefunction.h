@@ -7,7 +7,9 @@ class PdeFunction {
 public:
   /// Return the function value at the given grid point.
   virtual double operator()(int nx, int ny, int nz, int nt) const=0;
-  /** Set inputs to values in this PdeFunction. Return true, if the values that were passed in match those of the grid underlying this function. */
+  /** Set inputs to number of grid points in this PdeFunction.
+
+      Returns true if Nx, Ny,... that were passed in match the number of gridpoints underlying this function. */
   virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const=0;
 };
 
@@ -21,8 +23,8 @@ private:
 public:
   TestPdeFunction( DROPS::ParamCL P, DROPS::instat_scalar_fun_ptr f) : f_(f)
   {
-      
-      
+
+
     int refinesteps;
     double lx, ly, lz;
     int nx, ny, nz;
@@ -36,8 +38,8 @@ public:
     nx_ = nx * pow (2, refinesteps)+1;
     ny_ = ny * pow (2, refinesteps)+1;
     nz_ = nz * pow (2, refinesteps)+1;
-    dx_= lx/(nx_-1); 
-    dy_= ly/(ny_-1); 
+    dx_= lx/(nx_-1);
+    dy_= ly/(ny_-1);
     dz_= lz/(nz_-1);
     dt_ = P.get<double>("Time.StepSize");
     nt_ = P.get<double>("Time.NumSteps")+1;

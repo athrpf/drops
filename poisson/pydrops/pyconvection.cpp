@@ -54,9 +54,6 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   int ny = extract<int>(t[1]);
   int nz = extract<int>(t[2]);
   int nt = extract<int>(t[3]);
-  P.put<int>("DomainCond.nx", nx);
-  P.put<int>("DomainCond.ny", ny);
-  P.put<int>("DomainCond.nz", nz);
   P.put<double>("DomainCond.lx", lx);
   P.put<double>("DomainCond.ly", ly);
   P.put<double>("DomainCond.lz", lz);
@@ -71,13 +68,15 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
 
   P.put<double>("PoissonCoeff.Dmol", Dmol);
   //P.put<std::string>("PoissonCoeff.Solution", "");
-  P.put<int>("PoissonCoeff.Stabilization", flag_supg);
+  P.put<int>("Stabilization.SUPG", flag_supg);
+  P.put<int>("PoissonCoeff.Adjoint", (int)flag_pr);
+  P.put<int>("PoissonCoeff.Convection", 1);
+  P.put<string>("PoissonCoeff.Flowfield", "Nusselt");
 
   P.put<int>("Time.NumSteps", nt-1); // again, number of intervals
   P.put<double>("Time.StepSize", dt);
   P.put<int>("Time.Scheme", 1);
   P.put<double>("Time.Theta", 1.0);
-  P.put<int>("Time.Convection", true);
 
   /* Print out parameters */
   std::cout << P << std::endl;
@@ -90,6 +89,9 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   PdeFunPtr sourcef(new PyPdeFunction(source));
   PdeFunPtr Dwf(new PyPdeFunction(Dw));
 
+  if (!check_dimensions(nx,ny,nz,nt,*C0f,*b_inf,*b_interfacef,*sourcef,*Dwf)) {
+    throw DROPS::DROPSErrCL("Error in setting up DROPS: Wrong dimensions in inputs!");
+  }
   npy_intp* c_sol_dim = new npy_intp[4];
   c_sol_dim[0] = nx; c_sol_dim[1] = ny; c_sol_dim[2] = nz; c_sol_dim[3] = nt;
   PyArrayObject* newarray = (PyArrayObject*) PyArray_New(&PyArray_Type, 4, c_sol_dim, PyArray_DOUBLE, NULL, NULL, 0, NPY_F_CONTIGUOUS, NULL);
@@ -106,7 +108,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   delete Dwf;
   return solution;
 }
-
+/*
 bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_interface, PdeFunction& source, PdeFunction& Dw)
 {
   try {
@@ -115,12 +117,12 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
     std::ifstream param;
     std::cout << "Using default parameter file: poissonex1.json\n";
     param.open( "poissonex1.json");
-    /*    else
+        else
 	  param.open( argv[1]);
 	  if (!param){
 	  std::cerr << "error while opening parameter file\n";
 	  return 1;
-	  }*/
+	  }
     param >> P;
     param.close();
     std::cout << P << std::endl;
@@ -148,6 +150,7 @@ bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_
   catch (DROPS::DROPSErrCL err) { err.handle(); }
   return false;
 }
+*/
 
 #include "prepy_product.cpp"
 
