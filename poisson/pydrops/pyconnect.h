@@ -52,7 +52,6 @@ class PythonConnectCL
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
   const PdeFunction *presol_, *DelPsi_;
-  bool adjoint_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -361,7 +360,6 @@ class PythonConnectCL
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
     refinesteps_= P.get<int>("DomainCond.RefineSteps");
-    adjoint_ = P.get<int>("PoissonCoeff.Adjoint");
 
     std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx_;
