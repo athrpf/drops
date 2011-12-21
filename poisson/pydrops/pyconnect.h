@@ -400,7 +400,6 @@ class PythonConnectCL
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
     refinesteps_= P.get<int>("DomainCond.RefineSteps");
-    adjoint_ = P.get<int>("PoissonCoeff.Adjoint");
 
     std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx_;
