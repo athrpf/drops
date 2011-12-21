@@ -78,6 +78,9 @@ double GetSource(const DROPS::Point3DCL& p, double t){return PyC.GetSource(p,t);
 double GetInflow(const DROPS::Point3DCL& p, double t){return PyC.GetInflow(p,t);}
 double GetInterfaceFlux( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceFlux(p,t);}
 double GetInterfaceValue( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceValue(p,t);}
+//for IA2
+double GetPresol( const DROPS::Point3DCL& p, double t){return PyC.GetPresol(p,t);}
+double GetDelPsi( const DROPS::Point3DCL& p, double t){return PyC.GetDelPsi(p,t);}
 
 
 
@@ -111,13 +114,34 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #endif
 
     if ( !doErrorEstimate) {
-        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
+        std::string Gradstr ("IA2Gradient");
+        std::string Sensstr ("IA2Sense");
+        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+        bool GradProb = (Gradstr.compare(IAProbstr) == 0);
+        bool SensProb = (Sensstr.compare(IAProbstr) == 0);
+        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"), GradProb);
         if(P.get<int>("PoissonCoeff.Convection"))
         {
             Poisson.vU.SetIdx( &Poisson.idx);
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
+        }
+        if(GradProb)
+        {
+            VecDescCL b1;
+            b1.SetIdx(&Poisson.idx);
+            Poisson.SetupL2ProjGrad(b1,GetPresol, GetDelPsi, NULL);
+            Poisson.b.Data+=b1.Data;
+            std::cout << line << "We are solving Gradient problem in IA2 ...\n"<<line;  
+        }
+        if(SensProb)
+        {
+            VecDescCL b1;
+            b1.SetIdx(&Poisson.idx);
+            Poisson.SetupGradSrc(b1,GetPresol, GetDelPsi);
+            Poisson.b.Data+=b1.Data;
+            std::cout << line << "We are solving sensetivity problem in IA2 ...\n"<<line;  
         }
         if(P.get<int>("Stabilization.SUPG"))
         {

@@ -57,7 +57,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 
 template<class Coeff>
 void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, bool SUPG)
+                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, bool SUPG, bool GradProb)
 // Sets up the stiffness matrix and right hand side
 {
     if (b != 0) b->Clear( 0.0);
@@ -101,6 +101,10 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
 
                     coup[i][j] = inner_prod( G[i], G[j])*int_a; //diffusion
                     coup[i][j]+= P1DiscCL::Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
+                    //for IA2,gradient problem
+                    if(GradProb)
+                    coup[i][j]+= P1DiscCL::GetMass(i,j)*absdet;
+                    //SUPG  stabilization
                     if(SUPG)
                     {
                         Quad2CL<double> res3( U_Grad[i] * U_Grad[j]);
@@ -145,13 +149,13 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG) const
+void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG, bool GradProb) const
 {
     MLMatrixCL::iterator  itA    = matA.Data.begin();
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA)
-        SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol, SUPG);
+        SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol, SUPG, GradProb);
 }
 
 template<class Coeff>
