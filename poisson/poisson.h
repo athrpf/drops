@@ -101,7 +101,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
-    void SetupSystem         (MLMatDescCL&, VecDescCL&, bool SUPG=false) const;
+    void SetupSystem         (MLMatDescCL&, VecDescCL&, bool SUPG=false, bool GradProb=false) const;
     ///  \brief set up matrices (M is time independent)
     void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
     /// \brief set up matrix and couplings with bnd unknowns for convection term
