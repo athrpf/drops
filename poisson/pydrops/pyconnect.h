@@ -209,15 +209,55 @@ class PythonConnectCL
   //  
   double GetPresol( const DROPS::Point3DCL& p, double t)
   {
-    int ix, iy, iz, it;
-    GetNum(p,t,ix,iy,iz,it);
-    return (*presol_)(ix,iy,iz,it);
+    double ret;
+
+    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
+    cmp_key key= std::make_pair(rnd(p[0]), pr);
+    DROPS::TetraCL* tetra= tetra_map_[key];
+
+    if (tetra == NULL) {//non-barycenter
+      int ix1,iy1,iz1,it1;
+      GetNum(p,t,ix1,iy1,iz1,it1);
+      ret=(*presol_)(ix1,iy1,iz1,it1);
+    } else {
+      int ix1,iy1, iz1,it1;
+      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
+      int ix2,iy2,iz2,it2;
+      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
+      int ix3,iy3,iz3,it3;
+      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
+      int ix4,iy4,iz4,it4;
+      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
+      ret = 0.25*((*presol_)(ix1,iy1,iz1,it1)+(*presol_)(ix2,iy2,iz2,it2)+
+		  (*presol_)(ix3,iy3,iz3,it3)+(*presol_)(ix4,iy4,iz4,it4));
+    }
+    return ret;
   };
   double GetDelPsi( const DROPS::Point3DCL& p, double t)
   {
-    int ix, iy, iz, it;
-    GetNum(p,t,ix,iy,iz,it);
-    return (*DelPsi_)(ix,iy,iz,it);
+    double ret;
+
+    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
+    cmp_key key= std::make_pair(rnd(p[0]), pr);
+    DROPS::TetraCL* tetra= tetra_map_[key];
+
+    if (tetra == NULL) {//non-barycenter
+      int ix1,iy1,iz1,it1;
+      GetNum(p,t,ix1,iy1,iz1,it1);
+      ret=(*DelPsi_)(ix1,iy1,iz1,it1);
+    } else {
+      int ix1,iy1, iz1,it1;
+      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
+      int ix2,iy2,iz2,it2;
+      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
+      int ix3,iy3,iz3,it3;
+      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
+      int ix4,iy4,iz4,it4;
+      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
+      ret = 0.25*((*DelPsi_)(ix1,iy1,iz1,it1)+(*DelPsi_)(ix2,iy2,iz2,it2)+
+		  (*DelPsi_)(ix3,iy3,iz3,it3)+(*DelPsi_)(ix4,iy4,iz4,it4));
+    }
+    return ret;
   };
 
    double GetInitial( const DROPS::Point3DCL& p, double t)
