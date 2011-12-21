@@ -44,8 +44,7 @@ class PythonConnectCL
   typedef std::map<cmp_key, DROPS::TetraCL*> TETRA_MAP;
 
  private:
-  int Nx_, Ny_, Nz_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
-  int Nt_;
+  int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   double D_mol_;
   bool   adjoint_;
@@ -53,6 +52,7 @@ class PythonConnectCL
   const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
     *Dw_;                                     // wavy induced diffusion parameter as a function,
   const PdeFunction *presol_, *DelPsi_;
+  bool adjoint_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -98,7 +98,7 @@ class PythonConnectCL
  public:
   PythonConnectCL()
     {
-      Nx_=Ny_=Nz_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
+      Nx_=Ny_=Nz_=Nt_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
       dx_=dy_=dz_=0.0;
 
       face_map_.clear();
@@ -206,7 +206,7 @@ class PythonConnectCL
     fclose(f);
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
-  //  
+  //
   double GetPresol( const DROPS::Point3DCL& p, double t)
   {
     double ret;
@@ -401,6 +401,7 @@ class PythonConnectCL
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
     refinesteps_= P.get<int>("DomainCond.RefineSteps");
+    adjoint_ = P.get<int>("PoissonCoeff.Adjoint");
 
     std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
     size_t idx_;
@@ -411,6 +412,7 @@ class PythonConnectCL
     Nx_ = nx_ * pow (2, refinesteps_)+1;
     Ny_ = ny_ * pow (2, refinesteps_)+1;
     Nz_ = nz_ * pow (2, refinesteps_)+1;
+    Nt_ = P.get<int>("Time.NumSteps")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
@@ -431,8 +433,8 @@ class PythonConnectCL
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
-  
-  void Init( const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F, 
+
+  void Init( const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F,
                     const PdeFunction* presol, const PdeFunction* DelPsi,const PdeFunction* Dw,  double* c_sol)
   {
     int refinesteps_;
@@ -451,8 +453,8 @@ class PythonConnectCL
     Nz_ = nz_ * pow (2, refinesteps_)+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
-    dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1); 
-    
+    dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
+
     B_in_   = B_in;
     B_Inter_= B_Inter;
     F_      = F;
@@ -461,7 +463,7 @@ class PythonConnectCL
     Dw_     = Dw;
     D_mol_  = P.get<double>("PoissonCoeff.Dmol");
     dt_     = P.get<double>("Time.StepSize");
-    
+
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
