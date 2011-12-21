@@ -80,8 +80,22 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   boost::python::object obj(handle<>((PyObject*)newarray));
   double* solution_ptr = (double*)newarray->data;
   for (int k=0; k<nx*ny*nz*nt; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
+  // if the problem is time-dependent, the first time step is set to the initial value
+  //std::string adstr ("IA1Adjoint");
+  //std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+  bool adjoint = !(std::string("IA1Adjoint").compare(P.get<std::string>("PoissonCoeff.IAProb")));
+
+  if (nt>1) {
+    double* c0_ptr = NULL;
+    if (!adjoint)
+      c0_ptr = solution_ptr;
+    else
+      c0_ptr = solution_ptr + (nt-1)*nx*ny*nz;
+    for (int ix=0; ix<nx; ++ix) for (int iy=0; iy<ny; ++iy) for (int iz=0; iz<nz; ++iz) solution_ptr[ix+nx*iy+nx*ny*iz] = C0f->operator()(ix, iy, iz,0);
+  }
   array solution = extract<boost::python::numeric::array>(obj);
-  convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_ptr);
+  double* solution_without_intitial_ptr = adjoint ? solution_ptr : solution_ptr+nx*ny*nz;
+  convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_without_intitial_ptr);
 
   delete C0f;
   delete b_inf;
@@ -90,49 +104,6 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   delete Dwf;
   return solution;
 }
-/*
-bool py_convection_diffusion(PdeFunction& C0, PdeFunction& b_in, PdeFunction& b_interface, PdeFunction& source, PdeFunction& Dw)
-{
-  try {
-    using namespace DROPS;
-
-    std::ifstream param;
-    std::cout << "Using default parameter file: poissonex1.json\n";
-    param.open( "poissonex1.json");
-        else
-	  param.open( argv[1]);
-	  if (!param){
-	  std::cerr << "error while opening parameter file\n";
-	  return 1;
-	  }
-    param >> P;
-    param.close();
-    std::cout << P << std::endl;
-
-    // set up data structure to represent a poisson problem
-    // ---------------------------------------------------------------------
-    std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
-    int Nx, Ny, Nz, Ns, Nt, N;
-
-    Nx = P.get<int>("DomainCond.nx")+1;
-    Ny = P.get<int>("DomainCond.ny")+1;
-    Nz = P.get<int>("DomainCond.nz")+1;
-    Ns = Nx*Ny*Nz;
-    Nt = P.get<int>("Time.NumSteps")+1;
-    N  = Ns*Nt;
-
-    if (check_dimensions(Nx,Ny,Nz,Nt,C0,b_in,b_interface,source,Dw)) {
-      convection_diffusion(P, &C0, &b_in, &b_interface, &source, &Dw, NULL);
-    }
-    else {
-      return false;
-    }
-    return true;
-  }
-  catch (DROPS::DROPSErrCL err) { err.handle(); }
-  return false;
-}
-*/
 
 #include "prepy_product.cpp"
 
