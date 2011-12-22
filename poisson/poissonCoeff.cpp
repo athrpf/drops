@@ -82,7 +82,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
-        U= Nu*9.81*dy*dy/2;  //U=gh^2/(2*nu)
+        U= 9.81*dy*dy/2/Nu;  //U=gh^2/(2*nu)
     ret[0]= U*(2-d)*d;
     ret[1]=0.;
     ret[2]=0.;
