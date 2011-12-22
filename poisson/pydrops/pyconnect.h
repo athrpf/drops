@@ -29,8 +29,9 @@
 #include "pdefunction.h"
 
 #include <fstream>
-#include <string>
 #include <sstream>
+#include <stdio.h>
+#include <string>
 #include <math.h>
 
 inline int rd( double d) { return static_cast<int>( d+0.5); }                   // rounding
@@ -43,7 +44,8 @@ class PythonConnectCL
   typedef std::map<cmp_key, DROPS::FaceCL*>  FACE_MAP;
   typedef std::map<cmp_key, DROPS::TetraCL*> TETRA_MAP;
 
- private:
+  //private:
+public:
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   double D_mol_;
@@ -471,5 +473,45 @@ class PythonConnectCL
 DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
 PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
 PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
+
+class PyDropsErr : public DROPS::DROPSErrCL {
+public:
+  PyDropsErr(const PythonConnectCL* PyC_, DROPS::ParamCL* P_, int it_, std::string msg_) : PyC(PyC_), P(P_), it(it_), msg(msg_) {}
+  const PythonConnectCL* PyC;
+  DROPS::ParamCL* P;
+  int it;
+  std::string msg;
+
+  /// Write all information corresponding to this problem to a file and return the filename
+  std::string write_err_to_file() const
+  {
+    std::string filename(tmpnam(NULL));
+    std::ofstream outfile(filename.c_str());
+    std::string ll("--------------------------------");
+    outfile << "----------------------------\nOutput file generated from a PyDropsErr Exception\n----------------------------\n";
+    outfile << "1. Param file\n";
+    outfile << (*P) <<std::endl;
+    outfile << ll << "\nThe solver failed in time step " << it << " of "<< PyC->Nt_-1 << std::endl;
+    std::stringstream Fstream, C0stream, Binstream, Binterfacestream, Dwstream;
+    for (int ix=0; ix<PyC->Nx_; ++ix)
+      for (int iy=0; iy<PyC->Ny_; ++iy)
+	for (int iz=0; iz<PyC->Nz_; ++iz) {
+	  Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->F_)(ix,iy,iz,it) << std::endl;
+	  C0stream << "C0(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->C0_)(ix,iy,iz,it) << std::endl;
+	  Binstream << "Bin(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->B_in_)(ix,iy,iz,it) << std::endl;
+	  Binterfacestream << "Binter(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->B_Inter_)(ix,iy,iz,it) << std::endl;
+	  Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->Dw_)(ix,iy,iz,it) << std::endl;
+	}
+    outfile << ll << "\n2. Source term\n" << Fstream.str();
+    outfile << ll << "\n3. Initial Value\n" << C0stream.str();
+    outfile << ll << "\n4. Inlet BC\n" << Binstream.str();
+    outfile << ll << "\n5. Interface BC\n" << Binterfacestream.str();
+    outfile << ll << "\n6. Diffusion Coefficient\n" << Dwstream.str();
+    outfile.close();
+    return filename;
+  }
+private:
+  PyDropsErr();
+};
 
 #endif

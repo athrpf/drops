@@ -72,7 +72,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   PdeFunPtr Dwf(new PyPdeFunction(Dw));
 
   if (!check_dimensions(nx,ny,nz,nt,*C0f,*b_inf,*b_interfacef,*sourcef,*Dwf)) {
-    throw DROPS::DROPSErrCL("Error in setting up DROPS: Wrong dimensions in inputs!");
+    throw (PyDropsErr(&PyC, &P, 0, "Error in setting up DROPS: Wrong dimensions in inputs!"));
   }
   npy_intp* c_sol_dim = new npy_intp[4];
   c_sol_dim[0] = nx; c_sol_dim[1] = ny; c_sol_dim[2] = nz; c_sol_dim[3] = nt;
@@ -81,8 +81,6 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   double* solution_ptr = (double*)newarray->data;
   for (int k=0; k<nx*ny*nz*nt; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
   // if the problem is time-dependent, the first time step is set to the initial value
-  //std::string adstr ("IA1Adjoint");
-  //std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
   bool adjoint = !(std::string("IA1Adjoint").compare(P.get<std::string>("PoissonCoeff.IAProb")));
 
   if (nt>1) {
@@ -107,6 +105,21 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
 
 #include "prepy_product.cpp"
 
+void drops_err_translator(const DROPS::DROPSErrCL& err)
+{
+  std::stringstream ss;
+  ss << "DROPSErr: ";
+  err.what(ss);
+  PyErr_SetString(PyExc_UserWarning, ss.str().c_str());
+}
+
+void pydrops_err_translator(const PyDropsErr& err)
+{
+  std::string filename = err.write_err_to_file();
+  std::string msg;
+  msg += "DROPSErr: The following error occured during a call to DROPS:\n" + err.msg + "\nThe state of DROPS was written to " + filename + "\n";
+  PyErr_SetString(PyExc_UserWarning, msg.c_str());
+}
 
 BOOST_PYTHON_MODULE(drops)
 {
@@ -114,9 +127,8 @@ BOOST_PYTHON_MODULE(drops)
   using namespace boost::python;
   boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
   def("convection_diffusion", numpy_convection_diffusion);
-  //def("get_array", &get_array);
-  //def("setArray", &setArray);
-
+  //register_exception_translator<DROPS::DROPSErrCL>(&drops_err_translator);
+  register_exception_translator<PyDropsErr>(&pydrops_err_translator);
   def("setup_scalar_product_matrices", setup_sp_matrices);
   def("scalar_product", numpy_scalar_product);
 
