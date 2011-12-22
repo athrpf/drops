@@ -67,7 +67,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
 {
     static bool first = true;
     static double dx, dy;
-    double Nu; // kinematic viscosity
+    static double Nu, g; // kinematic viscosity, gravitational constant
     //dirty hack
     if (first){
         std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
@@ -77,12 +77,13 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy;
         Nu  = P.get<double>("PoissonCoeff.KinematicViscosity");
+	g   = P.get<double>("PoissonCoeff.Gravity"); // this must not be fixed to 9.81 - maybe we use different scalings!!
         first = false;
     }
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
-        U= Nu*9.81*dy*dy/2;  //U=gh^2/(2*nu)
+        U= g*dy*dy/2/Nu;  //U=gh^2/(2*nu)
     ret[0]= U*(2-d)*d;
     ret[1]=0.;
     ret[2]=0.;

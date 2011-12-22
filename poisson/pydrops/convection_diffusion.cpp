@@ -18,9 +18,9 @@
  *
  *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
-*/
+ */
 
- // include geometric computing
+// include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
 #include "geom/geomselect.h"
@@ -33,13 +33,13 @@
 #include "poisson/integrTime.h"
 #include "num/poissonsolverfactory.h"
 
- // include problem class
+// include problem class
 #include "misc/params.h"
 #include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "num/bndData.h"
 
- // include standards
+// include standards
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -92,9 +92,9 @@ namespace DROPS
 {
 
 
-template<class CoeffCL, class SolverT>
-void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P)
-{
+  template<class CoeffCL, class SolverT>
+  void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P)
+  {
     // time measurements
 #ifndef _PAR
     TimerCL timer;
@@ -102,172 +102,168 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #else
     const bool doErrorEstimate= false;
     if (P.get<int>("Err.DoErrorEstimate"))
-        std::cout << "Skipping Error-Estimation ..." << std::endl;
+      std::cout << "Skipping Error-Estimation ..." << std::endl;
     ParTimerCL timer;
 #endif
 
     if ( !doErrorEstimate) {
-        std::string Gradstr ("IA2Gradient");
-        std::string Sensstr ("IA2Sense");
-        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
-        bool GradProb = (Gradstr.compare(IAProbstr) == 0);
-        bool SensProb = (Sensstr.compare(IAProbstr) == 0);
-        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"), GradProb);
-        if(P.get<int>("PoissonCoeff.Convection"))
+      std::string Gradstr ("IA2Gradient");
+      std::string Sensstr ("IA2Sense");
+      std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+      bool GradProb = (Gradstr.compare(IAProbstr) == 0);
+      bool SensProb = (Sensstr.compare(IAProbstr) == 0);
+      Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"), GradProb);
+      if(P.get<int>("PoissonCoeff.Convection"))
         {
-            Poisson.vU.SetIdx( &Poisson.idx);
-            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
-            Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
-            Poisson.b.Data+=Poisson.vU.Data;
+	  Poisson.vU.SetIdx( &Poisson.idx);
+	  Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
+	  Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
+	  Poisson.b.Data+=Poisson.vU.Data;
         }
-        if(GradProb)
+      if(GradProb)
         {
-            VecDescCL b1;
-            b1.SetIdx(&Poisson.idx);
-            Poisson.SetupL2ProjGrad(b1,GetPresol, GetDelPsi, NULL);
-            Poisson.b.Data+=b1.Data;
-            std::cout << line << "We are solving Gradient problem in IA2 ...\n"<<line;  
+	  VecDescCL b1;
+	  b1.SetIdx(&Poisson.idx);
+	  Poisson.SetupL2ProjGrad(b1,GetPresol, GetDelPsi, NULL);
+	  Poisson.b.Data+=b1.Data;
+	  std::cout << line << "We are solving Gradient problem in IA2 ...\n"<<line;
         }
-        if(SensProb)
+      if(SensProb)
         {
-            VecDescCL b1;
-            b1.SetIdx(&Poisson.idx);
-            Poisson.SetupGradSrc(b1,GetPresol, GetDelPsi);
-            Poisson.b.Data+=b1.Data;
-            std::cout << line << "We are solving sensetivity problem in IA2 ...\n"<<line;  
+	  VecDescCL b1;
+	  b1.SetIdx(&Poisson.idx);
+	  Poisson.SetupGradSrc(b1,GetPresol, GetDelPsi);
+	  Poisson.b.Data+=b1.Data;
+	  std::cout << line << "We are solving sensetivity problem in IA2 ...\n"<<line;
         }
-        if(P.get<int>("Stabilization.SUPG"))
+      if(P.get<int>("Stabilization.SUPG"))
         {
-            //CoeffCL::Show_Pec();
-            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
+	  //CoeffCL::Show_Pec();
+	  std::cout << line << "The SUPG stabilization has been added ...\n"<<line;
         }
-        timer.Reset();
-        solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
-        timer.Stop();
+      timer.Reset();
+      solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
+      timer.Stop();
 #ifndef _PAR
-        double realresid = norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
+      double realresid = norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
 #else
-        double realresid = Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data), false);
+      double realresid = Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data), false);
 #endif
-        //Setup solution for python interface
-        PyC.SetSol3D(Poisson.GetSolution());
-        std::cout << " o Solved system with:\n"
-                  << "   - time          " << timer.GetTime()   << " s\n"
-                  << "   - iterations    " << solver.GetIter()  << '\n'
-                  << "   - residuum      " << solver.GetResid() << '\n'
-                  << "   - real residuum " << realresid         << std::endl;
-        if(solver.GetResid() > P.get<double>("Poisson.Tol"))
-        {  
-            std::cout <<"The residual is bigger than tolerence ...\n";
-            abort();
+      //Setup solution for python interface
+      PyC.SetSol3D(Poisson.GetSolution());
+      std::cout << " o Solved system with:\n"
+		<< "   - time          " << timer.GetTime()   << " s\n"
+		<< "   - iterations    " << solver.GetIter()  << '\n'
+		<< "   - residuum      " << solver.GetResid() << '\n'
+		<< "   - real residuum " << realresid         << std::endl;
+      if(solver.GetResid() > P.get<double>("Poisson.Tol"))
+        {
+	  throw (PyDropsErr(&PyC, &P, 0, "The residual is bigger than tolerance"));
         }
-        if(solver.GetResid()!=solver.GetResid())
-        {  
-            std::cout <<"The residual is nan ...\n";
-            abort();
-        } 
-        if (P.get<int>("Poisson.SolutionIsKnown")) {
-            std::cout << line << "Check result against known solution ...\n";
-            Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+      if(solver.GetResid()!=solver.GetResid())
+        {
+	  throw (PyDropsErr(&PyC, &P, 0, "The residual is NAN"));
         }
+      if (P.get<int>("Poisson.SolutionIsKnown")) {
+	std::cout << line << "Check result against known solution ...\n";
+	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+      }
     }
     else{
-        MultiGridCL& MG= Poisson.GetMG();
-        const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
+      MultiGridCL& MG= Poisson.GetMG();
+      const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
 
-        MLIdxDescCL  loc_idx;
-        VecDescCL  loc_x;
-        MLIdxDescCL* new_idx= &Poisson.idx;
-        MLIdxDescCL* old_idx= &loc_idx;
-        VecDescCL* new_x= &Poisson.x;
-        VecDescCL* old_x= &loc_x;
+      MLIdxDescCL  loc_idx;
+      VecDescCL  loc_x;
+      MLIdxDescCL* new_idx= &Poisson.idx;
+      MLIdxDescCL* old_idx= &loc_idx;
+      VecDescCL* new_x= &Poisson.x;
+      VecDescCL* old_x= &loc_x;
 
-        DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::base_>
-            Estimator( P.get<double>("Err.RelReduction"), P.get<double>("Err.MinRatio"), P.get<double>("Err.Threshold"), P.get<double>("Err.Meas"), P.get<int>("Err.DoMark"),
-                       &PoissonP1CL<CoeffCL>::ResidualErrEstimator, *static_cast<typename PoissonP1CL<CoeffCL>::base_*>(&Poisson) );
+      DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::base_>
+	Estimator( P.get<double>("Err.RelReduction"), P.get<double>("Err.MinRatio"), P.get<double>("Err.Threshold"), P.get<double>("Err.Meas"), P.get<int>("Err.DoMark"),
+		   &PoissonP1CL<CoeffCL>::ResidualErrEstimator, *static_cast<typename PoissonP1CL<CoeffCL>::base_*>(&Poisson) );
 
-        int step= 0;
-        bool new_marks;
+      int step= 0;
+      bool new_marks;
 
-        new_idx->SetFE( P1_FE);
-        old_idx->SetFE( P1_FE);
+      new_idx->SetFE( P1_FE);
+      old_idx->SetFE( P1_FE);
 
-        do{
-            timer.Reset();
-            //std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
-            MG.Refine();
+      do{
+	timer.Reset();
+	//std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
+	MG.Refine();
 
-            Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // create numbering for this idx
-            std::cout << "new triangLevel: " << Poisson.idx.TriangLevel() << std::endl;
-            Poisson.b.SetIdx( new_idx);                              // tell b about numbering
-            new_x->SetIdx( new_idx);                    			 // second vector with the same idx
+	Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // create numbering for this idx
+	std::cout << "new triangLevel: " << Poisson.idx.TriangLevel() << std::endl;
+	Poisson.b.SetIdx( new_idx);                              // tell b about numbering
+	new_x->SetIdx( new_idx);                    			 // second vector with the same idx
 
-            std::cout << line << "Problem size\no number of unknowns             " << new_x->Data.size() << std::endl;
+	std::cout << line << "Problem size\no number of unknowns             " << new_x->Data.size() << std::endl;
 
-            MG.SizeInfo(std::cout);
-            if ( step == 0)
-                Estimator.Init( typename PoissonP1CL<CoeffCL>::DiscSolCL( new_x, &BndData, &MG));
+	MG.SizeInfo(std::cout);
+	if ( step == 0)
+	  Estimator.Init( typename PoissonP1CL<CoeffCL>::DiscSolCL( new_x, &BndData, &MG));
 
-            if ( old_x->RowIdx)
-            {
-                P1EvalCL<double, const PoissonBndDataCL, const VecDescCL>  oldx( old_x, &BndData, &MG);
-                P1EvalCL<double, const PoissonBndDataCL, VecDescCL>        newx( new_x, &BndData, &MG);
-                Interpolate( newx, oldx);
-          //            CheckSolution(*new_x, &::Lsg);
-                old_x->Reset();
-             }
+	if ( old_x->RowIdx)
+	  {
+	    P1EvalCL<double, const PoissonBndDataCL, const VecDescCL>  oldx( old_x, &BndData, &MG);
+	    P1EvalCL<double, const PoissonBndDataCL, VecDescCL>        newx( new_x, &BndData, &MG);
+	    Interpolate( newx, oldx);
+	    //            CheckSolution(*new_x, &::Lsg);
+	    old_x->Reset();
+	  }
 
-            Poisson.A.SetIdx( new_idx, new_idx);             // tell A about numbering
-            Poisson.SetupSystem( Poisson.A, Poisson.b);
-            timer.Stop();
-            timer.Reset();
-            solver.Solve( Poisson.A.Data, new_x->Data, Poisson.b.Data);
-            timer.Stop();
-            //Setup solution for python interface
-            PyC.SetSol3D(Poisson.GetSolution());
-            double realresid = norm( VectorCL(Poisson.A.Data*new_x->Data-Poisson.b.Data));
-            std::cout << " o Solved system with:\n"
-                      << "   - time          " << timer.GetTime()   << " s\n"
-                      << "   - iterations    " << solver.GetIter()  << '\n'
-                      << "   - residuum      " << solver.GetResid() << '\n'
-                      << "   - real residuum " << realresid         << std::endl;
-            if(solver.GetResid() > P.get<double>("Poisson.Tol"))
-            {  
-                std::cout <<"The residual is bigger than tolerence ...\n";
-                abort();
-            }
-            if(solver.GetResid()!=solver.GetResid())
-            {  
-                std::cout <<"The residual is nan ...\n";
-                abort();
-            } 
-            Poisson.A.Reset();
-            Poisson.b.Reset();
-            if (P.get<int>("Poisson.SolutionIsKnown")) {
-                std::cout << line << "Check result against known solution ...\n";
-                Poisson.CheckSolution( *new_x, CoeffCL::Solution);
-            }
-            new_marks = Estimator.Estimate( typename PoissonP1CL<CoeffCL>::const_DiscSolCL( new_x, &BndData, &MG) );
+	Poisson.A.SetIdx( new_idx, new_idx);             // tell A about numbering
+	Poisson.SetupSystem( Poisson.A, Poisson.b);
+	timer.Stop();
+	timer.Reset();
+	solver.Solve( Poisson.A.Data, new_x->Data, Poisson.b.Data);
+	timer.Stop();
+	//Setup solution for python interface
+	PyC.SetSol3D(Poisson.GetSolution());
+	double realresid = norm( VectorCL(Poisson.A.Data*new_x->Data-Poisson.b.Data));
+	std::cout << " o Solved system with:\n"
+		  << "   - time          " << timer.GetTime()   << " s\n"
+		  << "   - iterations    " << solver.GetIter()  << '\n'
+		  << "   - residuum      " << solver.GetResid() << '\n'
+		  << "   - real residuum " << realresid         << std::endl;
+	if(solver.GetResid() > P.get<double>("Poisson.Tol"))
+	  {
+	    throw (PyDropsErr(&PyC, &P, 0, "The residual is bigger than tolerence"));
+	  }
+	if(solver.GetResid()!=solver.GetResid())
+	  {
+	    throw (PyDropsErr(&PyC, &P, 0, "The residual is NAN"));
+	  }
+	Poisson.A.Reset();
+	Poisson.b.Reset();
+	if (P.get<int>("Poisson.SolutionIsKnown")) {
+	  std::cout << line << "Check result against known solution ...\n";
+	  Poisson.CheckSolution( *new_x, CoeffCL::Solution);
+	}
+	new_marks = Estimator.Estimate( typename PoissonP1CL<CoeffCL>::const_DiscSolCL( new_x, &BndData, &MG) );
 
-            std::swap( old_x, new_x);
-            std::swap( old_idx, new_idx);
-        } while ( new_marks && step++ < P.get<int>("Err.NumRef"));
-        // I want the solution to be in Poisson.x
-        if ( old_x == &loc_x)
+	std::swap( old_x, new_x);
+	std::swap( old_idx, new_idx);
+      } while ( new_marks && step++ < P.get<int>("Err.NumRef"));
+      // I want the solution to be in Poisson.x
+      if ( old_x == &loc_x)
         {
-            Poisson.idx.swap( loc_idx);
-            Poisson.x.SetIdx( &Poisson.idx);
+	  Poisson.idx.swap( loc_idx);
+	  Poisson.x.SetIdx( &Poisson.idx);
 
-            Poisson.x.Data.resize( loc_x.Data.size());
-            Poisson.x.Data = loc_x.Data;
+	  Poisson.x.Data.resize( loc_x.Data.size());
+	  Poisson.x.Data = loc_x.Data;
         }
     }
-}
+  }
 
-/// \brief Strategy to solve the Poisson problem on a given triangulation
+  /// \brief Strategy to solve the Poisson problem on a given triangulation
   template<class CoeffCL>
-void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
-{
+  void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
+  {
     // time measurements
 #ifndef _PAR
     TimerCL timer;
@@ -286,7 +282,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
     Poisson.idx.SetFE( P1_FE);                                  // set quadratic finite elements
     //see class for explanation: template didnt work
     if ( PoissonSolverFactoryHelperCL().MGUsed(P))
-        Poisson.SetNumLvl ( mg.GetNumLevel());
+      Poisson.SetNumLvl ( mg.GetNumLevel());
     Poisson.CreateNumbering( mg.GetLastLevel(), &Poisson.idx);  // number vertices and edges
     Poisson.b.SetIdx( &Poisson.idx);                            // tell b about numbering
     Poisson.x.SetIdx( &Poisson.idx);                            // tell x about numbering
@@ -304,18 +300,18 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 #ifdef _PAR
     std::vector<size_t> UnkOnProc= ProcCL::Gather( Poisson.x.Data.size(), 0);
     const IdxT numUnk   = Poisson.idx.GetGlobalNumUnknowns( mg),
-               numAccUnk= std::accumulate(UnkOnProc.begin(), UnkOnProc.end(), 0);
+      numAccUnk= std::accumulate(UnkOnProc.begin(), UnkOnProc.end(), 0);
 #else
     std::vector<size_t> UnkOnProc( 1);
     UnkOnProc[0]  = Poisson.x.Data.size();
     IdxT numUnk   = Poisson.x.Data.size(),
-         numAccUnk= Poisson.x.Data.size();
+      numAccUnk= Poisson.x.Data.size();
 #endif
     std::cout << " o number of unknowns             " << numUnk    << '\n'
               << " o number of accumulated unknowns " << numAccUnk << '\n'
               << " o number of unknowns on proc\n";
     for (size_t i=0; i<UnkOnProc.size(); ++i)
-        std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
+      std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
 
     // discretize (setup linear equation system)
     // -------------------------------------------------------------------------
@@ -323,7 +319,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
+      Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -337,247 +333,245 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
     PoissonSolverBaseCL* solver = factory.CreatePoissonSolver();
 
     if ( factory.GetProlongation() != 0)
-        SetupP1ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
+      SetupP1ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
 
     // Solve the linear equation system
     if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
+      Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     else
-        SolveStatProblem( Poisson, *solver, P);
+      SolveStatProblem( Poisson, *solver, P);
 
     if(P.get<int>("Time.NumSteps")!=0)
-    {
+      {
         //CoeffCL::Show_Pec();
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
+	  ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
-            timer.Reset();
-            std::cout << line << "Step: " << step << std::endl;
-            ThetaScheme.DoStep( Poisson.x);
-            //Setup solutions for python interface
-            PyC.SetSol3D(Poisson.GetSolution(), Poisson.x.t);
+	  timer.Reset();
+	  std::cout << line << "Step: " << step << std::endl;
+	  ThetaScheme.DoStep( Poisson.x);
+	  //Setup solutions for python interface
+	  PyC.SetSol3D(Poisson.GetSolution(), Poisson.x.t);
 
-            timer.Stop();
-            std::cout << " o Solved system with:\n"
-                      << "   - time          " << timer.GetTime()    << " s\n"
-                      << "   - iterations    " << solver->GetIter()  << '\n'
-                      << "   - residuum      " << solver->GetResid() << '\n';
-            if(solver->GetResid() > P.get<double>("Poisson.Tol"))
-            {  
-                std::cout <<"The residual is bigger than tolerence ...\n";
-                abort();
+	  timer.Stop();
+	  std::cout << " o Solved system with:\n"
+		    << "   - time          " << timer.GetTime()    << " s\n"
+		    << "   - iterations    " << solver->GetIter()  << '\n'
+		    << "   - residuum      " << solver->GetResid() << '\n';
+	  if(solver->GetResid() > P.get<double>("Poisson.Tol"))
+            {
+	      throw (PyDropsErr(&PyC, &P, step-1, "The residual is greater than tolerence"));
             }
-            if(solver->GetResid()!=solver->GetResid())
-            {  
-                std::cout <<"The residual is nan ...\n";
-                abort();
-            }                
-            if (P.get("Poisson.SolutionIsKnown", 0)) {
-                std::cout << line << "Check result against known solution ...\n";
-                Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
+	  if(solver->GetResid()!=solver->GetResid())
+            {
+    	      throw (PyDropsErr(&PyC, &P, step-1, "The residual is NAN"));
             }
+	  if (P.get("Poisson.SolutionIsKnown", 0)) {
+	    std::cout << line << "Check result against known solution ...\n";
+	    Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
+	  }
         }
-    }
+      }
 
     delete solver;
-}
+  }
 
 } // end of namespace DROPS
 
 void SetMissingParameters(DROPS::ParamCL& P){
-    P.put_if_unset<int>("Stabilization.SUPG",0);
-    P.put_if_unset<std::string>("PoissonCoeff.IAProb", "IA1Direct");    
+  P.put_if_unset<int>("Stabilization.SUPG",0);
+  P.put_if_unset<std::string>("PoissonCoeff.IAProb", "IA1Direct");
 }
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
-        PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
-        SetMissingParameters(P);
+  PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
+  SetMissingParameters(P);
 #ifdef _PAR
-    DROPS::ProcInitCL procinit(&argc, &argv);
-    DROPS::ParMultiGridInitCL pmginit;
+  DROPS::ProcInitCL procinit(&argc, &argv);
+  DROPS::ParMultiGridInitCL pmginit;
 #endif
-    try
-    {
-    // time measurements
+  //try
+  //{
+  // time measurements
 #ifndef _PAR
-        DROPS::TimerCL timer;
+  DROPS::TimerCL timer;
 #else
-        DROPS::ParTimerCL timer;
+  DROPS::ParTimerCL timer;
 #endif
 
-        // set up data structure to represent a poisson problem
-        // ---------------------------------------------------------------------
-        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
-        timer.Reset();
+  // set up data structure to represent a poisson problem
+  // ---------------------------------------------------------------------
+  std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+  timer.Reset();
 
-        //create geometry
-        DROPS::MultiGridCL* mg= 0;
-        //DROPS::PoissonBndDataCL* bdata = 0;
+  //create geometry
+  DROPS::MultiGridCL* mg= 0;
+  //DROPS::PoissonBndDataCL* bdata = 0;
 
-        const bool isneumann[6]=
-        { false, true,              // inlet, outlet
-          true,  false,             // wall, interface
-          true,  true };            // in Z direction
+  const bool isneumann[6]=
+    { false, true,              // inlet, outlet
+      true,  false,             // wall, interface
+      true,  true };            // in Z direction
 
-        DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
+  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
 
-        const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
+  const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
 
-        DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
+  DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
-        //only for measuring cell, not used here
-        double r = 1;
-        std::string serfile = "none";
+  //only for measuring cell, not used here
+  double r = 1;
+  std::string serfile = "none";
 
-        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
-        
-        // Setup the problem
-        //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-        std::string adstr ("IA1Adjoint");
-        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
+  DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+
+  // Setup the problem
+  //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
+  std::string adstr ("IA1Adjoint");
+  std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+  DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
 
 #ifdef _PAR
-        // Set parallel data structures
-        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
-        pmg.AttachTo( *mg);                                  // handling of parallel multigrid
-        DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
-        lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
-        lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
+  // Set parallel data structures
+  DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+  pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+  DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
+  lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
+  lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
 #endif
-        timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+  timer.Stop();
+  std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
-        // Refine the grid
-        // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
-        timer.Reset();
-        // Create new tetrahedra
-        for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
-            std::cout << " refine (" << ref << ")\n";
-            DROPS::MarkAll( *mg);
-            mg->Refine();
-        }
-        // do loadbalancing
+  // Refine the grid
+  // ---------------------------------------------------------------------
+  std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+  timer.Reset();
+  // Create new tetrahedra
+  for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
+    std::cout << " refine (" << ref << ")\n";
+    DROPS::MarkAll( *mg);
+    mg->Refine();
+  }
+  // do loadbalancing
 #ifdef _PAR
-        lb.DoMigration();
+  lb.DoMigration();
 #endif
 
-        timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-        mg->SizeInfo(cout);
+  timer.Stop();
+  std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+  mg->SizeInfo(cout);
 
-        //prepare MC
-        PyC.SetMG(mg);
-        PythonConnectCL::ClearMaps();
-        PythonConnectCL::setFaceMap();
-        PythonConnectCL::setTetraMap();
+  //prepare MC
+  PyC.SetMG(mg);
+  PythonConnectCL::ClearMaps();
+  PythonConnectCL::setFaceMap();
+  PythonConnectCL::setTetraMap();
 
-        // Solve the problem
-	    DROPS::Strategy( prob, P);
-        //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+  // Solve the problem
+  DROPS::Strategy( prob, P);
+  //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
-        delete mg;
-        //delete bdata;
-    }
-    catch (DROPS::DROPSErrCL err) { err.handle(); }
+  delete mg;
+  //delete bdata;
+  //}
+  //catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 
 //Used to solve a direct, sensetivity, adjoint and gradient problem in IA2; source for direct and adjoint; presol for sensetivity and gradient; DelPsi for sensetivity and gradient
 void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* presol, const PdeFunction* DelPsi, const PdeFunction* Dw, double* C_sol)
 {
-        PyC.Init(P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);
-        SetMissingParameters(P);
+  PyC.Init(P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);
+  SetMissingParameters(P);
 #ifdef _PAR
-    DROPS::ProcInitCL procinit(&argc, &argv);
-    DROPS::ParMultiGridInitCL pmginit;
+  DROPS::ProcInitCL procinit(&argc, &argv);
+  DROPS::ParMultiGridInitCL pmginit;
 #endif
-    try
-    {
-    // time measurements
+  //try
+  //{
+  // time measurements
 #ifndef _PAR
-        DROPS::TimerCL timer;
+  DROPS::TimerCL timer;
 #else
-        DROPS::ParTimerCL timer;
+  DROPS::ParTimerCL timer;
 #endif
 
-        // set up data structure to represent a poisson problem
-        // ---------------------------------------------------------------------
-        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
-        timer.Reset();
+  // set up data structure to represent a poisson problem
+  // ---------------------------------------------------------------------
+  std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+  timer.Reset();
 
-        //create geometry
-        DROPS::MultiGridCL* mg= 0;
-        //DROPS::PoissonBndDataCL* bdata = 0;
+  //create geometry
+  DROPS::MultiGridCL* mg= 0;
+  //DROPS::PoissonBndDataCL* bdata = 0;
 
-        const bool isneumann[6]=
-        { false, true,              // inlet, outlet
-          true,  false,             // wall, interface
-          true,  true };            // in Z direction
+  const bool isneumann[6]=
+    { false, true,              // inlet, outlet
+      true,  false,             // wall, interface
+      true,  true };            // in Z direction
 
-        DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
+  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
 
-        const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
+  const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
 
-        DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
+  DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
-        //only for measuring cell, not used here
-        double r = 1;
-        std::string serfile = "none";
+  //only for measuring cell, not used here
+  double r = 1;
+  std::string serfile = "none";
 
-        DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
-        
-        // Setup the problem
-        //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
+  DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+
+  // Setup the problem
+  //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
+  DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
 
 #ifdef _PAR
-        // Set parallel data structures
-        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
-        pmg.AttachTo( *mg);                                  // handling of parallel multigrid
-        DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
-        lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
-        lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
+  // Set parallel data structures
+  DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+  pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+  DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
+  lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
+  lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
 #endif
-        timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+  timer.Stop();
+  std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
-        // Refine the grid
-        // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
-        timer.Reset();
-        // Create new tetrahedra
-        for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
-            std::cout << " refine (" << ref << ")\n";
-            DROPS::MarkAll( *mg);
-            mg->Refine();
-        }
-        // do loadbalancing
+  // Refine the grid
+  // ---------------------------------------------------------------------
+  std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+  timer.Reset();
+  // Create new tetrahedra
+  for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
+    std::cout << " refine (" << ref << ")\n";
+    DROPS::MarkAll( *mg);
+    mg->Refine();
+  }
+  // do loadbalancing
 #ifdef _PAR
-        lb.DoMigration();
+  lb.DoMigration();
 #endif
 
-        timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-        mg->SizeInfo(cout);
+  timer.Stop();
+  std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+  mg->SizeInfo(cout);
 
-        //prepare MC
-        PyC.SetMG(mg);
-        PythonConnectCL::ClearMaps();
-        PythonConnectCL::setFaceMap();
-        PythonConnectCL::setTetraMap();
+  //prepare MC
+  PyC.SetMG(mg);
+  PythonConnectCL::ClearMaps();
+  PythonConnectCL::setFaceMap();
+  PythonConnectCL::setTetraMap();
 
-        // Solve the problem
-	    DROPS::Strategy( prob, P);
-        //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+  // Solve the problem
+  DROPS::Strategy( prob, P);
+  //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
-        delete mg;
-        //delete bdata;
-    }
-    catch (DROPS::DROPSErrCL err) { err.handle(); }
+  delete mg;
+  //delete bdata;
+  //}
+  //catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 
