@@ -559,10 +559,11 @@ int main(int argc, char** argv)
     }
     
     convection_diffusion(outfile, P, C0, b_in, b_interface, source, Dw, C_sol);
-    delete[] C0;
-    delete[] b_in;
-    delete[] b_interface;
-    delete[] source;
+    delete C0;
+    delete b_in;
+    delete b_interface;
+    delete source;
+    delete Dw;
     delete[] C_sol;
     return 0;
   }
