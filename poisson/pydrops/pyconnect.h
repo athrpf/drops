@@ -43,7 +43,6 @@ public:
   typedef boost::shared_ptr<PythonConnectCL> Ptr;
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
-  double D_mol_;
   bool   adjoint_;
 
   const DropsFunction *presol_, *DelPsi_;
@@ -295,8 +294,6 @@ public:
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
     dt_     = P.get<double>("Time.StepSize");
-
-    D_mol_ = P.get<double>("PoissonCoeff.Dmol");
 
     VolumeGridFunction* vg = new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_);
     SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
