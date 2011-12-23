@@ -58,6 +58,22 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   P.put<std::string>("DomainCond.BoundaryType","2!21!21!2!21!21");
   P.put<int>("DomainCond.GeomType", 1);
 
+  // read from meshfile string
+  std::string meshfile = P.get<std::string>("DomainCond.MeshFile"), delim("x@");
+  size_t idx;
+  while ((idx = meshfile.find_first_of(delim)) != std::string::npos )
+    meshfile[idx] = ' ';
+  std::istringstream brick_info(meshfile);
+  int nx_mesh, ny_mesh, nz_mesh;
+  double lx_mesh, ly_mesh, lz_mesh;
+  brick_info >> lx_mesh >> ly_mesh >> lz_mesh >> nx_mesh >> ny_mesh >> nz_mesh;
+  if (nx_mesh!=nx-1) {
+
+  }
+  assert(nx_mesh==nx-1);
+  assert(ny_mesh==ny-1);
+  assert(nz_mesh==nz-1);
+
   int nt_test = P.get<int>("Time.NumSteps"); // again, number of intervals
   assert(nt_test==nt-1);
 
@@ -94,7 +110,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
     for (int ix=0; ix<nx; ++ix) for (int iy=0; iy<ny; ++iy) for (int iz=0; iz<nz; ++iz) solution_ptr[ix+nx*iy+nx*ny*iz] = C0f->operator()(ix, iy, iz,0);
   }
   array solution = extract<boost::python::numeric::array>(obj);
-  double* solution_without_intitial_ptr = adjoint ? solution_ptr : solution_ptr+nx*ny*nz;
+  double* solution_without_intitial_ptr = (adjoint | nt<2) ? solution_ptr : solution_ptr+nx*ny*nz;
   convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_without_intitial_ptr);
 
   delete C0f;
