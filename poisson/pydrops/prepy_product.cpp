@@ -197,7 +197,7 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
 
       std::string boundaryfuncs = "Zero!Zero!Zero!Zero!Zero!Zero";
       std::string boundarytype  = "0!21!21!0!21!21";
-      DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs);
+      DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs); // here, memory is lost!
 
       // Setup the problem
       PoissonProblem* prob = new PoissonProblem( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
@@ -224,6 +224,7 @@ numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
   npy_intp* output_dim = new npy_intp[1];
   output_dim[0] = nt;
   PyArrayObject* retval = (PyArrayObject*) PyArray_New(&PyArray_Type, 1, output_dim, PyArray_DOUBLE, NULL, NULL, 0, NPY_C_CONTIGUOUS, NULL);
+  delete[] output_dim;
   object obj(handle<>((PyObject*)retval));
   double* solution_ptr = (double*)retval->data;
 

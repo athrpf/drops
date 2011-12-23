@@ -194,13 +194,13 @@ public:
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
 
-  DropsFunction* GetDiffusion;
-  DropsFunction* GetInitial;
-  DropsFunction* GetSource;
-  DropsFunction* GetInterfaceValue; // never barycentric
-  DropsFunction* GetInflow; // never barycentric
-  DropsFunction* GetDelPsi;
-  DropsFunction* GetPresol;
+  DropsFunction::Ptr GetDiffusion;
+  DropsFunction::Ptr GetInitial;
+  DropsFunction::Ptr GetSource;
+  DropsFunction::Ptr GetInterfaceValue; // never barycentric
+  DropsFunction::Ptr GetInflow; // never barycentric
+  DropsFunction::Ptr GetDelPsi;
+  DropsFunction::Ptr GetPresol;
 
   template<class P1EvalT>
     void SetSol3D( const P1EvalT& sol, double t)  //Instationary problem
@@ -256,15 +256,15 @@ public:
     dt_    = P.get<double>("Time.StepSize");
 
     // Save the matrix input arguments.
-    VolumeGridFunction* vg = new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_);
-    SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
-    SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
+    GridFunction::Ptr vg(new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_));
+    GridFunction::Ptr sg_inlet(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0));
+    GridFunction::Ptr sg_interface(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3));
 
-    GetInitial = new DropsFunction(C0, vg, 4);
-    GetInflow = new DropsFunction(B_in, sg_inlet, 3);
-    GetSource    = new DropsFunction(F, vg, 4);
-    GetDiffusion    = new DropsFunction(Dw, vg, 4);
-    GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
+    GetInitial = DropsFunction::Ptr(new DropsFunction(C0, vg, 4));
+    GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
+    GetSource = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
+    GetDiffusion = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
+    GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
 
     std::string adstr ("IA1Adjoint");
     std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
@@ -299,12 +299,12 @@ public:
     SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
     SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
 
-    GetInflow = new DropsFunction(B_in, sg_inlet, 3);
-    GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
-    GetSource    = new DropsFunction(F, vg, 4);
-    GetPresol = new DropsFunction(presol, vg, 4);
-    GetDelPsi = new DropsFunction(DelPsi, vg, 4);
-    GetDiffusion = new DropsFunction(Dw, vg, 4);
+    GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
+    GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
+    GetSource = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
+    GetPresol = DropsFunction::Ptr(new DropsFunction(presol, vg, 4));
+    GetDelPsi = DropsFunction::Ptr(new DropsFunction(DelPsi, vg, 4));
+    GetDiffusion = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;

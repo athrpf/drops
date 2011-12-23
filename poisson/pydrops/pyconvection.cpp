@@ -95,6 +95,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   npy_intp* c_sol_dim = new npy_intp[4];
   c_sol_dim[0] = nx; c_sol_dim[1] = ny; c_sol_dim[2] = nz; c_sol_dim[3] = nt;
   PyArrayObject* newarray = (PyArrayObject*) PyArray_New(&PyArray_Type, 4, c_sol_dim, PyArray_DOUBLE, NULL, NULL, 0, NPY_F_CONTIGUOUS, NULL);
+  delete[] c_sol_dim;
   boost::python::object obj(handle<>((PyObject*)newarray));
   double* solution_ptr = (double*)newarray->data;
   for (int k=0; k<nx*ny*nz*nt; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
