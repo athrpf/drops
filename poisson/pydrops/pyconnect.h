@@ -45,7 +45,7 @@ public:
   double dx_, dy_, dz_, dt_;
   bool   adjoint_;
 
-  const DropsFunction *presol_, *DelPsi_;
+  //const DropsFunction *presol_, *DelPsi_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -302,8 +302,8 @@ public:
     GetInflow = new DropsFunction(B_in, sg_inlet, 3);
     GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
     GetSource    = new DropsFunction(F, vg, 4);
-    presol_ = new DropsFunction(presol, vg, 4);
-    DelPsi_ = new DropsFunction(DelPsi, vg, 4);
+    GetPresol = new DropsFunction(presol, vg, 4);
+    GetDelPsi = new DropsFunction(DelPsi, vg, 4);
     GetDiffusion = new DropsFunction(Dw, vg, 4);
 
     // Set the output pointer to the output arguments.
