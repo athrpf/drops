@@ -2,7 +2,7 @@ import drops
 from numpy import sin, pi, ones, zeros, mgrid
 from matplotlib.pylab import *
 
-f = 4
+f = 1
 Nx = 10*f
 Ny = 10*f
 Nz = 10*f
@@ -38,7 +38,7 @@ flag_pr = True
 flag_bc = True
 flag_supg = False
 
-retval =  drops.convection_diffusion(C0,  b_in, source, D, b_interface, uN, Dmol, lx, ly, lz, dt, theta, flag_pr, flag_bc, flag_supg)
+retval =  drops.convection_diffusion(C0,  b_in, source, D, b_interface, "convdiff.json")
 
 dV  = lx*ly*lz/(Nx-1)/(Ny-1)/(Nz-1)
 err = ((retval - c)*dV)**2
