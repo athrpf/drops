@@ -20,8 +20,6 @@ drops.setup_scalar_product_matrices(Nx, Ny, Nz, Nt, lx, ly, lz, tmax, False)
 Xmesh, Ymesh, Zmesh, Tmesh = mgrid[0:Nx,0:Ny,0:Nz,0:Nt]
 X = Xmesh.astype(float)/(Nx-1)*lx
 Y = Ymesh.astype(float)/(Ny-1)*ly
-Z = Zmesh.astype(float)/(Nz-1)*lz
-T = Tmesh.astype(float)/(Nt-1)*tmax
 
 D = ones([Nx, Ny, Nz, Nt])
 
@@ -38,7 +36,7 @@ flag_pr = True
 flag_bc = True
 flag_supg = False
 
-retval =  drops.convection_diffusion(C0,  b_in, source, D, b_interface, "convdiff.json")
+retval =  drops.convection_diffusion(C0,  b_in, source, D, b_interface, "dropstest.json")
 
 dV  = lx*ly*lz/(Nx-1)/(Ny-1)/(Nz-1)
 err = ((retval - c)*dV)**2

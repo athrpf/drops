@@ -108,6 +108,7 @@ private:
 
 class DropsFunction {
  public:
+  typedef boost::shared_ptr<DropsFunction> Ptr;
   DropsFunction(const PdeFunction* f_, const GridFunction* g_, int n_) : f(f_), g(g_), n(n_){}
 
   double operator()(const DROPS::Point3DCL& p, double t)
