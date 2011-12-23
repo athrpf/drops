@@ -34,16 +34,18 @@
 #include <string>
 #include <math.h>
 
+#include <boost/shared_ptr.hpp>
+
 /// holds the Python input matrices and Python output parameters
 class PythonConnectCL
 {
 public:
+  typedef boost::shared_ptr<PythonConnectCL> Ptr;
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   double D_mol_;
   bool   adjoint_;
 
-  const DropsFunction *C0_, *B_in_, *B_Inter_, *F_,*Dw_;  // initial+boundary+rhs function,  wavy induced diffusion parameter as a function,
   const DropsFunction *presol_, *DelPsi_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
@@ -56,7 +58,7 @@ public:
   FACE_MAP face_map_;
   TETRA_MAP tetra_map_;
 
-  //
+
   int GetNum( const DROPS::Point3DCL& p, double t, int seg) const
   {
     if (seg == 0 || seg == 1){//yoz
@@ -80,7 +82,7 @@ public:
     iy = rd(p[1]/dy_);
     iz = rd(p[2]/dz_);
     it = rd(t/dt_);
-  }
+    }
  public:
   PythonConnectCL()
     {
@@ -259,12 +261,11 @@ public:
     SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
     SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
 
-    C0_   = new DropsFunction(C0, vg, 4);
-    B_in_ = new DropsFunction(B_in, sg_inlet, 3);
-    F_    = new DropsFunction(F, vg, 4);
-    Dw_    = new DropsFunction(Dw, vg, 4);
-    D_mol_ = P.get<double>("PoissonCoeff.Dmol");
-    B_Inter_= new DropsFunction(B_Inter, sg_interface, 3);
+    GetInitial = new DropsFunction(C0, vg, 4);
+    GetInflow = new DropsFunction(B_in, sg_inlet, 3);
+    GetSource    = new DropsFunction(F, vg, 4);
+    GetDiffusion    = new DropsFunction(Dw, vg, 4);
+    GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
 
     std::string adstr ("IA1Adjoint");
     std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
@@ -301,12 +302,12 @@ public:
     SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
     SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
 
-    B_in_ = new DropsFunction(B_in, sg_inlet, 3);
-    B_Inter_= new DropsFunction(B_Inter, sg_interface, 3);
-    F_    = new DropsFunction(F, vg, 4);
+    GetInflow = new DropsFunction(B_in, sg_inlet, 3);
+    GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
+    GetSource    = new DropsFunction(F, vg, 4);
     presol_ = new DropsFunction(presol, vg, 4);
-    DelPsi_  = new DropsFunction(DelPsi, vg, 4);
-    Dw_    = new DropsFunction(Dw, vg, 4);
+    DelPsi_ = new DropsFunction(DelPsi, vg, 4);
+    GetDiffusion = new DropsFunction(Dw, vg, 4);
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
@@ -316,8 +317,8 @@ public:
 
 class PyDropsErr : public DROPS::DROPSErrCL {
 public:
-  PyDropsErr(const PythonConnectCL* PyC_, DROPS::ParamCL* P_, int it_, std::string msg_) : PyC(PyC_), P(P_), it(it_), msg(msg_) {}
-  const PythonConnectCL* PyC;
+ PyDropsErr(const PythonConnectCL::Ptr PyC_, DROPS::ParamCL* P_, int it_, std::string msg_) : PyC(PyC_), P(P_), it(it_), msg(msg_) {}
+  const PythonConnectCL::Ptr PyC;
   DROPS::ParamCL* P;
   int it;
   std::string msg;

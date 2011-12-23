@@ -30,8 +30,8 @@ double rnd(double d) {// rounding four digits after comma
 
 class GridFunction {
 public:
-  virtual bool get_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it)const =0;
-  virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it,int k) const=0;
+  virtual bool get_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it)const =0;
+  virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it,int k) const=0;
 };
 
 class VolumeGridFunction : public GridFunction {
@@ -47,20 +47,19 @@ class VolumeGridFunction : public GridFunction {
 
   /// Returns true if p,t is a non-barycentric (a true gridpoint).
   /// If true, ix, iy, ... are set to the indices of that grid point
-  virtual bool get_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it) const {
+  virtual bool get_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it) const {
     d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
     cmp_key key= std::make_pair(rnd(p[0]), pr);
     tetra_it tetra= tetra_map->find(key);
     if (tetra == tetra_map->end()) {//non-barycenter
-      int ix1,iy1, iz1,it1;
-      GetNum(p,t,ix1,iy1,iz1,it1);
+      GetNum(p,t,ix,iy,iz,it);
       return true;
     }
     return false;
   }
 
   /// Returns the indices for the barycentric coordinate p.
-  virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it,int k) const {
+  virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it,int k) const {
     d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
     cmp_key key= std::make_pair(rnd(p[0]), pr);
     tetra_it tetra= tetra_map->find(key);
@@ -87,19 +86,18 @@ public:
     else if (surface_index==4 || surface_index==5) {iz=0;}
   }
 
-  virtual bool get_indices(const DROPS::Point3DCL& p, double t, int ix, int iy, int iz, int it) const {
+  virtual bool get_indices(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
     d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
     cmp_key key= std::make_pair(rnd(p[0]), pr);
     face_it face = face_map->find(key);
     if (face == face_map->end()) {//non-barycenter
-      int ix1,iy1, iz1,it1;
       GetNum(p,t,ix,iy,iz,it);
       return true;
     }
     return false;
   }
 
-  virtual void get_barycenter_indices(const DROPS::Point3DCL& p, double t, int ix, int iy, int iz, int it, int k) const {
+  virtual void get_barycenter_indices(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it, int k) const {
     assert(false); // all boundary functions are dirichlet...
   }
 private:

@@ -65,33 +65,12 @@ using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
 
-//PythonConnectCL PyC;
-
-//DROPS::ParamCL P;
-/*
-double GetInitial(const DROPS::Point3DCL& p, double t)
-{
-  return PyC.GetInitial(p,t);
-}
-double GetDiffusion(const DROPS::Point3DCL& p, double t){return PyC.GetDiffusion(p,t);}
-double GetSource(const DROPS::Point3DCL& p, double t){return PyC.GetSource(p,t);}
-double GetInflow(const DROPS::Point3DCL& p, double t){return PyC.GetInflow(p,t);}
-double GetInterfaceFlux( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceFlux(p,t);}
-double GetInterfaceValue( const DROPS::Point3DCL& p, double t){return PyC.GetInterfaceValue(p,t);}
-//for IA2
-double GetPresol( const DROPS::Point3DCL& p, double t){return PyC.GetPresol(p,t);}
-double GetDelPsi( const DROPS::Point3DCL& p, double t){return PyC.GetDelPsi(p,t);}
-*/
-
-
 double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
 
 namespace DROPS
 {
-
-
   template<class CoeffCL, class SolverT>
-  void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P, PythonConnectCL* PyC)
+  void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P, PythonConnectCL::Ptr PyC)
   {
     // time measurements
 #ifndef _PAR
@@ -260,7 +239,7 @@ namespace DROPS
 
   /// \brief Strategy to solve the Poisson problem on a given triangulation
   template<class CoeffCL>
-  void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P, PythonConnectCL* PyC)
+  void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P, PythonConnectCL::Ptr PyC)
   {
     // time measurements
 #ifndef _PAR
@@ -383,7 +362,7 @@ void SetMissingParameters(DROPS::ParamCL& P){
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
-  PythonConnectCL* PyC = new PythonConnectCL();
+  PythonConnectCL::Ptr PyC(new PythonConnectCL());
   PyC->Init(P, C0, b_in, source, Dw, b_interface, C_sol);
   SetMissingParameters(P);
 #ifdef _PAR
@@ -471,13 +450,12 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
   DROPS::Strategy( prob, P, PyC);
 
   delete mg;
-  delete PyC;
 }
 
 //Used to solve a direct, sensetivity, adjoint and gradient problem in IA2; source for direct and adjoint; presol for sensetivity and gradient; DelPsi for sensetivity and gradient
 void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* presol, const PdeFunction* DelPsi, const PdeFunction* Dw, double* C_sol)
 {
-  PythonConnectCL* PyC = new PythonConnectCL();
+  PythonConnectCL::Ptr PyC(new PythonConnectCL());
   PyC->Init(P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);
   SetMissingParameters(P);
 #ifdef _PAR
@@ -564,9 +542,5 @@ void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunctio
   DROPS::Strategy( prob, P, PyC);
 
   delete mg;
-  delete PyC;
-  //delete bdata;
-  //}
-  //catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 

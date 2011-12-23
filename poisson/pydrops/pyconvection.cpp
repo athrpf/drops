@@ -32,6 +32,7 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
 
 
 using namespace boost::python::numeric;
+DROPS::ParamCL P;
 
 array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, string json_filename) {
   // 1. Read parameter file
@@ -43,7 +44,6 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
 	std::cerr << "error while opening parameter file\n";
 	return 1;
 	}*/
-  DROPS::ParamCL P;
   param >> P;
   param.close();
   using namespace boost::python;
