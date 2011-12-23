@@ -1,5 +1,5 @@
-/// \file convection_diffusion.cpp
-/// \brief Solver for Poisson problem with P1 functions for python interface
+/// \file Test_convdiff.cpp
+/// \brief Solver for Poisson problem with P1 functions for python interface, use poissonex1.json and pyconnect class
 /*
  * This file is part of DROPS.
  *
@@ -262,7 +262,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 }
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
-  template<class CoeffCL>
+template<class CoeffCL>
 void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
 {
     // time measurements
@@ -510,17 +510,14 @@ int main(int argc, char** argv)
     param.close();
     std::cout << P << std::endl;
     
-    
-    
-    
     instat_scalar_fun_ptr initial;
     instat_scalar_fun_ptr rhs;
     instat_scalar_fun_ptr bnd;
     instat_scalar_fun_ptr diffusion;
-    initial = One;
-    bnd     = One;
-    rhs     = Source_test;
-    diffusion = Zero;
+    initial = One;          //Example1_InitialValue, c=1
+    bnd     = One;          //boundary conditions
+    rhs     = Source_test;  //Here: u = 1 + 64 xyz *(1-x)*(1-y)*(1-z), Example1_Solution
+    diffusion = Zero;       //Dw, wavy induced diffusion
     // set up data structure to represent a poisson problem
     // ---------------------------------------------------------------------
     typedef const PdeFunction* PdeFunPtr;
@@ -554,7 +551,6 @@ int main(int argc, char** argv)
         C_sol=new double[Ns];
     }
     
-
     convection_diffusion(P, C0, b_in, b_interface, source, Dw, C_sol);
 
     delete[] C0;

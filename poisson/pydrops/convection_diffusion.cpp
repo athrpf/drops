@@ -564,6 +564,7 @@ void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunctio
   DROPS::Strategy( prob, P, PyC);
 
   delete mg;
+  delete PyC;
   //delete bdata;
   //}
   //catch (DROPS::DROPSErrCL err) { err.handle(); }
