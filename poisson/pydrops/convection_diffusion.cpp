@@ -65,10 +65,10 @@ using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
 
-PythonConnectCL PyC;
+//PythonConnectCL PyC;
 
-DROPS::ParamCL P;
-
+//DROPS::ParamCL P;
+/*
 double GetInitial(const DROPS::Point3DCL& p, double t)
 {
   return PyC.GetInitial(p,t);
@@ -81,19 +81,17 @@ double GetInterfaceValue( const DROPS::Point3DCL& p, double t){return PyC.GetInt
 //for IA2
 double GetPresol( const DROPS::Point3DCL& p, double t){return PyC.GetPresol(p,t);}
 double GetDelPsi( const DROPS::Point3DCL& p, double t){return PyC.GetDelPsi(p,t);}
-
+*/
 
 
 double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
-double Inflow(const DROPS::Point3DCL& p, double t) { return PyC.GetInflow(p,t); }
-//double Interface(const DROPS::Point3DCL& p, double t) { return PyC.GetInterfaceFlux(p,t); }
 
 namespace DROPS
 {
 
 
   template<class CoeffCL, class SolverT>
-  void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P)
+  void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P, PythonConnectCL* PyC)
   {
     // time measurements
 #ifndef _PAR
@@ -124,7 +122,7 @@ namespace DROPS
         {
 	  VecDescCL b1;
 	  b1.SetIdx(&Poisson.idx);
-	  Poisson.SetupL2ProjGrad(b1,GetPresol, GetDelPsi, NULL);
+	  Poisson.SetupL2ProjGrad(b1,*PyC->GetPresol, *PyC->GetDelPsi, NULL);
 	  Poisson.b.Data+=b1.Data;
 	  std::cout << line << "We are solving Gradient problem in IA2 ...\n"<<line;
         }
@@ -132,7 +130,7 @@ namespace DROPS
         {
 	  VecDescCL b1;
 	  b1.SetIdx(&Poisson.idx);
-	  Poisson.SetupGradSrc(b1,GetPresol, GetDelPsi);
+	  Poisson.SetupGradSrc(b1,*PyC->GetPresol, *PyC->GetDelPsi);
 	  Poisson.b.Data+=b1.Data;
 	  std::cout << line << "We are solving sensetivity problem in IA2 ...\n"<<line;
         }
@@ -150,7 +148,7 @@ namespace DROPS
       double realresid = Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data), false);
 #endif
       //Setup solution for python interface
-      PyC.SetSol3D(Poisson.GetSolution());
+      PyC->SetSol3D(Poisson.GetSolution());
       std::cout << " o Solved system with:\n"
 		<< "   - time          " << timer.GetTime()   << " s\n"
 		<< "   - iterations    " << solver.GetIter()  << '\n'
@@ -158,11 +156,11 @@ namespace DROPS
 		<< "   - real residuum " << realresid         << std::endl;
       if(solver.GetResid() > P.get<double>("Poisson.Tol"))
         {
-	  throw (PyDropsErr(&PyC, &P, 0, "The residual is bigger than tolerance"));
+	  throw (PyDropsErr(PyC, &P, 0, "The residual is bigger than tolerance"));
         }
       if(solver.GetResid()!=solver.GetResid())
         {
-	  throw (PyDropsErr(&PyC, &P, 0, "The residual is NAN"));
+	  throw (PyDropsErr(PyC, &P, 0, "The residual is NAN"));
         }
       if (P.get<int>("Poisson.SolutionIsKnown")) {
 	std::cout << line << "Check result against known solution ...\n";
@@ -222,7 +220,7 @@ namespace DROPS
 	solver.Solve( Poisson.A.Data, new_x->Data, Poisson.b.Data);
 	timer.Stop();
 	//Setup solution for python interface
-	PyC.SetSol3D(Poisson.GetSolution());
+	PyC->SetSol3D(Poisson.GetSolution());
 	double realresid = norm( VectorCL(Poisson.A.Data*new_x->Data-Poisson.b.Data));
 	std::cout << " o Solved system with:\n"
 		  << "   - time          " << timer.GetTime()   << " s\n"
@@ -231,11 +229,11 @@ namespace DROPS
 		  << "   - real residuum " << realresid         << std::endl;
 	if(solver.GetResid() > P.get<double>("Poisson.Tol"))
 	  {
-	    throw (PyDropsErr(&PyC, &P, 0, "The residual is bigger than tolerence"));
+	    throw (PyDropsErr(PyC, &P, 0, "The residual is bigger than tolerence"));
 	  }
 	if(solver.GetResid()!=solver.GetResid())
 	  {
-	    throw (PyDropsErr(&PyC, &P, 0, "The residual is NAN"));
+	    throw (PyDropsErr(PyC, &P, 0, "The residual is NAN"));
 	  }
 	Poisson.A.Reset();
 	Poisson.b.Reset();
@@ -262,7 +260,7 @@ namespace DROPS
 
   /// \brief Strategy to solve the Poisson problem on a given triangulation
   template<class CoeffCL>
-  void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P)
+  void Strategy( PoissonP1CL<CoeffCL>& Poisson, ParamCL& P, PythonConnectCL* PyC)
   {
     // time measurements
 #ifndef _PAR
@@ -339,7 +337,7 @@ namespace DROPS
     if(P.get<int>("Time.NumSteps") !=0)
       Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     else
-      SolveStatProblem( Poisson, *solver, P);
+      SolveStatProblem( Poisson, *solver, P, PyC);
 
     if(P.get<int>("Time.NumSteps")!=0)
       {
@@ -352,7 +350,7 @@ namespace DROPS
 	  std::cout << line << "Step: " << step << std::endl;
 	  ThetaScheme.DoStep( Poisson.x);
 	  //Setup solutions for python interface
-	  PyC.SetSol3D(Poisson.GetSolution(), Poisson.x.t);
+	  PyC->SetSol3D(Poisson.GetSolution(), Poisson.x.t);
 
 	  timer.Stop();
 	  std::cout << " o Solved system with:\n"
@@ -361,11 +359,10 @@ namespace DROPS
 		    << "   - residuum      " << solver->GetResid() << '\n';
 	  if(solver->GetResid() > P.get<double>("Poisson.Tol"))
             {
-	      throw (PyDropsErr(&PyC, &P, step-1, "The residual is greater than tolerence"));
+	      throw (PyDropsErr(PyC, &P, step-1, "The residual is greater than tolerence"));
             }
-	  if(solver->GetResid()!=solver->GetResid())
-            {
-    	      throw (PyDropsErr(&PyC, &P, step-1, "The residual is NAN"));
+	  if(solver->GetResid()!=solver->
+	     throw (PyDropsErr(PyC, &P, step-1, "The residual is NAN"));
             }
 	  if (P.get("Poisson.SolutionIsKnown", 0)) {
 	    std::cout << line << "Check result against known solution ...\n";
@@ -386,7 +383,8 @@ void SetMissingParameters(DROPS::ParamCL& P){
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
-  PyC.Init(P, C0, b_in, source, Dw, b_interface, C_sol);
+  PythonConnectCL* PyC = new PythonConnectCL();
+  PyC->Init(P, C0, b_in, source, Dw, b_interface, C_sol);
   SetMissingParameters(P);
 #ifdef _PAR
   DROPS::ProcInitCL procinit(&argc, &argv);
@@ -408,17 +406,16 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
 
   //create geometry
   DROPS::MultiGridCL* mg= 0;
-  //DROPS::PoissonBndDataCL* bdata = 0;
 
   const bool isneumann[6]=
     { false, true,              // inlet, outlet
       true,  false,             // wall, interface
       true,  true };            // in Z direction
 
-  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
+  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, *PyC->GetInitial);
 
   const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-    { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
+    { *PyC->GetInflow, &Zero, &Zero, *PyC->GetInterfaceValue, &Zero, &Zero};
 
   DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
@@ -465,25 +462,23 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
   mg->SizeInfo(cout);
 
   //prepare MC
-  PyC.SetMG(mg);
-  PythonConnectCL::ClearMaps();
-  PythonConnectCL::setFaceMap();
-  PythonConnectCL::setTetraMap();
+  PyC->SetMG(mg);
+  PyC->ClearMaps();
+  PyC->setFaceMap();
+  PyC->setTetraMap();
 
   // Solve the problem
-  DROPS::Strategy( prob, P);
-  //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+  DROPS::Strategy( prob, P, PyC);
 
   delete mg;
-  //delete bdata;
-  //}
-  //catch (DROPS::DROPSErrCL err) { err.handle(); }
+  delete PyC;
 }
 
 //Used to solve a direct, sensetivity, adjoint and gradient problem in IA2; source for direct and adjoint; presol for sensetivity and gradient; DelPsi for sensetivity and gradient
 void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* presol, const PdeFunction* DelPsi, const PdeFunction* Dw, double* C_sol)
 {
-  PyC.Init(P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);
+  PythonConnectCL* PyC = new PythonConnectCL();
+  PyC->Init(P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);
   SetMissingParameters(P);
 #ifdef _PAR
   DROPS::ProcInitCL procinit(&argc, &argv);
@@ -512,10 +507,10 @@ void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunctio
       true,  false,             // wall, interface
       true,  true };            // in Z direction
 
-  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, GetDiffusion, GetSource, GetInitial);
+  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, *PyC->GetInitial);
 
   const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-    { &Inflow, &Zero, &Zero, &GetInterfaceValue, &Zero, &Zero};
+    { *PyC->GetInflow, &Zero, &Zero, *PyC->GetInterfaceValue, &Zero, &Zero};
 
   DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
@@ -560,14 +555,13 @@ void CoefEstimation(DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunctio
   mg->SizeInfo(cout);
 
   //prepare MC
-  PyC.SetMG(mg);
-  PythonConnectCL::ClearMaps();
-  PythonConnectCL::setFaceMap();
-  PythonConnectCL::setTetraMap();
+  PyC->SetMG(mg);
+  PyC->ClearMaps();
+  PyC->setFaceMap();
+  PyC->setTetraMap();
 
   // Solve the problem
-  DROPS::Strategy( prob, P);
-  //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+  DROPS::Strategy( prob, P, PyC);
 
   delete mg;
   //delete bdata;

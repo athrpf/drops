@@ -34,43 +34,28 @@
 #include <string>
 #include <math.h>
 
-inline int rd( double d) { return static_cast<int>( d+0.5); }                   // rounding
-
+/// holds the Python input matrices and Python output parameters
 class PythonConnectCL
-{ // holds the Python input matrices and Python output parameters
-  typedef std::pair<double, double> d_pair;
-  typedef std::pair<double, d_pair> cmp_key;
-  //
-  typedef std::map<cmp_key, DROPS::FaceCL*>  FACE_MAP;
-  typedef std::map<cmp_key, DROPS::TetraCL*> TETRA_MAP;
-
-  //private:
+{
 public:
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   double D_mol_;
   bool   adjoint_;
 
-  const PdeFunction *C0_, *B_in_, *B_Inter_, *F_,  // initial+boundary+rhs function,
-    *Dw_;                                     // wavy induced diffusion parameter as a function,
-  const PdeFunction *presol_, *DelPsi_;
+  const DropsFunction *C0_, *B_in_, *B_Inter_, *F_,*Dw_;  // initial+boundary+rhs function,  wavy induced diffusion parameter as a function,
+  const DropsFunction *presol_, *DelPsi_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
-  static DROPS::MultiGridCL* MG_;
+  //static DROPS::MultiGridCL* MG_;
+  DROPS::MultiGridCL* MG_;
 
-  static FACE_MAP face_map_;
-  static TETRA_MAP tetra_map_;
+  //static FACE_MAP face_map_;
+  //static TETRA_MAP tetra_map_;
+  FACE_MAP face_map_;
+  TETRA_MAP tetra_map_;
 
-  typedef FACE_MAP::const_iterator fi;
-  typedef TETRA_MAP::const_iterator ti;
-
-
-  static double rnd(double d) {// rounding four digits after comma
-    int i_d = (int)(d*10000);
-    double d_d = (double)i_d/10000;
-    return d_d;
-  }
   //
   int GetNum( const DROPS::Point3DCL& p, double t, int seg) const
   {
@@ -107,12 +92,12 @@ public:
     }
   void SetMG( DROPS::MultiGridCL* MG) { MG_= MG; }
   //
-  static void ClearMaps() {
+  void ClearMaps() {
     face_map_.clear();
     tetra_map_.clear();
   }
   //
-  static void setFaceMap()
+  void setFaceMap()
   {
     std::cout<<"SETTING FACE MAP" <<std::endl;
     DROPS::Uint lvl= MG_->GetLastLevel();
@@ -129,11 +114,11 @@ public:
     }
     std::cout<<"FACE MAP SET" <<std::endl;
   }
-  static void DumpFaceMap()
+  void DumpFaceMap()
   {
     FILE* f=fopen("face.map","w");
     std::cout<<"DUMPING FACE MAP\n"<<std::endl;
-    for (fi p= face_map_.begin(); p!= face_map_.end(); p++) {
+    for (face_it p= face_map_.begin(); p!= face_map_.end(); p++) {
 
       DROPS::Point3DCL bc = DROPS::Point3DCL(0.);
       bc[0]=p->first.first;
@@ -160,7 +145,7 @@ public:
     std::cout<<"END DUMP FACE MAP"<<std::endl;
   }
   //
-  static void setTetraMap()
+  void setTetraMap()
   {
     std::cout<<"SETTING TETRA MAP"<<std::endl;
     DROPS::Uint lvl= MG_->GetLastLevel();
@@ -177,11 +162,11 @@ public:
     }
     std::cout<<"TETRA MAP SET"<<std::endl;
   }
-  static void DumpTetraMap()
+  void DumpTetraMap()
   {
     FILE* f=fopen("tetra.map","w");
     std::cout<<"DUMPING TETRA MAP"<<std::endl;
-    for (ti p= tetra_map_.begin(); p!= tetra_map_.end(); p++) {
+    for (tetra_it p= tetra_map_.begin(); p!= tetra_map_.end(); p++) {
 
       DROPS::Point3DCL bc = DROPS::Point3DCL(0.);
       bc[0]=p->first.first;
@@ -207,164 +192,14 @@ public:
     fclose(f);
     std::cout<<"END DUMP TETRA MAP"<<std::endl;
   }
-  //
-  double GetPresol( const DROPS::Point3DCL& p, double t)
-  {
-    double ret;
 
-    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
-    cmp_key key= std::make_pair(rnd(p[0]), pr);
-    DROPS::TetraCL* tetra= tetra_map_[key];
-
-    if (tetra == NULL) {//non-barycenter
-      int ix1,iy1,iz1,it1;
-      GetNum(p,t,ix1,iy1,iz1,it1);
-      ret=(*presol_)(ix1,iy1,iz1,it1);
-    } else {
-      int ix1,iy1, iz1,it1;
-      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
-      int ix2,iy2,iz2,it2;
-      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
-      int ix3,iy3,iz3,it3;
-      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
-      int ix4,iy4,iz4,it4;
-      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
-      ret = 0.25*((*presol_)(ix1,iy1,iz1,it1)+(*presol_)(ix2,iy2,iz2,it2)+
-		  (*presol_)(ix3,iy3,iz3,it3)+(*presol_)(ix4,iy4,iz4,it4));
-    }
-    return ret;
-  };
-  double GetDelPsi( const DROPS::Point3DCL& p, double t)
-  {
-    double ret;
-
-    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
-    cmp_key key= std::make_pair(rnd(p[0]), pr);
-    DROPS::TetraCL* tetra= tetra_map_[key];
-
-    if (tetra == NULL) {//non-barycenter
-      int ix1,iy1,iz1,it1;
-      GetNum(p,t,ix1,iy1,iz1,it1);
-      ret=(*DelPsi_)(ix1,iy1,iz1,it1);
-    } else {
-      int ix1,iy1, iz1,it1;
-      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
-      int ix2,iy2,iz2,it2;
-      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
-      int ix3,iy3,iz3,it3;
-      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
-      int ix4,iy4,iz4,it4;
-      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
-      ret = 0.25*((*DelPsi_)(ix1,iy1,iz1,it1)+(*DelPsi_)(ix2,iy2,iz2,it2)+
-		  (*DelPsi_)(ix3,iy3,iz3,it3)+(*DelPsi_)(ix4,iy4,iz4,it4));
-    }
-    return ret;
-  };
-
-   double GetInitial( const DROPS::Point3DCL& p, double t)
-  {
-    t=0.;
-    int ix, iy, iz, it;
-    GetNum(p,t,ix,iy,iz,it);
-    return (*C0_)(ix,iy,iz,it);
-  };
-  //boundary functions
-  //x=0;
-   double GetInflow( const DROPS::Point3DCL& p, double t)
-  {
-    int ix, iy, iz, it;
-    GetNum(p,t,ix,iy,iz,it);
-    return (*B_in_)(ix,iy,iz,it);
-  };
-  //y=0: if neumann condition is active
-   double GetInterfaceFlux( const DROPS::Point3DCL& p, double t)
-  {
-    double ret;
-
-    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
-    cmp_key key= std::make_pair(rnd(p[0]), pr);
-
-    DROPS::FaceCL* face= face_map_[key];
-
-    if (face == NULL) {//non-barycenter
-      int ix, iy, iz, it;
-      GetNum(p,t,ix,iy,iz,it);
-      ret = (*B_Inter_)(ix,0,iz,it);
-      //ret= B_Inter_[GetNum(p,t,3)];
-    } else {
-      int ix1,iy1, iz1,it1;
-      GetNum(face->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
-      int ix2,iy2,iz2,it2;
-      GetNum(face->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
-      int ix3,iy3,iz3,it3;
-      GetNum(face->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
-      iy1 = 0; iy2 = 0; iy3 = 0;
-      ret= 1./3.*((*B_Inter_)(ix1,iy1,iz1,it1)+(*B_Inter_)(ix2,iy2,iz2,it2)+(*B_Inter_)(ix3,iy3,iz3,it3));
-    }
-    return ret;
-  };
-  //y=0: if dirichlet condition is active
-   double GetInterfaceValue( const DROPS::Point3DCL& p, double t) const
-  {
-    int ix, iy,iz, it;
-    GetNum(p,t,ix,iy,iz,it);
-    return (*B_Inter_)(ix,0,iz,it);
-  };
-  //rhs
-   double GetSource( const DROPS::Point3DCL& p, double t) const
-  {
-    double ret;
-
-    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
-    cmp_key key= std::make_pair(rnd(p[0]), pr);
-    DROPS::TetraCL* tetra= tetra_map_[key];
-
-    if (tetra == NULL) {//non-barycenter
-      int ix1,iy1,iz1,it1;
-      GetNum(p,t,ix1,iy1,iz1,it1);
-      ret=(*F_)(ix1,iy1,iz1,it1);
-    } else {
-      int ix1,iy1, iz1,it1;
-      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
-      int ix2,iy2,iz2,it2;
-      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
-      int ix3,iy3,iz3,it3;
-      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
-      int ix4,iy4,iz4,it4;
-      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
-      ret = 0.25*((*F_)(ix1,iy1,iz1,it1)+(*F_)(ix2,iy2,iz2,it2)+
-		  (*F_)(ix3,iy3,iz3,it3)+(*F_)(ix4,iy4,iz4,it4));
-    }
-
-    return ret;
-  };
-  //coefficient functions
-   double GetDiffusion( const DROPS::Point3DCL& p, double t) const
-  {
-    double ret;
-
-    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
-    cmp_key key= std::make_pair(rnd(p[0]), pr);
-    DROPS::TetraCL* tetra= tetra_map_[key];
-
-    if (tetra == NULL) {//non-barycenter
-      int ix1,iy1, iz1,it1;
-      GetNum(p,t,ix1,iy1,iz1,it1);
-      ret=(*Dw_)(ix1,iy1,iz1,it1)+D_mol_;
-    }else {
-      int ix1,iy1, iz1,it1;
-      GetNum(tetra->GetVertex(0)->GetCoord(),t,ix1,iy1,iz1,it1);
-      int ix2,iy2,iz2,it2;
-      GetNum(tetra->GetVertex(1)->GetCoord(),t,ix2,iy2,iz2,it2);
-      int ix3,iy3,iz3,it3;
-      GetNum(tetra->GetVertex(2)->GetCoord(),t,ix3,iy3,iz3,it3);
-      int ix4,iy4,iz4,it4;
-      GetNum(tetra->GetVertex(3)->GetCoord(),t,ix4,iy4,iz4,it4);
-      ret = 0.25*((*Dw_)(ix1,iy1,iz1,it1)+(*Dw_)(ix2,iy2,iz2,it2)+
-		  (*Dw_)(ix3,iy3,iz3,it3)+(*Dw_)(ix4,iy4,iz4,it4)) + D_mol_;
-    }
-    return ret;
-  };
+  DropsFunction* GetDiffusion;
+  DropsFunction* GetInitial;
+  DropsFunction* GetSource;
+  DropsFunction* GetInterfaceValue; // never barycentric
+  DropsFunction* GetInflow; // never barycentric
+  DropsFunction* GetDelPsi;
+  DropsFunction* GetPresol;
 
   template<class P1EvalT>
     void SetSol3D( const P1EvalT& sol, double t)  //Instationary problem
@@ -415,17 +250,21 @@ public:
     Nt_ = P.get<int>("Time.NumSteps")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
+    Nt_    = P.get<int>("Time.NumSteps")+1;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
+    dt_    = P.get<double>("Time.StepSize");
 
     // Save the matrix input arguments.
-    C0_   = C0;
-    B_in_ = B_in;
-    F_    = F;
-    Dw_    = Dw;
+    VolumeGridFunction* vg = new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_);
+    SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
+    SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
+
+    C0_   = new DropsFunction(C0, vg, 4);
+    B_in_ = new DropsFunction(B_in, sg_inlet, 3);
+    F_    = new DropsFunction(F, vg, 4);
+    Dw_    = new DropsFunction(Dw, vg, 4);
     D_mol_ = P.get<double>("PoissonCoeff.Dmol");
-    dt_    = P.get<double>("Time.StepSize");
-    Nt_    = P.get<int>("Time.NumSteps")+1;
-    B_Inter_= B_Inter;
+    B_Inter_= new DropsFunction(B_Inter, sg_interface, 3);
 
     std::string adstr ("IA1Adjoint");
     std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
@@ -454,25 +293,26 @@ public:
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
-
-    B_in_   = B_in;
-    B_Inter_= B_Inter;
-    F_      = F;
-    presol_ = presol;
-    DelPsi_  = DelPsi;
-    Dw_     = Dw;
-    D_mol_  = P.get<double>("PoissonCoeff.Dmol");
     dt_     = P.get<double>("Time.StepSize");
+
+    D_mol_ = P.get<double>("PoissonCoeff.Dmol");
+
+    VolumeGridFunction* vg = new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_);
+    SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
+    SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
+
+    B_in_ = new DropsFunction(B_in, sg_inlet, 3);
+    B_Inter_= new DropsFunction(B_Inter, sg_interface, 3);
+    F_    = new DropsFunction(F, vg, 4);
+    presol_ = new DropsFunction(presol, vg, 4);
+    DelPsi_  = new DropsFunction(DelPsi, vg, 4);
+    Dw_    = new DropsFunction(Dw, vg, 4);
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
-
 };
 
-DROPS::MultiGridCL* PythonConnectCL::MG_= NULL;
-PythonConnectCL::FACE_MAP PythonConnectCL::face_map_;
-PythonConnectCL::TETRA_MAP PythonConnectCL::tetra_map_;
 
 class PyDropsErr : public DROPS::DROPSErrCL {
 public:
@@ -492,6 +332,7 @@ public:
     outfile << "1. Param file\n";
     outfile << (*P) <<std::endl;
     outfile << ll << "\nThe solver failed in time step " << it << " of "<< PyC->Nt_-1 << std::endl;
+    /*
     std::stringstream Fstream, C0stream, Binstream, Binterfacestream, Dwstream;
     for (int ix=0; ix<PyC->Nx_; ++ix)
       for (int iy=0; iy<PyC->Ny_; ++iy)
@@ -507,6 +348,7 @@ public:
     outfile << ll << "\n4. Inlet BC\n" << Binstream.str();
     outfile << ll << "\n5. Interface BC\n" << Binterfacestream.str();
     outfile << ll << "\n6. Diffusion Coefficient\n" << Dwstream.str();
+    */
     outfile.close();
     return filename;
   }

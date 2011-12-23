@@ -43,6 +43,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
 	std::cerr << "error while opening parameter file\n";
 	return 1;
 	}*/
+  DROPS::ParamCL P;
   param >> P;
   param.close();
   using namespace boost::python;
@@ -72,7 +73,8 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   PdeFunPtr Dwf(new PyPdeFunction(Dw));
 
   if (!check_dimensions(nx,ny,nz,nt,*C0f,*b_inf,*b_interfacef,*sourcef,*Dwf)) {
-    throw (PyDropsErr(&PyC, &P, 0, "Error in setting up DROPS: Wrong dimensions in inputs!"));
+    std::cerr <<"Error in setting up DROPS: Wrong dimensions in inputs!\n";
+    abort();
   }
   npy_intp* c_sol_dim = new npy_intp[4];
   c_sol_dim[0] = nx; c_sol_dim[1] = ny; c_sol_dim[2] = nz; c_sol_dim[3] = nt;

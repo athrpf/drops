@@ -13,6 +13,129 @@ public:
   virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const=0;
 };
 
+typedef std::pair<double, double> d_pair;
+typedef std::pair<double, d_pair> cmp_key;
+typedef std::map<cmp_key, DROPS::FaceCL*>  FACE_MAP;
+typedef std::map<cmp_key, DROPS::TetraCL*> TETRA_MAP;
+typedef FACE_MAP::const_iterator face_it;
+typedef TETRA_MAP::const_iterator tetra_it;
+
+inline int rd( double d) { return static_cast<int>( d+0.5); }                   // rounding
+
+double rnd(double d) {// rounding four digits after comma
+  int i_d = (int)(d*10000);
+  double d_d = (double)i_d/10000;
+  return d_d;
+}
+
+class GridFunction {
+public:
+  virtual bool get_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it)const =0;
+  virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it,int k) const=0;
+};
+
+class VolumeGridFunction : public GridFunction {
+ public:
+  VolumeGridFunction(double dx,double dy,double dz,double dt, const TETRA_MAP* tetra_map_) : tetra_map(tetra_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt) {}
+
+  void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
+    ix = rd(p[0]/dx_);
+    iy = rd(p[1]/dy_);
+    iz = rd(p[2]/dz_);
+    it = rd(t/dt_);
+  }
+
+  /// Returns true if p,t is a non-barycentric (a true gridpoint).
+  /// If true, ix, iy, ... are set to the indices of that grid point
+  virtual bool get_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it) const {
+    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
+    cmp_key key= std::make_pair(rnd(p[0]), pr);
+    tetra_it tetra= tetra_map->find(key);
+    if (tetra == tetra_map->end()) {//non-barycenter
+      int ix1,iy1, iz1,it1;
+      GetNum(p,t,ix1,iy1,iz1,it1);
+      return true;
+    }
+    return false;
+  }
+
+  /// Returns the indices for the barycentric coordinate p.
+  virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int ix,int iy,int iz,int it,int k) const {
+    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
+    cmp_key key= std::make_pair(rnd(p[0]), pr);
+    tetra_it tetra= tetra_map->find(key);
+    assert(tetra!=tetra_map->end());
+    GetNum(tetra->second->GetVertex(k)->GetCoord(),t,ix,iy,iz,it);
+  }
+private:
+  const TETRA_MAP* tetra_map;
+  double dx_, dy_, dz_, dt_;
+};
+
+class SurfaceGridFunction : public GridFunction {
+public:
+  SurfaceGridFunction(double dx, double dy, double dz, double dt, const FACE_MAP* face_map_, int surface_index_) :
+    face_map(face_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt), surface_index(surface_index_) {}
+
+  void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
+    ix = rd(p[0]/dx_);
+    iy = rd(p[1]/dy_);
+    iz = rd(p[2]/dz_);
+    it = rd(t/dt_);
+    if (surface_index==0 || surface_index==1) {ix=0;}
+    else if (surface_index==2 || surface_index==3) {iy=0;}
+    else if (surface_index==4 || surface_index==5) {iz=0;}
+  }
+
+  virtual bool get_indices(const DROPS::Point3DCL& p, double t, int ix, int iy, int iz, int it) const {
+    d_pair pr= std::make_pair(rnd(p[2]), rnd(p[1]));
+    cmp_key key= std::make_pair(rnd(p[0]), pr);
+    face_it face = face_map->find(key);
+    if (face == face_map->end()) {//non-barycenter
+      int ix1,iy1, iz1,it1;
+      GetNum(p,t,ix,iy,iz,it);
+      return true;
+    }
+    return false;
+  }
+
+  virtual void get_barycenter_indices(const DROPS::Point3DCL& p, double t, int ix, int iy, int iz, int it, int k) const {
+    assert(false); // all boundary functions are dirichlet...
+  }
+private:
+  const FACE_MAP* face_map;
+  double dx_, dy_, dz_, dt_;
+  int surface_index;
+};
+
+class DropsFunction {
+ public:
+  DropsFunction(const PdeFunction* f_, const GridFunction* g_, int n_) : f(f_), g(g_), n(n_){}
+
+  double operator()(const DROPS::Point3DCL& p, double t)
+  {
+    int ix, iy, iz, it;
+    bool non_barycenter = g->get_indices(p,t,ix,iy,iz,it);
+    if (non_barycenter) {
+      return (*f)(ix,iy,iz,it);
+    } else {
+      double retval = 0.;
+      for (int k=0; k<n; ++k) {
+	g->get_barycenter_indices(p,t,ix,iy,iz,it,k);
+	retval += 1./n*(*f)(ix,iy,iz,it);
+      }
+      return retval;
+    }
+  }
+
+ private:
+  const PdeFunction* f;
+  const GridFunction* g;
+  /// 4 for volumetric grid point, 3 for surface point
+  int n;
+};
+
+
 //For testing use, construct from function
 class TestPdeFunction : public PdeFunction {
 
