@@ -43,10 +43,9 @@ public:
   typedef boost::shared_ptr<PythonConnectCL> Ptr;
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
-  double D_mol_;
   bool   adjoint_;
 
-  const DropsFunction *presol_, *DelPsi_;
+  //const DropsFunction *presol_, *DelPsi_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
     *MaxIter_;                                // max. iterations of solver (1 x 1)
   //helper maps for barycenters
@@ -296,8 +295,6 @@ public:
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
     dt_     = P.get<double>("Time.StepSize");
 
-    D_mol_ = P.get<double>("PoissonCoeff.Dmol");
-
     VolumeGridFunction* vg = new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_);
     SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
     SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
@@ -305,8 +302,8 @@ public:
     GetInflow = new DropsFunction(B_in, sg_inlet, 3);
     GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
     GetSource    = new DropsFunction(F, vg, 4);
-    presol_ = new DropsFunction(presol, vg, 4);
-    DelPsi_ = new DropsFunction(DelPsi, vg, 4);
+    GetPresol = new DropsFunction(presol, vg, 4);
+    GetDelPsi = new DropsFunction(DelPsi, vg, 4);
     GetDiffusion = new DropsFunction(Dw, vg, 4);
 
     // Set the output pointer to the output arguments.
