@@ -49,8 +49,7 @@
     //############################################
     "PoissonCoeff":
     {
-        "Dmol":             1.0,                              // molecular Diffusion coefficient
-        "Diffusion":        "Zero",                           //Diffusion coefficient
+        "Diffusion":        "One",                           //Diffusion coefficient
         // -> Here: a = 1
         //"Reaction":       "Example1_Reaction",              //Reaction term [q] with the name "Example1_Reaction"
         // -> Here: q = 0
