@@ -299,12 +299,12 @@ public:
     SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
     SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
 
-    GetInflow = new DropsFunction(B_in, sg_inlet, 3);
+    GetInflow         = new DropsFunction(B_in, sg_inlet, 3);
     GetInterfaceValue = new DropsFunction(B_Inter, sg_interface, 3);
-    GetSource    = new DropsFunction(F, vg, 4);
-    GetPresol = new DropsFunction(presol, vg, 4);
-    GetDelPsi = new DropsFunction(DelPsi, vg, 4);
-    GetDiffusion = new DropsFunction(Dw, vg, 4);
+    GetSource         = new DropsFunction(F, vg, 4);
+    GetPresol         = new DropsFunction(presol, vg, 4);
+    GetDelPsi         = new DropsFunction(DelPsi, vg, 4);
+    GetDiffusion      = new DropsFunction(Dw, vg, 4);
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
