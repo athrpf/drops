@@ -361,9 +361,9 @@ namespace DROPS
             {
 	      throw (PyDropsErr(PyC, &P, step-1, "The residual is greater than tolerence"));
             }
-	  if(solver->GetResid()!=solver->
+	  if(solver->GetResid()!=solver->GetResid()) {
 	     throw (PyDropsErr(PyC, &P, step-1, "The residual is NAN"));
-            }
+	  }
 	  if (P.get("Poisson.SolutionIsKnown", 0)) {
 	    std::cout << line << "Check result against known solution ...\n";
 	    Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
