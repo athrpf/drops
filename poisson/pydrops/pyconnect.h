@@ -44,6 +44,7 @@ public:
   int Nx_, Ny_, Nz_, Nt_, Nxy_, Nyz_, Nxz_, Nxyz_; // N=number of points
   double dx_, dy_, dz_, dt_;
   bool   adjoint_;
+  std::ofstream* outfile;
 
   //const DropsFunction *presol_, *DelPsi_;
   double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
@@ -87,7 +88,6 @@ public:
     {
       Nx_=Ny_=Nz_=Nt_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
       dx_=dy_=dz_=0.0;
-
       face_map_.clear();
       tetra_map_.clear();
     }
@@ -100,7 +100,7 @@ public:
   //
   void setFaceMap()
   {
-    std::cout<<"SETTING FACE MAP" <<std::endl;
+    *outfile<<"SETTING FACE MAP" <<std::endl;
     DROPS::Uint lvl= MG_->GetLastLevel();
     for(DROPS::MultiGridCL::TriangFaceIteratorCL
 	  fit=MG_->GetTriangFaceBegin(lvl), fend=MG_->GetTriangFaceEnd(lvl);
@@ -113,12 +113,12 @@ public:
 
       face_map_[key]= &face;
     }
-    std::cout<<"FACE MAP SET" <<std::endl;
+    *outfile<<"FACE MAP SET" <<std::endl;
   }
   void DumpFaceMap()
   {
     FILE* f=fopen("face.map","w");
-    std::cout<<"DUMPING FACE MAP\n"<<std::endl;
+    *outfile<<"DUMPING FACE MAP\n"<<std::endl;
     for (face_it p= face_map_.begin(); p!= face_map_.end(); p++) {
 
       DROPS::Point3DCL bc = DROPS::Point3DCL(0.);
@@ -143,12 +143,12 @@ public:
     }
     fprintf(f," %d",(int)face_map_.size());
     fclose(f);
-    std::cout<<"END DUMP FACE MAP"<<std::endl;
+    *outfile<<"END DUMP FACE MAP"<<std::endl;
   }
   //
   void setTetraMap()
   {
-    std::cout<<"SETTING TETRA MAP"<<std::endl;
+    *outfile<<"SETTING TETRA MAP"<<std::endl;
     DROPS::Uint lvl= MG_->GetLastLevel();
     for(DROPS::MultiGridCL::TriangTetraIteratorCL
 	  tit=MG_->GetTriangTetraBegin(lvl), tend=MG_->GetTriangTetraEnd(lvl);
@@ -161,12 +161,12 @@ public:
 
       tetra_map_[key]= &tetra;
     }
-    std::cout<<"TETRA MAP SET"<<std::endl;
+    *outfile<<"TETRA MAP SET"<<std::endl;
   }
   void DumpTetraMap()
   {
     FILE* f=fopen("tetra.map","w");
-    std::cout<<"DUMPING TETRA MAP"<<std::endl;
+    *outfile<<"DUMPING TETRA MAP"<<std::endl;
     for (tetra_it p= tetra_map_.begin(); p!= tetra_map_.end(); p++) {
 
       DROPS::Point3DCL bc = DROPS::Point3DCL(0.);
@@ -191,7 +191,7 @@ public:
       fprintf(f," %f %f %f \n",p[0],p[1],p[2]);
     }
     fclose(f);
-    std::cout<<"END DUMP TETRA MAP"<<std::endl;
+    *outfile<<"END DUMP TETRA MAP"<<std::endl;
   }
 
   DropsFunction* GetDiffusion;
@@ -232,8 +232,9 @@ public:
     }
 
   //Check the input matrices
-  void Init( const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
+  void Init( std::ofstream* of, const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
   {
+    outfile=of;
     int refinesteps_;
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;
@@ -273,9 +274,10 @@ public:
     C3D_ = c_sol;
   }
 
-  void Init( const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F,
+  void Init( std::ofstream* of, const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F,
                     const PdeFunction* presol, const PdeFunction* DelPsi,const PdeFunction* Dw,  double* c_sol)
   {
+    outfile=of;
     int refinesteps_;
     double lx_, ly_, lz_;
     int nx_, ny_, nz_;

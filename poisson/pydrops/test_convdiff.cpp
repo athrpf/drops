@@ -107,7 +107,7 @@ namespace DROPS
 #else
     const bool doErrorEstimate= false;
     if (P.get<int>("Err.DoErrorEstimate"))
-        std::cout << "Skipping Error-Estimation ..." << std::endl;
+        *(PyC->outfile) << "Skipping Error-Estimation ..." << std::endl;
     ParTimerCL timer;
 #endif
 
@@ -131,7 +131,7 @@ namespace DROPS
           b1.SetIdx(&Poisson.idx);
           Poisson.SetupL2ProjGrad(b1,*PyC->GetPresol, *PyC->GetDelPsi, NULL);
           Poisson.b.Data+=b1.Data;
-          std::cout << line << "We are solving Gradient problem in IA2 ...\n"<<line;
+          *(PyC->outfile) << line << "We are solving Gradient problem in IA2 ...\n"<<line;
         }
         if(SensProb)
         {
@@ -139,12 +139,12 @@ namespace DROPS
 	        b1.SetIdx(&Poisson.idx);
             Poisson.SetupGradSrc(b1,*PyC->GetPresol, *PyC->GetDelPsi);
 	        Poisson.b.Data+=b1.Data;
-	        std::cout << line << "We are solving sensetivity problem in IA2 ...\n"<<line;
+	        *(PyC->outfile) << line << "We are solving sensetivity problem in IA2 ...\n"<<line;
         }
         if(P.get<int>("Stabilization.SUPG"))
         {
             //CoeffCL::Show_Pec();
-            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
+            *(PyC->outfile) << line << "The SUPG stabilization has been added ...\n"<<line;           
         }
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
@@ -156,7 +156,7 @@ namespace DROPS
 #endif
       //Setup solution for python interface
       PyC->SetSol3D(Poisson.GetSolution());
-      std::cout << " o Solved system with:\n"
+      *(PyC->outfile) << " o Solved system with:\n"
 		<< "   - time          " << timer.GetTime()   << " s\n"
 		<< "   - iterations    " << solver.GetIter()  << '\n'
 		<< "   - residuum      " << solver.GetResid() << '\n'
@@ -170,7 +170,7 @@ namespace DROPS
 	  throw (PyDropsErr(PyC, &P, 0, "The residual is NAN"));
         }
       if (P.get<int>("Poisson.SolutionIsKnown")) {
-	std::cout << line << "Check result against known solution ...\n";
+	*(PyC->outfile) << line << "Check result against known solution ...\n";
 	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
       }
     }
@@ -197,17 +197,17 @@ namespace DROPS
 
         do{
             timer.Reset();
-            //std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
+            //*(PyC->outfile) << DROPS::SanityMGOutCL(MG) << std::endl;
             MG.Refine();
 
             Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // create numbering for this idx
-            std::cout << "new triangLevel: " << Poisson.idx.TriangLevel() << std::endl;
+            *(PyC->outfile) << "new triangLevel: " << Poisson.idx.TriangLevel() << std::endl;
             Poisson.b.SetIdx( new_idx);                              // tell b about numbering
             new_x->SetIdx( new_idx);                    			 // second vector with the same idx
 
-            std::cout << line << "Problem size\no number of unknowns             " << new_x->Data.size() << std::endl;
+            *(PyC->outfile) << line << "Problem size\no number of unknowns             " << new_x->Data.size() << std::endl;
 
-            MG.SizeInfo(std::cout);
+            MG.SizeInfo(*(PyC->outfile));
             if ( step == 0)
                 Estimator.Init( typename PoissonP1CL<CoeffCL>::DiscSolCL( new_x, &BndData, &MG));
 
@@ -229,20 +229,20 @@ namespace DROPS
             //Setup solution for python interface
             PyC->SetSol3D(Poisson.GetSolution());
             double realresid = norm( VectorCL(Poisson.A.Data*new_x->Data-Poisson.b.Data));
-            std::cout << " o Solved system with:\n"
+            *(PyC->outfile) << " o Solved system with:\n"
                       << "   - time          " << timer.GetTime()   << " s\n"
                       << "   - iterations    " << solver.GetIter()  << '\n'
                       << "   - residuum      " << solver.GetResid() << '\n'
                       << "   - real residuum " << realresid         << std::endl;
             if(solver.GetResid() > P.get<double>("Poisson.Tol"))
             {  
-                std::cout <<"The residual is bigger than tolerence ...\n";
+                *(PyC->outfile) <<"The residual is bigger than tolerence ...\n";
                 abort();
             }
             Poisson.A.Reset();
             Poisson.b.Reset();
             if (P.get<int>("Poisson.SolutionIsKnown")) {
-                std::cout << line << "Check result against known solution ...\n";
+                *(PyC->outfile) << line << "Check result against known solution ...\n";
                 Poisson.CheckSolution( *new_x, CoeffCL::Solution);
             }
             new_marks = Estimator.Estimate( typename PoissonP1CL<CoeffCL>::const_DiscSolCL( new_x, &BndData, &MG) );
@@ -278,7 +278,7 @@ namespace DROPS
 
     // connection triangulation and vectors
     // -------------------------------------------------------------------------
-    std::cout << line << "Connecting triangulation and matrices/vectors ...\n";
+    *(PyC->outfile) << line << "Connecting triangulation and matrices/vectors ...\n";
     timer.Reset();
 
     Poisson.idx.SetFE( P1_FE);                                  // set quadratic finite elements
@@ -293,12 +293,12 @@ namespace DROPS
     Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);
 
     timer.Stop();
-    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+    *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
 
 
     // display problem size
     // -------------------------------------------------------------------------
-    std::cout << line << "Problem size\n";
+    *(PyC->outfile) << line << "Problem size\n";
 #ifdef _PAR
     std::vector<size_t> UnkOnProc= ProcCL::Gather( Poisson.x.Data.size(), 0);
     const IdxT numUnk   = Poisson.idx.GetGlobalNumUnknowns( mg),
@@ -309,26 +309,26 @@ namespace DROPS
     IdxT numUnk   = Poisson.x.Data.size(),
          numAccUnk= Poisson.x.Data.size();
 #endif
-    std::cout << " o number of unknowns             " << numUnk    << '\n'
+    *(PyC->outfile) << " o number of unknowns             " << numUnk    << '\n'
               << " o number of accumulated unknowns " << numAccUnk << '\n'
               << " o number of unknowns on proc\n";
     for (size_t i=0; i<UnkOnProc.size(); ++i)
-        std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
+        *(PyC->outfile) << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
 
     // discretize (setup linear equation system)
     // -------------------------------------------------------------------------
-    std::cout << line << "Discretize (setup linear equation system) ...\n";
+    *(PyC->outfile) << line << "Discretize (setup linear equation system) ...\n";
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
         Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
     timer.Stop();
-    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+    *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
 
 
     // solve the linear equation system
     // -------------------------------------------------------------------------
-    std::cout << line << "Solve the linear equation system ...\n";
+    *(PyC->outfile) << line << "Solve the linear equation system ...\n";
 
     // type of preconditioner and solver
     PoissonSolverFactoryCL<> factory( P, Poisson.idx);
@@ -351,13 +351,13 @@ namespace DROPS
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
 	  timer.Reset();
-	  std::cout << line << "Step: " << step << std::endl;
+	  *(PyC->outfile) << line << "Step: " << step << std::endl;
 	  ThetaScheme.DoStep( Poisson.x);
 	  //Setup solutions for python interface
 	  PyC->SetSol3D(Poisson.GetSolution(), Poisson.x.t);
 
 	  timer.Stop();
-	  std::cout << " o Solved system with:\n"
+	  *(PyC->outfile) << " o Solved system with:\n"
 		    << "   - time          " << timer.GetTime()    << " s\n"
 		    << "   - iterations    " << solver->GetIter()  << '\n'
 		    << "   - residuum      " << solver->GetResid() << '\n';
@@ -369,7 +369,7 @@ namespace DROPS
 	     throw (PyDropsErr(PyC, &P, step-1, "The residual is NAN"));
             }
 	  if (P.get("Poisson.SolutionIsKnown", 0)) {
-	    std::cout << line << "Check result against known solution ...\n";
+	    *(PyC->outfile) << line << "Check result against known solution ...\n";
 	    Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
 	  }
         }
@@ -381,10 +381,10 @@ namespace DROPS
 } // end of namespace DROPS
 
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
-void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
+void convection_diffusion(std::ofstream& outfile,DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
 {
-  PythonConnectCL::Ptr PyC(new PythonConnectCL());
-  PyC->Init(P, C0, b_in, source, Dw, b_interface, C_sol);
+        PythonConnectCL::Ptr PyC(new PythonConnectCL());
+        PyC->Init(&outfile, P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
     DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
@@ -400,7 +400,7 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
 
         // set up data structure to represent a poisson problem
         // ---------------------------------------------------------------------
-        std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+        *(PyC->outfile) << line << "Set up data structure to represent a Poisson problem ...\n";
         timer.Reset();
 
         //create geometry
@@ -451,15 +451,15 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
         lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
 #endif
         timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+        *(PyC->outfile) << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
         timer.Reset();
         // Create new tetrahedra
         for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
-            std::cout << " refine (" << ref << ")\n";
+            *(PyC->outfile) << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();
         }
@@ -469,8 +469,8 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
 #endif
 
         timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-        mg->SizeInfo(cout);
+        *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
+        mg->SizeInfo(*(PyC->outfile));
 
         //prepare MC
         PyC->SetMG(mg);
@@ -480,7 +480,7 @@ void convection_diffusion(DROPS::ParamCL& P, const PdeFunction* C0, const PdeFun
 
         // Solve the problem
 	    DROPS::Strategy( prob, P, PyC);
-        //std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+        //*(PyC->outfile) << DROPS::SanityMGOutCL(*mg) << std::endl;
 
         delete mg;
         //delete PyC;
@@ -500,8 +500,9 @@ int main(int argc, char** argv)
     using namespace DROPS;
 
     std::ifstream param;
+    std::ofstream outfile("outfile");
     if (argc!=2){
-      std::cout << "Using default parameter file: poissonex1.json\n";
+      outfile << "Using default parameter file: poissonex1.json\n";
       param.open( "poissonex1.json");
     }
     else
@@ -513,7 +514,8 @@ int main(int argc, char** argv)
     param >> P;
     param.close();
     SetMissingParameters(P);
-    std::cout << P << std::endl;
+
+    outfile << P << std::endl;
     
     instat_scalar_fun_ptr initial;
     instat_scalar_fun_ptr rhs;
@@ -556,8 +558,7 @@ int main(int argc, char** argv)
         C_sol=new double[Ns];
     }
     
-    convection_diffusion(P, C0, b_in, b_interface, source, Dw, C_sol);
-
+    convection_diffusion(outfile, P, C0, b_in, b_interface, source, Dw, C_sol);
     delete[] C0;
     delete[] b_in;
     delete[] b_interface;
