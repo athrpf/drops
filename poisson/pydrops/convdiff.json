@@ -52,7 +52,7 @@
         "Solution":         "Zero",                         //Solution of poisson problem
         "Flowfield":        "Example1_Flowfield",           //Convection velocity of PDE [b]
         "Convection":       0,                              //Do we have convection? -> Here: no
-        "IAProb":           "IA1Direct"                     //IA1Direct, IA1Adjoint, IA2Direct, IA2Sense, IA2Gradient
+        "IAProb":           "IA1Direct"                     //IA1Direct, IA1Adjoint, IA2Direct, IA2Sensi, IA2Gradient
     },
     "Stabilization":
     {
