@@ -232,8 +232,8 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
             {
               Point3DCL n;
               sit->GetOuterNormal(FaceOfVert(i, f), n);
-              src.Data[UnknownIdx[i]]+=
-                Quad2D(*sit, FaceOfVert(i, f), i, dalpha, t) * inner_prod( gradT, n);
+              src.Data[UnknownIdx[i]]+= 0.;//
+                //Quad2D(*sit, FaceOfVert(i, f), i, dalpha, t) * inner_prod( gradT, n);
             }
       }
     }

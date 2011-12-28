@@ -74,6 +74,23 @@ const char line[] ="------------------------------------------------------------
 
 DROPS::ParamCL P;
 
+double Psi(DROPS::Point3DCL, double)
+{
+    return 1.;
+}
+double Delta(DROPS::Point3DCL, double)
+{
+    return 1.;
+}
+double Sensi_Sol(const DROPS::Point3DCL& p, double){
+        double pi= 3.1415926;
+        return -sin(2*pi*p[0]);
+}
+double Grad_Sol(const DROPS::Point3DCL& p, double){
+        double pi= 3.1415926;
+        return -sin(2*pi*p[0]);
+}
+
 namespace DROPS
 {
 
@@ -93,7 +110,12 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #endif
 
     if ( !doErrorEstimate) {
-        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
+        std::string Gradstr ("IA2Gradient");
+        std::string Sensstr ("IA2Sensi");
+        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+        bool GradProb = (Gradstr.compare(IAProbstr) == 0);
+        bool SensProb = (Sensstr.compare(IAProbstr) == 0);
+        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"), GradProb);
         if(P.get<int>("PoissonCoeff.Convection"))
         {
             Poisson.vU.SetIdx( &Poisson.idx);
@@ -101,10 +123,26 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
         }
+        if(GradProb)
+        {
+            VecDescCL b1;
+            b1.SetIdx(&Poisson.idx);
+            Poisson.SetupL2ProjGrad(b1,Grad_Sol, Psi, NULL);
+            Poisson.b.Data+=b1.Data;
+            std::cout << line << "We are solving Gradient problem in IA2 ...\n"<<line<<std::endl;
+        }
+        if(SensProb)
+        {
+            VecDescCL b1;
+            b1.SetIdx(&Poisson.idx);
+            Poisson.SetupGradSrc(b1, Sensi_Sol, Delta);
+            Poisson.b.Data+=b1.Data;
+            std::cout << line << "We are solving sensetivity problem in IA2 ...\n"<<line<<std::endl;
+        }
         if(P.get<int>("Stabilization.SUPG"))
         {
             //CoeffCL::Show_Pec();
-            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;
+            std::cout << line << "The SUPG stabilization has been added ...\n"<<line<<std::endl;
         }
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
