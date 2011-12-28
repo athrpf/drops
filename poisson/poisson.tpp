@@ -569,7 +569,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
         { // assemble row i
 
           if (UnknownIdx[i] == NoIdx) continue; // vertex i is on a Dirichlet boundary -> no test function
-
+          //Velocity field takes the velocity from the direct problem
           const Quad3CL<> u_Gradi( dot( u, Quad3CL<Point3DCL>( G[i])));
           for(int j=0; j<4; ++j)
           {

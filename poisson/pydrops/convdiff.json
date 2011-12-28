@@ -49,7 +49,6 @@
     //############################################
     "PoissonCoeff":
     {
-        "Dmol":  1,
         "Solution":         "Zero",                         //Solution of poisson problem
         "Flowfield":        "Example1_Flowfield",           //Convection velocity of PDE [b]
         "Convection":       0,                              //Do we have convection? -> Here: no
