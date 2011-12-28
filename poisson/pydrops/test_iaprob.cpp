@@ -74,9 +74,9 @@ const char line[] ="------------------------------------------------------------
 
 DROPS::ParamCL P;
 
-double Psi(DROPS::Point3DCL, double)
+double Psi(DROPS::Point3DCL p, double)
 {
-    return 1.;
+    return 2.*p[0];
 }
 double Delta(DROPS::Point3DCL, double)
 {
@@ -87,8 +87,7 @@ double Sensi_Sol(const DROPS::Point3DCL& p, double){
         return -sin(2*pi*p[0]);
 }
 double Grad_Sol(const DROPS::Point3DCL& p, double){
-        double pi= 3.1415926;
-        return -sin(2*pi*p[0]);
+        return exp(-p[0]);
 }
 
 namespace DROPS

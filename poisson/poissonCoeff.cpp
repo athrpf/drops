@@ -362,6 +362,29 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscas("Sensi_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
     static DROPS::RegisterScalarFunction regscaa("Sensi_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
 }//end of namespace
+ namespace IA2Grad{
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL& p, double){
+        return 2*exp(-p[0]);
+    }
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1.0;
+    }
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double)
+    {
+        return p[0]*exp(-p[0]);
+    }
+    static DROPS::RegisterScalarFunction regscaq("Grad_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaf("Grad_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscas("Grad_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
+    static DROPS::RegisterScalarFunction regscaa("Grad_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+}//end of namespace
 double Solution( const DROPS::Point3DCL& p, double=0.0){
     return 1 + p[0] + (1-exp(p[0]))/exp(1.0);
 }

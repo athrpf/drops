@@ -1,0 +1,160 @@
+{
+    //=========================================================================
+    //    DROPS parameter file for poissonP{1,2}
+    //    simulation of poisson problem:
+    //      The problem is quasi-1D.
+    //=========================================================================
+
+    //#######################################
+    // Options for the iterative Solver
+    //#######################################
+    "Poisson":
+    {
+        "PcIter":       1,       //inactive (former: iterations of the preconditioner)
+        "PcTol":        0.1,     //inactive (former: tolerance of the preconditioning solve)
+        "Iter":         5000,     //number of iterations of the iterativ solver
+        "Restart":      100,     //used for GMRES: a possible krylov-space uses only as
+            // many vectors to construct the new krylov space
+        "RelativeErr":  0,       //use relative tolerances (otherwise absolute) 1 = true, 0 = false
+        "Tol":          1e-10,   //(relative/absolute) tolerance of iterative method
+        "Method":       103,     //Methods describes Solver (first digit) + Preconditioner (last two digits)
+            // First digit:
+            //           1XX : Multigrid
+            //           2XX : Prec. CG
+            //           3XX : GMRES
+            // last two digits: (Smoother + Coarse Solver[only for MG])
+            //           X02 : Jacobi     + SSOR
+            //           X03 : SSOR       + SSOR
+            //           X04 : GS         + SSOR
+            //           X05 : SGS        + SSOR
+            //           X06 : SOR        + SSOR
+            // BUT it exist only the following combinations:
+            // 102,103,104,105,106,203,302,303
+        "SmoothingSteps":   1,   //for Multigrid: number of Smoothing steps;
+        "NumLvl":           -1,  //for Multigird: number of used levels (-1 = all)
+        "Relax":            1,   //Relaxation factor
+        "SolutionIsKnown":  1    //Is the solution known/can we measure an exact error? 1 = true, 0 = false
+    },
+
+    //#######################################
+    // Functions and Coefficients that define the continuous problem:
+    // du/dt - a laplace u + b grad u + q u = f
+    // on Domain (s. DomainCond) + bound. cond. (s. DomainCond)
+    // the coefficients are set with strings which correspond to
+    // functions of a container. The given ones used here are
+    // defined in poissonCoeff.cpp
+    // In this concrete example we are only interested in a steady
+    // solution, we have convection, no reaction and a given solution.
+    // The problem is quasi-1D.
+    //############################################
+    "PoissonCoeff":
+    {
+        "Diffusion":        "One",                          //Diffusion coefficient
+            // -> Here: a = 1
+        "Reaction":         "Grad_Reaction",             //Reaction term [q] with the name "Adjoint_Reaction"
+            // -> Here: q = 0
+        "Solution":         "Grad_Solution",             //Solution of poisson problem [u] has the name "Adjoint_Solution"
+            // -> Here: u = x*exp(-x)
+        "Source":           "Zero",                         //Right hand side of PDE [f]
+            // for IA2 sensetivity, we have a special source term
+        "Flowfield":        "Zero",                         //Convection velocity of PDE [b]
+            // No convections
+        "InitialVal":       "Zero",                         // -> Here: u(t=0) = exp(-x)
+            //stationary problem
+        "Convection":       0,                              //Do we have convection? -> Here: yes
+        "IAProb":           "IA2Gradient"                      //IA1Direct, IA1Adjoint, IA2Direct, IA2Sensi, IA2Gradient
+    },
+
+    //############################################
+    // Description of Geometry and mesh parameters
+    // and Boundary conditions
+    //###################################################
+    "DomainCond":
+    {
+        "RefineSteps":      4,
+            //initial refinement: how often is the mesh refined
+            // -> Here: three times refinement
+        "GeomType":         1,
+            //specifies the used geometry:
+            // 0=ReadMeshBuilder (from file)
+            // 1=BrickBuilder (a cuboid)
+            // 2=CavityBuilder (a cuboid cut away from a cuboid)
+            // 3=LBuilder
+            // 4=BBuilder
+            // -> Here: Brickbuilder
+        "InitialFile":      "none",
+            //file prefix when reading data for initial condition
+            // -> Here: no initial data is read from outside
+        "MeshFile":         "1x1x1@4x4x4",
+            //mesh file (created by GAMBIT or NETGEN, FLUENT/UNS format)
+            // or (in case of the BrickBuilder:)
+            // dimensions of a cuboid (e.g. AxBxC@DxExF) with edge
+            // sizes A,B and C in x,y,z direction and a partition into
+            // D/E/F cuboids in x/y/z direction (for initial mesh)
+            // Note that the Brickbuilder genenrates 6 Boundary domains
+            // with the order: b.dom. 1 has normal in neg. x direction
+            // b.dom. 2 has normal in pos. x direction
+            // b.dom. 3 has normal in neg. y direction, etc..
+            // -> Here: a cube.
+        "BoundaryType":     "2!21!21!21!21!21",
+            //Boundary conditions for each boundary domain
+            // are prescribes by a type and a function. Thus
+            // each boundary domain gets an index.
+            // the '!' is the delimiter between those indices.
+            // The following indices are allowed:
+            // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
+            // NatBC= 23
+            // -> Here: all boundaries are natural boundaries except for the
+            // first part which is of Dirichlet type.
+        "BoundaryFncs":     "Grad_Solution!Zero!Zero!Zero!Zero!Zero"
+            // For each boundary domain take a string which describes
+            // a function of a function container (s. PoissonCoeff-sect.)
+            // -> Here: all boundaries have zero natural boundaries
+            // except for the first part which has Dirichlet value 1.
+
+    },
+
+    //###################################################
+    // Time Discretization
+    //################################################
+    "Time":
+    {
+        "StepSize":     0.05,   //time step size
+        "NumSteps":     0,   //number of timesteps. -> Here: =0, i.e. stationary setup
+        "Scheme":       1,   //time disc. method: 1= theta scheme, 2=fractional step
+        "Theta":        0.5    //For theta scheme: parameter theta
+    },
+
+    //#################################
+    // Error estimator
+    // For stationary cases poissonP1
+    // is also able to estimate the
+    // error and refine adaptively
+    //#################################
+    "Err":
+    {
+        "DoErrorEstimate":      0,      //Do ErrorEstimate at all? 1 = true, 0 = false
+        "RelReduction":         0.1,    //relative error reduction that should be achieved
+        "DoMark":               1,      //Mark Elements (and refine adaptively)? 1 = true, 0 = false
+        "MinRatio":             0,      //every element which has a larger error than this fraction
+                                        //times the error of the worst element is marked
+        "Threshold":            0.6,    //error of marked elements should be at least this
+                                        //fraction of the total estimated error
+        "Meas":                 0.875,
+        "NumRef":               2       //number of adaptive refinements
+    },
+
+    //#################################
+    // VTK output parameters
+    // for visualization with
+    // VTK/Paraview
+    //#################################
+    "VTK":
+    {
+        "VTKOut":       0,                  //Use VTK output?
+        "VTKDir":       "vtk",              //local directory for vtk files
+        "VTKName":      "poisson_Adjoint_",     //name of vtk files (filename prefix)
+        "Binary":       0                   //write out VTK files in binary format
+    }
+
+}
