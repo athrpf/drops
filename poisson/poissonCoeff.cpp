@@ -307,6 +307,37 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterVectorFunction regscav("SUPG_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
 }//end of namespace
 
+ namespace PoissonAdjoint{
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    /// \brief Convection: constant flow in x direction
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){
+        DROPS::Point3DCL v(0.);
+        v[0] = 1.;
+        return v;
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL& p, double t){
+        return -exp(-t)*exp(-p[0]);
+    }
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1.0;
+    }
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double t)
+    {
+        return exp(-t)*exp(-p[0]);
+    }
+    static DROPS::RegisterScalarFunction regscaq("Adjoint_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaf("Adjoint_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscas("Adjoint_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
+    static DROPS::RegisterScalarFunction regscaa("Adjoint_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+    static DROPS::RegisterVectorFunction regscav("Adjoint_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
+}//end of namespace
+
 double Solution( const DROPS::Point3DCL& p, double=0.0){
     return 1 + p[0] + (1-exp(p[0]))/exp(1.0);
 }
