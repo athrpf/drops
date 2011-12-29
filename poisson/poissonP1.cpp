@@ -77,6 +77,75 @@ DROPS::ParamCL P;
 
 namespace DROPS
 {
+//Streamline diffusion stabilization class which can compute difference stabilization coefficient according to the grids type.
+class SUPGCL
+{
+  private:
+    static double magnitude_;
+    static int    geom_;      // decide how to compute characteristic length to approximate the longest length in flow direction
+    static double longedge_;   // the longest edge for regular grids; 
+    //static bool    SUPG_;
+  public:
+    SUPGCL(ParamCL para)
+    { init(para);}
+    static void init(ParamCL para)
+    {
+        double lx_, ly_, lz_;
+        int    nx_, ny_, nz_;
+        std::string mesh( para.get<std::string>("DomainCond.MeshFile")), delim("x@");
+        size_t idx_;
+        while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+            mesh[idx_]= ' ';
+        std::istringstream brick_info( mesh);
+        brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
+        int Ref_=para.get<int>("DomainCond.RefineSteps");
+        magnitude_ =para.get<double>("Stabilization.Magnitude");
+        geom_      =para.get<double>("Stabilization.geom");
+        //pick up the longest edge
+        if(geom_==1)
+        {
+            double dx_= lx_/(nx_*std::pow(2, Ref_)); 
+            double dy_= ly_/(ny_*std::pow(2, Ref_));
+            double dz_= ly_/(nz_*std::pow(2, Ref_));
+            double m;
+            if(dx_>=dy_)
+                m = dx_;
+            else
+                m = dy_;
+            if( m>=dz_)
+                longedge_=m;
+            else
+                longedge_=dz_;
+                
+        }
+        else
+        {   longedge_ = 0;}    
+    }
+    
+    static double GetCharaLength(int geom)
+    {
+        double h=0.;
+        if(geom==1)
+            h=longedge_;
+        else
+            std::cout<<"WARNING: The geometry type has not been implemented!\n";
+        return h;    
+    }
+        
+    static double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha) 
+    {//Stabilization coefficient
+        double Pec=0.;
+        double h  =GetCharaLength(geom_);
+        Pec=Vel.norm()*h/(2.*alpha);  //compute mesh Peclet number  
+        if (Pec<=1)
+            return 0.0;
+        else
+            return magnitude_*h/(2.*Vel.norm())*(1.-1./Pec);
+    }
+};
+double SUPGCL::longedge_;
+double SUPGCL::magnitude_;
+int    SUPGCL::geom_;
 
 
 template<class CoeffCL, class SolverT>
