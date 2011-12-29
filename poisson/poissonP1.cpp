@@ -163,13 +163,22 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 #endif
 
     if ( !doErrorEstimate) {
+        // discretize (setup linear equation system)
+        std::cout << line << "Discretize (setup linear equation system) in stationary problem...\n";
+        timer.Reset();
         Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         if(P.get<int>("PoissonCoeff.Convection"))
         {
+            std::cout << line << "Setup convection...\n";
+            timer.Reset();
             Poisson.vU.SetIdx( &Poisson.idx);
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
+            timer.Stop();
+            std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         }
         if(P.get<int>("Stabilization.SUPG"))
         {
@@ -191,7 +200,10 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
                   << "   - real residuum " << realresid         << std::endl;
         if (P.get<int>("Poisson.SolutionIsKnown")) {
             std::cout << line << "Check result against known solution ...\n";
+            timer.Reset();
             Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+            timer.Stop();
+            std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         }
     }
     else{
@@ -327,34 +339,40 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
               << " o number of unknowns on proc\n";
     for (size_t i=0; i<UnkOnProc.size(); ++i)
         std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
-
-    // discretize (setup linear equation system)
-    // -------------------------------------------------------------------------
-    std::cout << line << "Discretize (setup linear equation system) ...\n";
-
-    timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
+    {
+        // discretize (setup linear equation system)
+        // -------------------------------------------------------------------------
+        std::cout << line << "Discretize (setup linear equation system) for instationary problem...\n";
+        timer.Reset();
         Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
-    timer.Stop();
-    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+    }
 
 
-    // solve the linear equation system
-    // -------------------------------------------------------------------------
-    std::cout << line << "Solve the linear equation system ...\n";
-
+    std::cout << line << "Choose the poisson solver...\n";
+    timer.Reset();
     // type of preconditioner and solver
     PoissonSolverFactoryCL<> factory( P, Poisson.idx);
     PoissonSolverBaseCL* solver = factory.CreatePoissonSolver();
 
     if ( factory.GetProlongation() != 0)
         SetupP1ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
+        
+    timer.Stop();
+    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
     // Solve the linear equation system
     if(P.get<int>("Time.NumSteps") !=0)
         Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     else
+    {
+        // solve the linear equation system
+        // -------------------------------------------------------------------------
+        std::cout << line << "Solve the linear equation system ...\n";
         SolveStatProblem( Poisson, *solver, P);
+    }
 
     // Output-Registrations:
     Ensight6OutCL* ensight = NULL;
@@ -432,7 +450,7 @@ int main (int argc, char** argv)
 #endif
     try
     {
-    // time measurements
+        // time measurements
 #ifndef _PAR
         DROPS::TimerCL timer;
 #else
@@ -450,8 +468,10 @@ int main (int argc, char** argv)
             std::cerr << "error while opening parameter file\n";
             return 1;
         }
+        //output all the parameters
         param >> P;
         param.close();
+        //Setup missing parameters
         SetMissingParameters(P);
         std::cout << P << std::endl;
 
@@ -467,11 +487,10 @@ int main (int argc, char** argv)
         //only for measuring cell, not used here
         double r = 1;
         std::string serfile = "none";
-
+        //build computational domain
         DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
-
+        //Setup boundary conditions
         DROPS::BuildBoundaryData( mg, bdata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
-
         // Setup the problem
         DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
 
@@ -483,11 +502,11 @@ int main (int argc, char** argv)
         lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
         lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
 #endif
+
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
-        // ---------------------------------------------------------------------
         std::cout << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
         timer.Reset();
         // Create new tetrahedra
@@ -507,16 +526,13 @@ int main (int argc, char** argv)
 
         // Solve the problem
         DROPS::Strategy( prob);
+        //Check if Multigrid is sane
+        std::cout << line << "Check if multigrid works properly...\n";
+        timer.Reset();
         std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
-
-        // maple/geomview-output
-//        DROPS::RBColorMapperCL colormap;
-//        std::ofstream maple("maple.txt");
-//        DROPS::Point3DCL e3(0.0); e3[2]= 1.0;
-//        maple << DROPS::MapleMGOutCL(*mg, -1, false, true, DROPS::PlaneCL(e3, 0.6)) << std::endl;
-//        std::ofstream fil("geom.off");
-//        fil << DROPS::GeomSolOutCL<DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> >::DiscSolCL>( *mg, prob.GetSolution(), &colormap, -1, false, 0.0, prob.x.Data.min(), prob.x.Data.max()) << std::endl;
-//        std::cout << DROPS::GeomMGOutCL(*mg, -1, true) << std::endl;
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        // delete dynamically allocated objects
         delete mg;
         delete bdata;
         return 0;

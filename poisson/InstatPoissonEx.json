@@ -118,7 +118,7 @@
     "Time":
     {
         "StepSize":     0.01,   //time step size
-        "NumSteps":     100,    //number of timesteps. -> Here: >0, i.e. instationary setup
+        "NumSteps":     20,    //number of timesteps. -> Here: >0, i.e. instationary setup
         "Scheme":       1,      //time disc. method: 1= theta scheme, 2=fractional step
         "Theta":        1     //For theta scheme: parameter theta
     },

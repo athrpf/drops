@@ -59,7 +59,7 @@
     },
     "Stabilization":
     {
-        "SUPG":             1,
+        "SUPG":              1,
         "Magnitude":         1.0,
         "Grids":             1
     },
