@@ -82,7 +82,7 @@ class SUPGCL
 {
   private:
     static double magnitude_;
-    static int    geom_;      // decide how to compute characteristic length to approximate the longest length in flow direction
+    static int    grids_;      // decide how to compute characteristic length to approximate the longest length in flow direction
     static double longedge_;   // the longest edge for regular grids; 
     //static bool    SUPG_;
   public:
@@ -100,9 +100,9 @@ class SUPGCL
         brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
         int Ref_=para.get<int>("DomainCond.RefineSteps");
         magnitude_ =para.get<double>("Stabilization.Magnitude");
-        geom_      =para.get<double>("Stabilization.geom");
+        grids_      =para.get<double>("Stabilization.Grids");
         //pick up the longest edge
-        if(geom_==1)
+        if(grids_==1)
         {
             double dx_= lx_/(nx_*std::pow(2, Ref_)); 
             double dy_= ly_/(ny_*std::pow(2, Ref_));
@@ -122,10 +122,10 @@ class SUPGCL
         {   longedge_ = 0;}    
     }
     
-    static double GetCharaLength(int geom)
+    static double GetCharaLength(int grids)
     {
         double h=0.;
-        if(geom==1)
+        if(grids==1)
             h=longedge_;
         else
             std::cout<<"WARNING: The geometry type has not been implemented!\n";
@@ -135,7 +135,7 @@ class SUPGCL
     static double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha) 
     {//Stabilization coefficient
         double Pec=0.;
-        double h  =GetCharaLength(geom_);
+        double h  =GetCharaLength(grids_);
         Pec=Vel.norm()*h/(2.*alpha);  //compute mesh Peclet number  
         if (Pec<=1)
             return 0.0;
@@ -145,7 +145,7 @@ class SUPGCL
 };
 double SUPGCL::longedge_;
 double SUPGCL::magnitude_;
-int    SUPGCL::geom_;
+int    SUPGCL::grids_;
 
 
 template<class CoeffCL, class SolverT>
@@ -420,6 +420,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 /// The result can be checked when Param-list is written to the output.
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
+    P.put_if_unset<double>("Stabilization.Magnitude",1.0);
+    P.put_if_unset<double>("Stabilization.Grids",1);
 }
 
 int main (int argc, char** argv)

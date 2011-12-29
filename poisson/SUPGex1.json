@@ -59,7 +59,9 @@
     },
     "Stabilization":
     {
-        "SUPG":             1
+        "SUPG":             1,
+        "Magnitude":         1.0,
+        "Grids":             1
     },
 
     //############################################
@@ -68,7 +70,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      4,
+        "RefineSteps":      2,
             //initial refinement: how often is the mesh refined
             // -> Here: two times refinement
         "GeomType":         1,
