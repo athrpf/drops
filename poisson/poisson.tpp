@@ -57,7 +57,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 
 template<class Coeff>
 void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, bool SUPG)
+                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg)
 // Sets up the stiffness matrix and right hand side
 {
     if (b != 0) b->Clear( 0.0);
@@ -87,7 +87,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
             absdet= std::fabs(det);
             //quad_a.assign( *sit, &Coeff::DiffusionCoeff, 0.0);                  //for variable diffusion coefficient
             //const double int_a= quad_a.quad( absdet);
-            if(SUPG)
+            if(supg.GetSUPG())
             {    
                 Quad5CL<Point3DCL> u(*sit,Coeff::Vel,0.);
                 for(int i=0; i<4; ++i)
@@ -101,10 +101,11 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
 
                     coup[i][j]=  Coeff::alpha*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
                     coup[i][j]+= P1DiscCL::Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
-                    if(SUPG)
+                    if(supg.GetSUPG())
                     {
                         Quad5CL<double> res3( U_Grad[i] * U_Grad[j]);
-                        coup[i][j]+= res3.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                        //SUPG stabilization
+                        coup[i][j]+= res3.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), 0.), Coeff::alpha);
                     }
                 }
                 UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
@@ -129,9 +130,9 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
                     {
                         Quad5CL<double> fp1(rhs*phiq5[i]);
                         b->Data[UnknownIdx[i]]+= fp1.quad(absdet);
-                        if (SUPG) {
+                        if (supg.GetSUPG()) {
                             Quad5CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
-                            b->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                            b->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), 0.), Coeff::alpha);
                         }
                         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
                             for (int f=0; f < 3; ++f)
@@ -145,13 +146,13 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG) const
+void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
 {
     MLMatrixCL::iterator  itA    = matA.Data.begin();
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA)
-        SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol, SUPG);
+        SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol, supg);
 }
 
 template<class Coeff>
@@ -236,7 +237,7 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
 }
 
 template <class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG) const
+void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, SUPGCL& supg) const
 /// Sets up the time dependent right hand sides including couplings
 /// resulting from inhomogeneous dirichlet bnd conditions
 {
@@ -282,7 +283,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 
     //quad_a.assign( *sit, Coeff_.alpha, tA);
     const double int_a=  Coeff_.alpha * absdet / 6.0;
-    if(SUPG)
+    if(supg.GetSUPG())
     {
         Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
         for(int i=0; i<4; i++)
@@ -295,14 +296,14 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         // dot-product of the gradients
         coupA[i][j]= inner_prod( G[i], G[j])*int_a;
         // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
-        if(SUPG)
+        if(supg.GetSUPG())
         {
             Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
             Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*Coeff::Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
+            coupA[i][j]+=StrA.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), tA), Coeff::alpha);  //SUPG term
             
             coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-            coupM[i][j]+= StrM.quad(absdet)*Coeff::Sta_Coeff(GetBaryCenter(*sit),tA); //SUPG term
+            coupM[i][j]+= StrM.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), tA), Coeff::alpha); //SUPG term
         }
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
@@ -331,9 +332,9 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 //        if (!Coeff_.SpecialRhs)
         Quad5CL<double> fp1(rhs*phiq5[i]);
         vf.Data[UnknownIdx[i]]+= fp1.quad(absdet);
-        if (SUPG) {
+        if (supg.GetSUPG()) {
             Quad5CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
-            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), tf );
+            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), tf), Coeff::alpha);
         }
         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
@@ -345,7 +346,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 }
 template<class Coeff>
 void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat, 
-                          IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool SUPG)
+                          IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg)
 /// Sets up the stiffness matrix and the mass matrix
 {
   MatrixBuilderCL A( &Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
@@ -382,7 +383,7 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
         //quad_a.assign( *sit, Coeff_.alpha, tA);
         const double int_a= Coeff_.alpha/6.0 * absdet;//quad_a.quad( absdet);
         
-        if(SUPG)
+        if(supg.GetSUPG())
         {
             Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, t);
             for(int i=0; i<4; i++)
@@ -396,12 +397,12 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
             coupA[i][j]= inner_prod( G[i], G[j])*int_a;
             // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
             coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-            if(SUPG)
+            if(supg.GetSUPG())
             {
             Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
             Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),t);  //SUPG term
-            coupM[i][j]+= StrM.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),t); //SUPG term
+            coupA[i][j]+=StrA.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), t), Coeff::alpha);  //SUPG term
+            coupM[i][j]+=StrM.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), t), Coeff::alpha);  //SUPG term
             }
           }
           UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;      
@@ -428,13 +429,13 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, bool SUPG) const
+void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, SUPGCL& supg) const
 {
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     MLMatrixCL::iterator  itM    = matM.Data.begin();
     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
-        SetupInstatSystem_P1( MG_, Coeff_, *itA, *itM, *itRow, *itCol, t, SUPG);
+        SetupInstatSystem_P1( MG_, Coeff_, *itA, *itM, *itRow, *itCol, t, supg);
 }
 
 template<class Coeff>
