@@ -275,7 +275,7 @@ int main (int argc, char** argv)
 
         std::ifstream param;
         if (argc!=2){
-            std::cout << "Using default parameter file: poissonex1.json\n";
+            std::cout << "Using default parameter file: PoissonEx.json\n";
             param.open( "PoissonEx.json");
         }
         else
