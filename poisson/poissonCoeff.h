@@ -83,13 +83,13 @@ class PoissonCoeffCL
             Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         Ref_=P.get<int>("DomainCond.RefineSteps");
     }
-    //Only used for flat film case
+/*    //Only used for flat film case
     static double h_Value()
     {//mesh size in flow direction
         double h=dx_/(nx_*std::pow(2, Ref_));
         return h;
-    }
-    static double Sta_Coeff(const DROPS::Point3DCL& p, double t) 
+    }*/
+/*    static double Sta_Coeff(const DROPS::Point3DCL& p, double t) 
     {//Stabilization coefficient
         double h  =h_Value();
         double Pec=0.;        
@@ -98,7 +98,7 @@ class PoissonCoeffCL
             return 0.0;
         else
             return h/(2.*Vel(p, t).norm())*(1.-1./Pec);
-    }
+    }*/
 /*    static void Show_Pec()
     {
         double U=9.81*1.e3*dy_*dy_/(2*C_.get<double>("Exp.Mu"));
