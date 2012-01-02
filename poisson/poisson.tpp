@@ -1208,9 +1208,9 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndD
 }
 
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG) const
+void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
 {
-    if(SUPG)
+    if(supg.GetSUPG())
         std::cerr<<"SUPG stabilization have been not implemented!"<<std::endl;
     MLMatrixCL::iterator  itA    = matA.Data.begin();
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
@@ -1340,9 +1340,9 @@ void PoissonP2CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, doubl
 
 //Setup Rhs of instat P2
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG) const
+void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, SUPGCL& supg) const
 {
-  if(SUPG)
+  if(supg.GetSUPG())
         std::cerr<<"SUPG stabilization have been not implemented!"<<std::endl;
   vA.Clear(tA);
   vM.Clear(tA);
@@ -1509,9 +1509,9 @@ void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<
 }
 
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, bool SUPG) const
+void PoissonP2CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, SUPGCL& supg) const
 {
-    if(SUPG||t)
+    if(supg.GetSUPG()||t)
         std::cerr<<"***SUPG stabilization have been not implemented!"<<std::endl;
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();

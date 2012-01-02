@@ -66,7 +66,12 @@ class SUPGCL
     int    grids_;      // decide how to compute characteristic length to approximate the longest length in flow direction
     double longedge_;   // the longest edge for regular grids; 
     bool    SUPG_;
-  public:
+    public:
+    SUPGCL()
+    {magnitude_=0.;
+     grids_ = 1;
+     longedge_=0.;
+     SUPG_= false;}
     SUPGCL(ParamCL para)
     { init(para);}
     void init(ParamCL para)
@@ -246,12 +251,12 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
-    void SetupSystem         ( MLMatDescCL&, VecDescCL&, bool SUPG=false) const;
+    void SetupSystem         ( MLMatDescCL&, VecDescCL&, SUPGCL& supg) const;
     
     ///  \brief set up matrices for instatProblem
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, SUPGCL& supg) const;
     
-    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG=false) const;
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, SUPGCL& supg) const;
     
     //Set up convection
     void SetupConvection( MLMatDescCL&, VecDescCL&, double) const; 

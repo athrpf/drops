@@ -449,9 +449,10 @@ int main (int argc, char** argv)
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
         //Initialize SUPGCL class
-        DROPS::SUPGCL supg(P);
+        DROPS::SUPGCL supg;
         if(P.get<int>("Stabilization.SUPG"))
         {
+            supg.init(P);
             //CoeffCL::Show_Pec();
             std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
         }

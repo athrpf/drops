@@ -83,7 +83,7 @@ namespace DROPS
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
 template<class CoeffCL>
-void Strategy( PoissonP2CL<CoeffCL>& Poisson)
+void Strategy( PoissonP2CL<CoeffCL>& Poisson, SUPGCL& supg)
 {
     // time measurement
 #ifndef _PAR
@@ -140,10 +140,10 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     timer.Reset();
     
     if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0.);    //IntationarySystem
+        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0., supg);    //IntationarySystem
     else
     {
-        Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem
+        Poisson.SetupSystem( Poisson.A, Poisson.b, supg);         //StationarySystem
         if(P.get<int>("PoissonCoeff.Convection"))
           {
             Poisson.vU.SetIdx( &Poisson.idx); 
@@ -227,7 +227,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 
     if (P.get<int>("Time.NumSteps") != 0){
         InstatPoissonThetaSchemeCL<PoissonP2CL<CoeffCL>, PoissonSolverBaseCL>
-           ThetaScheme(Poisson, *solver, P.get<double>("Time.Theta"), P.get<double>("PoissonCoeff.Convection"));
+           ThetaScheme(Poisson, *solver, supg, P.get<double>("Time.Theta"), P.get<double>("PoissonCoeff.Convection"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize"));
    
         for ( int step = 1; step <= P.get<int>("Time.NumSteps"); ++step)
@@ -346,9 +346,9 @@ int main (int argc, char** argv)
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
-
+        DROPS::SUPGCL supg;
         // Solve the problem
-        DROPS::Strategy( prob);
+        DROPS::Strategy( prob, supg);
         std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
         // maple/geomview-output
