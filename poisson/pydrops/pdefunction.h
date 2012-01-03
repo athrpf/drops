@@ -103,7 +103,7 @@ public:
     return false;
   }
 
-  virtual void get_barycenter_indices(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it, int k) const {
+  virtual void get_barycenter_indices(const DROPS::Point3DCL&, double, int&, int&, int&, int&, int) const {
     assert(false); // all boundary functions are dirichlet...
   }
 private:
