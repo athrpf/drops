@@ -204,6 +204,7 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       ScalarProductSetup(*prob, P);
 
       PySpC.set_properties(P, prob);    //Initalize PythonConnector
+      delete bdata;
     }  catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 
