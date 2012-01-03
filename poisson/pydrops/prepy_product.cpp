@@ -65,8 +65,6 @@ using namespace std;
 
 typedef DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > PoissonProblem;
 
-//const char line[] ="----------------------------------------------------------------------------------\n";
-
 class PyScalarProductConnector {
 public:
   void set_properties(const DROPS::ParamCL& P, PoissonProblem* prob_)
@@ -102,26 +100,23 @@ public:
 
   int nx, ny, nz, nt; // number of grid points
   double dx, dy, dz, dt;
+
+  double fun1(const DROPS::Point3DCL& p, double t)
+  {
+    int ix, iy, iz, it;
+    getnum(p, t, ix, iy, iz, it);
+    (*(pdefun1))(ix, iy, iz, it);
+  }
+  double fun2(const DROPS::Point3DCL& p, double t)
+  {
+    int ix, iy, iz, it;
+    PySpC.getnum(p, t, ix, iy, iz, it);
+    PySpC.pdefun2->operator()(ix, iy, iz, it);
+  }
+
 private:
 };
 
-PyScalarProductConnector PySpC;
-
-double fun1(const DROPS::Point3DCL& p, double t)
-{
-  int ix, iy, iz, it;
-  PySpC.getnum(p, t, ix, iy, iz, it);
-  (*(PySpC.pdefun1))(ix, iy, iz, it);
-}
-double fun2(const DROPS::Point3DCL& p, double t)
-{
-  int ix, iy, iz, it;
-  PySpC.getnum(p, t, ix, iy, iz, it);
-  PySpC.pdefun2->operator()(ix, iy, iz, it);
-}
-
-
-//DROPS::ParamCL P_sp; // Parameter object for scalar product - does this one really have to be global?
 
 namespace DROPS {
   void ScalarProductSetup( PoissonProblem& Poisson, ParamCL& P)
@@ -155,7 +150,6 @@ namespace DROPS {
  */
 int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, double lz, double tmax, bool h1)
 {
-  DROPS::ParamCL P;
   try
     {
       P.put<int>("DomainCond.nx", nx);
@@ -230,7 +224,7 @@ numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
 
   PoissonProblem* prob = PySpC.prob;
   for (int timestep=0; timestep<nt; ++timestep) {
-    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, fun1, fun2, timestep*PySpC.dt, false);
+    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, instat_scalar_fun_ptr(PySpC.fun1), instat_scalar_fun_ptr(PySpC.fun2), timestep*PySpC.dt, false); //
     std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
   }
   array solution = extract<numeric::array>(obj);

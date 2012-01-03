@@ -207,7 +207,7 @@ public:
     {
       double *out;
       if (adjoint_) {
-	  const int num = (Nt_-rd(t/dt_))*Nxyz_;    //flip solution back
+	  const int num = (Nt_-rd(t/dt_)-1)*Nxyz_;    //flip solution back
 	  out = C3D_+num;
       } else {
 	  const int num= (rd(t/dt_)-1)*Nxyz_;         // omit initial time step in output

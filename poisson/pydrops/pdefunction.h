@@ -141,6 +141,30 @@ class DropsFunction {
   int n;
 };
 
+/**
+ *  Class for interpolating a function for scalar products.
+ *
+ *  The main difference to DropsFunction is that this class assumes that the
+ *  function is only evaluated on grids.
+ */
+class DropsScalarProdFunction {
+public:
+  DropsScalarProdFunction(PdeFunction::ConstPtr pdefun_, int dx_, int dy_, int dz_, int dt_) : pdefun(pdefun_)dx(dx_), dy(dy_), dz(dz_), dt(dt_) {}
+  void getnum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const
+  {
+    ix=rd(p[0]/dx); iy=rd(p[1]/dy); iz=rd(p[2]/dz); it=rd(t/dt);
+  }
+  double operator()(DROPS::Point3DCL& p, double t) const
+  {
+    int ix, iy, iz, it;
+    getnum(p, t, ix, iy, iz, it);
+    return pdefun->operator()(ix, iy, iz, it);
+  }
+private:
+  double dx, dy, dz, dt;
+  PdeFunction::ConstPtr pdefun;
+};
+
 
 //For testing use, construct from function
 class TestPdeFunction : public PdeFunction {
