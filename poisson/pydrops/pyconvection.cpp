@@ -72,7 +72,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   std::ofstream outfile;  outfile.open(ofilename.c_str());
 
   /* Print out parameters */
-  std::cout << P << std::endl;
+  outfile << P << std::endl;
 
   /* Convert numpy arrays to PyPdeFunctions */
   PdeFunction::ConstPtr C0f(new PyPdeBoundaryFunction(&C0,3));
