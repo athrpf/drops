@@ -128,6 +128,10 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
     double Diffusion(const DROPS::Point3DCL&, double){
         return 1.;
     }
+    ///Neumann boundary condition at x=1
+    double Neumann(const DROPS::Point3DCL& p, double){
+        return -64.*p[0]*p[1]*p[2]*(1-p[1])*(1-p[2]);
+    }
     /// \brief Solution
     double Solution( const DROPS::Point3DCL& p, double){
         return 1 + 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
@@ -141,6 +145,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
     static DROPS::RegisterScalarFunction regscaf("Example1_Source",       Source      );
     static DROPS::RegisterScalarFunction regscas("Example1_Solution",     Solution    );
     static DROPS::RegisterScalarFunction regscaa("Example1_Diffusion",    Diffusion   );
+    static DROPS::RegisterScalarFunction regscan("Example1_Neumann",      Neumann     );
     static DROPS::RegisterVectorFunction regscav("Example1_Flowfield",    Flowfield   );
     static DROPS::RegisterScalarFunction regscai("Example1_InitialValue", InitialValue);
 

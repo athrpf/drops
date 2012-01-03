@@ -29,7 +29,7 @@ namespace DROPS
 
 //========================================================
 //
-//                Set up matrices and rhs
+//                Set up matrices and rhs in poisson P1 problem
 //
 //========================================================
 
@@ -58,7 +58,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 template<class Coeff>
 void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
                    IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg)
-// Sets up the stiffness matrix and right hand side
+/// Sets up the stiffness matrix and right hand side for stationary problem
 {
     if (b != 0) b->Clear( 0.0);
 
@@ -147,6 +147,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
+///Go throught every level to Setup system in P1
 {
     MLMatrixCL::iterator  itA    = matA.Data.begin();
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
@@ -187,6 +188,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 
 template <class Coeff>
 void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t) const
+///Special rhs for IA2 sensitivity problem
 {
   src.Clear( t);
   const Uint lvl = src.GetLevel(),
@@ -347,7 +349,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 template<class Coeff>
 void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat, 
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg)
-/// Sets up the stiffness matrix and the mass matrix
+/// Sets up the stiffness matrix and the mass matrix for instationary problem
 {
   MatrixBuilderCL A( &Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
   MatrixBuilderCL M( &Mmat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
@@ -430,6 +432,7 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, SUPGCL& supg) const
+///Go throught every multigrid level to Setup system in P1
 {
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
@@ -527,6 +530,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
+///Go throught every multigrid level to setup convection
 {
     MLMatrixCL::iterator  itU    = matU.Data.begin();
     MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
@@ -537,6 +541,7 @@ void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, doub
 
 template <class Coeff>
 void PoissonP1CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, double t0) const
+///Setup initial condition for instationary problem
 {
     Uint lvl= vec.GetLevel(),
          idx= vec.RowIdx->GetIdx();
