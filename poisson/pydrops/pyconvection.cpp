@@ -101,7 +101,7 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
       c0_ptr = solution_ptr;
     else
       c0_ptr = solution_ptr + (nt-1)*nx*ny*nz;
-    for (int ix=0; ix<nx; ++ix) for (int iy=0; iy<ny; ++iy) for (int iz=0; iz<nz; ++iz) solution_ptr[ix+nx*iy+nx*ny*iz] = C0f->operator()(ix, iy, iz,0);
+    for (int ix=0; ix<nx; ++ix) for (int iy=0; iy<ny; ++iy) for (int iz=0; iz<nz; ++iz) c0_ptr[ix+nx*iy+nx*ny*iz] = C0f->operator()(ix, iy, iz,0);
   }
   array solution = extract<boost::python::numeric::array>(obj);
   double* solution_without_intitial_ptr = (adjoint | nt<2) ? solution_ptr : solution_ptr+nx*ny*nz;
