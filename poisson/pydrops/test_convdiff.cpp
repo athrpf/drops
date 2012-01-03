@@ -112,13 +112,13 @@ namespace DROPS
 #endif
 
     if ( !doErrorEstimate) {
-        std::string Gradstr ("IA2Gradient");
-        std::string Sensstr ("IA2Sense");
-        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
-        bool GradProb = (Gradstr.compare(IAProbstr) == 0);
-        bool SensProb = (Sensstr.compare(IAProbstr) == 0);
-        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"), GradProb);
-        if(P.get<int>("PoissonCoeff.Convection"))
+      std::string Gradstr ("IA2Gradient");
+      std::string Sensstr ("IA2Sensi");
+      std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+      bool GradProb = (Gradstr.compare(IAProbstr) == 0);
+      bool SensProb = (Sensstr.compare(IAProbstr) == 0);
+      Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"), GradProb);
+      if(P.get<int>("PoissonCoeff.Convection"))
         {
             Poisson.vU.SetIdx( &Poisson.idx);
             Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
@@ -381,10 +381,10 @@ namespace DROPS
 } // end of namespace DROPS
 
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
-void convection_diffusion(std::ofstream& outfile,DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
+void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, double* C_sol)
 {
-        PythonConnectCL::Ptr PyC(new PythonConnectCL());
-        PyC->Init(&outfile, P, C0, b_in, source, Dw, b_interface, C_sol);
+  PythonConnectCL::Ptr PyC(new PythonConnectCL());
+  PyC->Init(&outfile, P, C0, b_in, source, Dw, b_interface, C_sol);
 #ifdef _PAR
     DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
@@ -527,12 +527,11 @@ int main(int argc, char** argv)
     diffusion =  One;       //Dw, wavy induced diffusion
     // set up data structure to represent a poisson problem
     // ---------------------------------------------------------------------
-    typedef const PdeFunction* PdeFunPtr;
-    PdeFunPtr C0(new TestPdeFunction(P,initial));
-    PdeFunPtr b_in(new TestPdeFunction(P,bnd));
-    PdeFunPtr b_interface(new TestPdeFunction(P, bnd));
-    PdeFunPtr source(new TestPdeFunction(P, rhs));
-    PdeFunPtr Dw(new TestPdeFunction(P, diffusion));
+    PdeFunction::ConstPtr C0(new TestPdeFunction(P,initial));
+    PdeFunction::ConstPtr b_in(new TestPdeFunction(P,bnd));
+    PdeFunction::ConstPtr b_interface(new TestPdeFunction(P, bnd));
+    PdeFunction::ConstPtr source(new TestPdeFunction(P, rhs));
+    PdeFunction::ConstPtr Dw(new TestPdeFunction(P, diffusion));
     
     double lx, ly, lz;
     int nx, ny, nz;
@@ -559,11 +558,11 @@ int main(int argc, char** argv)
     }
     
     convection_diffusion(outfile, P, C0, b_in, b_interface, source, Dw, C_sol);
-    delete C0;
+/*    delete C0;
     delete b_in;
     delete b_interface;
     delete source;
-    delete Dw;
+    delete Dw;*/
     delete[] C_sol;
     return 0;
   }

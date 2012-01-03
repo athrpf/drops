@@ -61,15 +61,17 @@ public:
 
   int GetNum( const DROPS::Point3DCL& p, double t, int seg) const
   {
+    int num=0;
     if (seg == 0 || seg == 1){//yoz
-      return (rd(p[2]/dz_)*Ny_ + rd(p[1]/dy_) + rd(t/dt_)*Ny_*Nz_);
+      num=rd(p[2]/dz_)*Ny_ + rd(p[1]/dy_) + rd(t/dt_)*Ny_*Nz_;
     }
     if (seg == 2 || seg == 3){//xoz
-      return (rd(p[2]/dz_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nx_*Nz_);
+      num=rd(p[2]/dz_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nx_*Nz_;
     }
     if (seg == 4 || seg == 5){//xoy
-      return (rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nx_*Ny_);
+      num=rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nx_*Ny_;
     }
+    return num;
   }
   //
   int GetNum( const DROPS::Point3DCL& p, double t=0.) const
@@ -77,7 +79,7 @@ public:
     return (rd(p[2]/dz_)*Nxy_ + rd(p[1]/dy_)*Nx_ + rd(p[0]/dx_) + rd(t/dt_)*Nxyz_);
   }
 
-  bool GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
+  void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
     ix = rd(p[0]/dx_);
     iy = rd(p[1]/dy_);
     iz = rd(p[2]/dz_);
