@@ -34,7 +34,7 @@ namespace DROPS
 //========================================================
 
 
-inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
+/*inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
 // Integrate nat_val() * phi_vert over face
 {
     Point3DCL vc3D[3];
@@ -52,7 +52,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
     const double absdet= FuncDet2D( v[1]->GetCoord() - v[0]->GetCoord(),
                                     v[2]->GetCoord() - v[0]->GetCoord());
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
-}
+}*/
 
 
 template<class Coeff>
@@ -137,7 +137,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndDa
                         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
                             for (int f=0; f < 3; ++f)
                                 if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                                    b->Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun() );
+                                    b->Data[UnknownIdx[i]]+= P1DiscCL::Quad2D(*sit, FaceOfVert(i, f), BndData_.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun(), i );
                     }
                 }
         }
@@ -166,7 +166,7 @@ void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
     U.Data.resize( idx.size());
 }
 
-inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun, double time)
+/*inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun, double time)
 /// Integrate nat_val() * phi_vert over face
 {
     Point3DCL vc[3];
@@ -184,7 +184,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
     const double f2= bfun(1./3.*(vc[0] + vc[1] + vc[2]), time);    //Barycenter of Face
     const double absdet= FuncDet2D(vc[1] - vc[0], vc[2] - vc[0]);
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
-}
+}*/
 
 template <class Coeff>
 void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t) const
@@ -231,7 +231,7 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
               Point3DCL n;
               sit->GetOuterNormal(FaceOfVert(i, f), n);
               src.Data[UnknownIdx[i]]+=
-                Quad2D(*sit, FaceOfVert(i, f), i, dalpha, t) * inner_prod( gradT, n);
+                P1DiscCL::Quad2D(*sit, FaceOfVert(i, f), dalpha, i,  t) * inner_prod( gradT, n);
             }
       }
     }
@@ -342,7 +342,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
               vA.Data[UnknownIdx[i]]+=
-                Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
+                P1DiscCL::Quad2D(*sit, FaceOfVert(i, f), BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), i, tA);
       }
   }
 }
