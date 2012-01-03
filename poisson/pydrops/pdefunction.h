@@ -3,8 +3,12 @@
 
 #include "num/discretize.h"
 
+#include <boost/shared_ptr.hpp>
+
 class PdeFunction {
 public:
+  typedef boost::shared_ptr<PdeFunction> Ptr;
+  typedef boost::shared_ptr<const PdeFunction> ConstPtr;
   /// Return the function value at the given grid point.
   virtual double operator()(int nx, int ny, int nz, int nt) const=0;
   /** Set inputs to number of grid points in this PdeFunction.
@@ -30,6 +34,8 @@ double rnd(double d) {// rounding four digits after comma
 
 class GridFunction {
 public:
+  typedef boost::shared_ptr<GridFunction> Ptr;
+  typedef boost::shared_ptr<const GridFunction> ConstPtr;
   virtual bool get_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it)const =0;
   virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it,int k) const=0;
 };
@@ -109,7 +115,8 @@ private:
 class DropsFunction {
  public:
   typedef boost::shared_ptr<DropsFunction> Ptr;
-  DropsFunction(const PdeFunction* f_, const GridFunction* g_, int n_) : f(f_), g(g_), n(n_){}
+  typedef boost::shared_ptr<const DropsFunction> ConstPtr;
+  DropsFunction(PdeFunction::ConstPtr f_, GridFunction::ConstPtr g_, int n_) : f(f_), g(g_), n(n_){}
 
   double operator()(const DROPS::Point3DCL& p, double t)
   {
@@ -128,8 +135,8 @@ class DropsFunction {
   }
 
  private:
-  const PdeFunction* f;
-  const GridFunction* g;
+  PdeFunction::ConstPtr f;
+  GridFunction::ConstPtr g;
   /// 4 for volumetric grid point, 3 for surface point
   int n;
 };

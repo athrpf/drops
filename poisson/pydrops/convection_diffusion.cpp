@@ -360,7 +360,7 @@ void SetMissingParameters(DROPS::ParamCL& P){
   P.put_if_unset<std::string>("PoissonCoeff.IAProb", "IA1Direct");
 }
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
-void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* Dw, double* C_sol)
+void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, double* C_sol)
 {
   PythonConnectCL::Ptr PyC(new PythonConnectCL());
   PyC->Init(&outfile, P, C0, b_in, source, Dw, b_interface, C_sol);
@@ -453,7 +453,7 @@ void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, const PdeFu
 }
 
 //Used to solve a direct, sensetivity, adjoint and gradient problem in IA2; source for direct and adjoint; presol for sensetivity and gradient; DelPsi for sensetivity and gradient
-void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, const PdeFunction* b_in, const PdeFunction* b_interface, const PdeFunction* source, const PdeFunction* presol, const PdeFunction* DelPsi, const PdeFunction* Dw, double* C_sol)
+void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr presol, PdeFunction::ConstPtr DelPsi, PdeFunction::ConstPtr Dw, double* C_sol)
 {
   PythonConnectCL::Ptr PyC(new PythonConnectCL());
   PyC->Init(&outfile, P, b_in, b_interface, source, presol, DelPsi,  Dw, C_sol);

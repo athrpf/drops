@@ -85,13 +85,13 @@ public:
     //cout << "set_properties tmax, it = " << tmax << ","<< nt << ","<< dt <<","<< endl;
   }
 
-  void SetProductFun(const PdeFunction* pdefun1_, const PdeFunction* pdefun2_) {
+  void SetProductFun(PdeFunction::ConstPtr pdefun1_, PdeFunction::ConstPtr pdefun2_) {
     pdefun1 = pdefun1_;
     pdefun2 = pdefun2_;
   }
 
-  const PdeFunction* pdefun1;
-  const PdeFunction* pdefun2;
+  PdeFunction::ConstPtr pdefun1;
+  PdeFunction::ConstPtr pdefun2;
 
   void getnum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it)
   {
@@ -210,9 +210,8 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
 #include "pypdefunction.h"
 using namespace boost::python;
 numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
-  typedef PdeFunction* PdeFunPtr;
-  PdeFunction* vf = new PyPdeFunction(v);
-  PdeFunction* wf = new PyPdeFunction(w);
+  PdeFunction::ConstPtr vf(new PyPdeFunction(&v));
+  PdeFunction::ConstPtr wf(new PyPdeFunction(&w));
 
   int nx=PySpC.nx, ny=PySpC.ny, nz=PySpC.nz, nt=PySpC.nt;
   assert(vf->get_dimensions(nx, ny, nz, nt));
@@ -234,8 +233,5 @@ numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
     std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
   }
   array solution = extract<numeric::array>(obj);
-
-  delete vf;
-  delete wf;
   return solution;
 }

@@ -232,7 +232,7 @@ public:
     }
 
   //Check the input matrices
-  void Init( std::ofstream* of, const DROPS::ParamCL& P, const PdeFunction* C0, const PdeFunction* B_in, const PdeFunction* F, const PdeFunction* Dw, const PdeFunction* B_Inter, double* c_sol)
+  void Init( std::ofstream* of, const DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr B_in, PdeFunction::ConstPtr F, PdeFunction::ConstPtr Dw, PdeFunction::ConstPtr B_Inter, double* c_sol)
   {
     outfile=of;
     int refinesteps_;
@@ -274,8 +274,8 @@ public:
     C3D_ = c_sol;
   }
 
-  void Init( std::ofstream* of, const DROPS::ParamCL& P, const PdeFunction* B_in, const PdeFunction* B_Inter, const PdeFunction* F,
-                    const PdeFunction* presol, const PdeFunction* DelPsi,const PdeFunction* Dw,  double* c_sol)
+  void Init( std::ofstream* of, const DROPS::ParamCL& P, PdeFunction::ConstPtr B_in, PdeFunction::ConstPtr B_Inter, PdeFunction::ConstPtr F,
+                    PdeFunction::ConstPtr presol, PdeFunction::ConstPtr DelPsi,PdeFunction::ConstPtr Dw,  double* c_sol)
   {
     outfile=of;
     int refinesteps_;
@@ -297,9 +297,9 @@ public:
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
     dt_     = P.get<double>("Time.StepSize");
 
-    VolumeGridFunction* vg = new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_);
-    SurfaceGridFunction* sg_inlet = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0);
-    SurfaceGridFunction* sg_interface = new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3);
+    GridFunction::Ptr vg(new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_));
+    GridFunction::Ptr sg_inlet(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0));
+    GridFunction::Ptr sg_interface(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3));
 
     GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));

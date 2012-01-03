@@ -38,12 +38,6 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   // 1. Read parameter file
   std::ifstream param;
   param.open(json_filename.c_str());
-  /*    else
-	param.open( argv[1]);
-	if (!param){
-	std::cerr << "error while opening parameter file\n";
-	return 1;
-	}*/
   param >> P;
   param.close();
   using namespace boost::python;
@@ -67,9 +61,6 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   int nx_mesh, ny_mesh, nz_mesh;
   double lx_mesh, ly_mesh, lz_mesh;
   brick_info >> lx_mesh >> ly_mesh >> lz_mesh >> nx_mesh >> ny_mesh >> nz_mesh;
-  if (nx_mesh!=nx-1) {
-
-  }
   assert(nx_mesh==nx-1);
   assert(ny_mesh==ny-1);
   assert(nz_mesh==nz-1);
@@ -77,16 +68,18 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   int nt_test = P.get<int>("Time.NumSteps"); // again, number of intervals
   assert(nt_test==nt-1);
 
+  std::string ofilename = P.get<std::string>("Err.Output", "outfile.out");
+  std::ofstream outfile;  outfile.open(ofilename.c_str());
+
   /* Print out parameters */
   std::cout << P << std::endl;
 
   /* Convert numpy arrays to PyPdeFunctions */
-  typedef const PdeFunction* PdeFunPtr;
-  PdeFunPtr C0f(new PyPdeBoundaryFunction(C0,3));
-  PdeFunPtr b_inf(new PyPdeBoundaryFunction(b_in,0));
-  PdeFunPtr b_interfacef(new PyPdeBoundaryFunction(b_interface,1));
-  PdeFunPtr sourcef(new PyPdeFunction(source));
-  PdeFunPtr Dwf(new PyPdeFunction(Dw));
+  PdeFunction::ConstPtr C0f(new PyPdeBoundaryFunction(&C0,3));
+  PdeFunction::ConstPtr b_inf(new PyPdeBoundaryFunction(&b_in,0));
+  PdeFunction::ConstPtr b_interfacef(new PyPdeBoundaryFunction(&b_interface,1));
+  PdeFunction::ConstPtr sourcef(new PyPdeFunction(&source));
+  PdeFunction::ConstPtr Dwf(new PyPdeFunction(&Dw));
 
   if (!check_dimensions(nx,ny,nz,nt,*C0f,*b_inf,*b_interfacef,*sourcef,*Dwf)) {
     std::cerr <<"Error in setting up DROPS: Wrong dimensions in inputs!\n";
@@ -112,13 +105,8 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   }
   array solution = extract<boost::python::numeric::array>(obj);
   double* solution_without_intitial_ptr = (adjoint | nt<2) ? solution_ptr : solution_ptr+nx*ny*nz;
-  convection_diffusion(P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_without_intitial_ptr);
-
-  delete C0f;
-  delete b_inf;
-  delete b_interfacef;
-  delete sourcef;
-  delete Dwf;
+  convection_diffusion(outfile, P, C0f, b_inf, b_interfacef, sourcef, Dwf, solution_without_intitial_ptr);
+  outfile.close();
   return solution;
 }
 
@@ -151,7 +139,7 @@ BOOST_PYTHON_MODULE(drops)
   def("setup_scalar_product_matrices", setup_sp_matrices);
   def("scalar_product", numpy_scalar_product);
 
-  class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
+  /*  class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
     .def(init<numeric::array&>())
-    .def("at",&PyPdeFunction::at);
+    .def("at",&PyPdeFunction::at);*/
 }
