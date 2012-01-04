@@ -15,7 +15,7 @@ tmax = 0.
 dt = 0.1
 theta = 1.0
 
-drops.setup_scalar_product_matrices(Nx, Ny, Nz, Nt, lx, ly, lz, tmax, False)
+scalarprod_connector = drops.ScalarProductConnector(Nx, Ny, Nz, Nt, lx, ly, lz, tmax, False)
 
 Xmesh, Ymesh, Zmesh, Tmesh = mgrid[0:Nx,0:Ny,0:Nz,0:Nt]
 X = Xmesh.astype(float)/(Nx-1)*lx
@@ -47,7 +47,7 @@ if -1.2345 in c:
 diff = retval - c
 print "err: ", diff
 print "retval:", retval
-sperr = "Scalar product: ", np.sqrt(drops.scalar_product(diff, diff))
+sperr = "Scalar product: ", np.sqrt(scalarprod_connector.scalar_product(diff, diff))
 print "vector norm: ", linalg.norm(err)
 print sperr
 #print retval
