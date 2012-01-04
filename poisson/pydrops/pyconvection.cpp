@@ -136,8 +136,9 @@ BOOST_PYTHON_MODULE(drops)
   def("convection_diffusion", numpy_convection_diffusion);
   //register_exception_translator<DROPS::DROPSErrCL>(&drops_err_translator);
   register_exception_translator<PyDropsErr>(&pydrops_err_translator);
-  def("setup_scalar_product_matrices", setup_sp_matrices);
-  def("scalar_product", numpy_scalar_product);
+
+  class_<PyScalarProductConnector>("ScalarProductConnector", "The ScalarProductConnector is an interface for computing the scalar product on a specific domain.", init<int, int, int, int, double, double, double, double, bool>(args("Nx","Ny","Nz","Nt","lx","ly","lz","tmax","h1"), "The constructor takes as arguments the number of grid points and the lengths of each side of the box."))
+    .def("scalar_product", &PyScalarProductConnector::numpy_scalar_product);
 
   /*  class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
     .def(init<numeric::array&>())

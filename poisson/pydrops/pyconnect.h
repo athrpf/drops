@@ -218,7 +218,7 @@ public:
 
       DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
 	  {
-        out[GetNum( sit->GetCoord())]= sol.val( *sit);
+	    out[GetNum( sit->GetCoord())]= sol.val( *sit);
 	  }
 
     }
@@ -254,14 +254,17 @@ public:
     Nt_ = P.get<int>("Time.NumSteps")+1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
-    Nt_    = P.get<int>("Time.NumSteps")+1;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
     dt_    = P.get<double>("Time.StepSize");
 
+    std::string adstr ("IA1Adjoint");
+    std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+    adjoint_ = (adstr.compare(IAProbstr)==0);
+
     // Save the matrix input arguments.
-    GridFunction::Ptr vg(new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_));
-    GridFunction::Ptr sg_inlet(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0));
-    GridFunction::Ptr sg_interface(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3));
+    GridFunction::Ptr vg(new VolumeGridFunction(Nt_, dx_, dy_, dz_, dt_, &tetra_map_, adjoint_));
+    GridFunction::Ptr sg_inlet(new SurfaceGridFunction(Nt_, dx_, dy_, dz_, dt_, &face_map_, 0,adjoint_));
+    GridFunction::Ptr sg_interface(new SurfaceGridFunction(Nt_, dx_, dy_, dz_, dt_, &face_map_, 3,adjoint_));
 
     GetInitial = DropsFunction::Ptr(new DropsFunction(C0, vg, 4));
     GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
@@ -269,9 +272,6 @@ public:
     GetDiffusion = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
 
-    std::string adstr ("IA1Adjoint");
-    std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
-    adjoint_ = (adstr.compare(IAProbstr)==0);
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
@@ -299,9 +299,9 @@ public:
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
     dt_     = P.get<double>("Time.StepSize");
 
-    GridFunction::Ptr vg(new VolumeGridFunction(dx_, dy_, dz_, dt_, &tetra_map_));
-    GridFunction::Ptr sg_inlet(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 0));
-    GridFunction::Ptr sg_interface(new SurfaceGridFunction(dx_, dy_, dz_, dt_, &face_map_, 3));
+    GridFunction::Ptr vg(new VolumeGridFunction(1, dx_, dy_, dz_, dt_, &tetra_map_, false));
+    GridFunction::Ptr sg_inlet(new SurfaceGridFunction(1, dx_, dy_, dz_, dt_, &face_map_, 0, false));
+    GridFunction::Ptr sg_interface(new SurfaceGridFunction(1, dx_, dy_, dz_, dt_, &face_map_, 3, false));
 
     GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));

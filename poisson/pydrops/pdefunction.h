@@ -36,19 +36,32 @@ class GridFunction {
 public:
   typedef boost::shared_ptr<GridFunction> Ptr;
   typedef boost::shared_ptr<const GridFunction> ConstPtr;
+  GridFunction(bool adjoint_) : adjoint(adjoint_) {}
   virtual bool get_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it)const =0;
   virtual void get_barycenter_indices(const DROPS::Point3DCL& p,double t,int& ix,int& iy,int& iz,int& it,int k) const=0;
+protected:
+  bool adjoint;
+private:
+  GridFunction();
 };
 
 class VolumeGridFunction : public GridFunction {
  public:
-  VolumeGridFunction(double dx,double dy,double dz,double dt, const TETRA_MAP* tetra_map_) : tetra_map(tetra_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt) {}
+  /** Constructor
+   *
+   *  Nt: Number of grid points.
+   *  adjoint: if true, the time steps will be inverted.
+   */
+  VolumeGridFunction(int Nt_, double dx,double dy,double dz,double dt, const TETRA_MAP* tetra_map_, bool adjoint_) : GridFunction(adjoint_), Nt(Nt_), tetra_map(tetra_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt) {}
 
   void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
     ix = rd(p[0]/dx_);
     iy = rd(p[1]/dy_);
     iz = rd(p[2]/dz_);
-    it = rd(t/dt_);
+    if (!adjoint)
+      it = rd(t/dt_);
+    else
+      it = Nt-rd(t/dt_)-1;
   }
 
   /// Returns true if p,t is a non-barycentric (a true gridpoint).
@@ -73,13 +86,16 @@ class VolumeGridFunction : public GridFunction {
     GetNum(tetra->second->GetVertex(k)->GetCoord(),t,ix,iy,iz,it);
   }
 private:
+  VolumeGridFunction();
+  int Nt;
   const TETRA_MAP* tetra_map;
   double dx_, dy_, dz_, dt_;
 };
 
 class SurfaceGridFunction : public GridFunction {
 public:
-  SurfaceGridFunction(double dx, double dy, double dz, double dt, const FACE_MAP* face_map_, int surface_index_) :
+  SurfaceGridFunction(int Nt_, double dx, double dy, double dz, double dt, const FACE_MAP* face_map_, int surface_index_, bool adjoint_) :
+    GridFunction(adjoint_), Nt(Nt_),
     face_map(face_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt), surface_index(surface_index_) {}
 
   void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
@@ -107,6 +123,8 @@ public:
     assert(false); // all boundary functions are dirichlet...
   }
 private:
+  SurfaceGridFunction();
+  int Nt;
   const FACE_MAP* face_map;
   double dx_, dy_, dz_, dt_;
   int surface_index;
@@ -149,20 +167,25 @@ class DropsFunction {
  */
 class DropsScalarProdFunction {
 public:
-  DropsScalarProdFunction(PdeFunction::ConstPtr pdefun_, int dx_, int dy_, int dz_, int dt_) : pdefun(pdefun_)dx(dx_), dy(dy_), dz(dz_), dt(dt_) {}
+  typedef boost::shared_ptr<DropsScalarProdFunction> Ptr;
+  typedef boost::shared_ptr<const DropsScalarProdFunction> ConstPtr;
+  DropsScalarProdFunction(PdeFunction::ConstPtr pdefun_, double dx_, double dy_, double dz_, double dt_) : pdefun(pdefun_), dx(dx_), dy(dy_), dz(dz_), dt(dt_) {}
   void getnum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const
   {
     ix=rd(p[0]/dx); iy=rd(p[1]/dy); iz=rd(p[2]/dz); it=rd(t/dt);
   }
-  double operator()(DROPS::Point3DCL& p, double t) const
+  double operator()(const DROPS::Point3DCL& p, double t) const
   {
     int ix, iy, iz, it;
     getnum(p, t, ix, iy, iz, it);
+    //std::cout << "dx: " << dx << "dy: " << dy << "dz: " << dz << "dt: " << dt << std::endl;
+    //std::cout << "ix: " << ix << "iy: " << iy << "iz: " << iz << "it: " << it << std::endl;
     return pdefun->operator()(ix, iy, iz, it);
   }
 private:
-  double dx, dy, dz, dt;
+  DropsScalarProdFunction();
   PdeFunction::ConstPtr pdefun;
+  double dx, dy, dz, dt;
 };
 
 

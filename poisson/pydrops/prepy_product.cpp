@@ -64,57 +64,41 @@
 using namespace std;
 
 typedef DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > PoissonProblem;
+typedef boost::shared_ptr<PoissonProblem> PoissonProblemPtr;
+
+using namespace boost::python;
 
 class PyScalarProductConnector {
 public:
-  void set_properties(const DROPS::ParamCL& P, PoissonProblem* prob_)
+  /** Constructor
+   *
+   *  Takes the number of grid points and lengths of the 4-dimensional box.
+   */
+  PyScalarProductConnector(int nx_, int ny_, int nz_, int nt_,
+			   double lx_, double ly_, double lz_, double tmax_, bool h1_)
+    : nx(nx_), ny(ny_), nz(nz_), nt(nt_),
+      lx(lx_), ly(ly_), lz(lz_), tmax(tmax_)
   {
-    prob = prob_;
-    nx = P.get<int>("DomainCond.nx");
-    ny = P.get<int>("DomainCond.ny");
-    nz = P.get<int>("DomainCond.nz");
-    nt = P.get<int>("DomainCond.nt");
-    double lx = P.get<double>("DomainCond.lx");
-    double ly = P.get<double>("DomainCond.ly");
-    double lz = P.get<double>("DomainCond.lz");
-    double tmax = P.get<double>("DomainCond.tmax");
-    dx = lx/(nx-1); dy = ly/(ny-1); dz = lz/(nz-1);
-    dt = nt>1 ? tmax/(nt-1) : 1.0;
-    //cout << "set_properties tmax, it = " << tmax << ","<< nt << ","<< dt <<","<< endl;
+    //std::cout << "lx = " << lx << std::endl;
+    dx = lx/(nx_-1);
+    dy = ly/(ny_-1);
+    dz = lz/(nz_-1);
+    dt = nt_>1 ? tmax/(nt_-1) : 1.0;
+    h1 = h1_;
+    // TODO: timing would be nice ...
+    setup_sp_matrices();
   }
 
-  void SetProductFun(PdeFunction::ConstPtr pdefun1_, PdeFunction::ConstPtr pdefun2_) {
-    pdefun1 = pdefun1_;
-    pdefun2 = pdefun2_;
-  }
+  void setup_sp_matrices();
 
-  PdeFunction::ConstPtr pdefun1;
-  PdeFunction::ConstPtr pdefun2;
-
-  void getnum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it)
-  {
-    ix=rd(p[0]/dx); iy=rd(p[1]/dy); iz=rd(p[2]/dz); it=rd(t/dt);
-    //cout << "getnum t, it = " << t << "," << it << ","<< dt <<","<< endl;
-  }
-  PoissonProblem* prob;
-
-  int nx, ny, nz, nt; // number of grid points
-  double dx, dy, dz, dt;
-
-  double fun1(const DROPS::Point3DCL& p, double t)
-  {
-    int ix, iy, iz, it;
-    getnum(p, t, ix, iy, iz, it);
-    (*(pdefun1))(ix, iy, iz, it);
-  }
-  double fun2(const DROPS::Point3DCL& p, double t)
-  {
-    int ix, iy, iz, it;
-    PySpC.getnum(p, t, ix, iy, iz, it);
-    PySpC.pdefun2->operator()(ix, iy, iz, it);
-  }
+  numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) const;
 
 private:
+  int nx, ny, nz, nt; // number of grid points
+  double lx, ly, lz, tmax;
+  double dx, dy, dz, dt;
+  bool h1;
+  PoissonProblemPtr prob;
 };
 
 
@@ -135,11 +119,6 @@ namespace DROPS {
     Poisson.M.SetIdx( &Poisson.idx, &Poisson.idx);              // tell M about numbering
     Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);
 
-    /* std::vector<size_t> UnkOnProc( 1);
-       UnkOnProc[0]  = Poisson.x.Data.size();
-       IdxT numUnk   = Poisson.x.Data.size(),
-       numAccUnk= Poisson.x.Data.size(); */
-
     Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0, 0 );
   }
 
@@ -148,18 +127,10 @@ namespace DROPS {
  *
  *  Takes number of grid points and lengths of the box
  */
-int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, double lz, double tmax, bool h1)
+void PyScalarProductConnector::setup_sp_matrices()
 {
   try
     {
-      P.put<int>("DomainCond.nx", nx);
-      P.put<int>("DomainCond.ny", ny);
-      P.put<int>("DomainCond.nz", nz);
-      P.put<int>("DomainCond.nt", nt);
-      P.put<double>("DomainCond.lx", lx);
-      P.put<double>("DomainCond.ly", ly);
-      P.put<double>("DomainCond.lz", lz);
-      P.put<double>("DomainCond.tmax", tmax);
       P.put<int>("DomainCond.RefineSteps", 0);
       stringstream MeshFile;
       MeshFile << lx << "x" << ly << "x" << lz << "@" << nx-1 << "x" << ny-1 << "x" << nz-1; // meshfile takes number of intervals, not grid points
@@ -175,8 +146,7 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
       P.put<string>("PoissonCoeff.Reaction", "Zero");
       P.put<int>("PoissonCoeff.Convection", 0);
       P.put<int>("Poisson.Method", 303);
-
-      std::cout << P << std::endl;
+      //std::cout << P << std::endl;
 
       // set up data structure to represent a poisson problem
       // ---------------------------------------------------------------------
@@ -191,28 +161,28 @@ int setup_sp_matrices(int nx, int ny, int nz, int nt, double lx, double ly, doub
 
       std::string boundaryfuncs = "Zero!Zero!Zero!Zero!Zero!Zero";
       std::string boundarytype  = "0!21!21!0!21!21";
-      DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs); // here, memory is lost!
+      DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs); // here, bdata is allocated, and we own it!
 
       // Setup the problem
-      PoissonProblem* prob = new PoissonProblem( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
+      prob = PoissonProblemPtr(new PoissonProblem( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata));
       ScalarProductSetup(*prob, P);
 
-      PySpC.set_properties(P, prob);    //Initalize PythonConnector
       delete bdata;
     }  catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
 
 #include "pypdefunction.h"
-using namespace boost::python;
-numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
+numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array& v, numeric::array& w) const
+{
   PdeFunction::ConstPtr vf(new PyPdeFunction(&v));
   PdeFunction::ConstPtr wf(new PyPdeFunction(&w));
 
-  int nx=PySpC.nx, ny=PySpC.ny, nz=PySpC.nz, nt=PySpC.nt;
-  assert(vf->get_dimensions(nx, ny, nz, nt));
-  assert(wf->get_dimensions(nx, ny, nz, nt));
+  int tmp_nx=nx, tmp_ny=ny, tmp_nz=nz, tmp_nt=nt;
+  assert(vf->get_dimensions(tmp_nx, tmp_ny, tmp_nz, tmp_nt));
+  assert(wf->get_dimensions(tmp_nx, tmp_ny, tmp_nz, tmp_nt));
 
-  PySpC.SetProductFun(vf, wf); //initalize two functions
+  DropsScalarProdFunction::ConstPtr fun1(new DropsScalarProdFunction(vf, dx, dy, dz, dt));
+  DropsScalarProdFunction::ConstPtr fun2(new DropsScalarProdFunction(wf, dx, dy, dz, dt));
 
   // croate output object
   npy_intp* output_dim = new npy_intp[1];
@@ -222,9 +192,8 @@ numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) {
   object obj(handle<>((PyObject*)retval));
   double* solution_ptr = (double*)retval->data;
 
-  PoissonProblem* prob = PySpC.prob;
   for (int timestep=0; timestep<nt; ++timestep) {
-    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, instat_scalar_fun_ptr(PySpC.fun1), instat_scalar_fun_ptr(PySpC.fun2), timestep*PySpC.dt, false); //
+    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, *fun1, *fun2, timestep*dt, false); //
     std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
   }
   array solution = extract<numeric::array>(obj);
