@@ -337,6 +337,43 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscaa("Adjoint_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
     static DROPS::RegisterVectorFunction regscav("Adjoint_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
 }//end of namespace
+ namespace PoissonAdjoint2{
+    double Pi =3.1415926;
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    /// \brief Convection: constant flow in x direction
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double){
+        DROPS::Point3DCL v(0.);
+        v[0] = (2.-p[1])*p[1];
+        return v;
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL& p, double t){
+        double time=1.-t;
+        double t_deriv = (1.-cos(2*Pi*p[0]))*sin(Pi/2.*(1.-p[1]))*Pi/2.*sin(Pi/2.*time);
+        double conv    = - Flowfield(p, time)[0]*2*Pi*sin(2*Pi*p[0])*sin(Pi/2.*(1.-p[1]))*cos(Pi/2.*time);
+        double diff    = - 4*Pi*Pi*cos(2*Pi*p[0])*sin(Pi/2.*(1.-p[1]))*cos(Pi/2.*time) + (1.-cos(2*Pi*p[0]))*Pi*Pi/4.*sin(Pi/2.*(1.-p[1]))*cos(Pi/2.*time);
+        return  t_deriv+conv+diff;
+    }
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1.0;
+    }
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double t)
+    {
+        double time=1.-t;
+        return (1.-cos(2*Pi*p[0]))*sin(Pi/2.*(1.-p[1]))*cos(Pi/2.*time);
+    }
+    static DROPS::RegisterScalarFunction regscaq("Adjoint2_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaf("Adjoint2_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscas("Adjoint2_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
+    static DROPS::RegisterScalarFunction regscaa("Adjoint2_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+    static DROPS::RegisterVectorFunction regscav("Adjoint2_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
+}//end of namespace
+
  namespace IA2Sensi{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
