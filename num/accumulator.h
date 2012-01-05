@@ -168,7 +168,7 @@ void AccumulatorTupleCL<VisitedT>::operator() (const ColorClassesCL& colors)
 #else
             int j;
 #endif
-#           pragma omp for
+#           pragma omp for schedule(dynamic)
             for (j= 0; j < cc.size(); ++j)
                 std::for_each( clones[t_id].begin(), clones[t_id].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *cc[j]));
         }
