@@ -39,7 +39,7 @@
  // include problem class
 #include "misc/params.h"
 #include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
-#include "poisson/poisson.h"      // setting up the Poisson problem
+#include "poisson/poisson.h"           // setting up the Poisson problem
 #include "num/bndData.h"
 
  // include standards
@@ -73,11 +73,11 @@ using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
 
-DROPS::ParamCL P;
+DROPS::ParamCL P;   //Parameter class, read in json file in main function
 
 namespace DROPS
 {
-
+    
 template<class CoeffCL, class SolverT>
 void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P, SUPGCL& supg)
 {
@@ -99,6 +99,8 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         Poisson.SetupSystem( Poisson.A, Poisson.b, supg);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        
+        //If we need to add convection
         if(P.get<int>("PoissonCoeff.Convection"))
         {
             std::cout << line << "Setup convection...\n";
@@ -113,6 +115,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
         timer.Stop();
+        
 #ifndef _PAR
         double realresid = norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
 #else
@@ -123,6 +126,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
                   << "   - iterations    " << solver.GetIter()  << '\n'
                   << "   - residuum      " << solver.GetResid() << '\n'
                   << "   - real residuum " << realresid         << std::endl;
+                  
         if (P.get<int>("Poisson.SolutionIsKnown")) {
             std::cout << line << "Check result against known solution ...\n";
             timer.Reset();
@@ -131,7 +135,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         }
     }
-    else{
+    else{//Do error estimation
         MultiGridCL& MG= Poisson.GetMG();
         const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
 
@@ -240,14 +244,12 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
     Poisson.x.SetIdx( &Poisson.idx);                            // tell x about numbering
     Poisson.A.SetIdx( &Poisson.idx, &Poisson.idx);              // tell A about numbering
     Poisson.M.SetIdx( &Poisson.idx, &Poisson.idx);              // tell M about numbering
-    Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);
+    Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);              // tell U about numbering
 
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
-
     // display problem size
-    // -------------------------------------------------------------------------
     std::cout << line << "Problem size\n";
 #ifdef _PAR
     std::vector<size_t> UnkOnProc= ProcCL::Gather( Poisson.x.Data.size(), 0);
@@ -264,17 +266,6 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
               << " o number of unknowns on proc\n";
     for (size_t i=0; i<UnkOnProc.size(); ++i)
         std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
-    if (P.get<int>("Time.NumSteps") != 0)
-    {
-        // discretize (setup linear equation system)
-        // -------------------------------------------------------------------------
-        std::cout << line << "Discretize (setup linear equation system) for instationary problem...\n";
-        timer.Reset();
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, supg);
-        timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-    }
-
 
     std::cout << line << "Choose the poisson solver...\n";
     timer.Reset();
@@ -288,18 +279,28 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
-    // Solve the linear equation system
+    //If it is a stationary problem, set up the system
+    if (P.get<int>("Time.NumSteps") != 0)
+    {
+        // discretize (setup linear equation system)
+        std::cout << line << "Discretize (setup linear equation system) for instationary problem...\n";
+        timer.Reset();
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, supg);
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+    }
+    //Do we need to set up initial condition? If not, solve StatProblem
     if(P.get<int>("Time.NumSteps") !=0)
         Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     else
     {
-        // solve the linear equation system
-        // -------------------------------------------------------------------------
+        // solve the stationary problem
         std::cout << line << "Solve the linear equation system ...\n";
         SolveStatProblem( Poisson, *solver, P, supg);
     }
 
     // Output-Registrations:
+    //Ensight format
     Ensight6OutCL* ensight = NULL;
     if (P.get<int>("Ensight.EnsightOut",0)){
         // Initialize Ensight6 output
@@ -311,8 +312,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
         ensight->Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
         ensight->Write();
     }
-
-
+    //VTK format
     VTKOutCL * vtkwriter = NULL;
     if (P.get<int>("VTK.VTKOut",0)){
         vtkwriter = new VTKOutCL(mg, "DROPS data", 
@@ -322,13 +322,14 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
         vtkwriter->Register( make_VTKScalar( Poisson.GetSolution(), "ConcenT"));
         vtkwriter->Write( Poisson.x.t);
     }
-        
+    //Do we have an instationary problem?
     if(P.get<int>("Time.NumSteps")!=0)
     {
-        //CoeffCL::Show_Pec();
+        //Creat instationary ThetaschemeCL to handle time integration for instationary problem and set time steps
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
         ThetaScheme( Poisson, *solver, supg, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"));
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
+        //Solve linear systerm in each time step
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
             timer.Reset();
             std::cout << line << "Step: " << step << std::endl;
@@ -341,14 +342,27 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
                       << "   - residuum      " << solver->GetResid() << '\n';
 
             if (P.get("Poisson.SolutionIsKnown", 0)) {
-                std::cout << line << "Check result against known solution ...\n";
+                std::cout << " o Check result against known solution ...\n";
+                timer.Reset();
                 Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
+                timer.Stop();
+                std::cout << " o -time " << timer.GetTime() << " s" << std::endl;
             }
 
-            if (ensight && step%P.get<int>("Ensight.EnsightOut", 0)==0)
+            if (ensight && step%P.get<int>("Ensight.EnsightOut", 0)==0){
+                std::cout << " o Ensight output ...\n";
+                timer.Reset();                
                 ensight->Write( Poisson.x.t);
-            if (vtkwriter && step%P.get<int>("VTK.VTKOut", 0)==0)
+                timer.Stop();
+                std::cout << " o -time " << timer.GetTime() << " s" << std::endl;                
+            }
+            if (vtkwriter && step%P.get<int>("VTK.VTKOut", 0)==0){
+                std::cout << " o VTK output ...\n";
+                timer.Reset();                  
                 vtkwriter->Write( Poisson.x.t);
+                timer.Stop();
+                std::cout << " o -time " << timer.GetTime() << " s" << std::endl; 
+            }
         }
     }
 
@@ -453,7 +467,6 @@ int main (int argc, char** argv)
         if(P.get<int>("Stabilization.SUPG"))
         {
             supg.init(P);
-            //CoeffCL::Show_Pec();
             std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
         }
         // Solve the problem
