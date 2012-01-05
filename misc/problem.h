@@ -259,6 +259,8 @@ class IdxDescCL: public FE_InfoCL
     }
     /// \brief Returns boundary condition
     BndCondCL GetBndInfo() const {return Bnd_;}
+    /// \brief Returns the matching function for periodic boundaries
+    match_fun GetMatchingFunction() const {return match_; }
     /// \brief Returns extended index. Only makes sense for XFEM.
     const ExtIdxDescCL& GetXidx() const { return extIdx_; }
     /// \brief Returns extended index. Only makes sense for XFEM.
@@ -394,6 +396,12 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
             it->DeleteNumbering( mg);
     }
     /// \}
+
+    /// \brief Returns boundary condition
+    BndCondCL GetBndInfo() const {return this->GetFinest().GetBndInfo();}
+    /// \brief Returns the matching function for periodic boundaries
+    match_fun GetMatchingFunction() const {return this->GetFinest().GetMatchingFunction(); }
+
 
 #ifdef _PAR
     /// \brief Get a reference on the ExchangeCL (of the finest level)

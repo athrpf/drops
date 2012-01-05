@@ -88,7 +88,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff,
     System2Accumulator_P2P1CL<TwoPhaseFlowCoeffCL> accu( coeff, BndData, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, MG, RowIdx->TriangLevel());
+    accumulate( accus, MG, RowIdx->TriangLevel(), RowIdx->GetMatchingFunction(), RowIdx->GetBndInfo());
 }
 
 
@@ -232,7 +232,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& coeff
     System2Accumulator_P2P1XCL p1x_accu( coeff, BndData, lset, *RowIdx, *ColIdx, *B, c, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &p1x_accu);
-    accumulate( accus, MG, RowIdx->TriangLevel());
+    accumulate( accus, MG, RowIdx->TriangLevel(), RowIdx->GetMatchingFunction(), RowIdx->GetBndInfo());
 }
 
 inline void ComputePgradV( LocalP2CL<Point3DCL>& PgradV, Uint pr, const Quad2CL<Point3DCL>& gradV)
@@ -1506,7 +1506,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
     System1Accumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, M, b, cplA, cplM, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, MG_, RowIdx.TriangLevel());
+    accumulate( accus, MG_, RowIdx.TriangLevel(), RowIdx.GetMatchingFunction(), RowIdx.GetBndInfo());
     // time.Stop();
     // std::cout << "setup: " << time.GetTime() << " seconds" << std::endl;
 }
@@ -2263,7 +2263,7 @@ void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, cons
     LBAccumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, cplA, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, MG_, RowIdx.TriangLevel());
+    accumulate( accus, MG_, RowIdx.TriangLevel(), RowIdx.GetMatchingFunction(), RowIdx.GetBndInfo());
 }
 
 

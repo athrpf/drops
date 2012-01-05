@@ -1252,7 +1252,7 @@ std::string PrioToString(Uint prio)
 
 void ColorClassesCL::compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL begin,
                                         MultiGridCL::const_TriangTetraIteratorCL end,
-                                        std::vector<TetraNumVecT>& neighbors)
+                                        std::vector<TetraNumVecT>& neighbors, match_fun match, const BndCondCL& Bnd)
 {
     const size_t num_tetra= std::distance( begin, end);
 
@@ -1262,6 +1262,35 @@ void ColorClassesCL::compute_neighbors (MultiGridCL::const_TriangTetraIteratorCL
     for (MultiGridCL::const_TriangTetraIteratorCL sit= begin; sit != end; ++sit)
         for (int i= 0; i < 4; ++i)
             vertexMap[sit->GetVertex( i)].push_back( sit - begin);
+
+    // in case of periodic boundaries: merge neighbors
+    if (match) {
+    	typedef std::list<const VertexCL*> VertexListT;
+    	VertexListT listper1, listper2;
+    	// collect vertices with boundary type Per1BC or Per2BC
+    	for (VertexMapT::iterator it = vertexMap.begin(); it != vertexMap.end(); ++it) {
+    		if (Bnd.GetBC( *(it->first)) == Per1BC)
+    			listper1.push_back(&*(it->first));
+    		if (Bnd.GetBC( *(it->first)) == Per2BC)
+    		    listper2.push_back(&*it->first);
+
+    	}
+    	// match vertices in listper1 and listper2 and merge vertexMap entries
+    	for (VertexListT::iterator it1 = listper1.begin(); it1 != listper1.end(); ++it1) {
+        	for (VertexListT::iterator it2 = listper2.begin(); it2 != listper2.end(); ) {
+                if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)))
+                {
+                	vertexMap[*it1].insert(vertexMap[*it1].end(), vertexMap[*it2].begin(),vertexMap[*it2].end());
+                	vertexMap[*it2].clear();
+                	vertexMap[*it2]= vertexMap[*it1];
+                    // remove it2 from listper2
+                    listper2.erase( it2++);
+                }
+                else it2++;
+        	}
+    	}
+    	if (!listper2.empty()) throw DROPSErrCL ( "ColorClassesCL::compute_neighbors : Periodic boundaries do not match!");
+    }
 
     // For every tetra j, store all neighboring tetras in neighbors[j].
     typedef std::set<size_t> TetraNumSetT;
@@ -1310,7 +1339,7 @@ void ColorClassesCL::fill_pointer_arrays (
 }
 
 void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIteratorCL begin,
-                                            MultiGridCL::const_TriangTetraIteratorCL end)
+                                            MultiGridCL::const_TriangTetraIteratorCL end, match_fun match, const BndCondCL& Bnd)
 {
 #   ifdef _PAR
         ParTimerCL timer;
@@ -1323,7 +1352,7 @@ void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIterat
 
     // Build the adjacency lists (a vector of neighbors for each tetra).
     std::vector<TetraNumVecT> neighbors( num_tetra);
-    compute_neighbors( begin, end, neighbors);
+    compute_neighbors( begin, end, neighbors, match, Bnd);
 
     // Color the tetras
     std::vector<int> color( num_tetra, -1); // Color of each tetra
@@ -1366,13 +1395,13 @@ void ColorClassesCL::compute_color_classes (MultiGridCL::const_TriangTetraIterat
     std::cout << "Creation of the tetra-coloring took " << duration << " seconds, " << num_colors() << " colors used." << '\n';
 }
 
-const ColorClassesCL& MultiGridCL::GetColorClasses (int Level) const
+const ColorClassesCL& MultiGridCL::GetColorClasses (int Level, match_fun match, const BndCondCL& Bnd) const
 {
     if (Level < 0)
         Level+= GetNumLevel();
 
     if (_colors.find( Level) == _colors.end())
-        _colors[Level]= new ColorClassesCL( GetTriangTetraBegin( Level), GetTriangTetraEnd( Level));
+        _colors[Level]= new ColorClassesCL( GetTriangTetraBegin( Level), GetTriangTetraEnd( Level), match, Bnd);
 
     return *_colors[Level];
 }
