@@ -178,7 +178,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     ///  \brief set up matrices (M is time independent)
     void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, SUPGCL& supg) const;
     /// \brief set up matrix and couplings with bnd unknowns for convection term
-    void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
+    void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t, SUPGCL& supg) const;
 
     /// \brief Setup time dependent parts
     ///
@@ -259,7 +259,7 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, SUPGCL& supg) const;
     
     //Set up convection
-    void SetupConvection( MLMatDescCL&, VecDescCL&, double) const; 
+    void SetupConvection( MLMatDescCL&, VecDescCL&, double, SUPGCL& supg) const; 
     
     //Set up initial value
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;

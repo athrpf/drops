@@ -147,7 +147,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson, SUPGCL& supg)
         if(P.get<int>("PoissonCoeff.Convection"))
           {
             Poisson.vU.SetIdx( &Poisson.idx); 
-            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);                 //Setupconvection
+            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0, supg);                 //Setupconvection
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data); //Combination with convection
             Poisson.b.Data+=Poisson.vU.Data;
           }

@@ -82,7 +82,7 @@ class InstatPoissonThetaSchemeCL
       if (Convection)
       {
         _cplU->SetIdx( _b->RowIdx);
-        _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.x.t);
+        _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.x.t, _supg);
       }
 /*      if(_SUPG)
       {
@@ -143,7 +143,7 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
   if (_Convection)
   {
       _rhs+= (_dt*(1.0-_theta)) * (_cplU->Data - _Poisson.U.Data * v.Data );
-      _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.x.t);
+      _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.x.t, _supg);
       _rhs+= (_dt*_theta) * _cplU->Data;
       MLMatrixCL AU;
       AU.LinComb( 1, _Poisson.A.Data, 1, _Poisson.U.Data);

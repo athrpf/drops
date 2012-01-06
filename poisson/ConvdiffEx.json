@@ -154,7 +154,7 @@
     {
         "VTKOut":       1,                  //Use VTK output?
         "VTKDir":       "vtk",              //local directory for vtk files
-        "VTKName":      "poisson_ex3_",     //name of vtk files (filename prefix)
+        "VTKName":      "convdiff_ex_",     //name of vtk files (filename prefix)
         "Binary":       0                   //write out VTK files in binary format
     }
 

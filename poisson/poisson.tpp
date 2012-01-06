@@ -24,6 +24,7 @@
 
 #include "num/discretize.h"
 #include "num/accumulator.h"
+#include "poisson/poissonaccus.tpp"
 namespace DROPS
 {
 
@@ -33,509 +34,12 @@ namespace DROPS
 //
 //========================================================
 
-/// - Base Accumulator for scalar P1 finite elements
-
-template<class Coeff,template <class T=double> class QuadCL>
-class Accumulator_P1CL : public TetraAccumulatorCL
-{
-    protected:   
-    const MultiGridCL& MG_;
-    const BndDataCL<> * BndData_; 
-    MatrixCL* Amat_; 
-    VecDescCL* b_; 
-    IdxDescCL& RowIdx_; 
-    IdxDescCL& ColIdx_; 
-    
-    MatrixBuilderCL * A_;    
-    
-    //local informations
-    
-    // - sharable (for future changes)
-    Point3DCL G[4];
-    double det;
-    double absdet;
-    IdxT UnknownIdx[4];
-    LocalP1CL<double> phi[4];
-    QuadCL<> phiQuad[4];
-    // - not sharable (for future changes)
-    double coup[4][4];
-    QuadCL<> U_Grad[4];
-    
-    const Uint lvl;
-    const Uint idx;
-    
-    const double t;
-    void update_global_matrix();
-    void update_coupling(const TetraCL& sit);
-    
-    public: 
-        Accumulator_P1CL (const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, const double t_=0);
-
-    ///\brief Initializes matrix-builders and load-vectors
-    void begin_accumulation ();
-    ///\brief Builds the matrices
-    void finalize_accumulation();
-
-    virtual void visit (const TetraCL&) 
-        { throw DROPSErrCL("BaseClass Accumulator_P1CL::visit called - this should not happen!");};
-
-    virtual TetraAccumulatorCL* clone (int /*tid*/) { return new Accumulator_P1CL ( *this); }
-        
-    
-};
-
-template<class Coeff,template <class T=double> class QuadCL>
-void Accumulator_P1CL<Coeff,QuadCL>::update_global_matrix()
-{
-    for(int i=0; i<4; ++i)          // assemble row i
-        if (UnknownIdx[i]!= NoIdx)  // vertex i is not on a Dirichlet boundary
-        {
-            for(int j=0; j<4;++j)
-            {
-                if (UnknownIdx[j]!= NoIdx) // vertex j is not on a Dirichlet boundary
-                {
-                    (*A_)(UnknownIdx[i], UnknownIdx[j])+=coup[i][j];    //DiffusiconCoeff*A
-                }
-            }
-        } 
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-void Accumulator_P1CL<Coeff,QuadCL>::update_coupling(const TetraCL& sit)
-{
-    for(int i=0; i<4; ++i)          // assemble row i
-        if (UnknownIdx[i]!= NoIdx)  // vertex i is not on a Dirichlet boundary
-        {
-            for(int j=0; j<4;++j)
-            {
-                if (UnknownIdx[j]== NoIdx) // vertex j is on a Dirichlet boundary
-                {
-                    b_->Data[UnknownIdx[i]]-= coup[i][j] * BndData_->GetDirBndValue(*sit.GetVertex(j));
-                }
-            }
-        } 
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-Accumulator_P1CL<Coeff,QuadCL>::Accumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, const double t_):                  
-                   MG_(MG), BndData_(BndData), Amat_(Amat), b_(b), RowIdx_(RowIdx), ColIdx_(ColIdx), 
-                   A_(0),
-                   lvl(RowIdx.TriangLevel()),
-                   idx(RowIdx.GetIdx()), t(t_)
-{
-    for(int i=0; i<4; i++)
-    {
-      phi[i][i]=1.;
-      phiQuad[i].assign(phi[i]);
-    }
-   
-}
-template<class Coeff,template <class T=double> class QuadCL>
-void Accumulator_P1CL<Coeff,QuadCL>::begin_accumulation ()
-{
-    if (b_ != 0) b_->Clear( 0.0);
-    if (Amat_)    
-        A_ = new MatrixBuilderCL( Amat_, RowIdx_.NumUnknowns(), ColIdx_.NumUnknowns());
-        
-}
-template<class Coeff,template <class T=double> class QuadCL>
-void Accumulator_P1CL<Coeff,QuadCL>::finalize_accumulation ()
-{
-    if (A_ != 0){
-        A_->Build();
-        delete A_;   
-    }     
-    
-}
-
-/// - Accumulators for stiffness, mass and convection:
-
-
-// source matrix: \int_{\Omega} f v \, dx
-template<class Coeff,template <class T=double> class QuadCL>
-class SourceAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
-{
-    protected:
-    typedef Accumulator_P1CL<Coeff,QuadCL> base_;
-    using                           base_::MG_;
-    using                           base_::BndData_; 
-    using                           base_::Amat_; 
-    using                           base_::b_; 
-    using                           base_::RowIdx_; 
-    using                           base_::ColIdx_; 
-    using                           base_::A_;              //Stiffnesss matrix
-    using                           base_::G;
-    using                           base_::det;
-    using                           base_::absdet;
-    using                           base_::UnknownIdx;
-    using                           base_::phi;
-    using                           base_::phiQuad;
-    using                           base_::coup;
-    using                           base_::U_Grad;
-    using                           base_::lvl;
-    using                           base_::idx;
-    using                           base_::t;
-    SUPGCL& supg_;
-    QuadCL<> rhs;
-    public:
-    SourceAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, VecDescCL* b, 
-                   IdxDescCL& RowIdx, SUPGCL& supg, const double t_)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,0,b,RowIdx,RowIdx,t_),supg_(supg){}
-    void local_setup (const TetraCL& sit);
-    void update_rhsintegrals(const TetraCL& sit);
-    void visit (const TetraCL& sit);
-    virtual TetraAccumulatorCL* clone (int /*tid*/) { return new SourceAccumulator_P1CL ( *this); }
-    
-};
-
-
-
-template<class Coeff,template <class T=double> class QuadCL>
-void SourceAccumulator_P1CL<Coeff,QuadCL>::visit (const TetraCL& sit)
-{
-  if (b_ != 0 && BndData_ != 0){      
-    local_setup(sit);
-    update_rhsintegrals(sit);
-  }
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-void SourceAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
-{
-    rhs.assign( sit, Coeff::f, 0.);
-    
-    for(int i=0; i<4; ++i)
-    {
-      UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx) : NoIdx;      
-    }    
-    
-    P1DiscCL::GetGradients(G,det,sit);
-    absdet= std::fabs(det);    
-    
-    if(supg_.GetSUPG())
-    {    
-        QuadCL<Point3DCL> u(sit,Coeff::Vel,t);
-        for(int i=0; i<4; ++i)
-            U_Grad[i]=dot( u, QuadCL<Point3DCL>( G[i]));
-    }    
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-void SourceAccumulator_P1CL<Coeff,QuadCL>::update_rhsintegrals(const TetraCL& sit)
-{
-    for(int i=0; i<4; ++i)    // assemble row i
-        if (UnknownIdx[i]!= NoIdx)  // vertex i is not on a Dirichlet boundary
-        {
-            QuadCL<double> fp1(rhs*phiQuad[i]);
-            b_->Data[UnknownIdx[i]]+= fp1.quad(absdet);
-            if (supg_.GetSUPG()) {
-                QuadCL<double> f_SD( rhs*U_Grad[i] );    //SUPG for source term
-                b_->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg_.Sta_Coeff( Coeff::Vel(GetBaryCenter(sit), 0.), Coeff::alpha);
-            }
-            if ( BndData_!=0 && BndData_->IsOnNatBnd(*sit.GetVertex(i)) )
-                for (int f=0; f < 3; ++f)
-                    if ( sit.IsBndSeg(FaceOfVert(i, f)) )
-                        b_->Data[UnknownIdx[i]]+= P1DiscCL::Quad2D(sit, FaceOfVert(i, f), BndData_->GetBndSeg(sit.GetBndIdx(FaceOfVert(i,f))).GetBndFun(), i );
-        } 
-    
-}
-    
-
-
-// stiffness matrix: \int_{\Omega} \alpha \nabla u \nabla v \, dx
-template<class Coeff,template <class T=double> class QuadCL>
-class StiffnessAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
-{
-    protected:
-    typedef Accumulator_P1CL<Coeff,QuadCL> base_;
-    using                           base_::MG_;
-    using                           base_::BndData_; 
-    using                           base_::Amat_; 
-    using                           base_::b_; 
-    using                           base_::RowIdx_; 
-    using                           base_::ColIdx_; 
-    using                           base_::A_;              //Stiffnesss matrix
-    using                           base_::G;
-    using                           base_::det;
-    using                           base_::absdet;
-    using                           base_::UnknownIdx;
-    using                           base_::phi;
-    using                           base_::phiQuad;
-    using                           base_::coup;
-    using                           base_::U_Grad;
-    using                           base_::lvl;
-    using                           base_::idx;
-    using                           base_::t;
-    SUPGCL& supg_;
-    public:
-    StiffnessAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg, const double t_)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t_),supg_(supg){}
-    void local_setup (const TetraCL& sit);
-    void visit (const TetraCL& sit);
-    virtual TetraAccumulatorCL* clone (int /*tid*/) { return new StiffnessAccumulator_P1CL ( *this); }
-    
-};
-
-
-template<class Coeff,template <class T=double> class QuadCL>
-void StiffnessAccumulator_P1CL<Coeff,QuadCL>::visit (const TetraCL& sit)
-{
-  local_setup(sit);
-  if (A_ != 0)
-    base_::update_global_matrix();
-  if (b_ != 0 && BndData_ != 0)      
-    base_::update_coupling(sit);
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
-{
-    P1DiscCL::GetGradients(G,det,sit);
-    absdet= std::fabs(det);
-    //quad_a.assign( sit, &Coeff::DiffusionCoeff, 0.0);                  //for variable diffusion coefficient
-    //const double int_a= quad_a.quad( absdet);
-    if(supg_.GetSUPG())
-    {    
-        QuadCL<Point3DCL> u(sit,Coeff::Vel,t);
-        for(int i=0; i<4; ++i)
-            U_Grad[i]=dot( u, QuadCL<Point3DCL>( G[i]));
-    }
-    for(int i=0; i<4; ++i)
-    { 
-        for(int j=0; j<4; ++j)
-        {
-            // dot-product of the gradients
-
-            coup[i][j]=  Coeff::alpha*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
-            coup[i][j]+= P1DiscCL::Quad(sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
-            if(supg_.GetSUPG())
-            {
-                QuadCL<double> res3( U_Grad[i] * U_Grad[j]);
-                //SUPG stabilization
-                coup[i][j]+= res3.quad(absdet)*supg_.Sta_Coeff( Coeff::Vel(GetBaryCenter(sit), t), Coeff::alpha);
-            }
-        }
-        UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx)
-                                                              : NoIdx;
-    }
-}
-
-   
-
-// mass matrix: \int_{\Omega} \alpha u  v \, dx
-template<class Coeff,template <class T=double> class QuadCL>
-class MassAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
-{
-    protected:
-    typedef Accumulator_P1CL<Coeff,QuadCL> base_;
-    using                           base_::MG_;
-    using                           base_::BndData_; 
-    using                           base_::Amat_; 
-    using                           base_::b_; 
-    using                           base_::RowIdx_; 
-    using                           base_::ColIdx_; 
-    using                           base_::A_;    
-    using                           base_::G;
-    using                           base_::det;
-    using                           base_::absdet;
-    using                           base_::UnknownIdx;
-    using                           base_::phi;
-    using                           base_::phiQuad;
-    using                           base_::coup;
-    using                           base_::U_Grad;
-    using                           base_::lvl;
-    using                           base_::idx;
-    using                           base_::t;
-    SUPGCL& supg_;
-    public:
-    MassAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg, const double t)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t),supg_(supg){}
-    void local_setup (const TetraCL& sit);
-    void visit (const TetraCL& sit);
-    virtual TetraAccumulatorCL* clone (int /*tid*/) { return new MassAccumulator_P1CL ( *this); }
-    
-    
-};
-
-
-template<class Coeff,template <class T=double> class QuadCL>
-void MassAccumulator_P1CL<Coeff,QuadCL>::visit (const TetraCL& sit)
-{
-  local_setup(sit);
-  if (A_ != 0)
-    base_::update_global_matrix();
-  if (b_ != 0 && BndData_ != 0)      
-    base_::update_coupling(sit);
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-void MassAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
-{
-
-    P1DiscCL::GetGradients(G,det,sit);
-    absdet= std::fabs(det);
-
-    if(supg_.GetSUPG())
-    {
-        QuadCL<Point3DCL> u(sit, Coeff::Vel, t);
-        for(int i=0; i<4; i++)
-            U_Grad[i]=dot(u, QuadCL<Point3DCL>(G[i]));
-    }
-    for(int i=0; i<4; ++i)
-    {
-      for(int j=0; j<4; ++j)
-      {
-        // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
-        coup[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-        if(supg_.GetSUPG())
-        {
-            QuadCL<double> StrM(U_Grad[i]*phiQuad[j]);
-            coup[i][j]+=StrM.quad(absdet)*supg_.Sta_Coeff( Coeff::Vel(GetBaryCenter(sit), t), Coeff::alpha);  //SUPG term
-        }
-      }
-      UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx) : NoIdx;      
-    }
-    
-}
-
-// Convection matrix: \int_{\Omega} w \nabla u v \, dx
-template<class Coeff,template <class T=double> class QuadCL>
-class ConvectionAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
-{
-    protected:
-    typedef Accumulator_P1CL<Coeff,QuadCL> base_;
-    using                           base_::MG_;
-    using                           base_::BndData_; 
-    using                           base_::Amat_; 
-    using                           base_::b_; 
-    using                           base_::RowIdx_; 
-    using                           base_::ColIdx_; 
-    using                           base_::A_;              //Convection matrix
-    using                           base_::G;
-    using                           base_::det;
-    using                           base_::absdet;
-    using                           base_::UnknownIdx;
-    using                           base_::phi;
-    using                           base_::phiQuad;
-    using                           base_::coup;
-    using                           base_::U_Grad;
-    using                           base_::lvl;
-    using                           base_::idx;
-    using                           base_::t;
-    bool adjoint;
-    public:
-    ConvectionAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx,  const double t_, bool adjoint_)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t_),adjoint(adjoint_){}
-    void local_setup (const TetraCL& sit);
-    void visit (const TetraCL& sit);
-    virtual TetraAccumulatorCL* clone (int /*tid*/) { return new ConvectionAccumulator_P1CL ( *this); }
-    
-    
-};
-
-
-template<class Coeff,template <class T=double> class QuadCL>
-void ConvectionAccumulator_P1CL<Coeff,QuadCL>::visit (const TetraCL& sit)
-{
-  local_setup(sit);
-  if (A_ != 0)
-    base_::update_global_matrix();
-  if (b_ != 0 && BndData_ != 0)     
-    base_::update_coupling(sit);  
-}
-
-template<class Coeff,template <class T=double> class QuadCL>
-void ConvectionAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
-{
-    P1DiscCL::GetGradients(G,det,sit);
-    absdet= std::fabs(det);
-
-    for(int i=0; i<4; ++i)
-    {
-      UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx) : NoIdx;
-    }
-    QuadCL<Point3DCL> u(sit,Coeff::Vel,t);
-    for(int j=0; j<4;++j)
-    {
-        const QuadCL<> u_Gradj( dot( u, QuadCL<Point3DCL>( G[j])));
-        for(int i=0; i<4; ++i)    // assemble row i
-        {
-          const QuadCL<double> resq3( phiQuad[i] * u_Gradj);
-          double res = resq3.quad(absdet);                  
-          if (!adjoint)
-            coup[i][j] = res;
-          else
-            coup[j][i] = res;
-        }
-    }
-}
-
 
 /// - Setup-System routines
 
 
 template<class Coeff>
-void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg)
-/// Sets up the stiffness matrix and right hand side for stationary problem
-{
-    StiffnessAccumulator_P1CL<Coeff,Quad5CL> accu(MG,&BndData_,&Amat,b,RowIdx,ColIdx,supg,0.);
-    SourceAccumulator_P1CL<Coeff,Quad5CL> accs(MG,&BndData_,b,RowIdx,supg,0.);
-    //Create tuple
-    TetraAccumulatorTupleCL accus;
-    //register accumulator
-    accus.push_back( &accu);
-    accus.push_back( &accs);
-    accumulate( accus, MG, RowIdx.TriangLevel());
-}
-
-template<class Coeff>
-void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
-///Go throught every level to Setup system in P1
-{
-    MLMatrixCL::iterator  itA    = matA.Data.begin();
-    MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
-    MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
-    for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA)
-        SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol, supg);
-}
-
-template<class Coeff>
-void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
-{
-    match_fun match= MG_.GetBnd().GetMatchFun();
-    idx.resize( n, P1_FE, BndData_, match);
-    A.Data.resize( idx.size());
-    M.Data.resize( idx.size());
-    U.Data.resize( idx.size());
-}
-
-/*
-template<class Coeff>
-void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL& Amat, MatrixCL& Mmat, 
-                          IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg)
-/// Sets up the stiffness matrix and the mass matrix for instationary problem
-{
-    StiffnessAccumulator_P1CL<Coeff,Quad5CL> accua(MG,0,&Amat,0,RowIdx,ColIdx,supg,t);
-    MassAccumulator_P1CL<Coeff,Quad5CL> accum(MG,0,&Mmat,0,RowIdx,ColIdx,supg,t);
-    //Create tuple
-    TetraAccumulatorTupleCL accus;
-    //register accumulator
-    accus.push_back( &accua);
-    accus.push_back( &accum);
-    accumulate( accus, MG, RowIdx.TriangLevel());    
-}
-
-*/
-
-
-template<class Coeff>
-void SetupAllVariants_System_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat, MatrixCL* Mmat, 
+void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat, MatrixCL* Mmat, 
                           MatrixCL* Umat, VecDescCL* cplA, VecDescCL* cplM, VecDescCL* cplU, VecDescCL* f, 
                           const BndDataCL<> * BndData_,
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg, bool adjoint)
@@ -577,138 +81,17 @@ void SetupAllVariants_System_P1( const MultiGridCL& MG, const Coeff& , MatrixCL*
 
 
 template<class Coeff>
-void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& C, MatrixCL& Amat, MatrixCL& Mmat, 
-                          IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg)
+void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
+///Go throught every level to Setup system in P1
 {
-  SetupAllVariants_System_P1(MG,C,&Amat,&Mmat,0,0,0,0,0,0,RowIdx,ColIdx,t,supg,false);
-}
-
-/*
-template<class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double , SUPGCL& supg) const
-//( const MultiGridCL& MG, const Coeff& C, MatrixCL& Amat, MatrixCL& Mmat, 
-//                          IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg)
-{
-//  SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-  SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,&vA,0,0,0,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-  SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,0,&vM,0,0,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-  //SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,0,0,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-}
-*/
-
-
-template <class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, SUPGCL& supg) const
-/// Sets up the time dependent right hand sides including couplings
-/// resulting from inhomogeneous dirichlet bnd conditions
-{
-//  SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,&vA,0,0,0,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-//  SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,0,&vM,0,0,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-  SetupAllVariants_System_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
-  
-  vA.Clear( tA);
-  vM.Clear( tA);
-  vf.Clear( tf);
-
-  const Uint lvl = vA.GetLevel(),
-             idx = vA.RowIdx->GetIdx();
-  Point3DCL G[4];
-
-  Comment("InstatPoissonP1CL::SetupInstatRhs with index "<<idx<<std::endl,
-          DebugNumericC);
-
-  double coupA[4][4];
-  double det;
-  double absdet;
-  IdxT UnknownIdx[4];
-  Quad2CL<> quad_a;
-  Quad5CL<>  rhs;
-  
-  double coupM[4][4];
-  Quad5CL<> U_Grad[4];
-  LocalP1CL<double> phi[4];
-  for(int i=0; i<4; i++)
-  {
-      phi[i][i]=1.;
-  }
-  Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
-
-//  StripTimeCL strip( &Coeff::f, tf);
-
-//  if (Coeff_.SpecialRhs)
-//      Coeff_.ComputeRhs( vf, tf, MG_);
-
-  for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-    sit != send; ++sit)
-  {
-    P1DiscCL::GetGradients(G,det,*sit);
-    absdet= std::fabs(det);
-
-    //quad_a.assign( *sit, Coeff_.alpha, tA);
-    const double int_a=  Coeff_.alpha * absdet / 6.0;
-    if(supg.GetSUPG())
-    {
-        Quad5CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
-        for(int i=0; i<4; i++)
-            U_Grad[i]=dot(u, Quad5CL<Point3DCL>(G[i]));
+    MLMatrixCL::iterator  itA    = matA.Data.begin();
+    MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
+    MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
+    for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA){
+        VecDescCL * rhs = (lvl == matA.Data.size()-1) ? &b : 0;
+        SetupPartialSystem_P1(MG_,Coeff_, &*itA,0,0,rhs,0,0,rhs, &BndData_,*itRow,*itCol, /* time */ 0.,supg, /* adjoint */ false);
     }
-    for(int i=0; i<4; ++i)
-    {
-      for(int j=0; j<4; ++j)
-      {
-        // dot-product of the gradients
-        coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-        // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
-        coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-        if(supg.GetSUPG())
-        {
-            Quad5CL<double> StrA(U_Grad[i]*U_Grad[j]);
-            Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), tA), Coeff::alpha);  //SUPG term
-            coupM[i][j]+= StrM.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), tA), Coeff::alpha); //SUPG term
-        }
-      }
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
-                                                            : NoIdx;
-    }
-
-    for(int j=0; j<4; ++j)
-      if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
-      { // coupling with vertex j on right-hand-side
-        const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), tA);
-        for(int i=0; i<4;++i)    // assemble row i
-        {
-          if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-          {
-            vA.Data[UnknownIdx[i]]-= coupA[j][i] * bndval;
-            vM.Data[UnknownIdx[i]]-= coupM[j][i] * bndval;
-          }
-        }
-      }
-
-    rhs.assign( *sit, Coeff_.f, tf);
-    for(int i=0; i<4;++i)    // assemble row i
-      if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-      {
-        //vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
-//        if (!Coeff_.SpecialRhs)
-        Quad5CL<double> fp1(rhs*phiq5[i]);
-        vf.Data[UnknownIdx[i]]+= fp1.quad(absdet);
-        if (supg.GetSUPG()) {
-            Quad5CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
-            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg.Sta_Coeff( Coeff::Vel(GetBaryCenter(*sit), tf), Coeff::alpha);
-        }
-        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
-          for (int f=0; f < 3; ++f)
-            if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-              vA.Data[UnknownIdx[i]]+=
-                P1DiscCL::Quad2D(*sit, FaceOfVert(i, f), BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), i, tA);
-      }
-  }
 }
-
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, SUPGCL& supg) const
@@ -718,32 +101,35 @@ void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     MLMatrixCL::iterator  itM    = matM.Data.begin();
     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
-        SetupInstatSystem_P1( MG_, Coeff_, *itA, *itM, *itRow, *itCol, t, supg);
+        SetupPartialSystem_P1(MG_,Coeff_,&*itA, &*itM,0,0,0,0,0,0,*itRow, *itCol,t,supg,false);
 }
 
 template<class Coeff>
-void SetupConvection_P1( const MultiGridCL& MG, const Coeff& , const BndDataCL<> BndData_,
-                         MatrixCL& Umat, VecDescCL* vU, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool adjoint_)
-/// Sets up matrix and couplings with bnd unknowns for convection term
-{
-    
-    ConvectionAccumulator_P1CL<Coeff,Quad3CL> accuc(MG,&BndData_,&Umat,vU,RowIdx,ColIdx,t,adjoint_);
-    //Create tuple
-    TetraAccumulatorTupleCL accus;
-    //register accumulator
-    accus.push_back( &accuc);
-    accumulate( accus, MG, RowIdx.TriangLevel());        
-}
-
-template<class Coeff>
-void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
+void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t, SUPGCL& supg) const
 ///Go throught every multigrid level to setup convection
 {
     MLMatrixCL::iterator  itU    = matU.Data.begin();
     MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matU.ColIdx->begin();
     for ( size_t lvl=0; lvl < matU.Data.size(); ++lvl, ++itRow, ++itCol, ++itU)
-        SetupConvection_P1( MG_, Coeff_, BndData_, *itU, (lvl == matU.Data.size()-1) ? &vU : 0, *itRow, *itCol, t, adjoint_);
+        SetupPartialSystem_P1(MG_,Coeff_,0, 0,&*itU,0,0,(lvl == matU.Data.size()-1) ? &vU : 0,0,&BndData_,*itRow, *itCol,t,supg,adjoint_);
+        
+}
+
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double , SUPGCL& supg) const
+{
+  SetupPartialSystem_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
+}
+
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
+{
+    match_fun match= MG_.GetBnd().GetMatchFun();
+    idx.resize( n, P1_FE, BndData_, match);
+    A.Data.resize( idx.size());
+    M.Data.resize( idx.size());
+    U.Data.resize( idx.size());
 }
 
 template <class Coeff>
@@ -1566,7 +952,7 @@ void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDa
 
 
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupConvection(MLMatDescCL& matU, VecDescCL& vU, double tU) const
+void PoissonP2CL<Coeff>::SetupConvection(MLMatDescCL& matU, VecDescCL& vU, double tU, SUPGCL&) const
 {
   MLMatrixCL ::iterator itU  = matU.Data.begin();
   MLIdxDescCL::iterator itRow= matU.RowIdx->begin();
