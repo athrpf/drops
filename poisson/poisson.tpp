@@ -72,7 +72,7 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat
     }
     
     //run accumulation
-    accumulate( accus, MG, RowIdx.TriangLevel());  
+    accumulate( accus, MG, RowIdx.TriangLevel(),RowIdx.GetMatchingFunction(), RowIdx.GetBndInfo());  
     if (accua != 0) delete accua;
     if (accum != 0) delete accum;
     if (accuc != 0) delete accuc;
