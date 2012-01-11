@@ -106,7 +106,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             std::cout << line << "Setup convection...\n";
             timer.Reset();
             Poisson.vU.SetIdx( &Poisson.idx);
-            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
+            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0, supg);
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
             timer.Stop();
