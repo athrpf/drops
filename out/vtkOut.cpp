@@ -364,38 +364,38 @@ void VTKOutCL::WriteCoords()
 }
 
 void VTKOutCL::GatherTetra()
-/** Gathers tetras in an array*/
+/** Gathers tetrahedra in an array*/
 {
-    // Gets number of tetras
     numTetras_=0;
     for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it)
-        numTetras_ += 8;                        // each tetra is stored reg-refined
-
-    tetras_.resize(4*numTetras_);               // four vertices * numTetras
-
+        numTetras_ += 1;                            // each tetra is stored as it is (consisting of four respective ten points)
+    
+//    if(onlyP1)
+//        tetras_.resize(4*numTetras_);               // (four vertices) * Number of Tetrahedra
+//    else 
+        tetras_.resize(10*numTetras_);              // (four vertices + six edges) * Number of Tetrahedra
+        
     // Gathers connectivities
     Uint counter=0;
-    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it){
-        RefRuleCL RegRef= GetRefRule( RegRefRuleC);                                     // get regular refinement rule
-        for (int ch=0; ch<8; ++ch)                                                      // iterate over all children
-        {
-            ChildDataCL data= GetChildData( RegRef.Children[ch]);                       // data of children
-            for (int vert= 0; vert<4; ++vert)
-            {
-                int v= data.Vertices[vert];                                             // number of corresponding vertex
-                if (v<4)                                                                // number corresponding to original vertex
-                    tetras_[counter] = vAddrMap_[it->GetVertex(v)];
-                else                                                                    // number corresponding to an edge
-                    tetras_[counter] = eAddrMap_[it->GetEdge(v-4)];
+    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it){ //loop over all tetrahedra
+        for (int vert= 0; vert<4; ++vert){
+            tetras_[counter] = vAddrMap_[it->GetVertex(vert)];
+            counter++;
+        }
+//        if(!onlyP1)
+//        {
+            for (int eddy=0; eddy<6; ++eddy){
+                tetras_[counter] = eAddrMap_[it->GetEdge(eddy)];
                 counter++;
             }
-        }
+            std::swap(tetras_[counter-4],tetras_[counter-5]);    // Permutation needed to make DROPS and VTK compatible (different numeration 
+//        }
     }
-    Assert(counter==4*numTetras_, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetras"), ~0);
+    Assert(counter==(/*onlyP1? 4:*/10)*numTetras_, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetrahedra"), ~0);
 }
-
+    
 void VTKOutCL::WriteTetra( bool writeDistribution)
-/** Writes the tetras into the VTK file*/
+/** Writes the tetrahedra into the VTK file*/
 {
     file_   << "\t<Cells>\n"
             << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"";
@@ -411,20 +411,29 @@ void VTKOutCL::WriteTetra( bool writeDistribution)
 //  {
         file_   <<"ascii\">\n\t\t";
         // Write out connectivities
-        for (Uint i=0; i<numTetras_; ++i)
-        {
-            file_ << tetras_[4*i+0] << ' '<< tetras_[4*i+1] << ' '<< tetras_[4*i+2] << ' '<< tetras_[4*i+3]<<" ";
-        }
+//        if(onlyP1)
+//            for (Uint i=0; i<numTetras_; ++i)
+//            {
+//                file_ << tetras_[4*i+0] << ' '<< tetras_[4*i+1] << ' '<< tetras_[4*i+2] << ' '<< tetras_[4*i+3] << " ";
+//            }
+//        else
+            for (Uint i=0; i<numTetras_; ++i)
+            {
+                file_ << tetras_[10*i+0] << ' '<< tetras_[10*i+1] << ' '<< tetras_[10*i+2] << ' '<< tetras_[10*i+3] << ' '
+                      << tetras_[10*i+4] << ' '<< tetras_[10*i+5] << ' '<< tetras_[10*i+6] << ' '<< tetras_[10*i+7] << ' '
+                      << tetras_[10*i+8] << ' '<< tetras_[10*i+9] << " ";
+            }
 //  }
     file_ << "\n\t\t</DataArray>\n";
     file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
-    for(Uint i=1; i<=numTetras_; ++i)
-    {
-        file_ << i*4<<" ";
-    }
+//    if(onlyP1)
+//        for(Uint i=1; i<=numTetras_; ++i) file_ << i*4<<" ";
+//    else
+        for(Uint i=1; i<=numTetras_; ++i) file_ << i*10<<" ";
     file_ << "\n\t\t</DataArray>";
     file_ << "\n\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n\t\t";
-    const int tetraType= 10;
+    const int tetraType=24;
+    //    const int tetraType= (onlyP1? 10:24);
     for(Uint i=1; i<=numTetras_; ++i)
         {
             file_ << tetraType<<" ";
