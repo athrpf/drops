@@ -81,7 +81,7 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat
 
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
+void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
 ///Go throught every level to Setup system in P1
 {
     MLMatrixCL::iterator  itA    = matA.Data.begin();
@@ -89,37 +89,37 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& su
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA){
         VecDescCL * rhs = (lvl == matA.Data.size()-1) ? &b : 0;
-        SetupPartialSystem_P1(MG_,Coeff_, &*itA,0,0,rhs,0,0,rhs, &BndData_,*itRow,*itCol, /* time */ 0.,supg, /* adjoint */ false);
+        SetupPartialSystem_P1(MG_,Coeff_, &*itA,0,0,rhs,0,0,rhs, &BndData_,*itRow,*itCol, /* time */ 0.,supg_, /* adjoint */ false);
     }
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, SUPGCL& supg) const
+void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t) const
 ///Go throught every multigrid level to Setup system in P1
 {
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     MLMatrixCL::iterator  itM    = matM.Data.begin();
     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
-        SetupPartialSystem_P1(MG_,Coeff_,&*itA, &*itM,0,0,0,0,0,0,*itRow, *itCol,t,supg,false);
+        SetupPartialSystem_P1(MG_,Coeff_,&*itA, &*itM,0,0,0,0,0,0,*itRow, *itCol,t,supg_,false);
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t, SUPGCL& supg) const
+void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
 ///Go throught every multigrid level to setup convection
 {
     MLMatrixCL::iterator  itU    = matU.Data.begin();
     MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matU.ColIdx->begin();
     for ( size_t lvl=0; lvl < matU.Data.size(); ++lvl, ++itRow, ++itCol, ++itU)
-        SetupPartialSystem_P1(MG_,Coeff_,0, 0,&*itU,0,0,(lvl == matU.Data.size()-1) ? &vU : 0,0,&BndData_,*itRow, *itCol,t,supg,adjoint_);
+        SetupPartialSystem_P1(MG_,Coeff_,0, 0,&*itU,0,0,(lvl == matU.Data.size()-1) ? &vU : 0,0,&BndData_,*itRow, *itCol,t,supg_,adjoint_);
         
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double , SUPGCL& supg) const
+void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double) const
 {
-  SetupPartialSystem_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg,false);
+  SetupPartialSystem_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg_,false);
 }
 
 template<class Coeff>
@@ -860,10 +860,8 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndD
 }
 
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, SUPGCL& supg) const
+void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
 {
-    if(supg.GetSUPG())
-        std::cerr<<"SUPG stabilization have been not implemented!"<<std::endl;
     MLMatrixCL::iterator  itA    = matA.Data.begin();
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
@@ -952,7 +950,7 @@ void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDa
 
 
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupConvection(MLMatDescCL& matU, VecDescCL& vU, double tU, SUPGCL&) const
+void PoissonP2CL<Coeff>::SetupConvection(MLMatDescCL& matU, VecDescCL& vU, double tU) const
 {
   MLMatrixCL ::iterator itU  = matU.Data.begin();
   MLIdxDescCL::iterator itRow= matU.RowIdx->begin();
@@ -992,10 +990,8 @@ void PoissonP2CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, doubl
 
 //Setup Rhs of instat P2
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, SUPGCL& supg) const
+void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const
 {
-  if(supg.GetSUPG())
-        std::cerr<<"SUPG stabilization have been not implemented!"<<std::endl;
   vA.Clear(tA);
   vM.Clear(tA);
   vf.Clear(tf);
@@ -1161,10 +1157,8 @@ void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<
 }
 
 template<class Coeff>
-void PoissonP2CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, SUPGCL& supg) const
+void PoissonP2CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double) const
 {
-    if(supg.GetSUPG()||t)
-        std::cerr<<"***SUPG stabilization have been not implemented!"<<std::endl;
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     MLMatrixCL::iterator  itM    = matM.Data.begin();

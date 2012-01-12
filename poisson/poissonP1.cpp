@@ -79,7 +79,7 @@ namespace DROPS
 {
     
 template<class CoeffCL, class SolverT>
-void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P, SUPGCL& supg)
+void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P)
 {
     // time measurements
 #ifndef _PAR
@@ -96,7 +96,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         // discretize (setup linear equation system)
         std::cout << line << "Discretize (setup linear equation system) in stationary problem...\n";
         timer.Reset();
-        Poisson.SetupSystem( Poisson.A, Poisson.b, supg);
+        Poisson.SetupSystem( Poisson.A, Poisson.b);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         
@@ -106,7 +106,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             std::cout << line << "Setup convection...\n";
             timer.Reset();
             Poisson.vU.SetIdx( &Poisson.idx);
-            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0, supg);
+            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
             timer.Stop();
@@ -182,7 +182,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
              }
 
             Poisson.A.SetIdx( new_idx, new_idx);             // tell A about numbering
-            Poisson.SetupSystem( Poisson.A, Poisson.b, supg);
+            Poisson.SetupSystem( Poisson.A, Poisson.b);
             timer.Stop();
             timer.Reset();
             solver.Solve( Poisson.A.Data, new_x->Data, Poisson.b.Data);
@@ -218,7 +218,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
 template<class CoeffCL>
-void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
+void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 {
     // time measurements
 #ifndef _PAR
@@ -285,7 +285,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
         // discretize (setup linear equation system)
         std::cout << line << "Discretize (setup linear equation system) for instationary problem...\n";
         timer.Reset();
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, supg);
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
     }
@@ -296,7 +296,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
     {
         // solve the stationary problem
         std::cout << line << "Solve the linear equation system ...\n";
-        SolveStatProblem( Poisson, *solver, P, supg);
+        SolveStatProblem( Poisson, *solver, P);
     }
 
     // Output-Registrations:
@@ -327,7 +327,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson, SUPGCL& supg)
     {
         //Creat instationary ThetaschemeCL to handle time integration for instationary problem and set time steps
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-        ThetaScheme( Poisson, *solver, supg, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"));
+        ThetaScheme( Poisson, *solver, P);
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
         //Solve linear systerm in each time step
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
@@ -430,8 +430,15 @@ int main (int argc, char** argv)
         DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
         //Setup boundary conditions
         DROPS::BuildBoundaryData( mg, bdata, P.get<std::string>("DomainCond.BoundaryType"), P.get<std::string>("DomainCond.BoundaryFncs"));
+        //Initialize SUPGCL class
+        DROPS::SUPGCL supg;
+        if(P.get<int>("Stabilization.SUPG"))
+        {
+            supg.init(P);
+            std::cout << line << "The SUPG stabilization will be added ...\n"<<line;           
+        }
         // Setup the problem
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata, supg);
 
 #ifdef _PAR
         // Set parallel data structures
@@ -462,15 +469,9 @@ int main (int argc, char** argv)
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
-        //Initialize SUPGCL class
-        DROPS::SUPGCL supg;
-        if(P.get<int>("Stabilization.SUPG"))
-        {
-            supg.init(P);
-            std::cout << line << "The SUPG stabilization has been added ...\n"<<line;           
-        }
+
         // Solve the problem
-        DROPS::Strategy( prob, supg);
+        DROPS::Strategy(prob);
         //Check if Multigrid is sane
         std::cout << line << "Check if multigrid works properly...\n";
         timer.Reset();

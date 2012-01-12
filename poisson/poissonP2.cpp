@@ -83,7 +83,7 @@ namespace DROPS
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
 template<class CoeffCL>
-void Strategy( PoissonP2CL<CoeffCL>& Poisson, SUPGCL& supg)
+void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 {
     // time measurement
 #ifndef _PAR
@@ -140,14 +140,14 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson, SUPGCL& supg)
     timer.Reset();
     
     if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0., supg);    //IntationarySystem
+        Poisson.SetupInstatSystem(Poisson.A, Poisson.M, 0.);    //IntationarySystem
     else
     {
-        Poisson.SetupSystem( Poisson.A, Poisson.b, supg);         //StationarySystem
+        Poisson.SetupSystem( Poisson.A, Poisson.b);         //StationarySystem
         if(P.get<int>("PoissonCoeff.Convection"))
           {
             Poisson.vU.SetIdx( &Poisson.idx); 
-            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0, supg);                 //Setupconvection
+            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);                 //Setupconvection
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data); //Combination with convection
             Poisson.b.Data+=Poisson.vU.Data;
           }
@@ -227,7 +227,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson, SUPGCL& supg)
 
     if (P.get<int>("Time.NumSteps") != 0){
         InstatPoissonThetaSchemeCL<PoissonP2CL<CoeffCL>, PoissonSolverBaseCL>
-           ThetaScheme(Poisson, *solver, supg, P.get<double>("Time.Theta"), P.get<double>("PoissonCoeff.Convection"));
+           ThetaScheme(Poisson, *solver, P);
         ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize"));
    
         for ( int step = 1; step <= P.get<int>("Time.NumSteps"); ++step)
@@ -264,6 +264,14 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson, SUPGCL& supg)
 
 } // end of namespace DROPS
 
+/// \brief Set Default parameters here s.t. they are initialized.
+/// The result can be checked when Param-list is written to the output.
+void SetMissingParameters(DROPS::ParamCL& P){
+    P.put_if_unset<int>("Stabilization.SUPG",0);
+    P.put_if_unset<double>("Stabilization.Magnitude",1.0);
+    P.put_if_unset<double>("Stabilization.Grids",1);
+}
+
 int main (int argc, char** argv)
 {
 #ifdef _PAR
@@ -286,6 +294,8 @@ int main (int argc, char** argv)
         }
         param >> P;
         param.close();
+        //Setup missing parameters
+        SetMissingParameters(P);
         std::cout << P << std::endl;
 
         // time measurement
@@ -348,17 +358,9 @@ int main (int argc, char** argv)
         mg->SizeInfo(cout);
         DROPS::SUPGCL supg;
         // Solve the problem
-        DROPS::Strategy( prob, supg);
+        DROPS::Strategy( prob );
         std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
-        // maple/geomview-output
-//        DROPS::RBColorMapperCL colormap;
-//        std::ofstream maple("maple.txt");
-//        DROPS::Point3DCL e3(0.0); e3[2]= 1.0;
-//        maple << DROPS::MapleMGOutCL(*mg, -1, false, true, DROPS::PlaneCL(e3, 0.6)) << std::endl;
-//        std::ofstream fil("geom.off");
-//        fil << DROPS::GeomSolOutCL<DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> >::DiscSolCL>( *mg, prob.GetSolution(), &colormap, -1, false, 0.0, prob.x.Data.min(), prob.x.Data.max()) << std::endl;
-//        std::cout << DROPS::GeomMGOutCL(*mg, -1, true) << std::endl;
         delete mg;
         delete bdata;
         return 0;
