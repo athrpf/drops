@@ -484,24 +484,19 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
     { false, true,              // inlet, outlet
       true,  false,             // wall, interface
       true,  true };            // in Z direction
-
-  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, *PyC->GetInitial);
-
+  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, &Zero);
   const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
     { *PyC->GetInflow, &Zero, &Zero, *PyC->GetInterfaceValue, &Zero, &Zero};
 
   DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
-
   //only for measuring cell, not used here
   double r = 1;
   std::string serfile = "none";
 
   DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
-
   // Setup the problem
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
   DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
-
 #ifdef _PAR
   // Set parallel data structures
   DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
@@ -512,7 +507,6 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
 #endif
   timer.Stop();
   *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
-
   // Refine the grid
   // ---------------------------------------------------------------------
   *(PyC->outfile) << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
@@ -527,20 +521,16 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
 #ifdef _PAR
   lb.DoMigration();
 #endif
-
   timer.Stop();
   *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
   mg->SizeInfo(*(PyC->outfile));
-
   //prepare MC
   PyC->SetMG(mg);
   PyC->ClearMaps();
   PyC->setFaceMap();
   PyC->setTetraMap();
-
   // Solve the problem
   DROPS::Strategy( prob, P, PyC);
-
   delete mg;
 }
 
