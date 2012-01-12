@@ -30,10 +30,29 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
   return false;
 }
 
-
 using namespace boost::python::numeric;
 DROPS::ParamCL P;
 
+/**
+ *  Solve a stationary convection diffusion problem from python.
+ *
+ *  \param b_in: boundary condition at inlet
+ *  \param source: Depends on the problem to be solved:
+ *          Direct: source term (rhs)
+ *          Sensitivity: delta (perturbance)
+ *          Adjoint: error in u-u_m (rhs)
+ *          Gradient: psi (solution of adjoint problem
+ *  \param
+ */
+array numpy_stationary_convection_diffusion(array& b_in, array& source, array& Dw, array& b_interface, string json_filename) {
+
+}
+
+/**
+ *  Solve a non-stationary convection diffusion problem from python.
+ *
+ *
+ */
 array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, string json_filename) {
   // 1. Read parameter file
   std::ifstream param;
@@ -128,6 +147,13 @@ void pydrops_err_translator(const PyDropsErr& err)
   PyErr_SetString(PyExc_UserWarning, msg.c_str());
 }
 
+void pyscalarprod_err_translator(const PyScalarProductErr& err)
+{
+  std::string msg = "Error in Scalar Product: ";
+  msg += err.msg;
+  PyErr_SetString(PyExc_UserWarning, msg.c_str());
+}
+
 BOOST_PYTHON_MODULE(drops)
 {
   import_array();		/* Initialize the Numarray module. */
@@ -136,6 +162,7 @@ BOOST_PYTHON_MODULE(drops)
   def("convection_diffusion", numpy_convection_diffusion);
   //register_exception_translator<DROPS::DROPSErrCL>(&drops_err_translator);
   register_exception_translator<PyDropsErr>(&pydrops_err_translator);
+  register_exception_translator<PyScalarProductErr>(&pyscalarprod_err_translator);
 
   class_<PyScalarProductConnector>("ScalarProductConnector", "The ScalarProductConnector is an interface for computing the scalar product on a specific domain.", init<int, int, int, int, double, double, double, double, bool>(args("Nx","Ny","Nz","Nt","lx","ly","lz","tmax","h1"), "The constructor takes as arguments the number of grid points and the lengths of each side of the box."))
     .def("scalar_product", &PyScalarProductConnector::numpy_scalar_product);
