@@ -173,12 +173,6 @@ void PyScalarProductConnector::setup_sp_matrices()
 
 #include "pypdefunction.h"
 
-class PyScalarProductErr {
-public:
-  PyScalarProductErr(std::string msg_) : msg(msg_){}
-  std::string msg;
-};
-
 numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array& v, numeric::array& w) const
 {
   PdeFunction::ConstPtr vf(new PyPdeFunction(&v));
@@ -188,12 +182,12 @@ numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array& v,
   if(!vf->get_dimensions(tmp_nx, tmp_ny, tmp_nz, tmp_nt)) {
     std::stringstream ss;
     ss << "wrong dimensions in first function. Should be " << nx << ", " << ny<< ", " << nz << ", " << nt<< ", but are in fact " << tmp_nx << ", " << tmp_ny<< ", " << tmp_nz << ", " << tmp_nt;
-    throw (PyScalarProductErr(ss.str().c_str()));
+    throw (PyDropsErr(ss.str().c_str()));
   }
   if(!wf->get_dimensions(tmp_nx, tmp_ny, tmp_nz, tmp_nt)) {
     std::stringstream ss;
     ss << "wrong dimensions in second function. Should be " << nx << ", " << ny<< ", " << nz << ", " << nt<< ", but are in fact " << tmp_nx << ", " << tmp_ny<< ", " << tmp_nz << ", " << tmp_nt;
-    throw (PyScalarProductErr(ss.str().c_str()));
+    throw (PyDropsErr(ss.str().c_str()));
   }
 
   DropsScalarProdFunction::ConstPtr fun1(new DropsScalarProdFunction(vf, dx, dy, dz, dt));

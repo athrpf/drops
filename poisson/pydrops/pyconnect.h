@@ -315,18 +315,24 @@ public:
   }
 };
 
-
 class PyDropsErr : public DROPS::DROPSErrCL {
 public:
- PyDropsErr(const PythonConnectCL::Ptr PyC_, DROPS::ParamCL* P_, int it_, std::string msg_) : PyC(PyC_), P(P_), it(it_), msg(msg_) {}
+ PyDropsErr(std::string msg_) : P(NULL), it(0), msg(msg_), with_data(false) {}
+ PyDropsErr(const PythonConnectCL::Ptr PyC_, DROPS::ParamCL* P_, int it_, std::string msg_) : PyC(PyC_), P(P_), it(it_), msg(msg_), with_data(true) {}
   const PythonConnectCL::Ptr PyC;
   DROPS::ParamCL* P;
   int it;
   std::string msg;
 
+  /// are PyC, P set?
+  bool with_data;
+
   /// Write all information corresponding to this problem to a file and return the filename
   std::string write_err_to_file() const
   {
+    if (!with_data) { // if no data is given, just return /dev/null
+      return std::string("/dev/null");
+    }
     std::string filename(tmpnam(NULL));
     std::ofstream outfile(filename.c_str());
     std::string ll("--------------------------------");
