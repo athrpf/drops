@@ -18,7 +18,7 @@
             // many vectors to construct the new krylov space
         "RelativeErr":      0,      //use relative tolerances (otherwise absolute) 1 = true, 0 = false
         "Tol":              1e-10,  //(relative/absolute) tolerance of iterative method
-        "Method":           302,    //Methods describes Solver (first digit)
+        "Method":           303,    //Methods describes Solver (first digit)
             //+ Preconditioner (last two digits)
             // First digit:
             //           1XX : Multigrid
@@ -71,7 +71,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      4,
+        "RefineSteps":      5,
             //initial refinement: how often is the mesh refined
             // -> Here: four times refinement
         "GeomType":     1,
@@ -117,8 +117,8 @@
     //################################################
     "Time":
     {
-        "StepSize":     0.01,   //time step size
-        "NumSteps":     100,    //number of timesteps. -> Here: >0, i.e. instationary setup
+        "StepSize":     0.1,   //time step size
+        "NumSteps":     10,    //number of timesteps. -> Here: >0, i.e. instationary setup
         "Scheme":       1,      //time disc. method: 1= theta scheme, 2=fractional step
         "Theta":        1     //For theta scheme: parameter theta
     },
