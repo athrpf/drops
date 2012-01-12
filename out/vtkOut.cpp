@@ -28,7 +28,7 @@ namespace DROPS
 {
 
 VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
-            const std::string& dirname, const std::string& filename, bool binary, Uint lvl)
+            const std::string& dirname, const std::string& filename, bool binary, bool onlyP1, Uint lvl)
 /** Beside constructing the VTKOutCL, this function computes the number of
     digits, that are used to decode the time steps in the filename.
 \param mg        MultiGridCL that contains the geometry
@@ -39,7 +39,7 @@ VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint nums
 \param lvl       Multigrid level
 */
     : mg_(mg), timestep_(0), numsteps_(numsteps), descstr_(dataname),
-        dirname_(dirname), filename_(filename), binary_(binary), geomwritten_(false),
+        dirname_(dirname), filename_(filename), binary_(binary), onlyP1_(onlyP1), geomwritten_(false),
         vAddrMap_(), eAddrMap_(), coords_(), tetras_(), lvl_(lvl),
         numPoints_(0), numTetras_(0)
 {
@@ -165,11 +165,11 @@ void VTKOutCL::GenerateTimeFile( double time, const std::string & name) const
     {
         std::ofstream timefile(timefilename.c_str());
         timefile << "<?xml version=\"1.0\"?>\n" 
-                 << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
-                 << "<Collection>\n"
-                 << "\t<DataSet timestep=\""<< time <<"\" group=\"\" part=\"0\" file=\"" << name <<"\"/>\n"
-                 << "</Collection>\n"
-                 << "</VTKFile>";
+                    "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
+                    "<Collection>\n"
+                    "\t<DataSet timestep=\""<< time <<"\" group=\"\" part=\"0\" file=\"" << name <<"\"/>\n"
+                    "</Collection>\n"
+                    "</VTKFile>";
         timefile.close();
     }
     else
@@ -180,8 +180,8 @@ void VTKOutCL::GenerateTimeFile( double time, const std::string & name) const
         {
             timefile.seekp(-24,std::ios_base::end);
             timefile << "\t<DataSet timestep=\""<< time <<"\" group=\"\" part=\"0\" file=\"" << name <<"\"/>\n"
-                     << "</Collection>\n"
-                     << "</VTKFile>";
+                        "</Collection>\n"
+                        "</VTKFile>";
             timefile.close();
         }
         else std::cerr << "Could not open VTK Timefile!" << std::endl;
@@ -191,18 +191,18 @@ void VTKOutCL::GenerateTimeFile( double time, const std::string & name) const
 void VTKOutCL::PutHeader()
 /** Writes the header into the VTK file*/
 {
-    file_ << "<?xml version=\"1.0\"?>"  << '\n'    // this is just the XML declaration, it's unnecessary for the actual VTK file
-          << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">"   << '\n'
-          << "<UnstructuredGrid>"   << '\n';
+    file_ << "<?xml version=\"1.0\"?>\n"     // this is just the XML declaration, it's unnecessary for the actual VTK file
+             "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
+             "<UnstructuredGrid>\n";
 }
 
 void VTKOutCL::PutFooter()
 /** Closes the file XML conform*/
 {
     file_ <<"\n\t</PointData>"
-          <<"\n</Piece>"
-          <<"\n</UnstructuredGrid>"
-          <<"\n</VTKFile>";
+            "\n</Piece>"
+            "\n</UnstructuredGrid>"
+            "\n</VTKFile>";
 }
 
 void VTKOutCL::GatherCoord()
@@ -349,9 +349,9 @@ void WriteBase64( const VectorBaseCL<T>& x, std::ostream& os)
 void VTKOutCL::WriteCoords()
 /** Each process writes out its coordinates. */
 {
-    file_<< "<Piece NumberOfPoints=\""<<numPoints_<<"\" NumberOfCells=\""<<numTetras_<<"\">";
-    file_<< "\n\t<Points>"
-         << "\n\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"" << ( binary_ ? "binary\">\n\t\t" : "ascii\">\n\t\t");
+    file_<< "<Piece NumberOfPoints=\""<<numPoints_<<"\" NumberOfCells=\""<<numTetras_<<"\">"
+            "\n\t<Points>"
+            "\n\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"" << ( binary_ ? "binary\">\n\t\t" : "ascii\">\n\t\t");
 
     if (binary_)
         WriteBase64(coords_, file_);
@@ -360,45 +360,35 @@ void VTKOutCL::WriteCoords()
             file_<< coords_[3*i+0] << ' ' << coords_[3*i+1] << ' ' << coords_[3*i+2]<< ' ';
 
     file_<< "\n\t\t</DataArray> \n"
-         << "\t</Points>\n";
+            "\t</Points>\n";
 }
 
 void VTKOutCL::GatherTetra()
 /** Gathers tetrahedra in an array*/
 {
-    numTetras_=0;
-    for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it)
-        numTetras_ += 1;                            // each tetra is stored as it is (consisting of four respective ten points)
-    
-//    if(onlyP1)
-//        tetras_.resize(4*numTetras_);               // (four vertices) * Number of Tetrahedra
-//    else 
-        tetras_.resize(10*numTetras_);              // (four vertices + six edges) * Number of Tetrahedra
-        
+    numTetras_=std::distance(mg_.GetTriangTetraBegin(lvl_),mg_.GetTriangTetraEnd(lvl_));  // calculates the number of tetrahedra
+    tetras_.resize((onlyP1_?4:10)*numTetras_);      // (four vertices) * Number of Tetrahedra respectively (four vertices + six edges) * Number of Tetrahedra
+  
     // Gathers connectivities
     Uint counter=0;
     for (MultiGridCL::const_TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(lvl_); it!=mg_.GetTriangTetraEnd(lvl_); ++it){ //loop over all tetrahedra
-        for (int vert= 0; vert<4; ++vert){
-            tetras_[counter] = vAddrMap_[it->GetVertex(vert)];
-            counter++;
+        for (int vert= 0; vert<4; ++vert)
+            tetras_[counter++] = vAddrMap_[it->GetVertex(vert)];
+        if(!onlyP1_)
+        {
+            for (int eddy=0; eddy<6; ++eddy)
+                tetras_[counter++] = eAddrMap_[it->GetEdge(eddy)];
+            std::swap(tetras_[counter-4],tetras_[counter-5]);    // Permutation needed to make DROPS and VTK compatible (different numeration) 
         }
-//        if(!onlyP1)
-//        {
-            for (int eddy=0; eddy<6; ++eddy){
-                tetras_[counter] = eAddrMap_[it->GetEdge(eddy)];
-                counter++;
-            }
-            std::swap(tetras_[counter-4],tetras_[counter-5]);    // Permutation needed to make DROPS and VTK compatible (different numeration 
-//        }
     }
-    Assert(counter==(/*onlyP1? 4:*/10)*numTetras_, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetrahedra"), ~0);
+    Assert(counter==(onlyP1_? 4:10)*numTetras_, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetrahedra"), ~0);
 }
     
 void VTKOutCL::WriteTetra( bool writeDistribution)
 /** Writes the tetrahedra into the VTK file*/
 {
     file_   << "\t<Cells>\n"
-            << "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"";
+               "\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"";
 // Binary output for the connectivity data seems useless (using >5 byte per integer), because it only blows up the amount of needed storage space, but it's implemented anyway,
 // for the sake of completeness.
 //  if(binary_)
@@ -411,12 +401,12 @@ void VTKOutCL::WriteTetra( bool writeDistribution)
 //  {
         file_   <<"ascii\">\n\t\t";
         // Write out connectivities
-//        if(onlyP1)
-//            for (Uint i=0; i<numTetras_; ++i)
-//            {
-//                file_ << tetras_[4*i+0] << ' '<< tetras_[4*i+1] << ' '<< tetras_[4*i+2] << ' '<< tetras_[4*i+3] << " ";
-//            }
-//        else
+        if(onlyP1_)
+            for (Uint i=0; i<numTetras_; ++i)
+            {
+                file_ << tetras_[4*i+0] << ' '<< tetras_[4*i+1] << ' '<< tetras_[4*i+2] << ' '<< tetras_[4*i+3] << " ";
+            }
+        else
             for (Uint i=0; i<numTetras_; ++i)
             {
                 file_ << tetras_[10*i+0] << ' '<< tetras_[10*i+1] << ' '<< tetras_[10*i+2] << ' '<< tetras_[10*i+3] << ' '
@@ -424,22 +414,19 @@ void VTKOutCL::WriteTetra( bool writeDistribution)
                       << tetras_[10*i+8] << ' '<< tetras_[10*i+9] << " ";
             }
 //  }
-    file_ << "\n\t\t</DataArray>\n";
-    file_ << "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
-//    if(onlyP1)
-//        for(Uint i=1; i<=numTetras_; ++i) file_ << i*4<<" ";
-//    else
+    file_ << "\n\t\t</DataArray>\n"
+             "\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n\t\t";
+    if(onlyP1_)
+        for(Uint i=1; i<=numTetras_; ++i) file_ << i*4<<" ";
+    else
         for(Uint i=1; i<=numTetras_; ++i) file_ << i*10<<" ";
-    file_ << "\n\t\t</DataArray>";
-    file_ << "\n\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n\t\t";
-    const int tetraType=24;
-    //    const int tetraType= (onlyP1? 10:24);
+    file_ << "\n\t\t</DataArray>"
+             "\n\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n\t\t";
+    const char* tetraType= (onlyP1_? "10 ":"24 ");
     for(Uint i=1; i<=numTetras_; ++i)
-        {
-            file_ << tetraType<<" ";
-        }
-    file_<<"\n\t\t</DataArray>"
-         <<"\n\t</Cells>";
+        file_ << tetraType;
+    file_ << "\n\t\t</DataArray>"
+             "\n\t</Cells>";
 
     if ( writeDistribution)
         WriteDistribution();
@@ -471,18 +458,18 @@ void VTKOutCL::WriteVarNames(std::ofstream& file, bool masterfile)
         if (it->second->GetDim()==1) scalarvalued.push_back(it->first);
         if (it->second->GetDim()==3) vectorvalued.push_back(it->first);
     }
-    file <<"\n\t<"<< (masterfile? "P":"") <<"PointData ";
+    file << "\n\t<" << (masterfile? "P":"") << "PointData ";
 
     if(!scalarvalued.empty())
     {
-        file <<"Scalars=\"" << scalarvalued[0];
-        for (size_t i= 1; i<scalarvalued.size();++i)
-            file<< "," << scalarvalued[i];
-        file<<"\"";
+        file << "Scalars=\"" << scalarvalued[0];
+        for (size_t i= 1; i < scalarvalued.size(); ++i)
+            file << "," << scalarvalued[i];
+        file << "\"";
     }
     if (!vectorvalued.empty())
     {
-        if ( !scalarvalued.empty())
+        if (!scalarvalued.empty())
             file << " ";
         file << "Vectors=\"" << vectorvalued[0];
         for (size_t i= 1; i<vectorvalued.size();++i)
@@ -499,7 +486,7 @@ void VTKOutCL::WriteValues( const VectorBaseCL<float>& allData, const std::strin
     std::ofstream& file= filePtr ? *filePtr : file_;
     
     file << "\n\t\t<" << ( !filePtr ? "" : "P") << "DataArray type=\"Float32\" Name=\"" << name << "\""
-         << " NumberOfComponents=\"" << numData << "\" format=\""
+            " NumberOfComponents=\"" << numData << "\" format=\""
          << ( binary_ ? "binary\"" : "ascii\"") << ( !filePtr ? "" : "/") << ">";
     if( !filePtr) // omit for master file
     {
@@ -510,7 +497,7 @@ void VTKOutCL::WriteValues( const VectorBaseCL<float>& allData, const std::strin
             for ( Uint i=0; i<allData.size(); ++i)
                 file << allData[i] << ' ';
         }
-        file <<"\n\t\t</DataArray>";
+        file << "\n\t\t</DataArray>";
     }
 }
 
