@@ -287,12 +287,12 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     }
     /// \brief Diffusion
     double Diffusion(const DROPS::Point3DCL&, double){
-        return 1.0;
+        return 0.01;
     }
     /// \brief Solution
     double Solution( const DROPS::Point3DCL& p, double)
     {
-        double D = P.get<double>("PoissonCoeff.Diffusion");
+        double D = Diffusion(p, 0.);
         return p[0] - (1 - exp(p[0]/D))/(1 - exp(1./D));
     }
 /*    static DROPS::RegisterScalarFunction regscaq("SUPG_Reaction",     Reaction    );

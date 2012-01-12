@@ -46,8 +46,8 @@
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":        0.01,                              //Diffusion coefficient
-            // -> Here: a = 1
+        "Diffusion":           "SUPG_Diffusion",                             //Diffusion coefficient
+            // -> Here: a = 0.01
         "Reaction":             "SUPG_Reaction",               //Reaction term [q] with the name "Example1_Reaction"
             // -> Here: q = 0
         "Solution":             "SUPG_Solution",               //Solution of poisson problem [u] has the name "Example1_Solution"
@@ -68,7 +68,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      4,
+        "RefineSteps":      2,
             //initial refinement: how often is the mesh refined
             // -> Here: two times refinement
         "GeomType":         1,
