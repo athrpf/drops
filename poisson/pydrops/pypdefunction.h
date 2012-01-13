@@ -18,7 +18,6 @@ public:
     nt = boost::python::extract<int>(t[3]);
   }
 
-
   virtual ~PyPdeFunction(){}
 
   virtual bool get_dimensions(int& Nx, int& Ny, int& Nz, int& Nt) const {
@@ -31,21 +30,31 @@ public:
   }
 
   virtual double operator()(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
-    //std::cout << "reading domain function " << ix << ","  << iy << ","  << iz << ","  << it << std::endl;
-    using namespace boost::python;
-    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>((*data)[t]);
+    return at(ix, iy, iz, it);
   }
 
   double at(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
+    if (!(ix>=0 && ix<nx)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index ix should be in ["<<0<<","<<nx-1<<"], but is "<<ix<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    if (!(iy>=0 && iy<ny)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index iy should be in ["<<0<<","<<ny-1<<"], but is "<<iy<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    if (!(iz>=0 && iz<nz)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index iz should be in ["<<0<<","<<nz-1<<"], but is "<<iz<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    if (!(it>=0 && it<nt)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index it should be in ["<<0<<","<<nt-1<<"], but is "<<it<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    //std::cout << "reading domain function " << ix << ","  << iy << ","  << iz << ","  << it << std::endl;
     using namespace boost::python;
     tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
     return extract<double>((*data)[t]);

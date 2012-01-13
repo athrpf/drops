@@ -52,7 +52,7 @@ class VolumeGridFunction : public GridFunction {
    *  Nt: Number of grid points.
    *  adjoint: if true, the time steps will be inverted.
    */
-  VolumeGridFunction(int Nt_, double dx,double dy,double dz,double dt, const TETRA_MAP* tetra_map_, bool adjoint_) : GridFunction(adjoint_), Nt(Nt_), tetra_map(tetra_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt) {}
+ VolumeGridFunction(int Nt_, double dx,double dy,double dz,double dt, const TETRA_MAP* tetra_map_, bool adjoint_) : GridFunction(adjoint_), Nt(Nt_), tetra_map(tetra_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt) { if (dt_==0) dt_=1.;}
 
   void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
     ix = rd(p[0]/dx_);
@@ -96,7 +96,7 @@ class SurfaceGridFunction : public GridFunction {
 public:
   SurfaceGridFunction(int Nt_, double dx, double dy, double dz, double dt, const FACE_MAP* face_map_, int surface_index_, bool adjoint_) :
     GridFunction(adjoint_), Nt(Nt_),
-    face_map(face_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt), surface_index(surface_index_) {}
+      face_map(face_map_), dx_(dx), dy_(dy), dz_(dz), dt_(dt), surface_index(surface_index_) {if(dt_==0) dt_=1.;}
 
   void GetNum(const DROPS::Point3DCL& p, double t, int& ix, int& iy, int& iz, int& it) const {
     ix = rd(p[0]/dx_);

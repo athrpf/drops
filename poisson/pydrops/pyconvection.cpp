@@ -51,6 +51,21 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
   return false;
 }
 
+bool check_stationary_dimensions(int Nx, int Ny, int Nz, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, PdeFunction::ConstPtr presol, ProblemType type)
+{
+  bool retval = check_dimension(*b_in, 1, Ny, Nz, 1) &&
+    check_dimension(*b_interface, Nx, 1, Nz, 1) &&
+    check_dimension(*source, Nx, Ny, Nz, 1);
+
+  if (type!=IA2Gradient)
+    retval = retval & check_dimension(*Dw, Nx, Ny, Nz,1);
+
+  if (type==IA2Sensitivity || type == IA2Gradient) {
+    retval = retval & check_dimension(*presol, Nx, Ny, Nz, 1);
+  }
+  return retval;
+}
+
 using namespace boost::python::numeric;
 DROPS::ParamCL P;
 
@@ -124,7 +139,16 @@ array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::p
   PdeFunction::ConstPtr sourcef(new PyPdeFunction(&source));
   PdeFunction::ConstPtr Dwf(new PyPdeFunction(&Dw));
 
-  //if (!check_dimensions(nx, ny, nz, 1, *C0f, *b_inf, *b_interfacef, *sourcef*, *Dwf)) {
+  std::string problem_type_string = P.get<std::string>("PoissonCoeff.IAProb");
+  if (problem_type_map.find(problem_type_string)==problem_type_map.end()) {
+    outfile.close();
+    throw (PyDropsErr("The provided problem type (PoissonCoeff.IAProb) does not exist or is not an IA2 problem."));
+  }
+  ProblemType problem_type = problem_type_map[problem_type_string];
+
+  if (!check_stationary_dimensions(nx, ny, nz, b_inf, b_interfacef, sourcef, Dwf, presolf, problem_type)) {
+    throw (PyDropsErr("Wrong dimensions in stationary problem."));
+  }
 
   // set up solution array
   npy_intp* c_sol_dim = new npy_intp[4];
@@ -134,13 +158,8 @@ array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::p
   boost::python::object obj(handle<>((PyObject*)newarray));
   double* solution_ptr = (double*)newarray->data;
   for (int k=0; k<nx*ny*nz; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
-  std::string problem_type = P.get<std::string>("PoissonCoeff.IAProb");
   array solution = extract<boost::python::numeric::array>(obj);
-  if (problem_type_map.find(problem_type)==problem_type_map.end()) {
-    outfile.close();
-    throw (PyDropsErr("The provided problem type (PoissonCoeff.IAProb) does not exist or is not an IA2 problem."));
-  }
-  switch (problem_type_map[std::string("IA2Direct")]) {
+  switch (problem_type) {
   case IA2Direct:
     std::cout << "solving the direct problem\n";
     CoefEstimation(outfile, P, b_inf, b_interfacef, sourcef, PdeFunction::ConstPtr(), PdeFunction::ConstPtr(), Dwf, solution_ptr);
