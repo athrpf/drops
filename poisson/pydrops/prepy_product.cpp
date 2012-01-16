@@ -91,7 +91,7 @@ public:
 
   void setup_sp_matrices();
 
-  numeric::array numpy_scalar_product(numeric::array& v, numeric::array& w) const;
+  numeric::array numpy_scalar_product(numeric::array v, numeric::array w) const;
 
 private:
   int nx, ny, nz, nt; // number of grid points
@@ -173,10 +173,10 @@ void PyScalarProductConnector::setup_sp_matrices()
 
 #include "pypdefunction.h"
 
-numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array& v, numeric::array& w) const
+numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array v, numeric::array w) const
 {
-  PdeFunction::ConstPtr vf(new PyPdeFunction(&v));
-  PdeFunction::ConstPtr wf(new PyPdeFunction(&w));
+  PdeFunction::ConstPtr vf(new PyPdeFunction(v));
+  PdeFunction::ConstPtr wf(new PyPdeFunction(w));
 
   int tmp_nx=nx, tmp_ny=ny, tmp_nz=nz, tmp_nt=nt;
   if(!vf->get_dimensions(tmp_nx, tmp_ny, tmp_nz, tmp_nt)) {

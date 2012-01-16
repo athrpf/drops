@@ -152,6 +152,8 @@ class DropsFunction {
     }
   }
 
+  PdeFunction::ConstPtr get_pdefunction() const { return f;}
+
  private:
   PdeFunction::ConstPtr f;
   GridFunction::ConstPtr g;
