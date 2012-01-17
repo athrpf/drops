@@ -13,9 +13,9 @@
 #include "convection_diffusion.cpp"
 #include "pypdefunction.h"
 
-bool check_dimension(const PdeFunction& f, int Nx, int Ny, int Nz, int Nt)
+bool check_dimension(PdeFunction::ConstPtr f, int Nx, int Ny, int Nz, int Nt)
 {
-  return f.get_dimensions(Nx, Ny, Nz, Nt);
+  return f->get_dimensions(Nx, Ny, Nz, Nt);
 }
 
 enum ProblemType {
@@ -39,7 +39,7 @@ void initialize_problem_type_map() {
   problem_type_map["IA2Gradient"] = IA2Gradient;
 }
 
-bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, const PdeFunction& b_in, const PdeFunction& b_interface, const PdeFunction& source, const PdeFunction& Dw)
+bool check_dimensions(int Nx, int Ny, int Nz, int Nt, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw)
 {
   if (check_dimension(C0, Nx, Ny, Nz, 1) &&
       check_dimension(b_in, 1, Ny, Nz, Nt) &&
@@ -49,6 +49,21 @@ bool check_dimensions(int Nx, int Ny, int Nz, int Nt, const PdeFunction& C0, con
     return true;
   }
   return false;
+}
+
+bool check_stationary_dimensions(int Nx, int Ny, int Nz, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, PdeFunction::ConstPtr presol, ProblemType type)
+{
+  bool retval = check_dimension(b_in, 1, Ny, Nz, 1) &&
+    check_dimension(b_interface, Nx, 1, Nz, 1) &&
+    check_dimension(source, Nx, Ny, Nz, 1);
+
+  if (type!=IA2Gradient)
+    retval = retval & check_dimension(Dw, Nx, Ny, Nz,1);
+
+  if (type==IA2Sensitivity || type == IA2Gradient) {
+    retval = retval & check_dimension(presol, Nx, Ny, Nz, 1);
+  }
+  return retval;
 }
 
 using namespace boost::python::numeric;
@@ -72,7 +87,7 @@ DROPS::ParamCL P;
  *  \param b_interface: boundary condition at surface
  *  \param json_filename: filename for json file to be used for parameters
  */
-array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::python::object& presol_obj, array& Dw, array& b_interface, string json_filename) {
+array numpy_stationary_convection_diffusion(array b_in, array source, boost::python::object presol_obj, array Dw, array b_interface, string json_filename) {
   using namespace boost::python;
   initialize_problem_type_map();
   PdeFunction::ConstPtr presolf;
@@ -81,7 +96,7 @@ array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::p
     // None
   } else {
     array presol = extract<boost::python::numeric::array>(presol_obj);
-    presolf = PdeFunction::ConstPtr(new PyPdeFunction(&presol));
+    presolf = PdeFunction::ConstPtr(new PyPdeFunction(presol));
   }
 
   // read json file
@@ -119,12 +134,21 @@ array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::p
   outfile << P << std::endl;
 
   /* Convert numpy arrays to PyPdeFunctions */
-  PdeFunction::ConstPtr b_inf(new PyPdeBoundaryFunction(&b_in,0));
-  PdeFunction::ConstPtr b_interfacef(new PyPdeBoundaryFunction(&b_interface,1));
-  PdeFunction::ConstPtr sourcef(new PyPdeFunction(&source));
-  PdeFunction::ConstPtr Dwf(new PyPdeFunction(&Dw));
+  PdeFunction::ConstPtr b_inf(new PyPdeBoundaryFunction(b_in,0));
+  PdeFunction::ConstPtr b_interfacef(new PyPdeBoundaryFunction(b_interface,1));
+  PdeFunction::ConstPtr sourcef(new PyPdeFunction(source));
+  PdeFunction::ConstPtr Dwf(new PyPdeFunction(Dw));
 
-  //if (!check_dimensions(nx, ny, nz, 1, *C0f, *b_inf, *b_interfacef, *sourcef*, *Dwf)) {
+  std::string problem_type_string = P.get<std::string>("PoissonCoeff.IAProb");
+  if (problem_type_map.find(problem_type_string)==problem_type_map.end()) {
+    outfile.close();
+    throw (PyDropsErr("The provided problem type (PoissonCoeff.IAProb) does not exist or is not an IA2 problem."));
+  }
+  ProblemType problem_type = problem_type_map[problem_type_string];
+
+  if (!check_stationary_dimensions(nx, ny, nz, b_inf, b_interfacef, sourcef, Dwf, presolf, problem_type)) {
+    throw (PyDropsErr("Wrong dimensions in stationary problem."));
+  }
 
   // set up solution array
   npy_intp* c_sol_dim = new npy_intp[4];
@@ -134,13 +158,8 @@ array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::p
   boost::python::object obj(handle<>((PyObject*)newarray));
   double* solution_ptr = (double*)newarray->data;
   for (int k=0; k<nx*ny*nz; ++k) { solution_ptr[k] = -1.2345;} // for testing purposes
-  std::string problem_type = P.get<std::string>("PoissonCoeff.IAProb");
   array solution = extract<boost::python::numeric::array>(obj);
-  if (problem_type_map.find(problem_type)==problem_type_map.end()) {
-    outfile.close();
-    throw (PyDropsErr("The provided problem type (PoissonCoeff.IAProb) does not exist or is not an IA2 problem."));
-  }
-  switch (problem_type_map[std::string("IA2Direct")]) {
+  switch (problem_type) {
   case IA2Direct:
     std::cout << "solving the direct problem\n";
     CoefEstimation(outfile, P, b_inf, b_interfacef, sourcef, PdeFunction::ConstPtr(), PdeFunction::ConstPtr(), Dwf, solution_ptr);
@@ -168,7 +187,7 @@ array numpy_stationary_convection_diffusion(array& b_in, array& source, boost::p
  *
  *
  */
-array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& Dw, array& b_interface, string json_filename) {
+array numpy_convection_diffusion(array C0, array b_in, array source, array Dw, array b_interface, string json_filename) {
   // 1. Read parameter file
   std::ifstream param;
   param.open(json_filename.c_str());
@@ -208,13 +227,13 @@ array numpy_convection_diffusion(array& C0, array& b_in, array& source, array& D
   outfile << P << std::endl;
 
   /* Convert numpy arrays to PyPdeFunctions */
-  PdeFunction::ConstPtr C0f(new PyPdeBoundaryFunction(&C0,3));
-  PdeFunction::ConstPtr b_inf(new PyPdeBoundaryFunction(&b_in,0));
-  PdeFunction::ConstPtr b_interfacef(new PyPdeBoundaryFunction(&b_interface,1));
-  PdeFunction::ConstPtr sourcef(new PyPdeFunction(&source));
-  PdeFunction::ConstPtr Dwf(new PyPdeFunction(&Dw));
+  PdeFunction::ConstPtr C0f(new PyPdeBoundaryFunction(C0,3));
+  PdeFunction::ConstPtr b_inf(new PyPdeBoundaryFunction(b_in,0));
+  PdeFunction::ConstPtr b_interfacef(new PyPdeBoundaryFunction(b_interface,1));
+  PdeFunction::ConstPtr sourcef(new PyPdeFunction(source));
+  PdeFunction::ConstPtr Dwf(new PyPdeFunction(Dw));
 
-  if (!check_dimensions(nx,ny,nz,nt,*C0f,*b_inf,*b_interfacef,*sourcef,*Dwf)) {
+  if (!check_dimensions(nx,ny,nz,nt,C0f,b_inf,b_interfacef,sourcef,Dwf)) {
     std::cerr <<"Error in setting up DROPS: Wrong dimensions in inputs!\n";
     abort();
   }
@@ -274,7 +293,7 @@ BOOST_PYTHON_MODULE(drops)
   class_<PyScalarProductConnector>("ScalarProductConnector", "The ScalarProductConnector is an interface for computing the scalar product on a specific domain.", init<int, int, int, int, double, double, double, double, bool>(args("Nx","Ny","Nz","Nt","lx","ly","lz","tmax","h1"), "The constructor takes as arguments the number of grid points and the lengths of each side of the box."))
     .def("scalar_product", &PyScalarProductConnector::numpy_scalar_product);
 
-  /*  class_<PyPdeFunction>("PyPdeFunction", init<numeric::array&>(args("x"), "__init__ docstring"))
-    .def(init<numeric::array&>())
+  /*  class_<PyPdeFunction>("PyPdeFunction", init<numeric::array>(args("x"), "__init__ docstring"))
+    .def(init<numeric::array>())
     .def("at",&PyPdeFunction::at);*/
 }

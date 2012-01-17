@@ -4,20 +4,19 @@
 class PyPdeFunction : public PdeFunction {
 private:
   int nx, ny, nz, nt;
-  boost::python::numeric::array* data;
+  boost::python::numeric::array data;
 public:
 
-  PyPdeFunction(boost::python::numeric::array* data_) : data(data_)
+  PyPdeFunction(boost::python::numeric::array data_) : data(data_)
   {
     using namespace boost::python;
-    tuple t = extract<tuple>(data->attr("shape"));
+    tuple t = extract<tuple>(data.attr("shape"));
     assert(len(t)==4);
     nx = boost::python::extract<int>(t[0]);
     ny = boost::python::extract<int>(t[1]);
     nz = boost::python::extract<int>(t[2]);
     nt = boost::python::extract<int>(t[3]);
   }
-
 
   virtual ~PyPdeFunction(){}
 
@@ -31,24 +30,35 @@ public:
   }
 
   virtual double operator()(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
-    //std::cout << "reading domain function " << ix << ","  << iy << ","  << iz << ","  << it << std::endl;
-    using namespace boost::python;
-    tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>((*data)[t]);
+    return at(ix, iy, iz, it);
   }
 
   double at(int ix, int iy, int iz, int it) const {
-    assert (ix>=0 && ix<nx);
-    assert (iy>=0 && iy<ny);
-    assert (iz>=0 && iz<nz);
-    assert (it>=0 && it<nt);
+    //if (!data) throw PyDropsErr("data is not set!");
+    if (!(ix>=0 && ix<nx)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index ix should be in ["<<0<<","<<nx-1<<"], but is "<<ix<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    if (!(iy>=0 && iy<ny)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index iy should be in ["<<0<<","<<ny-1<<"], but is "<<iy<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    if (!(iz>=0 && iz<nz)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index iz should be in ["<<0<<","<<nz-1<<"], but is "<<iz<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    if (!(it>=0 && it<nt)) {
+      std::stringstream ss;
+      ss<<"Error in PyPdeFunction: Index it should be in ["<<0<<","<<nt-1<<"], but is "<<it<<std::endl;
+      throw (PyDropsErr(ss.str()));
+    }
+    //std::cout << "reading domain function " << ix << ","  << iy << ","  << iz << ","  << it << std::endl;
     using namespace boost::python;
     tuple t = make_tuple<int,int,int,int>(ix,iy,iz,it);
-    return extract<double>((*data)[t]);
+    return extract<double>(data[t]);
   }
 };
 
@@ -56,13 +66,13 @@ class PyPdeBoundaryFunction : public PdeFunction {
 private:
   int dead_dim;
   int nx, ny, nz, nt;
-  boost::python::numeric::array* data;
+  boost::python::numeric::array data;
 public:
-  PyPdeBoundaryFunction(boost::python::numeric::array* data_, int dead_dim_) : dead_dim(dead_dim_), data(data_)
+  PyPdeBoundaryFunction(boost::python::numeric::array data_, int dead_dim_) : dead_dim(dead_dim_), data(data_)
   {
     using namespace boost::python;
     //std::cout << "In PyPdeboundaryfunction" << std::endl;
-    tuple t = extract<tuple>(data->attr("shape"));
+    tuple t = extract<tuple>(data.attr("shape"));
     if (!(len(t)==3)) {
       std::cout << "Length of Boundary function array is not 3 but " << len(t) << std::endl;
       assert(false);
@@ -132,7 +142,7 @@ public:
       assert (iz>=0 && iz<nz);
       t = make_tuple<int,int,int>(ix,iy,iz);
     }
-    return extract<double>((*data)[t]);
+    return extract<double>(data[t]);
   }
 };
 

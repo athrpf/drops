@@ -294,10 +294,11 @@ public:
     Nx_ = nx_ * pow (2, refinesteps_)+1;
     Ny_ = ny_ * pow (2, refinesteps_)+1;
     Nz_ = nz_ * pow (2, refinesteps_)+1;
+    Nt_ = 1;
     Nyz_=Ny_*Nz_; Nxy_=Nx_*Ny_; Nxz_=Nx_*Nz_;
     Nxyz_= Nxy_*Nz_;
     dx_= lx_/(Nx_-1); dy_= ly_/(Ny_-1); dz_= lz_/(Nz_-1);
-    dt_     = P.get<double>("Time.StepSize");
+    dt_     = 1.; // no time steps - but this variable is used in many places
 
     GridFunction::Ptr vg(new VolumeGridFunction(1, dx_, dy_, dz_, dt_, &tetra_map_, false));
     GridFunction::Ptr sg_inlet(new SurfaceGridFunction(1, dx_, dy_, dz_, dt_, &face_map_, 0, false));
@@ -340,23 +341,25 @@ public:
     outfile << "1. Param file\n";
     outfile << (*P) <<std::endl;
     outfile << ll << "\nThe solver failed in time step " << it << " of "<< PyC->Nt_-1 << std::endl;
-    /*
+
     std::stringstream Fstream, C0stream, Binstream, Binterfacestream, Dwstream;
-    for (int ix=0; ix<PyC->Nx_; ++ix)
-      for (int iy=0; iy<PyC->Ny_; ++iy)
-	for (int iz=0; iz<PyC->Nz_; ++iz) {
-	  Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->F_)(ix,iy,iz,it) << std::endl;
-	  C0stream << "C0(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->C0_)(ix,iy,iz,it) << std::endl;
-	  Binstream << "Bin(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->B_in_)(ix,iy,iz,it) << std::endl;
-	  Binterfacestream << "Binter(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->B_Inter_)(ix,iy,iz,it) << std::endl;
-	  Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << (*PyC->Dw_)(ix,iy,iz,it) << std::endl;
-	}
+    if (PyC->GetSource) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
+											      Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetSource->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+																		    if (PyC->GetInitial) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
+																													       C0stream << "C0(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInitial->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetInflow) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
+											      Binstream << "Bin(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInflow->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetInterfaceValue) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
+												      Binterfacestream << "Binter(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInterfaceValue->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetDiffusion) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
+												 Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetDiffusion->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+
     outfile << ll << "\n2. Source term\n" << Fstream.str();
     outfile << ll << "\n3. Initial Value\n" << C0stream.str();
     outfile << ll << "\n4. Inlet BC\n" << Binstream.str();
     outfile << ll << "\n5. Interface BC\n" << Binterfacestream.str();
     outfile << ll << "\n6. Diffusion Coefficient\n" << Dwstream.str();
-    */
+
     outfile.close();
     return filename;
   }
