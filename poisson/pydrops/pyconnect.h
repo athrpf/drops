@@ -343,16 +343,31 @@ public:
     outfile << ll << "\nThe solver failed in time step " << it << " of "<< PyC->Nt_-1 << std::endl;
 
     std::stringstream Fstream, C0stream, Binstream, Binterfacestream, Dwstream;
-    if (PyC->GetSource) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
-											      Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetSource->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
-																		    if (PyC->GetInitial) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
-																													       C0stream << "C0(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInitial->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
-    if (PyC->GetInflow) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
-											      Binstream << "Bin(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInflow->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
-    if (PyC->GetInterfaceValue) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
-												      Binterfacestream << "Binter(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInterfaceValue->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
-    if (PyC->GetDiffusion) for (int ix=0; ix<PyC->Nx_; ++ix) for (int iy=0; iy<PyC->Ny_; ++iy) for (int iz=0; iz<PyC->Nz_; ++iz)
-												 Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetDiffusion->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetSource)
+      for (int ix=0; ix<PyC->Nx_; ++ix)
+	for (int iy=0; iy<PyC->Ny_; ++iy)
+	  for (int iz=0; iz<PyC->Nz_; ++iz)
+	      Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetSource->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetInitial)
+      for (int ix=0; ix<PyC->Nx_; ++ix)
+	for (int iy=0; iy<PyC->Ny_; ++iy)
+	  for (int iz=0; iz<PyC->Nz_; ++iz)
+	    C0stream << "C0(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInitial->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetInflow)
+      for (int ix=0; ix<PyC->Nx_; ++ix)
+	for (int iy=0; iy<PyC->Ny_; ++iy)
+	  for (int iz=0; iz<PyC->Nz_; ++iz)
+	    Binstream << "Bin(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInflow->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetInterfaceValue)
+      for (int ix=0; ix<PyC->Nx_; ++ix)
+	for (int iy=0; iy<PyC->Ny_; ++iy)
+	  for (int iz=0; iz<PyC->Nz_; ++iz)
+	    Binterfacestream << "Binter(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInterfaceValue->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+    if (PyC->GetDiffusion)
+      for (int ix=0; ix<PyC->Nx_; ++ix)
+	for (int iy=0; iy<PyC->Ny_; ++iy)
+	  for (int iz=0; iz<PyC->Nz_; ++iz)
+	    Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetDiffusion->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
 
     outfile << ll << "\n2. Source term\n" << Fstream.str();
     outfile << ll << "\n3. Initial Value\n" << C0stream.str();

@@ -139,7 +139,9 @@ namespace DROPS
         }
       if(solver.GetResid()!=solver.GetResid())
         {
-	  throw (PyDropsErr(PyC, &P, 0, "The residual is NAN"));
+	  std::stringstream ss;
+	  ss << "The linear solver in DROPS did not converge.\nIterations: " << solver.GetIter() << "\nMaxIter: " << solver.GetMaxIter() << std::endl;
+	  throw (PyDropsErr(PyC, &P, 0, ss.str()));
         }
       if (P.get<int>("Poisson.SolutionIsKnown")) {
 	*(PyC->outfile) << line << "Check result against known solution ...\n";
@@ -212,7 +214,9 @@ namespace DROPS
 	  }
 	if(solver.GetResid()!=solver.GetResid())
 	  {
-	    throw (PyDropsErr(PyC, &P, 0, "The residual is NAN"));
+	    std::stringstream ss;
+	    ss << "The linear solver in DROPS did not converge.\nIterations: " << solver.GetIter() << "\nMaxIter: " << solver.GetMaxIter() << std::endl;
+	    throw (PyDropsErr(PyC, &P, 0, ss.str()));
 	  }
 	Poisson.A.Reset();
 	Poisson.b.Reset();
@@ -341,7 +345,9 @@ namespace DROPS
 	      throw (PyDropsErr(PyC, &P, step-1, "The residual is greater than tolerence"));
             }
 	  if(solver->GetResid()!=solver->GetResid()) {
-	     throw (PyDropsErr(PyC, &P, step-1, "The residual is NAN"));
+	    std::stringstream ss;
+	    ss << "The linear solver in DROPS did not converge.\nIterations: " << solver->GetIter() << "\nMaxIter: " << solver->GetMaxIter() << std::endl;
+	    throw (PyDropsErr(PyC, &P, step-1, ss.str()));
 	  }
 	  if (P.get("Poisson.SolutionIsKnown", 0)) {
 	    *(PyC->outfile) << line << "Check result against known solution ...\n";
