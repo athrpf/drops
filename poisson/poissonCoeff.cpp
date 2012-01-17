@@ -25,6 +25,7 @@
 #include "poisson/poissonCoeff.h"
 #include "misc/bndmap.h"
 #include "misc/params.h"
+#include <string>
 
 //========================================================================
 //          Functions for poissonP1.cpp and drops_statP2.cpp
@@ -68,6 +69,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
     static bool first = true;
     static double dx, dy;
     static double Nu, g; // kinematic viscosity, gravitational constant
+    static bool adjoint;
     //dirty hack
     if (first){
         std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
@@ -77,14 +79,20 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy;
         Nu  = P.get<double>("PoissonCoeff.KinematicViscosity");
-	g   = P.get<double>("PoissonCoeff.Gravity"); // this must not be fixed to 9.81 - maybe we use different scalings!!
+	    g   = P.get<double>("PoissonCoeff.Gravity"); // this must not be fixed to 9.81 - maybe we use different scalings!!
+        std::string adstr ("IA1Adjoint");
+        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+        adjoint = (adstr.compare(IAProbstr) == 0);
         first = false;
     }
 
     DROPS::Point3DCL ret;
     const double d= p[1]/dy,
         U= g*dy*dy/2/Nu;  //U=gh^2/(2*nu)
-    ret[0]= U*(2-d)*d;
+    double sgn =1.;
+    if(adjoint)
+        sgn=-1.;
+    ret[0]= sgn*U*(2-d)*d;
     ret[1]=0.;
     ret[2]=0.;
 
