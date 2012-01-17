@@ -379,7 +379,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
           if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
           {
             vA.Data[UnknownIdx[i]]-= coupA[j][i] * bndval;
-            vM.Data[UnknownIdx[i]]-= P1DiscCL::GetMass( i, j)*absdet * bndval;
+            vM.Data[UnknownIdx[i]]-= coupM[j][i] * bndval;//P1DiscCL::GetMass( i, j)*absdet * bndval;
           }
         }
       }
