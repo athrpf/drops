@@ -340,14 +340,20 @@ namespace DROPS
 		    << "   - time          " << timer.GetTime()    << " s\n"
 		    << "   - iterations    " << solver->GetIter()  << '\n'
 		    << "   - residuum      " << solver->GetResid() << '\n';
-	  if(solver->GetResid() > P.get<double>("Poisson.Tol"))
-            {
-	      throw (PyDropsErr(PyC, &P, step-1, "The residual is greater than tolerence"));
-            }
-	  if(solver->GetResid()!=solver->GetResid()) {
+	  if (isnan(solver->GetResid())) {
 	    std::stringstream ss;
-	    ss << "The linear solver in DROPS did not converge.\nIterations: " << solver->GetIter() << "\nMaxIter: " << solver->GetMaxIter() << std::endl;
-	    throw (PyDropsErr(PyC, &P, step-1, ss.str()));
+	    ss << "The residual of the solver is NAN!";
+	    throw(PyDropsErr(PyC, &P, step-1, ss.str()));
+	  }
+	  if (isinf(solver->GetResid())) {
+	    std::stringstream ss;
+	    ss << "The residual of the solver is infinite!";
+	    throw(PyDropsErr(PyC, &P, step-1, ss.str()));
+	  }
+	  if(solver->GetResid() > P.get<double>("Poisson.Tol")) {
+	    std::stringstream ss;
+	    ss << "After " << solver->GetIter() << " iterations, the residual " << solver->GetResid() << " is still greater than the tolerance " << P.get<double>("Poisson.Tol");
+	    throw (PyDropsErr(PyC, &P, step-1, "The residual is greater than tolerence"));
 	  }
 	  if (P.get("Poisson.SolutionIsKnown", 0)) {
 	    *(PyC->outfile) << line << "Check result against known solution ...\n";
