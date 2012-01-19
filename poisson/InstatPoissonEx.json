@@ -71,7 +71,7 @@
     //###################################################
     "DomainCond":
     {
-        "RefineSteps":      5,
+        "RefineSteps":      4,
             //initial refinement: how often is the mesh refined
             // -> Here: four times refinement
         "GeomType":     1,
@@ -118,7 +118,7 @@
     "Time":
     {
         "StepSize":     0.1,   //time step size
-        "NumSteps":     10,    //number of timesteps. -> Here: >0, i.e. instationary setup
+        "NumSteps":     2,    //number of timesteps. -> Here: >0, i.e. instationary setup
         "Scheme":       1,      //time disc. method: 1= theta scheme, 2=fractional step
         "Theta":        1     //For theta scheme: parameter theta
     },
@@ -149,10 +149,10 @@
     //#################################
     "VTK":
     {
-        "VTKOut":       1,              //Use VTK output?
-        "VTKDir":       "vtk",          //local directory for vtk files
-        "VTKName":      "poisson_ex2_", //name of vtk files (filename prefix)
-        "Binary":       0               //write out VTK files in binary format
+        "VTKOut":       1,                   //Use VTK output?
+        "VTKDir":       "vtk",               //local directory for vtk files
+        "VTKName":      "instatpoisson_ex_", //name of vtk files (filename prefix)
+        "Binary":       0                    //write out VTK files in binary format
     }
 
 }

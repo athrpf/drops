@@ -356,13 +356,12 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         // dot-product of the gradients
         coupA[i][j]= inner_prod( G[i], G[j])*int_a;
         // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
+        coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
         if(SUPG)
         {
             Quad2CL<double> StrA(U_Grad[i]*U_Grad[j]);
             //Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
-            
-            coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
+            coupA[i][j]+= StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
             coupM[i][j]+= U_Grad[i].quadP1(j,absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA); //SUPG term
         }
       }
