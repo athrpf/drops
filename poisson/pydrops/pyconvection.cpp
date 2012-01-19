@@ -287,7 +287,7 @@ BOOST_PYTHON_MODULE(drops)
   boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
   def("convection_diffusion", numpy_convection_diffusion);
   def("stationary_cd", numpy_stationary_convection_diffusion);
-  //register_exception_translator<DROPS::DROPSErrCL>(&drops_err_translator);
+  register_exception_translator<DROPS::DROPSErrCL>(&drops_err_translator);
   register_exception_translator<PyDropsErr>(&pydrops_err_translator);
 
   class_<PyScalarProductConnector>("ScalarProductConnector", "The ScalarProductConnector is an interface for computing the scalar product on a specific domain.", init<int, int, int, int, double, double, double, double, bool>(args("Nx","Ny","Nz","Nt","lx","ly","lz","tmax","h1"), "The constructor takes as arguments the number of grid points and the lengths of each side of the box."))

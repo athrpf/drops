@@ -81,7 +81,7 @@ class PoissonCoeffCL
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
         if(P.get<int>("PoissonCoeff.Convection")==0)
             Vel = vecmap["ZeroVel"];
-        else    
+        else
             Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         Ref_=P.get<int>("DomainCond.RefineSteps");
     }
@@ -106,7 +106,10 @@ class PoissonCoeffCL
         Solution = scamap[P.get<std::string>("PoissonCoeff.Solution")];
         InitialCondition = init;
         DROPS::InVecMap & vecmap = DROPS::InVecMap::getInstance();
-        Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
+        if(P.get<int>("PoissonCoeff.Convection", 1)==0)
+            Vel = vecmap["ZeroVel"];
+        else
+            Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         Ref_=P.get<int>("DomainCond.RefineSteps");
     }
 
