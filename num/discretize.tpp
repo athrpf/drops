@@ -350,7 +350,7 @@ template<class T>
 template<class T>
   Quad2CL<T>::Quad2CL(const TetraCL& s,
       instat_fun_ptr f, double t)
-  : base_type( value_type(), Quad5DataCL::NumNodesC)
+  : base_type( value_type(), Quad2DataCL::NumNodesC)
 {
     this->assign( s, f, t);
 }
