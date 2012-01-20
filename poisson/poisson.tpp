@@ -28,26 +28,40 @@
 namespace DROPS
 {
 
-//========================================================
+//========================================================================================================
 //
-//                Set up matrices and rhs in poisson P1 problem
+//                       Set up matrices and right hand side (rhs) in poisson P1 problem
 //
-//========================================================
+//========================================================================================================
 
 
 /// - Setup-System routines
 
 
+/// \brief This function is called by different setup routines in poissonP1 class
+/// Depending on corresponding pointers are NULL or not, this function will decide 
+/// which part of system should be assembled in accumulation way
+//========================================================================================================
+// Explations of part of arguments of SetupPartialSysterm_P1 function
+// MatrixCL* Amat       Stiffness matrix  
+// MatrixCL* Mmat       mass matrix
+// MatrixCL* Umat       convection matrix
+// VecDescCL* cplA      boundary coupling term corresponding to Amat
+// VecDescCL* cplM      boundary coupling term corresponding to Mmat
+// VecDescCL* cplU      boundary coupling term corresponding to Umat
+// VecDescCL* f         Source functions
+// SUPGCL& supg         SUPG stabilization 
+// bool adjoint         Adjoint problem flag        
+//========================================================================================================
 template<class Coeff>
 void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat, MatrixCL* Mmat, 
                           MatrixCL* Umat, VecDescCL* cplA, VecDescCL* cplM, VecDescCL* cplU, VecDescCL* f, 
                           const BndDataCL<> * BndData_,
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg, bool adjoint)
-/// Sets up the stiffness matrix and the mass matrix for instationary problem
 {
     //Create tuple
     TetraAccumulatorTupleCL accus;
-    
+    //Accumulators
     StiffnessAccumulator_P1CL<Coeff,Quad5CL> * accua = 0;
     MassAccumulator_P1CL<Coeff,Quad5CL> * accum = 0;
     ConvectionAccumulator_P1CL<Coeff,Quad3CL> * accuc = 0;
@@ -95,7 +109,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t) const
-///Go throught every multigrid level to Setup system in P1
+///Go throught every multigrid level to Setup left hand side of instationary system in P1
 {
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
@@ -106,7 +120,7 @@ void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
-///Go throught every multigrid level to setup convection
+///Go throught every multigrid level to setup convection 
 {
     MLMatrixCL::iterator  itU    = matU.Data.begin();
     MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
@@ -118,6 +132,7 @@ void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, doub
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double) const
+///Setup right hand side of instationary system in P1 only last level
 {
   SetupPartialSystem_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg_,false);
 }
@@ -206,72 +221,11 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
 }
 
 
-//===================================================
+//=======================================================================================================
 //
-//   check computed solution, estimate error etc.
+//            check computed solution, estimate error etc. in poisson P1 problem
 //
-//===================================================
-
-template<class Coeff>
-double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun_ptr Lsg) const
-{
-    double diff, maxdiff=0, norm2= 0, L2=0;
-    Uint lvl=lsg.GetLevel(),
-         Idx=lsg.RowIdx->GetIdx();
-
-    const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
-
-    std::cout << "Difference to exact solution:" << std::endl;
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        double absdet= sit->GetVolume()*6.,
-            sum= 0;
-        for(Uint i=0; i<4; ++i)
-        {
-            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord(), 0.0));
-            sum+= diff*diff;
-        }
-        sum/= 120;
-        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter( *sit), 0.0);
-        sum+= 2./15. * diff*diff;
-        L2+= sum*absdet;
-    }
-#ifdef _PAR
-    L2= ProcCL::GlobalSum(L2);
-#endif
-    L2= std::sqrt(L2);
-
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (sit->Unknowns.Exist(Idx))
-        {
-           diff= std::fabs( Lsg( sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
-           norm2+= diff*diff;
-           if (diff>maxdiff)
-           {
-               maxdiff= diff;
-           }
-        }
-    }
-
-    int Lsize = lsg.Data.size();
-#ifdef _PAR
-    Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(MG_);
-    norm2   = ProcCL::GlobalSum(norm2, Drops_MasterC);
-    maxdiff = ProcCL::GlobalMax(maxdiff, Drops_MasterC);
-#endif
-
-    std::cout << "  2-Norm= " << std::sqrt(norm2)
-              << "\nw-2-Norm= " << std::sqrt(norm2/Lsize)
-              << "\nmax-Norm= " << maxdiff
-              << "\n L2-Norm= " << L2 << std::endl;
-
-    return L2;
-}
-
+//========================================================================================================
 template <class Coeff>
 double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   instat_scalar_fun_ptr Lsg, double t) const
@@ -339,6 +293,11 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   return L2;
 }
 
+//=======================================================================================================
+//
+//            error estimation in poisson P1 problem
+//
+//========================================================================================================
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::GetDiscError(const MLMatDescCL& A, instat_scalar_fun_ptr Lsg) const
@@ -579,7 +538,12 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
     return 4.*cc_radius*cc_radius*_err;
 }
 
-// PoissonP2CL
+//=======================================================================================================
+//
+//            Local quadrature functions in poisson P2 problem
+//            To do: replace them
+//
+//========================================================================================================
 
 // Copy of functions GetGradientsOnRef, MakeGradients,
 // Quad(t,sf,i,j), Quad(t,sf,i)(new!!!) and QuadGrad (for P2P1)
@@ -751,6 +715,13 @@ inline double QuadGrad(const SMatrixCL<3,5>* G, int i, int j)
 
     return ( tmp[0] + tmp[1] + tmp[2] + tmp[3] )/120. + 2./15.*tmp[4];
 }
+
+
+//=======================================================================================================
+//
+//            Setup matrices and right hand side in poisson P2 problem
+//
+//========================================================================================================
 
 
 template<class Coeff>
@@ -1167,63 +1138,6 @@ void PoissonP2CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
 }
 
 /// \todo CheckSolution checks 2-norm and max-norm just on vertices and not on edges
-template<class Coeff>
-double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun_ptr Lsg) const
-{
-    double diff, maxdiff=0, norm2= 0, L2=0;
-    Uint lvl=lsg.GetLevel(),
-         Idx=lsg.RowIdx->GetIdx();
-
-    const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
-
-    std::cout << "Difference to exact solution" << std::endl;
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
-        double absdet= sit->GetVolume()*6.,
-            sum= 0;
-        for(Uint i=0; i<4; ++i)
-        {
-            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord(), 0.0));
-            sum+= diff*diff;
-        }
-        sum/= 120;
-        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter(*sit), 0.0);
-        sum+= 2./15. * diff*diff;
-        L2+= sum*absdet;
-    }
-
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (sit->Unknowns.Exist(Idx))
-        {
-           diff= std::fabs( Lsg(sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
-           norm2+= diff*diff;
-           if (diff>maxdiff)
-           {
-               maxdiff= diff;
-           }
-        }
-    }
-
-    size_t dataSize= lsg.Data.size();
-#ifdef _PAR
-    // not completely correct, but nearly ...
-    norm2= ProcCL::GlobalSum(norm2);
-    maxdiff= ProcCL::GlobalMax(maxdiff);
-    L2= ProcCL::GlobalSum(L2);
-    dataSize= ProcCL::GlobalSum(dataSize);
-#endif
-
-    std::cout << "  2-Norm= " << std::sqrt(norm2)          << std::endl
-              << "w-2-Norm= " << std::sqrt(norm2/dataSize) << std::endl
-              << "max-Norm= " << maxdiff                   << std::endl
-              << " L2-Norm= " << std::sqrt(L2)             << std::endl;
-    return L2;
-}
-
 template <class Coeff>
 double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun_ptr Lsg, double t) const
 {
@@ -1303,11 +1217,11 @@ void PoissonP2CL<Coeff>::SetNumLvl( size_t n)
     A.Data.resize( idx.size());
 }
 
-//============================================================================
+//========================================================================================================
 //
-//                      Marker classes for adaptive refinement
+//                           Marker classes for adaptive refinement
 //
-//============================================================================
+//========================================================================================================
 
 
 template <class _TetraEst, class _ProblemCL>

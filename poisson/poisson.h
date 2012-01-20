@@ -194,10 +194,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
     /// \brief check computed solution etc.
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double t=0.) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg, double t=0.) const { return CheckSolution(x, Lsg, t); }
 
     void GetDiscError   ( const MLMatDescCL&, instat_scalar_fun_ptr) const;
     void GetDiscError   ( scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
@@ -266,11 +264,8 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
     // check computed solution, etc.
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-    
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double t=0.) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg, double t=0.) const { return CheckSolution(x, Lsg, t); }
 
     DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
