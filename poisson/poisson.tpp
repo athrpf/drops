@@ -56,7 +56,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 
 
 template<class Coeff>
-void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, 
+void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b,
                    IdxDescCL& RowIdx, IdxDescCL& ColIdx, bool SUPG, bool GradProb)
 // Sets up the stiffness matrix and right hand side
 {
@@ -88,7 +88,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
             quad_a.assign( *sit, Coeff_.alpha, 0.0);                  //for variable diffusion coefficient
             const double int_a= quad_a.quad( absdet);
             if(SUPG)
-            {    
+            {
                 Quad2CL<Point3DCL> u(*sit,Coeff::Vel,0.);
                 for(int i=0; i<4; ++i)
                     U_Grad[i]=dot( u, Quad2CL<Point3DCL>( G[i]));
@@ -252,7 +252,7 @@ void PoissonP1CL<Coeff>::SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, 
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-  const double int_vi= 1./24; //1/120+1/4*2/15             NOT SO GOOD 
+  const double int_vi= 1./24; //1/120+1/4*2/15             NOT SO GOOD
 
 //
 
@@ -318,7 +318,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
   Quad2CL<>  rhs;
-  
+
   double coupM[4][4];
   Quad2CL<> U_Grad[4];
   //LocalP1CL<double> phi[4];
@@ -332,6 +332,8 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 
 //  if (Coeff_.SpecialRhs)
 //      Coeff_.ComputeRhs( vf, tf, MG_);
+
+  double tmp;
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
@@ -348,6 +350,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         Quad2CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
         for(int i=0; i<4; i++)
             U_Grad[i]=dot(u, Quad2CL<Point3DCL>(G[i]));
+	tmp = Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);
     }
     for(int i=0; i<4; ++i)
     {
@@ -361,8 +364,8 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         {
             Quad2CL<double> StrA(U_Grad[i]*U_Grad[j]);
             //Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+= StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);  //SUPG term
-            coupM[i][j]+= U_Grad[i].quadP1(j,absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA); //SUPG term
+            coupA[i][j]+= StrA.quad(absdet)*tmp;  //SUPG term
+            coupM[i][j]+= U_Grad[i].quadP1(j,absdet)*tmp; //SUPG term
         }
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
@@ -404,7 +407,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
   }
 }
 template<class Coeff>
-void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat, 
+void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat,
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool SUPG)
 /// Sets up the stiffness matrix and the mass matrix
 {
@@ -419,7 +422,7 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
   double coupA[4][4];
   double det;
   double absdet;
-  
+
   double coupM[4][4];
   Quad2CL<> U_Grad[4];
 /*  LocalP1CL<double> phi[4];
@@ -428,9 +431,10 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
       phi[i][i]=1.;
   }
   Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};*/
-  
+
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
+  double tmp;
 
       for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
         sit != send; ++sit)
@@ -441,12 +445,12 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
 
         quad_a.assign( *sit, Coeff_.alpha, t);
         const double int_a= quad_a.quad( absdet);
-        
         if(SUPG)
         {
-            Quad2CL<Point3DCL> u(*sit, Coeff_.Vel, t);
+	  Quad2CL<Point3DCL> u(*sit, Coeff_.Vel, t);
             for(int i=0; i<4; i++)
                 U_Grad[i]=dot(u, Quad2CL<Point3DCL>(G[i]));
+	    tmp = Coeff_.Sta_Coeff(GetBaryCenter(*sit),t);
         }
         for(int i=0; i<4; ++i)
         {
@@ -460,11 +464,11 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
             {
             Quad2CL<double> StrA(U_Grad[i]*U_Grad[j]);
             //Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),t);  //SUPG term
-            coupM[i][j]+= U_Grad[i].quadP1(j, absdet)*Coeff_.Sta_Coeff(GetBaryCenter(*sit),t); //SUPG term
+            coupA[i][j]+=StrA.quad(absdet)*tmp;  //SUPG term
+            coupM[i][j]+= U_Grad[i].quadP1(j, absdet)*tmp; //SUPG term
             }
           }
-          UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;      
+          UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
         }
 
         for(int i=0; i<4; ++i)    // assemble row i
@@ -481,10 +485,10 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
             }
           }
       }
-      
+
   A.Build();
   M.Build();
-      
+
 }
 
 template<class Coeff>
@@ -513,7 +517,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-  
+
   LocalP1CL<double> phi[4];
   for (int i =0; i < 4; i++){
     phi[i][i]=1;
@@ -521,7 +525,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
   Quad3CL<> phiq3[4] = {
       phi[0], phi[1], phi[2] ,phi[3]
   };
-      
+
   for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl); sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
@@ -544,7 +548,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
               if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
               {
                 const Quad3CL<double> resq3( phiq3[i] * u_Gradj);
-                double res = resq3.quad(absdet);                  
+                double res = resq3.quad(absdet);
                 U( UnknownIdx[i], UnknownIdx[j])+= res;// u_Gradj.quadP1( i, absdet);
               }
           }
@@ -555,9 +559,9 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
                   for(int i=0; i<4; ++i)    // assemble row i
                   if (UnknownIdx[i] != NoIdx){  // vertex i is not on a Dirichlet boundary
                       const Quad3CL<double> resq3( phiq3[i] * u_Gradj);
-                      double res = resq3.quad(absdet);                  
+                      double res = resq3.quad(absdet);
                       vU->Data[ UnknownIdx[i]]-= res/*u_Gradj.quadP1( i, absdet) */* bndval;
-                      
+
                   }
               }
         }
@@ -573,7 +577,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
           for(int j=0; j<4; ++j)
           {
             const Quad3CL<double> resq3( phiq3[j] * u_Gradi);
-            double res = -resq3.quad(absdet);       //the sign is changed here  
+            double res = -resq3.quad(absdet);       //the sign is changed here
             //const double coupl= u_Gradi.quadP1( j, absdet);
             if (UnknownIdx[j] != NoIdx)  // vertex j is not on a Dirichlet boundary
               U( UnknownIdx[i], UnknownIdx[j])+= res;
@@ -1131,7 +1135,7 @@ inline double QuadP2( const TetraCL& sit, Uint face, const BndDataCL<>& BndData_
         BaryCoordCL BaryC_face[3];
         // std::memset( BaryC_face, 0, 3*sizeof( BaryCoordCL));
         const VertexCL* v[3];
-        for (Uint n= 0; n < 3; ++n) 
+        for (Uint n= 0; n < 3; ++n)
         v[n]= sit.GetVertex( VertOfFace( face, n));
         for(int i=0;i<3;i++)
         {
@@ -1143,7 +1147,7 @@ inline double QuadP2( const TetraCL& sit, Uint face, const BndDataCL<>& BndData_
         P2[m].assign(p2[m], BaryC_face);
         bnd.assign(sit, BaryC_face, BndData_.GetBndFun(sit.GetBndIdx(face)));
         const double absdet_face=FuncDet2D(v[1]->GetCoord()-v[0]->GetCoord(),
-                                           v[2]->GetCoord()-v[0]->GetCoord());  
+                                           v[2]->GetCoord()-v[0]->GetCoord());
         NeumannBnd=Quad5_2DCL<>(bnd*P2[m]).quad(absdet_face);
         return NeumannBnd;
 }
@@ -1251,7 +1255,7 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndD
                       int n=i<4? 3:2;  //Three faces for a vertex and two faces for a point on the edge;
                       for (int f=0; f < n; ++f)
                         {
-                         face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);  
+                         face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
                          if ( sit->IsBndSeg(face))
                             {
                              b->Data[Numb[i]]+=QuadP2(*sit, face, BndData_, i);
@@ -1282,36 +1286,36 @@ void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG)
 
 //Set up P2-convection
 template<class Coeff>
-void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Umat, 
+void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Umat,
                         VecDescCL* vU, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double tU)
 {
   if(vU!=0) vU->Clear(tU);
   MatrixBuilderCL U(&Umat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
-  
+
   const Uint lvl=RowIdx.TriangLevel();
   const Uint idx=RowIdx.GetIdx();
-  
+
   IdxT Numb[10];
   bool IsOnDirBnd[10];
-  
+
  // Quad3CL<Point3DCL> u;
   LocalP1CL<Point3DCL> Grad[10], GradRef[10];
   SMatrixCL<3,3> T;
   double det;
   double absdet;
   double tmp; //tell the vert points and the edge points
-  
 
-  
+
+
   for(MultiGridCL::const_TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
       sit!=send; ++sit)
   {
       GetTrafoTr(T, det, *sit);
       absdet=std::fabs(det);
-  
+
       P2DiscCL::GetGradientsOnRef(GradRef);
       P2DiscCL::GetGradients(Grad, GradRef, T);
-       
+
       Quad3CL<Point3DCL> u(*sit,Coeff_.Vel,tU);
       for(int i=0; i<4; ++i)
         {
@@ -1354,7 +1358,7 @@ void SetupConvection_P2(const MultiGridCL& MG_, const Coeff& Coeff_, const BndDa
                 }
               }
         }
-    
+
   }
   U.Build();
 }
@@ -1366,7 +1370,7 @@ void PoissonP2CL<Coeff>::SetupConvection(MLMatDescCL& matU, VecDescCL& vU, doubl
   MLMatrixCL ::iterator itU  = matU.Data.begin();
   MLIdxDescCL::iterator itRow= matU.RowIdx->begin();
   MLIdxDescCL::iterator itCol= matU.ColIdx->begin();
-  
+
   for (size_t lvl=0; lvl < matU.Data.size(); ++lvl, ++itRow, ++itCol, ++itU)
      {
      SetupConvection_P2(MG_, Coeff_, BndData_, *itU, (lvl==matU.Data.size()-1) ? &vU:0, *itRow, *itCol, tU);
@@ -1381,7 +1385,7 @@ void PoissonP2CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, doubl
          idx= vec.RowIdx->GetIdx();
 
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), 
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl),
         send= const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl); sit != send; ++sit)  //Vertices
     {
         if (sit->Unknowns.Exist(idx))
@@ -1389,7 +1393,7 @@ void PoissonP2CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, doubl
             vec.Data[sit->Unknowns(idx)]= func( sit->GetCoord(), t0);
         }
     }
-    
+
     for (MultiGridCL::const_TriangEdgeIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangEdgeBegin(lvl),
         send= const_cast<const MultiGridCL&>(MG_).GetTriangEdgeEnd(lvl); sit!=send; ++sit)      //Edges
     {
@@ -1408,10 +1412,10 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
   vA.Clear(tA);
   vM.Clear(tA);
   vf.Clear(tf);
-  
+
   const Uint lvl = vA.GetLevel(),
              idx = vA.RowIdx->GetIdx();
-             
+
   Comment("InstatPoissonP2CL::SetupInstatRhs with Index"<<idx<<std::endl, DebugNumericC);
   Quad2CL<> rhs;
   IdxT Numb[10];
@@ -1422,17 +1426,17 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
   SMatrixCL<3, 3> T;
   double coup[10][10];
   double det, absdet;
-        
+
     //fill value part of matrices
     GetGradientsOnRef(GradRef);
-    for(MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), 
+    for(MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
                             send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
-     
+
         GetTrafoTr(T, det, *sit);
         MakeGradients(Grad, GradRef, T);
         absdet = std:: fabs(det);
-        
+
         //collet some information about the edges and verts of the tetra and save it in the Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
         {
@@ -1472,7 +1476,7 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         //rhs.assign(*sit, Coeff_.f, tf);
 
         for(int i=0; i<10;++i)
-        {    
+        {
             if(!IsOnDirBnd[i])
             {
                 double valf;
@@ -1486,14 +1490,14 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
               int n=i<4? 3:2;  //Three faces for a vertex and two faces for a point on the edge;
               for (int f=0; f < n; ++f)
                 {
-                 face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);  
+                 face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
                  if ( sit->IsBndSeg(face))
                     {
                      vA.Data[Numb[i]]+=QuadP2(*sit, face, BndData_, i);
                     }
                 }
             }
-            
+
         }
     }
 }
@@ -1501,15 +1505,15 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 template<class Coeff>
 void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 { //Setup stiffness and mass matrices
-    
+
     const Uint lvl = RowIdx.TriangLevel(),
                idx = RowIdx.GetIdx();
     MatrixBuilderCL A(&Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
     MatrixBuilderCL M(&Mmat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
-    
+
     IdxT Numb[10];
     bool IsOnDirBnd[10];
-    
+
 #ifndef _PAR
  std::cout<< "entering SetupInstatSystem: " << ColIdx.NumUnknowns()<< " unknowns,"<<std::endl;
 #endif
@@ -1519,12 +1523,12 @@ void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<
     SMatrixCL<3, 3> T;
     double coup[10][10];
     double det, absdet;
-    
+
     GetGradientsOnRef(GradRef);
     for(MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
     sit != send; ++sit)
     {
-        
+
         GetTrafoTr(T,det, *sit);
         MakeGradients(Grad, GradRef, T);
         absdet = std:: fabs(det);
@@ -1558,7 +1562,7 @@ void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<
                         M(Numb[i], Numb[j])+=P2DiscCL::GetMass(i, j)*absdet;
                     }
                 }
-                
+
     }
 #ifndef _PAR
     std::cout<< "done: value part fill"<<std::endl;
