@@ -80,6 +80,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
     //}
     //Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
     Quad2CL<> quad_a;
+    double tmp;   //used to store stabilization parameter
         for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
              sit != send; ++sit)
         {
@@ -92,6 +93,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
                 Quad2CL<Point3DCL> u(*sit,Coeff::Vel,0.);
                 for(int i=0; i<4; ++i)
                     U_Grad[i]=dot( u, Quad2CL<Point3DCL>( G[i]));
+                tmp = Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
             }
             for(int i=0; i<4; ++i)
             {
@@ -108,7 +110,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
                     if(SUPG)
                     {
                         Quad2CL<double> res3( U_Grad[i] * U_Grad[j]);
-                        coup[i][j]+= res3.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                        coup[i][j]+= res3.quad(absdet)*tmp;
                     }
                 }
                 UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
@@ -135,7 +137,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
                         b->Data[UnknownIdx[i]]+= rhs.quadP1(i,absdet);
                         if (SUPG) {
                             Quad2CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
-                            b->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                            b->Data[UnknownIdx[i]]+= f_SD.quad(absdet)* tmp;
                         }
                         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
                             for (int f=0; f < 3; ++f)
@@ -321,19 +323,8 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 
   double coupM[4][4];
   Quad2CL<> U_Grad[4];
-  //LocalP1CL<double> phi[4];
-  //for(int i=0; i<4; i++)
-  //{
-  //    phi[i][i]=1.;
-  //}
-  //Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
 
-//  StripTimeCL strip( &Coeff::f, tf);
-
-//  if (Coeff_.SpecialRhs)
-//      Coeff_.ComputeRhs( vf, tf, MG_);
-
-  double tmp;
+  double tmp;   //used for store stabilization parameter
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
@@ -350,7 +341,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         Quad2CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
         for(int i=0; i<4; i++)
             U_Grad[i]=dot(u, Quad2CL<Point3DCL>(G[i]));
-	tmp = Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);
+        tmp = Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);
     }
     for(int i=0; i<4; ++i)
     {
@@ -387,7 +378,10 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
       }
 
     rhs.assign( *sit, Coeff_.f, tf);
+    if (SUPG)
+        tmp = Coeff_.Sta_Coeff( GetBaryCenter(*sit), tf );   //tf maybe not equal to tA
     for(int i=0; i<4;++i)    // assemble row i
+    {
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
       {
 //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
@@ -395,15 +389,16 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         //Quad5CL<double> fp1(rhs*phiq5[i]);
         vf.Data[UnknownIdx[i]]+= rhs.quadP1(i,absdet);
         if (SUPG) {
-            Quad2CL<double> f_SD( rhs*U_Grad[i] );    //SUPG term
-            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*Coeff_.Sta_Coeff( GetBaryCenter(*sit), tf );
+            Quad2CL<double> f_SD( rhs*U_Grad[i] );       
+            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*tmp;   //SUPG term
         }
         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
               vA.Data[UnknownIdx[i]]+=
                 Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
-      }
+      }      
+    }
   }
 }
 template<class Coeff>
@@ -434,7 +429,7 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
 
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
-  double tmp;
+  double tmp;     //used for store stabilization parameter
 
       for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
         sit != send; ++sit)
