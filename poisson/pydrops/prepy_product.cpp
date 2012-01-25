@@ -35,7 +35,7 @@
 
 // include problem class
 #include "misc/params.h"
-#include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
+//#include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "num/bndData.h"
 
@@ -63,10 +63,29 @@
 
 using namespace std;
 
-typedef DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > PoissonProblem;
-typedef boost::shared_ptr<PoissonProblem> PoissonProblemPtr;
 
 using namespace boost::python;
+
+DROPS::Point3DCL ZeroVec(const DROPS::Point3DCL&, double){
+  return DROPS::Point3DCL(0.);
+}
+
+class PyScalarProductCoeff {
+public:
+  PyScalarProductCoeff()
+    : q(&Zero), alpha(&Zero), f(&Zero), Sta_Coeff(&Zero), Vel(&ZeroVec)
+  {}
+
+  DROPS::instat_scalar_fun_ptr q;
+  DROPS::instat_scalar_fun_ptr alpha;
+  DROPS::instat_scalar_fun_ptr f;
+  DROPS::instat_scalar_fun_ptr Sta_Coeff;
+  DROPS::instat_vector_fun_ptr Vel;
+
+};
+
+typedef DROPS::PoissonP1CL<PyScalarProductCoeff > PoissonProblem;
+typedef boost::shared_ptr<PoissonProblem> PoissonProblemPtr;
 
 class PyScalarProductConnector {
 public:
@@ -99,8 +118,8 @@ private:
   double dx, dy, dz, dt;
   bool h1;
   PoissonProblemPtr prob;
+  PyScalarProductCoeff coeff;
 };
-
 
 namespace DROPS {
   void ScalarProductSetup( PoissonProblem& Poisson, ParamCL& P)
@@ -164,7 +183,7 @@ void PyScalarProductConnector::setup_sp_matrices()
       DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs); // here, bdata is allocated, and we own it!
 
       // Setup the problem
-      prob = PoissonProblemPtr(new PoissonProblem( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata));
+      prob = PoissonProblemPtr(new PoissonProblem( *mg, coeff, *bdata));
       ScalarProductSetup(*prob, P);
 
       delete bdata;

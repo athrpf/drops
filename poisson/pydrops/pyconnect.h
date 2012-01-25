@@ -26,6 +26,7 @@
 
 #include "misc/container.h"
 #include "geom/multigrid.h"
+#include "num/discretize.h"
 #include "pdefunction.h"
 
 #include <fstream>
@@ -35,6 +36,82 @@
 #include <math.h>
 
 #include <boost/shared_ptr.hpp>
+
+double Zero(const DROPS::Point3DCL&, double) {return 0.;}
+
+
+/// \brief Nusselt velocity profile for flat film
+class Nusselt {
+public:
+  Nusselt(const DROPS::ParamCL &P) {
+
+    std::string mesh( P.get<std::string>("DomainCond.MeshFile")), delim("x@");
+    size_t idx_;
+    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+      mesh[idx_]= ' ';
+    std::istringstream brick_info( mesh);
+    brick_info >> dx >> dy;
+    Nu  = P.get<double>("PoissonCoeff.KinematicViscosity");
+    g   = P.get<double>("PoissonCoeff.Gravity"); // this must not be fixed to 9.81 - maybe we use different scalings!!
+    std::string adstr ("IA1Adjoint");
+    std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+    adjoint = (adstr.compare(IAProbstr) == 0);
+  }
+  DROPS::Point3DCL operator()(const DROPS::Point3DCL& p, double)
+  {
+    DROPS::Point3DCL ret;
+    const double d= p[1]/dy,
+      U= g*dy*dy/2/Nu;  //U=gh^2/(2*nu)
+    double sgn =1.;
+    if(adjoint)
+      sgn=-1.;
+    ret[0]= sgn*U*(2-d)*d;
+    ret[1]=0.;
+    ret[2]=0.;
+
+    return ret;
+  }
+private:
+  Nusselt();
+
+  double dx, dy, Nu, g;
+  bool adjoint;
+};
+
+class Stability_Coefficient {
+public:
+  Stability_Coefficient(int nx_, double dx_, DROPS::instat_scalar_fun_ptr alpha_, DROPS::instat_vector_fun_ptr Vel_)
+    :
+    nx(nx_), dx(dx_), alpha(alpha_), Vel(Vel_)
+  { }
+
+  double operator()(const DROPS::Point3DCL& p, double t)
+  {//Stabilization coefficient
+    double h  =h_Value();
+    double Pec=0.;
+    double velnorm = Vel(p,t).norm();
+    Pec= velnorm*h/(2.*alpha(p, t));  //compute mesh Peclet number
+    if (Pec<=1)
+      return 0.0;
+    else
+      return h/(2.*velnorm)*(1.-1./Pec);
+  }
+
+private:
+  Stability_Coefficient();
+  double dx;
+  int nx;
+
+  //Only used for flat film case
+  double h_Value()
+  {//mesh size in flow direction
+    double h=dx/(nx);
+    return h;
+  }
+
+  DROPS::instat_scalar_fun_ptr alpha;
+  DROPS::instat_vector_fun_ptr Vel;
+};
 
 /// holds the Python input matrices and Python output parameters
 class PythonConnectCL
@@ -196,13 +273,20 @@ public:
     *outfile<<"END DUMP TETRA MAP"<<std::endl;
   }
 
-  DropsFunction::Ptr GetDiffusion;
+  DropsFunction::Ptr pyalpha;
   DropsFunction::Ptr GetInitial;
-  DropsFunction::Ptr GetSource;
+  DropsFunction::Ptr pyf;
   DropsFunction::Ptr GetInterfaceValue; // never barycentric
   DropsFunction::Ptr GetInflow; // never barycentric
   DropsFunction::Ptr GetDelPsi;
   DropsFunction::Ptr GetPresol;
+
+  DROPS::instat_scalar_fun_ptr alpha;
+  DROPS::instat_scalar_fun_ptr f;
+  DROPS::instat_scalar_fun_ptr q;
+  DROPS::instat_scalar_fun_ptr Sta_Coeff;
+  DROPS::instat_vector_fun_ptr Vel;
+
 
   template<class P1EvalT>
     void SetSol3D( const P1EvalT& sol, double t)  //Instationary problem
@@ -268,9 +352,15 @@ public:
 
     GetInitial = DropsFunction::Ptr(new DropsFunction(C0, vg, 4));
     GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
-    GetSource = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
-    GetDiffusion = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
+    pyf = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
+    f = *pyf;
+    pyalpha = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
+    alpha = *pyalpha;
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
+
+    Vel = Nusselt(P);
+    q = &Zero;
+    Sta_Coeff = Stability_Coefficient(nx_, dx_, alpha, Vel);
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
@@ -306,10 +396,12 @@ public:
 
     GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
-    GetSource = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
+    pyf = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
+    f = *pyf;
     GetPresol = DropsFunction::Ptr(new DropsFunction(presol, vg, 4));
     GetDelPsi = DropsFunction::Ptr(new DropsFunction(DelPsi, vg, 4));
-    GetDiffusion = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
+    pyalpha = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
+    alpha = *pyalpha;
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
@@ -343,11 +435,11 @@ public:
     outfile << ll << "\nThe solver failed in time step " << it << " of "<< PyC->Nt_-1 << std::endl;
 
     std::stringstream Fstream, C0stream, Binstream, Binterfacestream, Dwstream;
-    if (PyC->GetSource)
+    if (PyC->pyf)
       for (int ix=0; ix<PyC->Nx_; ++ix)
 	for (int iy=0; iy<PyC->Ny_; ++iy)
 	  for (int iz=0; iz<PyC->Nz_; ++iz)
-	      Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetSource->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+	      Fstream << "F(" << ix << ","<<iy<<","<<iz<<") = " << PyC->pyf->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
     if (PyC->GetInitial)
       for (int ix=0; ix<PyC->Nx_; ++ix)
 	for (int iy=0; iy<PyC->Ny_; ++iy)
@@ -363,11 +455,11 @@ public:
 	for (int iy=0; iy<PyC->Ny_; ++iy)
 	  for (int iz=0; iz<PyC->Nz_; ++iz)
 	    Binterfacestream << "Binter(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetInterfaceValue->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
-    if (PyC->GetDiffusion)
+    if (PyC->pyalpha)
       for (int ix=0; ix<PyC->Nx_; ++ix)
 	for (int iy=0; iy<PyC->Ny_; ++iy)
 	  for (int iz=0; iz<PyC->Nz_; ++iz)
-	    Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << PyC->GetDiffusion->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
+	    Dwstream << "Dw(" << ix << ","<<iy<<","<<iz<<") = " << PyC->pyalpha->get_pdefunction()->operator()(ix,iy,iz,it) << std::endl;
 
     outfile << ll << "\n2. Source term\n" << Fstream.str();
     outfile << ll << "\n3. Initial Value\n" << C0stream.str();

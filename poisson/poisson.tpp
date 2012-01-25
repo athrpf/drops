@@ -90,10 +90,10 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
             const double int_a= quad_a.quad( absdet);
             if(SUPG)
             {
-                Quad2CL<Point3DCL> u(*sit,Coeff::Vel,0.);
+                Quad2CL<Point3DCL> u(*sit,Coeff_.Vel,0.);
                 for(int i=0; i<4; ++i)
                     U_Grad[i]=dot( u, Quad2CL<Point3DCL>( G[i]));
-                tmp = Coeff::Sta_Coeff( GetBaryCenter(*sit), 0. );
+                tmp = Coeff_.Sta_Coeff( GetBaryCenter(*sit), 0. );
             }
             for(int i=0; i<4; ++i)
             {
@@ -102,7 +102,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
                     // dot-product of the gradients
 
                     coup[i][j] = inner_prod( G[i], G[j])*int_a; //diffusion
-                    coup[i][j]+= P1DiscCL::Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
+                    coup[i][j]+= P1DiscCL::Quad(*sit, Coeff_.q, i, j, 0.0)*absdet;  //reaction
                     //for IA2,gradient problem
                     if(GradProb)
                     coup[i][j]+= P1DiscCL::GetMass(i,j)*absdet;
@@ -116,7 +116,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
                 UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
                                                                       : NoIdx;
             }
-            rhs.assign( *sit, Coeff::f, 0.);
+            rhs.assign( *sit, Coeff_.f, 0.);
             for(int i=0; i<4; ++i)    // assemble row i
                 if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
                 {
@@ -349,7 +349,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
       {
         // dot-product of the gradients
         coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-        // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
+        // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff_.q, i, j)*absdet;
         coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
         if(SUPG)
         {
@@ -389,7 +389,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         //Quad5CL<double> fp1(rhs*phiq5[i]);
         vf.Data[UnknownIdx[i]]+= rhs.quadP1(i,absdet);
         if (SUPG) {
-            Quad2CL<double> f_SD( rhs*U_Grad[i] );       
+            Quad2CL<double> f_SD( rhs*U_Grad[i] );
             vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*tmp;   //SUPG term
         }
         if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
@@ -397,7 +397,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
               vA.Data[UnknownIdx[i]]+=
                 Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
-      }      
+      }
     }
   }
 }
@@ -453,7 +453,7 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
           {
             // dot-product of the gradients
             coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-            // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
+            // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff_.q, i, j)*absdet;
             coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
             if(SUPG)
             {
@@ -809,7 +809,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
     return num_ref || num_un_ref;
 }
 
-
+/*
 template<class Coeff>
 double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
 // Based on R. Verfuerth, "A review of a posteriori error estimation and adaptive
@@ -830,7 +830,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
     const double absdet= std::fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
-    const double P0f= Quad3PosWeightsCL::Quad(t, CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
+    const double P0f= Quad3PosWeightsCL::Quad(t, Coeff_.f, 0.0)*6.; // absdet/vol = 6.
     _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
 
     // Integrals over boundary - distinguish between inner-boundary and domain-boundary
@@ -892,7 +892,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-            _err+= /* 0.5 * 2.* */cc_rad_Face * jump*jump * absdet2D/2.;
+            _err+= /* 0.5 * 2.*       cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
     return _err;
@@ -981,12 +981,12 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-            _err+= /* 0.5 * 2.* */cc_rad_Face * jump*jump * absdet2D/2.;
+            _err+= /* 0.5 * 2.* cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
     return 4.*cc_radius*cc_radius*_err;
 }
-
+*/
 // PoissonP2CL
 
 // Copy of functions GetGradientsOnRef, MakeGradients,
@@ -1162,7 +1162,7 @@ inline double QuadGrad(const SMatrixCL<3,5>* G, int i, int j)
 
 
 template<class Coeff>
-void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
+void SetupSystem_P2( const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 // Sets up the stiffness matrix and right hand side
 {
     if (b!=0) b->Clear( 0.0);
@@ -1214,8 +1214,8 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndD
             for(int j=0; j<=i; ++j)
             {
                 // negative dot-product of the gradients
-                coup[i][j] = Coeff::alpha * QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, Coeff::q, i, j, 0.0)*absdet;
+                coup[i][j] = Coeff_.alpha * QuadGrad( Grad, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, Coeff_.q, i, j, 0.0)*absdet;
                 coup[j][i] = coup[i][j];
             }
 
@@ -1240,7 +1240,7 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndD
                 }
                 if (b!=0)
                 {
-                    tmp= Quad(*sit, Coeff::f, i, 0.0)*absdet;
+                    tmp= Quad(*sit, Coeff_.f, i, 0.0)*absdet;
                     b->Data[Numb[i]]+= tmp;
 
                     if ( i<4 ? BndData_.IsOnNatBnd(*sit->GetVertex(i))
@@ -1448,8 +1448,8 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
             {
-                coup[i][j] = Coeff::alpha * QuadGrad(Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, Coeff::q, i, j, 0.0)*absdet;
+                coup[i][j] = Coeff_.alpha * QuadGrad(Grad, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, Coeff_.q, i, j, 0.0)*absdet;
                 coup[j][i] = coup[i][j];
             }
         //assemble
@@ -1475,7 +1475,7 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
             if(!IsOnDirBnd[i])
             {
                 double valf;
-                valf=Quad(*sit, Coeff::f, i, tf)*absdet;
+                valf=Quad(*sit, Coeff_.f, i, tf)*absdet;
                 vf.Data[Numb[i]]+=valf;                       //rhs.quadP2(i, absdet);
             }
             if ( i<4 ? BndData_.IsOnNatBnd(*sit->GetVertex(i))
@@ -1498,7 +1498,7 @@ void PoissonP2CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 }
 //Setup Instat P2 problem
 template<class Coeff>
-void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
+void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 { //Setup stiffness and mass matrices
 
     const Uint lvl = RowIdx.TriangLevel(),
@@ -1542,8 +1542,8 @@ void SetupInstatSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
             {
-                coup[i][j] = Coeff::alpha * QuadGrad(Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, Coeff::q, i, j, 0.0)*absdet;  //reaction term
+                coup[i][j] = Coeff_.alpha * QuadGrad(Grad, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, Coeff_.q, i, j, 0.0)*absdet;  //reaction term
                 coup[j][i] = coup[i][j];
             }
         //assemble

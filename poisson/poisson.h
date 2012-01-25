@@ -117,7 +117,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetupGradSrc( VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t= 0.) const;
 
     void SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, instat_scalar_fun_ptr Psi, instat_scalar_fun_ptr flux, double t= 0.) const;
-    
+
     /// \brief Set initial value
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
@@ -131,8 +131,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void GetDiscError   ( scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
 
     bool          EstimateError         ( const VecDescCL&, const double, double&, est_fun);
-    static double ResidualErrEstimator  ( const TetraCL&, const VecDescCL&, const BndDataCL&);
-    static double ResidualErrEstimatorL2( const TetraCL&, const VecDescCL&, const BndDataCL&);
+  //static double ResidualErrEstimator  ( const TetraCL&, const VecDescCL&, const BndDataCL&);
+  //static double ResidualErrEstimatorL2( const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }

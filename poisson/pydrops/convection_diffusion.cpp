@@ -35,7 +35,7 @@
 
 // include problem class
 #include "misc/params.h"
-#include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
+//#include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "num/bndData.h"
 
@@ -63,9 +63,7 @@
 
 using namespace std;
 
-const char line[] ="----------------------------------------------------------------------------------\n";
-
-double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
+const char line[] ="--------------------------------------------------------------------\n";
 
 namespace DROPS
 {
@@ -145,10 +143,11 @@ namespace DROPS
         }
       if (P.get<int>("Poisson.SolutionIsKnown")) {
 	*(PyC->outfile) << line << "Check result against known solution ...\n";
-	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+	exit(1);
+	//Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
       }
     }
-    else{
+    /*else{
       MultiGridCL& MG= Poisson.GetMG();
       const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
 
@@ -159,9 +158,9 @@ namespace DROPS
       VecDescCL* new_x= &Poisson.x;
       VecDescCL* old_x= &loc_x;
 
-      DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::base_>
-	Estimator( P.get<double>("Err.RelReduction"), P.get<double>("Err.MinRatio"), P.get<double>("Err.Threshold"), P.get<double>("Err.Meas"), P.get<int>("Err.DoMark"),
-		   &PoissonP1CL<CoeffCL>::ResidualErrEstimator, *static_cast<typename PoissonP1CL<CoeffCL>::base_*>(&Poisson) );
+      //DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::base_>
+      //Estimator( P.get<double>("Err.RelReduction"), P.get<double>("Err.MinRatio"), P.get<double>("Err.Threshold"), P.get<double>("Err.Meas"), P.get<int>("Err.DoMark"),
+      //&PoissonP1CL<CoeffCL>::ResidualErrEstimator, *static_cast<typename PoissonP1CL<CoeffCL>::base_*>(&Poisson) );
 
       int step= 0;
       bool new_marks;
@@ -183,7 +182,7 @@ namespace DROPS
 
 	MG.SizeInfo(*(PyC->outfile));
 	if ( step == 0)
-	  Estimator.Init( typename PoissonP1CL<CoeffCL>::DiscSolCL( new_x, &BndData, &MG));
+	  //Estimator.Init( typename PoissonP1CL<CoeffCL>::DiscSolCL( new_x, &BndData, &MG));
 
 	if ( old_x->RowIdx)
 	  {
@@ -222,9 +221,10 @@ namespace DROPS
 	Poisson.b.Reset();
 	if (P.get<int>("Poisson.SolutionIsKnown")) {
 	  *(PyC->outfile) << line << "Check result against known solution ...\n";
-	  Poisson.CheckSolution( *new_x, CoeffCL::Solution);
+	  exit(1);
+	  //Poisson.CheckSolution( *new_x, CoeffCL::Solution);
 	}
-	new_marks = Estimator.Estimate( typename PoissonP1CL<CoeffCL>::const_DiscSolCL( new_x, &BndData, &MG) );
+	//new_marks = Estimator.Estimate( typename PoissonP1CL<CoeffCL>::const_DiscSolCL( new_x, &BndData, &MG) );
 
 	std::swap( old_x, new_x);
 	std::swap( old_idx, new_idx);
@@ -238,7 +238,7 @@ namespace DROPS
 	  Poisson.x.Data.resize( loc_x.Data.size());
 	  Poisson.x.Data = loc_x.Data;
         }
-    }
+	}*/
   }
 
   /// \brief Strategy to solve the Poisson problem on a given triangulation
@@ -318,7 +318,7 @@ namespace DROPS
 
     // Solve the linear equation system
     if(P.get<int>("Time.NumSteps") !=0)
-      Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
+      Poisson.Init( Poisson.x, *PyC->GetInitial, 0.0);
     else
       SolveStatProblem( Poisson, *solver, P, PyC);
 
@@ -357,7 +357,8 @@ namespace DROPS
 	  }
 	  if (P.get("Poisson.SolutionIsKnown", 0)) {
 	    *(PyC->outfile) << line << "Check result against known solution ...\n";
-	    Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
+	    exit(1);
+	    //Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
 	  }
         }
       }
@@ -403,7 +404,7 @@ void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction
       true,  false,             // wall, interface
       true,  true };            // in Z direction
 
-  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, *PyC->GetInitial);
+  //DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, *PyC->GetInitial);
 
   const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
     { *PyC->GetInflow, &Zero, &Zero, *PyC->GetInterfaceValue, &Zero, &Zero};
@@ -420,7 +421,8 @@ void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
   std::string adstr ("IA1Adjoint");
   std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
-  DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
+  //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
+  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, adstr.compare(IAProbstr) == 0);
 
 #ifdef _PAR
   // Set parallel data structures
@@ -496,7 +498,7 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
     { false, true,              // inlet, outlet
       true,  false,             // wall, interface
       true,  true };            // in Z direction
-  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, &Zero);
+  //  DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, &Zero);
   const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
     { *PyC->GetInflow, &Zero, &Zero, *PyC->GetInterfaceValue, &Zero, &Zero};
 
@@ -508,7 +510,7 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
   DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
   // Setup the problem
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-  DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata);
+  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata);
 #ifdef _PAR
   // Set parallel data structures
   DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
