@@ -64,10 +64,6 @@
 using namespace std;
 using namespace boost::python;
 
-DROPS::Point3DCL ZeroVec(const DROPS::Point3DCL&, double){
-  return DROPS::Point3DCL(0.);
-}
-
 class PyScalarProductCoeff {
 public:
   PyScalarProductCoeff()

@@ -37,9 +37,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-double Zero(const DROPS::Point3DCL&, double) {return 0.;}
-
-
 /// \brief Nusselt velocity profile for flat film
 class Nusselt {
 public:
@@ -164,7 +161,7 @@ public:
     }
  public:
   PythonConnectCL()
-    : q(&Zero)
+    : q(&Zero), Vel(&ZeroVec)
     {
       Nx_=Ny_=Nz_=Nt_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
       dx_=dy_=dz_=0.0;

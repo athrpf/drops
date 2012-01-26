@@ -5,6 +5,13 @@
 
 #include <boost/shared_ptr.hpp>
 
+/// Functions returning zero
+double Zero(const DROPS::Point3DCL&, double) {return 0.;}
+
+DROPS::Point3DCL ZeroVec(const DROPS::Point3DCL&, double){
+  return DROPS::Point3DCL(0.);
+}
+
 class PdeFunction {
 public:
   typedef boost::shared_ptr<PdeFunction> Ptr;
