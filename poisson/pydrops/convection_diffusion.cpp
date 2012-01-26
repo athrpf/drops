@@ -83,7 +83,7 @@ namespace DROPS
 
     if ( !doErrorEstimate) {
       std::string Gradstr ("IA2Gradient");
-      std::string Sensstr ("IA2Sensi");
+      std::string Sensstr ("IA2Sensitivity");
       std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
       bool GradProb = (Gradstr.compare(IAProbstr) == 0);
       bool SensProb = (Sensstr.compare(IAProbstr) == 0);
