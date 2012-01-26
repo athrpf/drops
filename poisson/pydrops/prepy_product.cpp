@@ -66,8 +66,8 @@ using namespace boost::python;
 
 class PyScalarProductCoeff {
 public:
-  PyScalarProductCoeff()
-    : q(&Zero), alpha(&Zero), f(&Zero), Sta_Coeff(&Zero), Vel(&ZeroVec)
+  PyScalarProductCoeff(bool h1_)
+    : q(&Zero), alpha(h1_ ? &One : &Zero), f(&Zero), Sta_Coeff(&Zero), Vel(&ZeroVec), h1(h1_)
   {}
 
   DROPS::instat_scalar_fun_ptr q;
@@ -75,7 +75,9 @@ public:
   DROPS::instat_scalar_fun_ptr f;
   DROPS::instat_scalar_fun_ptr Sta_Coeff;
   DROPS::instat_vector_fun_ptr Vel;
-
+private:
+  PyScalarProductCoeff();
+  bool h1;
 };
 
 typedef DROPS::PoissonP1CL<PyScalarProductCoeff > PoissonProblem;
@@ -90,14 +92,13 @@ public:
   PyScalarProductConnector(int nx_, int ny_, int nz_, int nt_,
 			   double lx_, double ly_, double lz_, double tmax_, bool h1_)
     : nx(nx_), ny(ny_), nz(nz_), nt(nt_),
-      lx(lx_), ly(ly_), lz(lz_), tmax(tmax_)
+      lx(lx_), ly(ly_), lz(lz_), tmax(tmax_), h1(h1_), coeff(h1_)
   {
     //std::cout << "lx = " << lx << std::endl;
     dx = lx/(nx_-1);
     dy = ly/(ny_-1);
     dz = lz/(nz_-1);
     dt = nt_>1 ? tmax/(nt_-1) : 1.0;
-    h1 = h1_;
     // TODO: timing would be nice ...
     setup_sp_matrices();
   }
@@ -145,23 +146,10 @@ void PyScalarProductConnector::setup_sp_matrices()
 {
   try
     {
-      P.put<int>("DomainCond.RefineSteps", 0);
       stringstream MeshFile;
       MeshFile << lx << "x" << ly << "x" << lz << "@" << nx-1 << "x" << ny-1 << "x" << nz-1; // meshfile takes number of intervals, not grid points
       P.put<string>("DomainCond.MeshFile",MeshFile.str().c_str());
-      if (h1) {
-	P.put<string>("PoissonCoeff.Diffusion", "One");
-      } else {
-	P.put<string>("PoissonCoeff.Diffusion", "Zero");
-      }
-      P.put<string>("PoissonCoeff.Source", "Zero");
-      P.put<string>("PoissonCoeff.Solution", "Zero");
-      P.put<string>("PoissonCoeff.InitialVal", "Zero");
-      P.put<string>("PoissonCoeff.Reaction", "Zero");
-      P.put<int>("PoissonCoeff.Convection", 0);
       P.put<int>("Poisson.Method", 303);
-      //std::cout << P << std::endl;
-
       // set up data structure to represent a poisson problem
       // ---------------------------------------------------------------------
       std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
@@ -216,7 +204,7 @@ numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array v, 
   double* solution_ptr = (double*)retval->data;
 
   for (int timestep=0; timestep<nt; ++timestep) {
-    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, *fun1, *fun2, timestep*dt, false); //
+    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, *fun1, *fun2, timestep*dt, h1); //
     std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
   }
   array solution = extract<numeric::array>(obj);

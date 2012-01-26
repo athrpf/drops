@@ -12,6 +12,8 @@ DROPS::Point3DCL ZeroVec(const DROPS::Point3DCL&, double){
   return DROPS::Point3DCL(0.);
 }
 
+double One(const  DROPS::Point3DCL&, double) {return 1.;}
+
 class PdeFunction {
 public:
   typedef boost::shared_ptr<PdeFunction> Ptr;
