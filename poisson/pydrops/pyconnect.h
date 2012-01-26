@@ -164,6 +164,7 @@ public:
     }
  public:
   PythonConnectCL()
+    : q(&Zero)
     {
       Nx_=Ny_=Nz_=Nt_=Nxy_=Nyz_=Nxz_=Nxyz_=-1;
       dx_=dy_=dz_=0.0;
@@ -359,7 +360,6 @@ public:
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
 
     Vel = Nusselt(P);
-    q = &Zero;
     Sta_Coeff = Stability_Coefficient(nx_, dx_, alpha, Vel);
 
     // Set the output pointer to the output arguments.
