@@ -67,7 +67,6 @@ bool check_stationary_dimensions(int Nx, int Ny, int Nz, PdeFunction::ConstPtr b
 }
 
 using namespace boost::python::numeric;
-DROPS::ParamCL P;
 
 /**
  *  Solve a stationary convection diffusion problem from python.
@@ -89,6 +88,7 @@ DROPS::ParamCL P;
  */
 array numpy_stationary_convection_diffusion(array b_in, array source, boost::python::object presol_obj, array Dw, array b_interface, string json_filename) {
   using namespace boost::python;
+  DROPS::ParamCL P;
   initialize_problem_type_map();
   PdeFunction::ConstPtr presolf;
   if (presol_obj.ptr()==object().ptr()) {
@@ -189,6 +189,7 @@ array numpy_stationary_convection_diffusion(array b_in, array source, boost::pyt
  */
 array numpy_convection_diffusion(array C0, array b_in, array source, array Dw, array b_interface, string json_filename) {
   // 1. Read parameter file
+  DROPS::ParamCL P;
   std::ifstream param;
   param.open(json_filename.c_str());
   param >> P;

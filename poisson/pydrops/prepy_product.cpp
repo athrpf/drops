@@ -62,8 +62,6 @@
 #include <math.h>
 
 using namespace std;
-
-
 using namespace boost::python;
 
 DROPS::Point3DCL ZeroVec(const DROPS::Point3DCL&, double){
@@ -119,6 +117,7 @@ private:
   bool h1;
   PoissonProblemPtr prob;
   PyScalarProductCoeff coeff;
+  DROPS::ParamCL P;
 };
 
 namespace DROPS {
