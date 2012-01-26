@@ -393,8 +393,12 @@ public:
 
     GetInflow = DropsFunction::Ptr(new DropsFunction(B_in, sg_inlet, 3));
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
-    pyf = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
-    f = *pyf;
+    if (F) {
+      pyf = DropsFunction::Ptr(new DropsFunction(F, vg, 4));
+      f = *pyf;
+    } else {
+      f = &Zero;
+    }
     GetPresol = DropsFunction::Ptr(new DropsFunction(presol, vg, 4));
     GetDelPsi = DropsFunction::Ptr(new DropsFunction(DelPsi, vg, 4));
     pyalpha = DropsFunction::Ptr(new DropsFunction(Dw, vg, 4));
