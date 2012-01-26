@@ -878,7 +878,7 @@ void PrMassAccumulator_P1CL::visit (const TetraCL& sit)
 
 void SetupPrMass_P1(const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& Coeff, MatrixCL& matM, IdxDescCL& RowIdx, const LevelsetP2CL& lset)
 {
-    PrMassAccumulator_P1CL p1_accu( MG, Coeff, matM, RowIdx, lset);
+    PrMassAccumulator_P1CL p1_accu( MG, Coeff, matM, RowIdx, lset, false);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &p1_accu);
     accus( MG.GetTriangTetraBegin( RowIdx.TriangLevel()), MG.GetTriangTetraEnd( RowIdx.TriangLevel()));
