@@ -152,7 +152,7 @@ void PyScalarProductConnector::setup_sp_matrices()
       P.put<int>("Poisson.Method", 303);
       // set up data structure to represent a poisson problem
       // ---------------------------------------------------------------------
-      std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
+      std::cout << line << "Set up matrices for scalar product computation ...\n";
 
       //create geometry
       DROPS::MultiGridCL* mg= 0;
@@ -204,8 +204,8 @@ numeric::array PyScalarProductConnector::numpy_scalar_product(numeric::array v, 
   double* solution_ptr = (double*)retval->data;
 
   for (int timestep=0; timestep<nt; ++timestep) {
-    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, *fun1, *fun2, timestep*dt, h1); //
-    std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
+    solution_ptr[timestep] = DROPS::Py_product(prob->GetMG(), prob->idx, prob->A, prob->M, *fun1, *fun2, timestep*dt, h1);
+    //std::cout<<"The result of py_product in timestep " << timestep << " is "<<solution_ptr[timestep]<<std::endl;
   }
   array solution = extract<numeric::array>(obj);
   return solution;
