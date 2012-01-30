@@ -481,7 +481,10 @@ int main (int argc, char** argv)
         //Check if Multigrid is sane
         std::cout << line << "Check if multigrid works properly...\n";
         timer.Reset();
-        std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+        if(P.get<int>("ALE.wavy"))
+            std::cout << "Because of ALE method, we don't check the sanity of multigrid here!" << std::endl;
+        else
+            std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         // delete dynamically allocated objects

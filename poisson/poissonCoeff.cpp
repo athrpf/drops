@@ -380,7 +380,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
     double refH   = 0.2;
     double Mag    = 0.25;
     double paraX  = 6. * PI;
-    double paraT  = 9. * PI;
+    double paraT  = 10. * PI;
     //Free surface
     double Interface( const DROPS::Point3DCL& p, double t)
     {
