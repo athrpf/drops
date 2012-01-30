@@ -119,8 +119,7 @@ public:
   std::ofstream* outfile;
 
   //const DropsFunction *presol_, *DelPsi_;
-  double* C3D_,                               // output matrices: temp solution (Nxyz x nt),
-    *MaxIter_;                                // max. iterations of solver (1 x 1)
+  double* C3D_;      // output matrices: temp solution (Nxyz x nt),
   //helper maps for barycenters
   //static DROPS::MultiGridCL* MG_;
   DROPS::MultiGridCL* MG_;
