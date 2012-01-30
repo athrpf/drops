@@ -141,7 +141,7 @@ void Accumulator_P1CL<Coeff,QuadCL>::finalize_accumulation ()
     
 }
 
-/// - Accumulators for stiffness, mass and convection:
+/// - Accumulators for source, stiffness, mass and convection:
 
 
 // source matrix: \int_{\Omega} f v \, dx
@@ -169,11 +169,12 @@ class SourceAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
     using                           base_::idx;
     using                           base_::t;
     SUPGCL& supg_;
+    bool    ALE_;
     QuadCL<> rhs;
     public:
     SourceAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, VecDescCL* b, 
-                   IdxDescCL& RowIdx, SUPGCL& supg, const double t_)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,0,b,RowIdx,RowIdx,t_),supg_(supg){}
+                   IdxDescCL& RowIdx, SUPGCL& supg, bool ALE, const double t_)
+                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,0,b,RowIdx,RowIdx,t_),supg_(supg), ALE_(ALE){}
     void local_setup (const TetraCL& sit);
     void update_rhsintegrals(const TetraCL& sit);
     void visit (const TetraCL& sit);
@@ -207,7 +208,12 @@ void SourceAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
     
     if(supg_.GetSUPG())
     {    
-        QuadCL<Point3DCL> u(sit,Coeff::Vel,t);
+        instat_vector_fun_ptr vel;
+        if(ALE_)
+        vel= Coeff::ALEVelocity;
+        else
+        vel= Coeff::Vel;
+        QuadCL<Point3DCL> u(sit,vel,t);
         for(int i=0; i<4; ++i)
             U_Grad[i]=dot( u, QuadCL<Point3DCL>( G[i]));
     }    
@@ -222,8 +228,13 @@ void SourceAccumulator_P1CL<Coeff,QuadCL>::update_rhsintegrals(const TetraCL& si
             QuadCL<double> fp1(rhs*phiQuad[i]);
             b_->Data[UnknownIdx[i]]+= fp1.quad(absdet);
             if (supg_.GetSUPG()) {
+                instat_vector_fun_ptr vel;
+                if(ALE_)
+                vel= Coeff::ALEVelocity;
+                else
+                vel= Coeff::Vel;
                 QuadCL<double> f_SD( rhs*U_Grad[i] );    //SUPG for source term
-                b_->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg_.Sta_Coeff( Coeff::Vel(GetBaryCenter(sit), t), Coeff::alpha);
+                b_->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha);
             }
             if ( BndData_!=0 && BndData_->IsOnNatBnd(*sit.GetVertex(i)) )
                 for (int f=0; f < 3; ++f)
@@ -260,10 +271,11 @@ class StiffnessAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
     using                           base_::idx;
     using                           base_::t;
     SUPGCL& supg_;
+    bool   ALE_;
     public:
     StiffnessAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg, const double t_)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t_),supg_(supg){}
+                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg, bool ALE, const double t_)
+                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t_),supg_(supg), ALE_(ALE){}
     void local_setup (const TetraCL& sit);
     void visit (const TetraCL& sit);
     virtual TetraAccumulatorCL* clone (int /*tid*/) { return new StiffnessAccumulator_P1CL ( *this); }
@@ -283,14 +295,19 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::visit (const TetraCL& sit)
 
 template<class Coeff,template <class T=double> class QuadCL>
 void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
-{
+{    
     P1DiscCL::GetGradients(G,det,sit);
     absdet= std::fabs(det);
     //quad_a.assign( sit, &Coeff::DiffusionCoeff, 0.0);                  //for variable diffusion coefficient
     //const double int_a= quad_a.quad( absdet);
     if(supg_.GetSUPG())
-    {    
-        QuadCL<Point3DCL> u(sit,Coeff::Vel,t);
+    {   
+        instat_vector_fun_ptr vel;
+        if(ALE_)
+        vel= Coeff::ALEVelocity;
+        else
+        vel= Coeff::Vel;
+        QuadCL<Point3DCL> u(sit,vel,t); 
         for(int i=0; i<4; ++i)
             U_Grad[i]=dot( u, QuadCL<Point3DCL>( G[i]));
     }
@@ -304,9 +321,14 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
             coup[i][j]+= P1DiscCL::Quad(sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
             if(supg_.GetSUPG())
             {
+                instat_vector_fun_ptr vel;
+                if(ALE_)
+                vel= Coeff::ALEVelocity;
+                else
+                vel= Coeff::Vel;
                 QuadCL<double> res3( U_Grad[i] * U_Grad[j]);
                 //SUPG stabilization
-                coup[i][j]+= res3.quad(absdet)*supg_.Sta_Coeff( Coeff::Vel(GetBaryCenter(sit), t), Coeff::alpha);
+                coup[i][j]+= res3.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha);
             }
         }
         UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx)
@@ -341,10 +363,11 @@ class MassAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
     using                           base_::idx;
     using                           base_::t;
     SUPGCL& supg_;
+    bool   ALE_;
     public:
     MassAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg, const double t)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t),supg_(supg){}
+                   IdxDescCL& RowIdx, IdxDescCL& ColIdx, SUPGCL& supg, bool ALE, const double t)
+                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t),supg_(supg), ALE_(ALE){}
     void local_setup (const TetraCL& sit);
     void visit (const TetraCL& sit);
     virtual TetraAccumulatorCL* clone (int /*tid*/) { return new MassAccumulator_P1CL ( *this); }
@@ -372,7 +395,12 @@ void MassAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
 
     if(supg_.GetSUPG())
     {
-        QuadCL<Point3DCL> u(sit, Coeff::Vel, t);
+        instat_vector_fun_ptr vel;
+        if(ALE_)
+        vel= Coeff::ALEVelocity;
+        else
+        vel= Coeff::Vel;
+        QuadCL<Point3DCL> u(sit,vel,t);
         for(int i=0; i<4; i++)
             U_Grad[i]=dot(u, QuadCL<Point3DCL>(G[i]));
     }
@@ -384,8 +412,13 @@ void MassAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
         coup[i][j]= P1DiscCL::GetMass( i, j)*absdet;
         if(supg_.GetSUPG())
         {
+            instat_vector_fun_ptr vel;
+            if(ALE_)
+            vel= Coeff::ALEVelocity;
+            else
+            vel= Coeff::Vel;
             QuadCL<double> StrM(U_Grad[i]*phiQuad[j]);
-            coup[i][j]+=StrM.quad(absdet)*supg_.Sta_Coeff( Coeff::Vel(GetBaryCenter(sit), t), Coeff::alpha);  //SUPG term
+            coup[i][j]+=StrM.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha);  //SUPG term
         }
       }
       UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx) : NoIdx;      
@@ -417,11 +450,12 @@ class ConvectionAccumulator_P1CL : public Accumulator_P1CL<Coeff,QuadCL>
     using                           base_::lvl;
     using                           base_::idx;
     using                           base_::t;
+    bool    ALE_;
     bool adjoint;
     public:
     ConvectionAccumulator_P1CL(const MultiGridCL& MG, const BndDataCL<> * BndData, MatrixCL* Amat, VecDescCL* b, 
-                   IdxDescCL& RowIdx, IdxDescCL& ColIdx,  const double t_, bool adjoint_)
-                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t_),adjoint(adjoint_){}
+                   IdxDescCL& RowIdx, IdxDescCL& ColIdx,  const double t_, bool ALE, bool adjoint_)
+                   :Accumulator_P1CL<Coeff,QuadCL>(MG,BndData,Amat,b,RowIdx,ColIdx,t_), ALE_(ALE), adjoint(adjoint_){}
     void local_setup (const TetraCL& sit);
     void visit (const TetraCL& sit);
     virtual TetraAccumulatorCL* clone (int /*tid*/) { return new ConvectionAccumulator_P1CL ( *this); }
@@ -450,7 +484,12 @@ void ConvectionAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
     {
       UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx) : NoIdx;
     }
-    QuadCL<Point3DCL> u(sit,Coeff::Vel,t);
+    instat_vector_fun_ptr vel;
+    if(ALE_)
+    vel= Coeff::ALEVelocity;
+    else
+    vel= Coeff::Vel;
+    QuadCL<Point3DCL> u(sit,vel,t);
     for(int j=0; j<4;++j)
     {
         const QuadCL<> u_Gradj( dot( u, QuadCL<Point3DCL>( G[j])));

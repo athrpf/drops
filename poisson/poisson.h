@@ -34,6 +34,8 @@
 #include <iostream>
 #include <numeric>
 
+#include "poisson/ale.h"
+
 
 namespace DROPS
 {
@@ -154,6 +156,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
+    bool       ALE_;           //ALE method
     MLIdxDescCL idx;
     VecDescCL   x;
     VecDescCL   b;
@@ -162,11 +165,12 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL M;
     MLMatDescCL U;
 
-    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool adj=false)
-        : base_( mgb, coeff, bdata), adjoint_( adj), supg_(supg), idx( P1_FE) {}
 
-    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool adj=false)
-        : base_( mg, coeff, bdata), adjoint_( adj), supg_(supg), idx( P1_FE) {}
+    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE, bool adj=false)
+        : base_( mgb, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
+
+    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE, bool adj=false)
+        : base_( mg, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, MG_, BndData_, match); }

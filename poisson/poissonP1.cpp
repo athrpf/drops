@@ -69,6 +69,8 @@
 
 #include "num/poissonsolverfactory.h"
 
+#include "poisson/ale.h"
+
 using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
@@ -229,7 +231,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     // the triangulation
     MultiGridCL& mg= Poisson.GetMG();
-
+    ALECL ALE(P, mg);
     // connection triangulation and vectors
     // -------------------------------------------------------------------------
     std::cout << line << "Connecting triangulation and matrices/vectors ...\n";
@@ -279,22 +281,21 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
-    //If it is a stationary problem, set up the system
+    //If it is NOT a stationary problem, set up the system and the initial condition
     if (P.get<int>("Time.NumSteps") != 0)
     {
         // discretize (setup linear equation system)
         std::cout << line << "Discretize (setup linear equation system) for instationary problem...\n";
         timer.Reset();
+        if(Poisson.ALE_)
+            ALE.InitGrid();
         Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t);
+        Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
     }
-    //Do we need to set up initial condition? If not, solve StatProblem
-    if(P.get<int>("Time.NumSteps") !=0)
-        Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     else
-    {
-        // solve the stationary problem
+    {//if it is a stationary problem, call SolveStatProblem
         std::cout << line << "Solve the linear equation system ...\n";
         SolveStatProblem( Poisson, *solver, P);
     }
@@ -333,6 +334,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
             timer.Reset();
             std::cout << line << "Step: " << step << std::endl;
+            if(Poisson.ALE_)
+                ALE.MovGrid(Poisson.x.t);
             ThetaScheme.DoStep( Poisson.x);
 
             timer.Stop();
@@ -378,7 +381,9 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
     P.put_if_unset<double>("Stabilization.Magnitude",1.0);
-    P.put_if_unset<double>("Stabilization.Grids",1);
+    P.put_if_unset<int>("Stabilization.Grids",1);
+    P.put_if_unset<int>("ALE.wavy",0);
+    P.put_if_unset<std::string>("ALE.Interface","Zero");
 }
 
 int main (int argc, char** argv)
@@ -438,7 +443,8 @@ int main (int argc, char** argv)
             std::cout << line << "The SUPG stabilization will be added ...\n"<<line;           
         }
         // Setup the problem
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata, supg);
+        DROPS::PoissonCoeffCL tmp = DROPS::PoissonCoeffCL( P);
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL> prob( *mg, tmp, *bdata, supg, P.get<int>("ALE.wavy"));
 
 #ifdef _PAR
         // Set parallel data structures

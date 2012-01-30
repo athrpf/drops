@@ -269,7 +269,9 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
     P.put_if_unset<double>("Stabilization.Magnitude",1.0);
-    P.put_if_unset<double>("Stabilization.Grids",1);
+    P.put_if_unset<int>("Stabilization.Grids",1);
+    P.put_if_unset<int>("ALE.wavy",0);
+    P.put_if_unset<std::string>("ALE.Interface","Zero");
 }
 
 int main (int argc, char** argv)
@@ -325,7 +327,7 @@ int main (int argc, char** argv)
         mg->SizeInfo(cout);
         std::cout << line << "Set up load balancing ...\n";
         // Setup the problem
-        DROPS::PoissonP2CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata);
+        DROPS::PoissonP2CL<DROPS::PoissonCoeffCL> prob( *mg, DROPS::PoissonCoeffCL(P), *bdata);
         timer.Reset();
 #ifdef _PAR
         // Set parallel data structures
