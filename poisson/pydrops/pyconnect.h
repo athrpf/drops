@@ -77,9 +77,9 @@ private:
 
 class Stability_Coefficient {
 public:
-  Stability_Coefficient(int nx_, double dx_, DROPS::instat_scalar_fun_ptr alpha_, DROPS::instat_vector_fun_ptr Vel_)
+  Stability_Coefficient(double dx_, DROPS::instat_scalar_fun_ptr alpha_, DROPS::instat_vector_fun_ptr Vel_)
     :
-    nx(nx_), dx(dx_), alpha(alpha_), Vel(Vel_)
+    dx(dx_), alpha(alpha_), Vel(Vel_)
   { }
 
   double operator()(const DROPS::Point3DCL& p, double t)
@@ -97,17 +97,15 @@ public:
 private:
   Stability_Coefficient();
   double dx;
-  int nx;
+
+  DROPS::instat_scalar_fun_ptr alpha;
+  DROPS::instat_vector_fun_ptr Vel;
 
   //Only used for flat film case
   double h_Value()
   {//mesh size in flow direction
-    double h=dx/(nx);
-    return h;
+    return dx;
   }
-
-  DROPS::instat_scalar_fun_ptr alpha;
-  DROPS::instat_vector_fun_ptr Vel;
 };
 
 /// holds the Python input matrices and Python output parameters
@@ -357,7 +355,7 @@ public:
     GetInterfaceValue = DropsFunction::Ptr(new DropsFunction(B_Inter, sg_interface, 3));
 
     Vel = Nusselt(P);
-    Sta_Coeff = Stability_Coefficient(nx_, dx_, alpha, Vel);
+    Sta_Coeff = Stability_Coefficient(dx_, alpha, Vel);
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
