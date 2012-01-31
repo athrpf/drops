@@ -408,10 +408,13 @@ public:
 
 class PyDropsErr : public DROPS::DROPSErrCL {
 public:
- PyDropsErr(std::string msg_) : P(NULL), it(0), msg(msg_), with_data(false) {}
- PyDropsErr(const PythonConnectCL::Ptr PyC_, DROPS::ParamCL* P_, int it_, std::string msg_) : PyC(PyC_), P(P_), it(it_), msg(msg_), with_data(true) {}
+ PyDropsErr(std::string msg_) : it(0), msg(msg_), with_data(false) {}
+ PyDropsErr(const PythonConnectCL::Ptr PyC_, DROPS::ParamCL& P, int it_, std::string msg_) : PyC(PyC_), it(it_), msg(msg_), with_data(true)
+  {
+    std::string filename = write_err_to_file(P);
+    msg = "DROPSErr: The following error occured during a call to DROPS:\n" + msg_ + "\nThe state of DROPS was written to " + filename + "\n";
+  }
   const PythonConnectCL::Ptr PyC;
-  DROPS::ParamCL* P;
   int it;
   std::string msg;
 
@@ -419,7 +422,7 @@ public:
   bool with_data;
 
   /// Write all information corresponding to this problem to a file and return the filename
-  std::string write_err_to_file() const
+  std::string write_err_to_file(DROPS::ParamCL& P) const
   {
     if (!with_data) { // if no data is given, just return /dev/null
       return std::string("/dev/null");
@@ -429,7 +432,7 @@ public:
     std::string ll("--------------------------------");
     outfile << "----------------------------\nOutput file generated from a PyDropsErr Exception\n----------------------------\n";
     outfile << "1. Param file\n";
-    outfile << (*P) <<std::endl;
+    outfile << (P) <<std::endl;
     outfile << ll << "\nThe solver failed in time step " << it << " of "<< PyC->Nt_-1 << std::endl;
 
     std::stringstream Fstream, C0stream, Binstream, Binterfacestream, Dwstream;

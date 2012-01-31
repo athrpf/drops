@@ -275,10 +275,7 @@ void drops_err_translator(const DROPS::DROPSErrCL& err)
 
 void pydrops_err_translator(const PyDropsErr& err)
 {
-  std::string filename = err.write_err_to_file();
-  std::string msg;
-  msg += "DROPSErr: The following error occured during a call to DROPS:\n" + err.msg + "\nThe state of DROPS was written to " + filename + "\n";
-  PyErr_SetString(PyExc_UserWarning, msg.c_str());
+  PyErr_SetString(PyExc_UserWarning, err.msg.c_str());
 }
 
 BOOST_PYTHON_MODULE(drops)
