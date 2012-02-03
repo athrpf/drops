@@ -138,7 +138,8 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
   if(_supg||_ale) //update stiffness and massmatrix if necessary
     _Poisson.SetupInstatSystem( _Poisson.A, _Poisson.M, _Poisson.x.t);
   _Poisson.SetupInstatRhs( *_cplA, *_cplM, _Poisson.x.t, *_b, _Poisson.x.t);
-
+  
+  if(_supg||_ale) 
   _Poisson.SetupInstatRhs( *_new_cplA, *_old_cplM, _Poisson.x.t-_dt, *_new_b, _Poisson.x.t-_dt);
 
   _rhs +=_Poisson.M.Data*v.Data
