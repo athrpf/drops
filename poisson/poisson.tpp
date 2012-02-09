@@ -810,7 +810,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
 }
 
 
-template<class Coeff>
+/*template<class Coeff>
 double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
 // Based on R. Verfuerth, "A review of a posteriori error estimation and adaptive
 // mesh refinement techniques"
@@ -892,7 +892,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-            _err+= /* 0.5 * 2.*    */   cc_rad_Face * jump*jump * absdet2D/2.;
+            _err+=  cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
     return _err;
@@ -981,11 +981,11 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-            _err+= /* 0.5 * 2.* */ cc_rad_Face * jump*jump * absdet2D/2.;
+            _err+=  cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
     return 4.*cc_radius*cc_radius*_err;
-}
+}*/
 
 // PoissonP2CL
 

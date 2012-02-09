@@ -131,8 +131,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void GetDiscError   ( scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
 
     bool          EstimateError         ( const VecDescCL&, const double, double&, est_fun);
-  static double ResidualErrEstimator  ( const TetraCL&, const VecDescCL&, const BndDataCL&);
-  static double ResidualErrEstimatorL2( const TetraCL&, const VecDescCL&, const BndDataCL&);
+    //static double ResidualErrEstimator  ( const TetraCL&, const VecDescCL&, const BndDataCL&);
+    //static double ResidualErrEstimatorL2( const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }

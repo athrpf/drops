@@ -300,7 +300,7 @@ namespace DROPS
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
-      Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
+      Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG"));
     timer.Stop();
     *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -324,11 +324,23 @@ namespace DROPS
 
     if(P.get<int>("Time.NumSteps")!=0)
       {
-        //CoeffCL::Show_Pec();
+
+
+      std::string IA12Sensstr ("IA12Sensitivity");
+      std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+      bool IA12SensProb = (IA12Sensstr.compare(IAProbstr) == 0);
+      if(IA12SensProb)
+      {
         InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-	  ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
-        ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
-        for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
+	    ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"), *PyC->GetPresol, *PyC->GetDelPsi);   
+      }
+      else
+      {
+        InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
+	    ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
+      }
+      ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
+      for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
 	  timer.Reset();
 	  *(PyC->outfile) << line << "Step: " << step << std::endl;
 	  ThetaScheme.DoStep( Poisson.x);
@@ -548,3 +560,98 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
   delete mg;
 }
 
+//used to solve the sensetivity problem in IA12
+void CoefCorrection(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, 
+                    PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, PdeFunction::ConstPtr presol, PdeFunction::ConstPtr Del,double* C_sol)
+{
+  PythonConnectCL::Ptr PyC(new PythonConnectCL());
+  PyC->Init(&outfile, P, C0, b_in, source, Dw, b_interface, C_sol);
+  PyC->SetupIA12SensiRhs(presol, Del);
+  SetMissingParameters(P);
+#ifdef _PAR
+  DROPS::ProcInitCL procinit(&argc, &argv);
+  DROPS::ParMultiGridInitCL pmginit;
+#endif
+  //try
+  //{
+  // time measurements
+#ifndef _PAR
+  DROPS::TimerCL timer;
+#else
+  DROPS::ParTimerCL timer;
+#endif
+
+  // set up data structure to represent a poisson problem
+  // ---------------------------------------------------------------------
+  *(PyC->outfile) << line << "Set up data structure to represent a Poisson problem ...\n";
+  timer.Reset();
+
+  //create geometry
+  DROPS::MultiGridCL* mg= 0;
+
+  const bool isneumann[6]=
+    { false, true,              // inlet, outlet
+      true,  false,             // wall, interface
+      true,  true };            // in Z direction
+
+  //DROPS::PoissonCoeffCL<DROPS::ParamCL> PoissonCoeff(P, *PyC->GetDiffusion, *PyC->GetSource, *PyC->GetInitial);
+
+  const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    { *PyC->GetInflow, &Zero, &Zero, *PyC->GetInterfaceValue, &Zero, &Zero};
+
+  DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
+
+  //only for measuring cell, not used here
+  double r = 1;
+  std::string serfile = "none";
+
+  DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
+
+  // Setup the problem
+  //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
+  std::string adstr ("IA1Adjoint");
+  std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+  //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
+  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, adstr.compare(IAProbstr) == 0);
+
+#ifdef _PAR
+  // Set parallel data structures
+  DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+  pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+  DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);     // loadbalancing
+  lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
+  lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
+#endif
+  timer.Stop();
+  *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
+
+  // Refine the grid
+  // ---------------------------------------------------------------------
+  *(PyC->outfile) << "Refine the grid " << P.get<int>("DomainCond.RefineSteps") << " times regulary ...\n";
+  timer.Reset();
+  // Create new tetrahedra
+  for ( int ref=1; ref <= P.get<int>("DomainCond.RefineSteps"); ++ref){
+    *(PyC->outfile) << " refine (" << ref << ")\n";
+    DROPS::MarkAll( *mg);
+    mg->Refine();
+  }
+  // do loadbalancing
+#ifdef _PAR
+  lb.DoMigration();
+#endif
+
+  timer.Stop();
+  *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
+  mg->SizeInfo(*(PyC->outfile));
+
+  //prepare MC
+  PyC->SetMG(mg);
+  PyC->ClearMaps();
+  PyC->setFaceMap();
+  PyC->setTetraMap();
+
+  // Solve the problem
+  DROPS::Strategy( prob, P, PyC);
+
+  delete mg;
+}

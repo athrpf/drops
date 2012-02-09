@@ -359,6 +359,15 @@ public:
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
   }
+  
+  //Only for IA12Sensi
+  void SetupIA12SensiRhs(PdeFunction::ConstPtr presol, PdeFunction::ConstPtr Del)
+  {
+      
+    GridFunction::Ptr vg(new VolumeGridFunction(1, dx_, dy_, dz_, dt_, &tetra_map_, false));  
+    GetPresol = DropsFunction::Ptr(new DropsFunction(presol, vg, 4));
+    GetDelPsi = DropsFunction::Ptr(new DropsFunction(Del, vg, 4)); 
+  }
 
   void Init( std::ofstream* of, const DROPS::ParamCL& P, PdeFunction::ConstPtr B_in, PdeFunction::ConstPtr B_Inter, PdeFunction::ConstPtr F,
                     PdeFunction::ConstPtr presol, PdeFunction::ConstPtr DelPsi,PdeFunction::ConstPtr Dw,  double* c_sol)

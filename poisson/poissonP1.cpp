@@ -124,7 +124,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
         }
     }
-    else{
+    /*else{
         MultiGridCL& MG= Poisson.GetMG();
         const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
 
@@ -202,7 +202,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.x.Data.resize( loc_x.Data.size());
             Poisson.x.Data = loc_x.Data;
         }
-    }
+    }*/
 }
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
