@@ -319,7 +319,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         vtkwriter = new VTKOutCL(mg, "DROPS data", 
                                  P.get<int>("Time.NumSteps")+1, 
                                  P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), 
-                                 P.get<int>("VTK.Binary") );
+                                 P.get<int>("VTK.Binary"), true );
         vtkwriter->Register( make_VTKScalar( Poisson.GetSolution(), "ConcenT"));
         vtkwriter->Write( Poisson.x.t);
     }

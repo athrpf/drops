@@ -490,44 +490,43 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
     }
+    double Interface( const DROPS::Point3DCL& p, double t)
+    {
+        double h;
+        h = 0.2 + 0.05 * sin ( p[0] * 0.1 * PI - 20. * PI * t );
+        return h;
+    }
+    DROPS::Point3DCL TransBack(const DROPS::Point3DCL &p, double t)
+    {
+        DROPS::Point3DCL ref(0.);
+        ref[0] = p[0];
+        ref[1] = 0.2 * p[1]/Interface(p, t);
+        ref[2] = p[2];        
+        return ref;
+    }
     /// \brief Convection: constant flow in x direction
-    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){ 
-        DROPS::Point3DCL v(0.);
-        v[0] = 2.5;
-        return v; 
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){ 
+        DROPS::Point3DCL ref = TransBack(p, t);
+        DROPS::Point3DCL ret;
+        const double d= ref[1]/0.2,
+            U= 200.;  //U=gh^2/(2*nu)      
+        ret[0]= U*(2-d)*d;                       
+        ret[1]=0.;
+        ret[2]=0.;
+        return ret;
     }
     /// \brief Right-hand side
     double Source(const DROPS::Point3DCL&, double){
         return 0.0; 
     }
-    /// \brief Diffusion
-    double Diffusion(const DROPS::Point3DCL&, double){
-        return 1.0;
+    double BInter(const DROPS::Point3DCL&, double){
+        return 0.01;
     }
     /// \brief Solution ====================================careful
-    double Interface( const DROPS::Point3DCL& p, double t)
-    {
-        double h;
-        h = 0.2 + 0.05 * sin ( p[0] * 4. * PI - PI * t/0.1 );
-        return h;
-    }
-    double DiffInterface( const DROPS::Point3DCL& p, double t)
-    {
-        double v;
-        v = -0.05 * cos ( p[0] * 4. * PI - PI * t/0.1 ) * PI/0.1;
-        return v;
-    }
-    DROPS::Point3DCL ALEFlowfield(const DROPS::Point3DCL& p, double t){ 
-        DROPS::Point3DCL v(0.);
-        v[0] = Flowfield(p,t)[0];
-        v[1] = Flowfield(p,t)[1] - p[1]/Interface(p,t)*DiffInterface(p,t);
-        v[2] = Flowfield(p,t)[2];
-        return v; 
-    }
+
     static DROPS::RegisterScalarFunction regscaq("ALE_Reaction",     Reaction    );
     static DROPS::RegisterScalarFunction regscaf("ALE_Source",       Source      );
     static DROPS::RegisterScalarFunction regscaint("ALE_Interface",  Interface   );
-    static DROPS::RegisterScalarFunction regscaa("ALE_Diffusion",    Diffusion   );
-    static DROPS::RegisterVectorFunction regscav("Origin_Velocity",  Flowfield   );
-    static DROPS::RegisterVectorFunction regscaalev("ALE_Velocity",  ALEFlowfield   );
+    static DROPS::RegisterVectorFunction regscav("ALE_Velocity",  Flowfield   );
+    static DROPS::RegisterScalarFunction regscas("ALE_Inter",      BInter   );
 }//end of namespace
