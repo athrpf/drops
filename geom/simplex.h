@@ -1,6 +1,6 @@
 /// \file simplex.h
 /// \brief classes that constitute the siplex
-/// \author LNM RWTH Aachen:Patrick Esser, Joerg Grande, Sven Gross, Eva Loch; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen:Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Liang Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -251,6 +251,7 @@ class VertexCL
     void                  SetPrio(PrioT p)      { _dddH.prio=p;}                         ///< set priority of this vertex (danger: no notification to DDD, use PrioChange!)
 #endif
     const Point3DCL&      GetCoord        () const { return _Coord; }                       ///< get coordinate of this vertex
+    void                  ChangeCoord     (Point3DCL& p) { _Coord = p; }                    ///change the coordinate of the vertex, e.g. ALE method in poisson problem
     bool                  IsOnBoundary    () const { return _BndVerts; }                    ///< check if this vertex lies on domain boundary
     const_BndVertIt       GetBndVertBegin () const { return _BndVerts->begin(); }
     const_BndVertIt       GetBndVertEnd   () const { return _BndVerts->end(); }

@@ -68,6 +68,7 @@ class VTKOutCL
     std::ofstream      file_;                       ///< actual file where to put data
     VTKvarMapT         vars_;                       ///< The variables stored by varName.
     const bool         binary_;                     ///< output in binary or ascii format
+    const bool         onlyP1_;                     ///< the simulation only contains P1 data and therefore only that kind of data will be written out (shrinks file sizes)
     bool               geomwritten_;                ///< flag if geometry has been written
 
     vertexAddressMapT   vAddrMap_;                  ///< Map vertex address to a unique (consecutive) number
@@ -133,7 +134,7 @@ class VTKOutCL
   public:
     /// \brief Constructor of this class
     VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
-             const std::string& dirname, const std::string& filename , bool binary, Uint lvl=(Uint)-1);
+             const std::string& dirname, const std::string& filename , bool binary, bool onlyP1=false, Uint lvl=(Uint)-1);
     ~VTKOutCL();
 
     /// \brief Register a variable or the geometry for output with Write().

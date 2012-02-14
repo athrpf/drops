@@ -233,7 +233,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, __UNUSED__ const double 
     LevelsetAccumulator_P2CL<DiscVelSolT> accu( *this, vel, SD_, dt);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, MG_, Phi.RowIdx->TriangLevel());
+    accumulate( accus, MG_, Phi.RowIdx->TriangLevel(), Phi.RowIdx->GetMatchingFunction(), Phi.RowIdx->GetBndInfo());
 }
 
 template <class DiscVelSolT>
@@ -245,7 +245,7 @@ PermutationT LevelsetP2CL::downwind_numbering (const DiscVelSolT& vel, IteratedD
     DownwindAccu_P2CL accu( *vel.GetBndData(), *vel.GetSolution(), idx, C);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, this->GetMG(), idx.TriangLevel());
+    accumulate( accus, this->GetMG(), idx.TriangLevel(), idx.GetMatchingFunction(), idx.GetBndInfo());
 
     const PermutationT& p= dw.downwind_numbering( C);
     permute_fe_basis( GetMG(), idx, p);

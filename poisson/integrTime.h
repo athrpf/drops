@@ -26,6 +26,7 @@
 #define DROPS_POI_INTEGRTIME_H
 
 #include "misc/problem.h"
+#include "poisson/poisson.h"
 
 /// \todo FracStepScheme fuer instat. Poisson
 
@@ -52,52 +53,54 @@ class InstatPoissonThetaSchemeCL
   private:
     PoissonT&   _Poisson;
     SolverT&    _solver;
-
+    const ParamCL& _param;
+    
     VecDescCL *_b, *_old_b;             // rhs
     VecDescCL *_cplA, *_old_cplA;       // couplings with poisson matrix A
     VecDescCL *_cplM, *_old_cplM;       // couplings with mass matrix M
     VecDescCL *_cplU;                   // couplings with convection matrix U
     VectorCL  _rhs;
+    VecDescCL *_new_cplA, *_new_b; 
     MLMatrixCL  _Lmat;                  // M + theta*dt*nu*A  = linear part
 
     double _theta, _dt;
     bool   _Convection;
-    bool   _SUPG;
+    bool   _supg;
+    bool   _ale;
     instat_scalar_fun_ptr _presol;
     instat_scalar_fun_ptr _delta;
+
   public:
-    InstatPoissonThetaSchemeCL( PoissonT& Poisson, SolverT& solver, double theta= 0.5, bool Convection= false, 
-                                bool SUPG=false, instat_scalar_fun_ptr presol = NULL, instat_scalar_fun_ptr delta = NULL)
-    : _Poisson( Poisson), _solver( solver),
+    InstatPoissonThetaSchemeCL( PoissonT& Poisson, SolverT& solver, const ParamCL& param,
+                  instat_scalar_fun_ptr presol = NULL, instat_scalar_fun_ptr delta = NULL)
+    : _Poisson( Poisson), _solver( solver), _param(param),
       _b( &Poisson.b), _old_b( new VecDescCL),
       _cplA( new VecDescCL), _old_cplA( new VecDescCL),
       _cplM( new VecDescCL), _old_cplM( new VecDescCL),
       _cplU( new VecDescCL),
-      _rhs( Poisson.b.RowIdx->NumUnknowns()), _theta( theta), _Convection( Convection), _SUPG(SUPG), 
+      _rhs( Poisson.b.RowIdx->NumUnknowns()), 
+      _new_cplA( new VecDescCL), _new_b( new VecDescCL), _theta( _param.get<double>("Time.Theta")),
+      _Convection(_param.get<int>("PoissonCoeff.Convection")), _supg(_param.get<int>("Stabilization.SUPG")),
+      _ale(_param.get<int>("ALE.wavy")),
       _presol(presol), _delta(delta)
     {
       _old_b->SetIdx( _b->RowIdx);
       _cplA->SetIdx( _b->RowIdx); _old_cplA->SetIdx( _b->RowIdx);
       _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
-      _Poisson.SetupInstatRhs( *_old_cplA, *_old_cplM, _Poisson.x.t, *_old_b, _Poisson.x.t, _SUPG);
-      
-      if(_presol != NULL)
-      {
-        VecDescCL *tmp;
-        tmp =new VecDescCL;
-        tmp->SetIdx( _b->RowIdx);
-        _Poisson.SetupGradSrc( *tmp, _presol, _delta, _Poisson.x.t);
-        _old_b->Data += tmp->Data; 
-      }
-      if (Convection)
+      _new_cplA->SetIdx( _b->RowIdx); _new_b->SetIdx( _b->RowIdx);
+      _Poisson.SetupInstatRhs( *_old_cplA, *_old_cplM, _Poisson.x.t, *_old_b, _Poisson.x.t);
+      if (_Convection)
       {
         _cplU->SetIdx( _b->RowIdx);
         _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.x.t);
-      }
-      if(_SUPG)
-      {
-        std::cout << "----------------------------------------------------------------------------------\n"
-                  <<"The SUPG stabilization has been added ...\n";  
+        if(_presol != NULL)
+        {
+           VecDescCL *tmp;
+           tmp =new VecDescCL;
+           tmp->SetIdx( _b->RowIdx);
+           _Poisson.SetupGradSrc( *tmp, _presol, _delta, _Poisson.x.t);
+           _old_b->Data += tmp->Data; 
+        }
       }
     }
 
@@ -137,11 +140,15 @@ template <class PoissonT, class SolverT>
 void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
 {
   _Poisson.x.t+= _dt;
-  
-  if(_SUPG)
-  _Poisson.SetupInstatSystem( _Poisson.A, _Poisson.M, _Poisson.x.t, _SUPG );
-  
-  _Poisson.SetupInstatRhs( *_cplA, *_cplM, _Poisson.x.t, *_b, _Poisson.x.t, _SUPG);
+  _rhs = _Poisson.A.Data * v.Data;
+  _rhs*= -_dt*(1.0-_theta); 
+
+  _rhs+=  _dt*(1.0-_theta)*(_old_b->Data)
+         +_dt*(1.0-_theta)* _old_cplA->Data;
+  //Update rhs
+  if(_supg||_ale) //update stiffness and massmatrix if necessary
+    _Poisson.SetupInstatSystem( _Poisson.A, _Poisson.M, _Poisson.x.t);
+  _Poisson.SetupInstatRhs( *_cplA, *_cplM, _Poisson.x.t, *_b, _Poisson.x.t);
   if(_presol != NULL)
   {
       VecDescCL *tmp;
@@ -150,14 +157,26 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
       _Poisson.SetupGradSrc( *tmp, _presol, _delta, _Poisson.x.t);
       _b->Data += tmp->Data; 
   }
+  
+  if(_supg||_ale) 
+  {
+      _Poisson.SetupInstatRhs( *_new_cplA, *_old_cplM, _Poisson.x.t-_dt, *_new_b, _Poisson.x.t-_dt);
+      if(_presol != NULL)
+      {
+          VecDescCL *tmp;
+          tmp = new VecDescCL;
+          tmp->SetIdx( _new_b->RowIdx);
+          _Poisson.SetupGradSrc( *tmp, _presol, _delta, _Poisson.x.t);
+          _new_b->Data += tmp->Data; 
+      }
+  }
 
-  _rhs = _Poisson.A.Data * v.Data;
-  _rhs*= -_dt*(1.0-_theta);
-  _rhs+= _Poisson.M.Data*v.Data
-         + _dt*( _theta*_b->Data + (1.0-_theta)*(_old_b->Data))
-         + (_dt*(1.0-_theta)) * _old_cplA->Data + (_dt*_theta) * _cplA->Data
-         - _old_cplM->Data + _cplM->Data;
-
+  _rhs +=_Poisson.M.Data*v.Data
+          -_old_cplM->Data
+          +_dt*_theta*_b->Data
+          + _dt*_theta*_cplA->Data
+          + _cplM->Data;
+    
   if (_Convection)
   {
       _rhs+= (_dt*(1.0-_theta)) * (_cplU->Data - _Poisson.U.Data * v.Data );
