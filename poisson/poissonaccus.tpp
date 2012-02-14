@@ -234,7 +234,7 @@ void SourceAccumulator_P1CL<Coeff,QuadCL>::update_rhsintegrals(const TetraCL& si
                 else
                 vel= Coeff::Vel;
                 QuadCL<double> f_SD( rhs*U_Grad[i] );    //SUPG for source term
-                b_->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha);
+                b_->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha(GetBaryCenter(sit), t));
             }
             if ( BndData_!=0 && BndData_->IsOnNatBnd(*sit.GetVertex(i)) )
                 for (int f=0; f < 3; ++f)
@@ -296,10 +296,11 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::visit (const TetraCL& sit)
 template<class Coeff,template <class T=double> class QuadCL>
 void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
 {    
+    Quad2CL<> quad_a;
     P1DiscCL::GetGradients(G,det,sit);
     absdet= std::fabs(det);
-    //quad_a.assign( sit, &Coeff::DiffusionCoeff, 0.0);                  //for variable diffusion coefficient
-    //const double int_a= quad_a.quad( absdet);
+    quad_a.assign( sit, Coeff::alpha, 0.0);                  //for variable diffusion coefficient
+    const double int_a= quad_a.quad( absdet);
     if(supg_.GetSUPG())
     {   
         instat_vector_fun_ptr vel;
@@ -317,7 +318,7 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
         {
             // dot-product of the gradients
 
-            coup[i][j]=  Coeff::alpha*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
+            coup[i][j]=  int_a*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
             coup[i][j]+= P1DiscCL::Quad(sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
             if(supg_.GetSUPG())
             {
@@ -328,7 +329,7 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
                 vel= Coeff::Vel;
                 QuadCL<double> res3( U_Grad[i] * U_Grad[j]);
                 //SUPG stabilization
-                coup[i][j]+= res3.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha);
+                coup[i][j]+= res3.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha(GetBaryCenter(sit), t));
             }
         }
         UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx)
@@ -418,7 +419,7 @@ void MassAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
             else
             vel= Coeff::Vel;
             QuadCL<double> StrM(U_Grad[i]*phiQuad[j]);
-            coup[i][j]+=StrM.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha);  //SUPG term
+            coup[i][j]+=StrM.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff::alpha(GetBaryCenter(sit), t));  //SUPG term
         }
       }
       UnknownIdx[i]= sit.GetVertex(i)->Unknowns.Exist(idx) ? sit.GetVertex(i)->Unknowns(idx) : NoIdx;      

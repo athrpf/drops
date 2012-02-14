@@ -62,18 +62,18 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat
     //Create tuple
     TetraAccumulatorTupleCL accus;
     //Accumulators
-    StiffnessAccumulator_P1CL<Coeff,Quad5CL> * accua = 0;
-    MassAccumulator_P1CL<Coeff,Quad5CL> * accum = 0;
+    StiffnessAccumulator_P1CL<Coeff,Quad2CL> * accua = 0;
+    MassAccumulator_P1CL<Coeff,Quad2CL> * accum = 0;
     ConvectionAccumulator_P1CL<Coeff,Quad3CL> * accuc = 0;
-    SourceAccumulator_P1CL<Coeff,Quad5CL> * accuf = 0;
+    SourceAccumulator_P1CL<Coeff,Quad2CL> * accuf = 0;
     
     //register accumulator
     if (Amat !=0 || cplA !=0){
-        accua = new StiffnessAccumulator_P1CL<Coeff,Quad5CL> (MG,BndData_,Amat,cplA,RowIdx,ColIdx,supg, ALE, t);
+        accua = new StiffnessAccumulator_P1CL<Coeff,Quad2CL> (MG,BndData_,Amat,cplA,RowIdx,ColIdx,supg, ALE, t);
         accus.push_back( accua);
     }
     if (Mmat !=0 || cplM !=0){
-        accum = new MassAccumulator_P1CL<Coeff,Quad5CL> (MG,BndData_,Mmat,cplM,RowIdx,ColIdx,supg, ALE, t);
+        accum = new MassAccumulator_P1CL<Coeff,Quad2CL> (MG,BndData_,Mmat,cplM,RowIdx,ColIdx,supg, ALE, t);
         accus.push_back( accum);
     }
     if (Umat !=0 || cplU !=0){
@@ -81,7 +81,7 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat
         accus.push_back( accuc);
     }
     if (f !=0){
-        accuf = new SourceAccumulator_P1CL<Coeff,Quad5CL> (MG,BndData_,f,RowIdx,supg, ALE, t);
+        accuf = new SourceAccumulator_P1CL<Coeff,Quad2CL> (MG,BndData_,f,RowIdx,supg, ALE, t);
         accus.push_back( accuf);
     }
     
@@ -211,7 +211,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG,
 //    }
 //}
 
-template<class Coeff>
+/*template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t) const
 ///Go throught every multigrid level to Setup left hand side of instationary system in P1
 {
@@ -220,7 +220,7 @@ void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
     MLMatrixCL::iterator  itM    = matM.Data.begin();
     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
         SetupPartialSystem_P1(MG_,Coeff_,&*itA, &*itM,0,0,0,0,0,0,*itRow, *itCol,t,supg_, ALE_, false);
-}
+}*/
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
@@ -234,12 +234,12 @@ void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, doub
         
 }
 
-template<class Coeff>
+/*template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double) const
 ///Setup right hand side of instationary system in P1 only last level
 {
   SetupPartialSystem_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg_, ALE_, false);
-}
+}*/
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
@@ -380,7 +380,7 @@ void PoissonP1CL<Coeff>::SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, 
     }
   }
 }
-/*template <class Coeff>
+template <class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG) const
 /// Sets up the time dependent right hand sides including couplings
 /// resulting from inhomogeneous dirichlet bnd conditions
@@ -478,7 +478,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
               vA.Data[UnknownIdx[i]]+=
-                Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
+                P1DiscCL::Quad2D(*sit, FaceOfVert(i, f), BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), i, tA);
       }
     }
   }
@@ -553,7 +553,22 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL&
                 M( UnknownIdx[i], UnknownIdx[j])+= coupM[i][j];
               }
               // else coupling with vertex j on right-hand-side  --> 0
-=======*/
+            }
+          }
+      }
+      A.Build();
+      M.Build();
+  
+}
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, bool SUPG) const
+ {
+     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
+     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
+     MLMatrixCL::iterator  itM    = matM.Data.begin();
+     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
+         SetupInstatSystem_P1( MG_, Coeff_, *itA, *itM, *itRow, *itCol, t, SUPG);
+ }
 
 
 //=======================================================================================================

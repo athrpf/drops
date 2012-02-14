@@ -38,6 +38,7 @@ double PoissonCoeffCL::dy_;
 int PoissonCoeffCL::nx_;
 int PoissonCoeffCL::ny_;
 double PoissonCoeffCL::dt_;
+int PoissonCoeffCL::Ref_;
 instat_scalar_fun_ptr PoissonCoeffCL::q;
 instat_scalar_fun_ptr PoissonCoeffCL::alpha;
 instat_scalar_fun_ptr PoissonCoeffCL::f;
@@ -183,6 +184,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscaf("Example1_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
     static DROPS::RegisterScalarFunction regscas("Example1_Solution",     DROPS::instat_scalar_fun_ptr(Solution)    );
     static DROPS::RegisterScalarFunction regscaa("Example1_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+    static DROPS::RegisterScalarFunction regscan("Example1_Neumann",      DROPS::instat_scalar_fun_ptr(Neumann)     );
     static DROPS::RegisterVectorFunction regscav("Example1_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
     static DROPS::RegisterScalarFunction regscai("Example1_InitialValue", DROPS::instat_scalar_fun_ptr(InitialValue));
 

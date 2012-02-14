@@ -95,7 +95,7 @@
             // b.dom. 2 has normal in pos. x direction
             // b.dom. 3 has normal in neg. y direction, etc..
             // -> Here: a cube which is divived by 4 in all directions.
-        "BoundaryType":         "2!23!2!2!2!2",
+        "BoundaryType":         "2!2!2!2!2!2",
             //Boundary conditions for each boundary domain
             // are prescribes by a type and a function. Thus
             // each boundary domain gets an index.
@@ -104,7 +104,7 @@
             // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
             // NatBC= 23
             // -> Here: all boundaries are Dirichlet boundaries.
-        "BoundaryFncs":         "One!Example1_Neumann!One!One!One!One"
+        "BoundaryFncs":         "One!One!One!One!One!One"
             // a function of a function container (s. PoissonCoeff-sect.)
             // -> Here: all boundaries have Dirichlet value 1.
             //For each boundary domain take a string which describes

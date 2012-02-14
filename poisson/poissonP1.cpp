@@ -97,7 +97,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         // discretize (setup linear equation system)
         std::cout << line << "Discretize (setup linear equation system) in stationary problem...\n";
         timer.Reset();
-        Poisson.SetupSystem( Poisson.A, Poisson.b);
+        Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         
@@ -288,7 +288,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         timer.Reset();
         if(Poisson.ALE_)
             ALE.InitGrid();
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t);
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG"));
         Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;

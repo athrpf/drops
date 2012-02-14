@@ -45,6 +45,7 @@ class PoissonCoeffCL
     static double dx_, dy_;
     static int    nx_, ny_;
     static double dt_;
+    static int    Ref_;
 
   public:
     //reaction
@@ -85,6 +86,7 @@ class PoissonCoeffCL
         else
             Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
         interface = scamap[P.get<std::string>("ALE.Interface")];
+        Ref_=P.get<int>("DomainCond.RefineSteps");
     }
     PoissonCoeffCL( ParamCL& P, instat_scalar_fun_ptr diffusion, instat_scalar_fun_ptr source, instat_scalar_fun_ptr init){
         C_=P;
@@ -111,8 +113,27 @@ class PoissonCoeffCL
             Vel = vecmap["ZeroVel"];
         else
             Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
-    }
-    
+            
+        Ref_=P.get<int>("DomainCond.RefineSteps");
+     }
+ 
+     //Only used for flat film case
+     static double h_Value()
+     {//mesh size in flow direction
+         double h=dx_/(nx_*std::pow(2, Ref_));
+         return h;
+     }
+     static double Sta_Coeff(const DROPS::Point3DCL& p, double t)
+     {//Stabilization coefficient
+         double h  =h_Value();
+         double Pec=0.;
+         Pec=Vel(p, t).norm()*h/(2.*alpha(p, t));  //compute mesh Peclet number
+         if (Pec<=1)
+             return 0.0;
+         else
+            return h/(2.*Vel(p, t).norm())*(1.-1./Pec);
+     }
+     
     static Point3DCL ALEVelocity(const DROPS::Point3DCL& p, double t)
     {
         double eps =1.0e-7;
