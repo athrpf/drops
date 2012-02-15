@@ -46,8 +46,8 @@
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":        0.01,                                    //Diffusion coefficient
-            // -> Here: a = 1
+        "Diffusion":        "instatSUPG_Diffusion",                                    //Diffusion coefficient
+            // -> Here: a = 0.01
         "Reaction":             "instatSUPG_Reaction",               //Reaction term [q] with the name "Example1_Reaction"
             // -> Here: q = 0
         "Solution":             "instatSUPG_Solution",               //Solution of poisson problem [u] has the name "Example1_Solution"

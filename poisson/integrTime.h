@@ -88,7 +88,7 @@ class InstatPoissonThetaSchemeCL
       _cplA->SetIdx( _b->RowIdx); _old_cplA->SetIdx( _b->RowIdx);
       _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
       _new_cplA->SetIdx( _b->RowIdx); _new_b->SetIdx( _b->RowIdx);
-      _Poisson.SetupInstatRhs( *_old_cplA, *_old_cplM, _Poisson.x.t, *_old_b, _Poisson.x.t, true);
+      _Poisson.SetupInstatRhs( *_old_cplA, *_old_cplM, _Poisson.x.t, *_old_b, _Poisson.x.t);
       if (_Convection)
       {
         _cplU->SetIdx( _b->RowIdx);
@@ -147,8 +147,8 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
          +_dt*(1.0-_theta)* _old_cplA->Data;
   //Update rhs
   if(_supg||_ale) //update stiffness and massmatrix if necessary
-    _Poisson.SetupInstatSystem( _Poisson.A, _Poisson.M, _Poisson.x.t, true);
-  _Poisson.SetupInstatRhs( *_cplA, *_cplM, _Poisson.x.t, *_b, _Poisson.x.t, true);
+    _Poisson.SetupInstatSystem( _Poisson.A, _Poisson.M, _Poisson.x.t );
+  _Poisson.SetupInstatRhs( *_cplA, *_cplM, _Poisson.x.t, *_b, _Poisson.x.t);
  if(_presol != NULL)
   {
       VecDescCL *tmp;
@@ -160,7 +160,7 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
   
  if(_supg||_ale) 
   {
-      _Poisson.SetupInstatRhs( *_new_cplA, *_old_cplM, _Poisson.x.t-_dt, *_new_b, _Poisson.x.t-_dt, _supg);
+      _Poisson.SetupInstatRhs( *_new_cplA, *_old_cplM, _Poisson.x.t-_dt, *_new_b, _Poisson.x.t-_dt);
       if(_presol != NULL)
       {
           VecDescCL *tmp;

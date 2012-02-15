@@ -288,7 +288,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         timer.Reset();
         if(Poisson.ALE_)
             ALE.InitGrid();
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG"));
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t);
         Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;

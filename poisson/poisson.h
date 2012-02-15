@@ -184,7 +184,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     // set up matrices and rhs
     void SetupSystem         (MLMatDescCL&, VecDescCL&, bool SUPG=false, bool GradProb=false) const;
     ///  \brief set up matrices (M is time independent)
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t) const;
     /// \brief set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
 
@@ -193,7 +193,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     /// couplings with bnd unknowns, coefficient f(t)
     /// If the function is called with the same vector for some arguments,
     /// the vector will contain the sum of the results after the call
-    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool supg) const;
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
     /// \brief Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t= 0.) const;
 

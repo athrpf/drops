@@ -211,7 +211,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG,
 //    }
 //}
 
-/*template<class Coeff>
+template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t) const
 ///Go throught every multigrid level to Setup left hand side of instationary system in P1
 {
@@ -220,7 +220,7 @@ void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
     MLMatrixCL::iterator  itM    = matM.Data.begin();
     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
         SetupPartialSystem_P1(MG_,Coeff_,&*itA, &*itM,0,0,0,0,0,0,*itRow, *itCol,t,supg_, ALE_, false);
-}*/
+}
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
@@ -234,12 +234,12 @@ void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, doub
         
 }
 
-/*template<class Coeff>
+template<class Coeff>
 void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double) const
 ///Setup right hand side of instationary system in P1 only last level
 {
   SetupPartialSystem_P1(MG_,Coeff_,0,0,0,&vA,&vM,0,&vf,&BndData_,*vA.RowIdx,*vA.RowIdx,tA,supg_, ALE_, false);
-}*/
+}
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
@@ -380,196 +380,6 @@ void PoissonP1CL<Coeff>::SetupL2ProjGrad(VecDescCL& r, instat_scalar_fun_ptr T, 
     }
   }
 }
-template <class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG) const
-/// Sets up the time dependent right hand sides including couplings
-/// resulting from inhomogeneous dirichlet bnd conditions
-{
-  vA.Clear( tA);
-  vM.Clear( tA);
-  vf.Clear( tf);
-
-  const Uint lvl = vA.GetLevel(),
-             idx = vA.RowIdx->GetIdx();
-  Point3DCL G[4];
-
-  Comment("InstatPoissonP1CL::SetupInstatRhs with index "<<idx<<std::endl,
-          DebugNumericC);
-
-  double coupA[4][4];
-  double det;
-  double absdet;
-  IdxT UnknownIdx[4];
-  Quad2CL<> quad_a;
-  Quad2CL<>  rhs;
-
-  double coupM[4][4];
-  Quad2CL<> U_Grad[4];
-
-  double tmp;   //used for store stabilization parameter
-
-  for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-    sit != send; ++sit)
-  {
-    P1DiscCL::GetGradients(G,det,*sit);
-    absdet= std::fabs(det);
-
-    quad_a.assign( *sit, Coeff_.alpha, tA);
-    const double int_a=  quad_a.quad(absdet);
-    if(SUPG)
-    {
-        Quad2CL<Point3DCL> u(*sit, Coeff_.Vel, tA);
-        for(int i=0; i<4; i++)
-            U_Grad[i]=dot(u, Quad2CL<Point3DCL>(G[i]));
-        tmp = Coeff_.Sta_Coeff(GetBaryCenter(*sit),tA);
-    }
-    for(int i=0; i<4; ++i)
-    {
-      for(int j=0; j<4; ++j)
-      {
-        // dot-product of the gradients
-        coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-        // coupA[i][j]+= P1DiscCL::Quad(*sit, &Coeff_.q, i, j)*absdet;
-        coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-        if(SUPG)
-        {
-            Quad2CL<double> StrA(U_Grad[i]*U_Grad[j]);
-            //Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+= StrA.quad(absdet)*tmp;  //SUPG term
-            coupM[i][j]+= U_Grad[i].quadP1(j,absdet)*tmp; //SUPG term
-        }
-      }
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
-                                                            : NoIdx;
-    }
-
-    for(int j=0; j<4; ++j)
-      if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
-      { // coupling with vertex j on right-hand-side
-        const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), tA);
-        for(int i=0; i<4;++i)    // assemble row i
-        {
-          if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-          {
-            vA.Data[UnknownIdx[i]]-= coupA[j][i] * bndval;
-            vM.Data[UnknownIdx[i]]-= coupM[j][i] * bndval;//P1DiscCL::GetMass( i, j)*absdet * bndval;
-          }
-        }
-      }
-
-    rhs.assign( *sit, Coeff_.f, tf);
-    if (SUPG)
-        tmp = Coeff_.Sta_Coeff( GetBaryCenter(*sit), tf );   //tf maybe not equal to tA
-    for(int i=0; i<4;++i)    // assemble row i
-    {
-      if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-      {
-//        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
-//        if (!Coeff_.SpecialRhs)
-        //Quad5CL<double> fp1(rhs*phiq5[i]);
-        vf.Data[UnknownIdx[i]]+= rhs.quadP1(i,absdet);
-        if (SUPG) {
-            Quad2CL<double> f_SD( rhs*U_Grad[i] );
-            vf.Data[UnknownIdx[i]]+= f_SD.quad(absdet)*tmp;   //SUPG term
-        }
-        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
-          for (int f=0; f < 3; ++f)
-            if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-              vA.Data[UnknownIdx[i]]+=
-                P1DiscCL::Quad2D(*sit, FaceOfVert(i, f), BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), i, tA);
-      }
-    }
-  }
-}
-template<class Coeff>
-void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat,
-                          IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool SUPG)
-/// Sets up the stiffness matrix and the mass matrix
-{
-  MatrixBuilderCL A( &Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
-  MatrixBuilderCL M( &Mmat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
-
-  const Uint lvl = RowIdx.TriangLevel();
-  const Uint idx = RowIdx.GetIdx();
-
-  Point3DCL G[4];
-
-  double coupA[4][4];
-  double det;
-  double absdet;
-
-  double coupM[4][4];
-  Quad2CL<> U_Grad[4];
-
-  IdxT UnknownIdx[4];
-  Quad2CL<> quad_a;
-  double tmp;     //used for store stabilization parameter
-
-      for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
-        sit != send; ++sit)
-      {
-
-        P1DiscCL::GetGradients(G,det,*sit);
-        absdet= std::fabs(det);
-
-        quad_a.assign( *sit, Coeff_.alpha, t);
-        const double int_a= quad_a.quad( absdet);
-        if(SUPG)
-        {
-	  Quad2CL<Point3DCL> u(*sit, Coeff_.Vel, t);
-            for(int i=0; i<4; i++)
-                U_Grad[i]=dot(u, Quad2CL<Point3DCL>(G[i]));
-	    tmp = Coeff_.Sta_Coeff(GetBaryCenter(*sit),t);
-        }
-        for(int i=0; i<4; ++i)
-        {
-          for(int j=0; j<4; ++j)
-          {
-            // dot-product of the gradients
-            coupA[i][j]= inner_prod( G[i], G[j])*int_a;
-            // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff_.q, i, j)*absdet;
-            coupM[i][j]= P1DiscCL::GetMass( i, j)*absdet;
-            if(SUPG)
-            {
-            Quad2CL<double> StrA(U_Grad[i]*U_Grad[j]);
-            //Quad5CL<double> StrM(U_Grad[i]*phiq5[j]);
-            coupA[i][j]+=StrA.quad(absdet)*tmp;  //SUPG term
-            coupM[i][j]+= U_Grad[i].quadP1(j, absdet)*tmp; //SUPG term
-            }
-          }
-          UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
-        }
-
-        for(int i=0; i<4; ++i)    // assemble row i
-          if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
-          {
-            for(int j=0; j<4;++j)
-            {
-              if (sit->GetVertex(j)->Unknowns.Exist(idx)) // vertex j is not on a Dirichlet boundary
-              {
-                A( UnknownIdx[i], UnknownIdx[j])+= coupA[j][i];
-                M( UnknownIdx[i], UnknownIdx[j])+= coupM[i][j];
-              }
-              // else coupling with vertex j on right-hand-side  --> 0
-            }
-          }
-      }
-      A.Build();
-      M.Build();
-  
-}
-template<class Coeff>
-void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double t, bool SUPG) const
- {
-     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
-     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
-     MLMatrixCL::iterator  itM    = matM.Data.begin();
-     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
-         SetupInstatSystem_P1( MG_, Coeff_, *itA, *itM, *itRow, *itCol, t, SUPG);
- }
-
 
 //=======================================================================================================
 //

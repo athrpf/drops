@@ -49,7 +49,7 @@
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":        1,            //Diffusion coefficient
+        "Diffusion":        "One",            //Diffusion coefficient
             // -> Here: a = 1
         "Reaction":         "Adjoint_Reaction",             //Reaction term [q] with the name              "Adjoint_Reaction"
             // -> Here: q = 0

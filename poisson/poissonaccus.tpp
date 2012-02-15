@@ -318,7 +318,7 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
         {
             // dot-product of the gradients
 
-            coup[i][j]=  int_a*inner_prod( G[i], G[j])/6.0*absdet; //diffusion
+            coup[i][j]=  int_a*inner_prod( G[i], G[j]); //diffusion
             coup[i][j]+= P1DiscCL::Quad(sit, Coeff::q, i, j, 0.0)*absdet;  //reaction
             if(supg_.GetSUPG())
             {

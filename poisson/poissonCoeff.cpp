@@ -344,6 +344,12 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
     }
+
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 0.01;
+    }
+    
     /// \brief Convection: constant flow in x direction
     DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){ 
     //(1, 0, 0)^T
@@ -354,13 +360,8 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     /// \brief Right-hand side
     double Source(const DROPS::Point3DCL& p, double t){
     // 1 - (1 + D)e^(-t-y)
-        static bool first = true;
-        //alpha to control diffusion parameter
-        static double alpha;
-        if(first){
-        alpha = P.get<double>("PoissonCoeff.Diffusion");
-        first=false;                                    
-        }
+        double alpha;
+        alpha = Diffusion(p, t);                                   
         double ret=0.;
         ret = 1. - (1 + alpha) * exp(-t-p[1]);
         return ret; 
@@ -368,16 +369,12 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     /// \brief Solution
     double Solution( const DROPS::Point3DCL& p, double t)
     {
-        static bool first = true;
-        //alpha to control diffusion parameter
-        static double alpha;
-        if(first){
-        alpha = P.get<double>("PoissonCoeff.Diffusion");
-        first=false;                                    
-        }
+        double alpha;
+        alpha = Diffusion(p, t);
         return exp(-t-p[1]) + p[0] - (1 - exp(p[0]/alpha))/(1 - exp(1./alpha)); 
     }
     static DROPS::RegisterScalarFunction regscaq("instatSUPG_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaa("instatSUPG_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
     static DROPS::RegisterScalarFunction regscaf("instatSUPG_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
     static DROPS::RegisterScalarFunction regscas("instatSUPG_Solution",     DROPS::instat_scalar_fun_ptr(Solution)    );
     static DROPS::RegisterVectorFunction regscav("instatSUPG_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
