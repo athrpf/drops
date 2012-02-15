@@ -169,10 +169,10 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL U;
 
 
-    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE, bool adj=false)
+    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE=false, bool adj=false)
         : base_( mgb, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
 
-    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE, bool adj=false)
+    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE=false, bool adj=false)
         : base_( mg, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
