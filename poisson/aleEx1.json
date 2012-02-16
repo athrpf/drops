@@ -33,7 +33,7 @@
 
 	"PoissonCoeff":
 	{
-		"Diffusion":		1,
+		"Diffusion":		"TestALE_Diffusion",
 		"Reaction":		    "Zero",
 		"Solution":		    "TestALE_Solution",
 		"Source":	 	    "TestALE_Source",
@@ -41,7 +41,7 @@
 		"InitialVal":		"TestALE_Solution",
 		"Convection":       1
 	},
-    
+
     "Stabilization":
     {
         "SUPG":              0,

@@ -468,6 +468,10 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
     }
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1.0;
+    }
     DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){ 
         DROPS::Point3DCL ref = TransBack(p, t);
         DROPS::Point3DCL v(0.);
@@ -490,13 +494,8 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     }
     /// \brief Right-hand side
     double Source(const DROPS::Point3DCL& p, double t){
-        static bool first = true;
-        //alpha to control diffusion parameter, you could change a small number to make problem convection-dominated
-        static double alpha;
-        if(first){
-        alpha = P.get<double>("PoissonCoeff.Diffusion");
-        first=false;                                    
-        }
+        double alpha;
+        alpha = Diffusion(p, t);
         DROPS::Point3DCL ref = TransBack(p, t);
         double a= Gradx(ref,t);
         double b= Grady(ref,t);
@@ -512,6 +511,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     }
     static DROPS::RegisterScalarFunction regscaq("TestALE_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)     );
     static DROPS::RegisterScalarFunction regscaf("TestALE_Source",       DROPS::instat_scalar_fun_ptr(Source)       );
+    static DROPS::RegisterScalarFunction regscaa("TestALE_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)    );
     static DROPS::RegisterScalarFunction regscaint("TestALE_Interface",  DROPS::instat_scalar_fun_ptr(Interface)    );
     static DROPS::RegisterScalarFunction regscas("TestALE_Solution",     DROPS::instat_scalar_fun_ptr(Solution)     );
     static DROPS::RegisterVectorFunction regscav("TestOrigin_Velocity",  DROPS::instat_vector_fun_ptr(Flowfield)    );
