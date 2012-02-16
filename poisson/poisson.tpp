@@ -54,7 +54,7 @@ namespace DROPS
 // bool adjoint         Adjoint problem flag        
 //========================================================================================================
 template<class Coeff>
-void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat, MatrixCL* Mmat, 
+void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& PoiCoeff, MatrixCL* Amat, MatrixCL* Mmat, 
                           MatrixCL* Umat, VecDescCL* cplA, VecDescCL* cplM, VecDescCL* cplU, VecDescCL* f, 
                           const BndDataCL<> * BndData_,
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg, bool ALE, bool adjoint)
@@ -69,19 +69,19 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& , MatrixCL* Amat
     
     //register accumulator
     if (Amat !=0 || cplA !=0){
-        accua = new StiffnessAccumulator_P1CL<Coeff,Quad2CL> (MG,BndData_,Amat,cplA,RowIdx,ColIdx,supg, ALE, t);
+        accua = new StiffnessAccumulator_P1CL<Coeff,Quad2CL> (MG, PoiCoeff, BndData_,Amat,cplA,RowIdx,ColIdx,supg, ALE, t);
         accus.push_back( accua);
     }
     if (Mmat !=0 || cplM !=0){
-        accum = new MassAccumulator_P1CL<Coeff,Quad2CL> (MG,BndData_,Mmat,cplM,RowIdx,ColIdx,supg, ALE, t);
+        accum = new MassAccumulator_P1CL<Coeff,Quad2CL> (MG, PoiCoeff, BndData_,Mmat,cplM,RowIdx,ColIdx,supg, ALE, t);
         accus.push_back( accum);
     }
     if (Umat !=0 || cplU !=0){
-        accuc = new ConvectionAccumulator_P1CL<Coeff,Quad3CL> (MG,BndData_,Umat,cplU,RowIdx,ColIdx,t, ALE, adjoint);
+        accuc = new ConvectionAccumulator_P1CL<Coeff,Quad3CL> (MG, PoiCoeff, BndData_,Umat,cplU,RowIdx,ColIdx,t, ALE, adjoint);
         accus.push_back( accuc);
     }
     if (f !=0){
-        accuf = new SourceAccumulator_P1CL<Coeff,Quad2CL> (MG,BndData_,f,RowIdx,supg, ALE, t);
+        accuf = new SourceAccumulator_P1CL<Coeff,Quad2CL> (MG, PoiCoeff, BndData_,f,RowIdx,supg, ALE, t);
         accus.push_back( accuf);
     }
     
