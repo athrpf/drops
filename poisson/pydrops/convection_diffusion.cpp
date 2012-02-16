@@ -329,21 +329,21 @@ namespace DROPS
       std::string IA12Sensstr ("IA12Sensitivity");
       std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
       bool IA12SensProb = (IA12Sensstr.compare(IAProbstr) == 0);
+      typedef boost::shared_ptr<InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL> > ThetaPtr;
+      ThetaPtr ThetaScheme;
       if(IA12SensProb)
       {
-        InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-	    ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"), *PyC->GetPresol, *PyC->GetDelPsi);   
+        ThetaScheme = ThetaPtr(new InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"), *PyC->GetPresol, *PyC->GetDelPsi));
       }
       else
       {
-        InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-	    ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
+        ThetaScheme = ThetaPtr(new InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG")));
       }
-      ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
+      ThetaScheme->SetTimeStep(P.get<double>("Time.StepSize") );
       for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
 	  timer.Reset();
 	  *(PyC->outfile) << line << "Step: " << step << std::endl;
-	  ThetaScheme.DoStep( Poisson.x);
+	  ThetaScheme->DoStep( Poisson.x);
 	  //Setup solutions for python interface
 	  PyC->SetSol3D(Poisson.GetSolution(), Poisson.x.t);
 
@@ -561,7 +561,7 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
 }
 
 //used to solve the sensetivity problem in IA12
-void CoefCorrection(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, 
+void CoefCorrection(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface,
                     PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, PdeFunction::ConstPtr presol, PdeFunction::ConstPtr Del,double* C_sol)
 {
   PythonConnectCL::Ptr PyC(new PythonConnectCL());
