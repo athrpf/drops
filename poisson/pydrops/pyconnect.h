@@ -75,6 +75,38 @@ private:
   bool adjoint;
 };
 
+class Interface {
+    private: 
+    
+    public:
+    
+    Interface(){}
+    double operator()( const DROPS::Point3DCL& p, double t)
+    {
+        double PI =3.1415926;
+        double h = 0.2 + 0.05 * sin ( p[0] * 0.1 * PI - 20. * PI * t );
+        return h;
+    }
+};
+
+class ALEVel {
+    private: 
+       DROPS::instat_scalar_vector_ptr vel_;
+       DROPS::instat_scalar_vector_ptr surf_;
+       ALEVel();    
+    public:
+    
+    ALEVel( DROPS::instat_scalar_vector_ptr vel, DROPS::instat_scalar_fun_ptr surf ): vel_(vel), surf_(surf){}
+    DROPS::Point3DCL operator()( const DROPS::Point3DCL& p, double t)
+    {
+        double eps =1.0e-7;
+        DROPS::Point3DCL ret;
+        ret  = vel_(p, t);
+        ret[1] -= p[1]/surf_(p, t)*(surf_(p, t+eps)-surf_(p, t))/eps;  //y/h(p,t)*h_p'(t)
+        return ret;
+    }
+};
+
 class Stability_Coefficient {
 public:
   Stability_Coefficient(double dx_, DROPS::instat_scalar_fun_ptr alpha_, DROPS::instat_vector_fun_ptr Vel_)
@@ -128,6 +160,7 @@ public:
   //static TETRA_MAP tetra_map_;
   FACE_MAP face_map_;
   TETRA_MAP tetra_map_;
+
 
 
   int GetNum( const DROPS::Point3DCL& p, double t, int seg) const
@@ -281,6 +314,8 @@ public:
   DROPS::instat_scalar_fun_ptr q;
   DROPS::instat_scalar_fun_ptr Sta_Coeff;
   DROPS::instat_vector_fun_ptr Vel;
+  DROPS::instat_scalar_fun_ptr interface;  
+  DROPS::instat_vector_fun_ptr ALEVelocity;
 
 
   template<class P1EvalT>
@@ -355,6 +390,8 @@ public:
 
     Vel = Nusselt(P);
     Sta_Coeff = Stability_Coefficient(dx_, alpha, Vel);
+    interface = Interface();
+    ALEVelocity = ALEVel(Vel, interface);      
 
     // Set the output pointer to the output arguments.
     C3D_ = c_sol;
