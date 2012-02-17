@@ -46,20 +46,21 @@
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":           "SUPG_Diffusion",                             //Diffusion coefficient
+        "Diffusion":        "instatSUPG_Diffusion",                                    //Diffusion coefficient
             // -> Here: a = 0.01
-        "Reaction":             "SUPG_Reaction",               //Reaction term [q] with the name "Example1_Reaction"
+        "Reaction":             "instatSUPG_Reaction",               //Reaction term [q] with the name "Example1_Reaction"
             // -> Here: q = 0
-        "Solution":             "SUPG_Solution",               //Solution of poisson problem [u] has the name "Example1_Solution"
-        "Source":               "SUPG_Source",                 //Right hand side of PDE [f]
-        "Flowfield":            "SUPG_Flowfield",              //Convection velocity of PDE [b]
-        "InitialVal":           "Zero",                        //Initial value of the pde [u(t=0)]
-            // -> Here: u(t=0) = 0
-        "Convection":     1        //Do we have convection? -> Here: no
+        "Solution":             "instatSUPG_Solution",               //Solution of poisson problem [u] has the name "Example1_Solution"
+        "Source":               "instatSUPG_Source",                 //Right hand side of PDE [f]
+        "Flowfield":            "instatSUPG_Flowfield",              //Convection velocity of PDE [b]
+        "InitialVal":           "instatSUPG_Solution",               //Initial value of the pde [u(t=0)]
+        "Convection":     1                                          //Do we have convection? -> Here: no
     },
     "Stabilization":
     {
-        "SUPG":             1
+        "SUPG":              1,
+        "Magnitude":         1.0,
+        "Grids":             1
     },
 
     //############################################
@@ -82,7 +83,7 @@
         "InitialFile":      "none",
             //file prefix when reading data for initial condition
             // -> Here: no initial data is read from outside
-        "MeshFile":         "1x1x1@4x4x4",
+        "MeshFile":         "1x0.5x0.5@4x2x2",
             //mesh file (created by GAMBIT or NETGEN, FLUENT/UNS format)
             // or (in case of the BrickBuilder:)
             // dimensions of a cuboid (e.g. AxBxC@DxExF) with edge
@@ -93,7 +94,7 @@
             // b.dom. 2 has normal in pos. x direction
             // b.dom. 3 has normal in neg. y direction, etc..
             // -> Here: a cube which is divived by 4 in all directions.
-        "BoundaryType":         "2!2!2!2!2!2",
+        "BoundaryType":         "2!2!2!2!21!21",
             //Boundary conditions for each boundary domain
             // are prescribes by a type and a function. Thus
             // each boundary domain gets an index.
@@ -102,7 +103,7 @@
             // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
             // NatBC= 23, NoBC= 98, UndefinedBC_= 99
             // -> Here: all boundaries are dirichlet boundaries.
-        "BoundaryFncs":         "Zero!Zero!SUPG_Solution!SUPG_Solution!SUPG_Solution!SUPG_Solution"
+        "BoundaryFncs":         "instatSUPG_Solution!instatSUPG_Solution!instatSUPG_Solution!instatSUPG_Solution!Zero!Zero"
             // a function of a function container (s. PoissonCoeff-sect.)
             // -> Here: all boundaries have dirichlet value 1.
             //For each boundary domain take a string which describes
@@ -113,10 +114,10 @@
     //################################################
     "Time":
     {
-        "StepSize":       1,       //time step size
-        "NumSteps":       0,       //number of timesteps. -> Here: 0, i.e. stationary setup
+        "StepSize":       0.4,       //time step size
+        "NumSteps":       2,       //number of timesteps. -> Here: 0, i.e. stationary setup
         "Scheme":         1,       //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":          1       //For theta scheme: parameter theta
+        "Theta":          1.0       //For theta scheme: parameter theta
     },
 
 	// experimental conditions
@@ -157,7 +158,7 @@
     {
         "VTKOut":       1,              //Use VTK output?
         "VTKDir":       "vtk",          //local directory for vtk files
-        "VTKName":      "SUPG_ex1_", //name of vtk files (filename prefix)
+        "VTKName":      "instatSUPG2_", //name of vtk files (filename prefix)
         "Binary":       0               //write out VTK files in binary format
     }
 

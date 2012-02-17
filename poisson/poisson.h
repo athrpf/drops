@@ -26,12 +26,15 @@
 #define DROPS_POISSON_H
 
 #include "misc/problem.h"
+#include "misc/params.h"
 #include "num/fe.h"
 #include "num/discretize.h"
 #include "num/bndData.h"
 #include <deque>
 #include <iostream>
 #include <numeric>
+
+#include "poisson/ale.h"
 
 
 namespace DROPS
@@ -60,11 +63,87 @@ class StripTimeCL
       { return _func( x, _t); }
 };
 
+//Streamline diffusion stabilization class which can compute difference stabilization coefficient according to the grids type.
+class SUPGCL
+{
+  private:
+    double magnitude_;
+    int    grids_;      // decide how to compute characteristic length to approximate the longest length in flow direction
+    double longedge_;   // the longest edge for regular grids; 
+    bool    SUPG_;
+    public:
+    SUPGCL()
+    {magnitude_=0.;
+     grids_ = 1;
+     longedge_=0.;
+     SUPG_= false;}
+    SUPGCL(ParamCL para)
+    { init(para);}
+    void init(ParamCL para)
+    {
+        double lx_, ly_, lz_;
+        int    nx_, ny_, nz_;
+        std::string mesh( para.get<std::string>("DomainCond.MeshFile")), delim("x@");
+        size_t idx_;
+        while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+            mesh[idx_]= ' ';
+        std::istringstream brick_info( mesh);
+        brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
+        int Ref_=para.get<int>("DomainCond.RefineSteps");
+        magnitude_ =para.get<double>("Stabilization.Magnitude");
+        grids_      =para.get<double>("Stabilization.Grids");
+        //pick up the longest edge
+        if(grids_==1)
+        {
+            double dx_= lx_/(nx_*std::pow(2, Ref_)); 
+            double dy_= ly_/(ny_*std::pow(2, Ref_));
+            double dz_= ly_/(nz_*std::pow(2, Ref_));
+            double m;
+            if(dx_>=dy_)
+                m = dx_;
+            else
+                m = dy_;
+            if( m>=dz_)
+                longedge_=m;
+            else
+                longedge_=dz_;
+                
+        }
+        else
+        {   longedge_ = 0;} 
+        SUPG_ = para.get<int>("Stabilization.SUPG");   
+    }
+    
+    bool GetSUPG(){return SUPG_;}
+    
+    double GetCharaLength(int grids)
+    {
+        double h=0.;
+        if(grids==1)
+            h=longedge_;
+        else
+            std::cout<<"WARNING: The geometry type has not been implemented!\n";
+        return h;    
+    }
+        
+    double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha) 
+    {//Stabilization coefficient
+        double Pec=0.;
+        double h  =GetCharaLength(grids_);
+        Pec=Vel.norm()*h/(2.*alpha);  //compute mesh Peclet number  
+        if (Pec<=1)
+            return 0.0;
+        else
+            return magnitude_*h/(2.*Vel.norm())*(1.-1./Pec);
+    }
+};
+
 template <class Coeff>
 class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 {
   private:
     bool adjoint_;
+    SUPGCL& supg_;
 
   public:
     typedef ProblemCL<Coeff, PoissonBndDataCL> base_;
@@ -80,6 +159,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
+    bool       ALE_;           //ALE method
     MLIdxDescCL idx;
     VecDescCL   x;
     VecDescCL   b;
@@ -88,11 +168,12 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL M;
     MLMatDescCL U;
 
-    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : base_( mgb, coeff, bdata), adjoint_( adj), idx( P1_FE) {}
 
-    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : base_( mg, coeff, bdata), adjoint_( adj), idx( P1_FE) {}
+    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE=false, bool adj=false)
+        : base_( mgb, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
+
+    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE=false, bool adj=false)
+        : base_( mg, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, MG_, BndData_, match); }
@@ -103,7 +184,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     // set up matrices and rhs
     void SetupSystem         (MLMatDescCL&, VecDescCL&, bool SUPG=false, bool GradProb=false) const;
     ///  \brief set up matrices (M is time independent)
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t) const;
     /// \brief set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
 
@@ -112,7 +193,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     /// couplings with bnd unknowns, coefficient f(t)
     /// If the function is called with the same vector for some arguments,
     /// the vector will contain the sum of the results after the call
-    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG=false) const;
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
     /// \brief Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t= 0.) const;
 
@@ -122,10 +203,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
     /// \brief check computed solution etc.
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double t=0.) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg, double t=0.) const { return CheckSolution(x, Lsg, t); }
 
     void GetDiscError   ( const MLMatDescCL&, instat_scalar_fun_ptr) const;
     void GetDiscError   ( scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
@@ -180,12 +259,12 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
-    void SetupSystem         ( MLMatDescCL&, VecDescCL&, bool SUPG=false) const;
+    void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
 
     ///  \brief set up matrices for instatProblem
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t, bool SUPG=false) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double t) const;
 
-    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf, bool SUPG=false) const;
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
 
     //Set up convection
     void SetupConvection( MLMatDescCL&, VecDescCL&, double) const;
@@ -194,11 +273,8 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
     // check computed solution, etc.
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-
-    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
-    double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double t=0.) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg, double t=0.) const { return CheckSolution(x, Lsg, t); }
 
     DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }

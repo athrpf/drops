@@ -21,34 +21,44 @@
  *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
-
 #include "poisson/poissonCoeff.h"
 #include "misc/bndmap.h"
 #include "misc/params.h"
 #include <string>
+#define PI 3.14159265
 
-//========================================================================
-//          Functions for poissonP1.cpp and drops_statP2.cpp
-//========================================================================
+//======================================================================================================================
+//                                  static members declarations of poissonCoeff class
+//======================================================================================================================
+
+namespace DROPS{
+ParamCL PoissonCoeffCL::C_;
+double PoissonCoeffCL::dx_;
+double PoissonCoeffCL::dy_;
+int PoissonCoeffCL::nx_;
+int PoissonCoeffCL::ny_;
+double PoissonCoeffCL::dt_;
+int PoissonCoeffCL::Ref_;
+instat_scalar_fun_ptr PoissonCoeffCL::q;
+instat_scalar_fun_ptr PoissonCoeffCL::alpha;
+instat_scalar_fun_ptr PoissonCoeffCL::f;
+instat_scalar_fun_ptr PoissonCoeffCL::Solution;
+instat_scalar_fun_ptr PoissonCoeffCL::InitialCondition;
+instat_vector_fun_ptr PoissonCoeffCL::Vel;
+instat_scalar_fun_ptr PoissonCoeffCL::interface;
+}
+
+//======================================================================================================================
+//                                  special Functions for poissonP1.cpp and poissonP2.cpp
+//======================================================================================================================
+
 extern DROPS::ParamCL P;
+
 double Heat(const DROPS::Point3DCL&, double)
 {
     extern DROPS::ParamCL P;
     return P.get<double>("Exp.Heat")/P.get<double>("Exp.Lambda")*1e-3;
 }
-
-/// \brief Interface condition for one phase film
-double Interface(const DROPS::Point3DCL&, double)
-{
-    return 0.02;
-}
-
-double InitFilm(const DROPS::Point3DCL&, double)
-{
-    return 1.0e-3;
-}
-
-
 /// boundary description of a neumann problem
 // uses constant function f = (-1)^seg *4.0
 template<int sel>
@@ -99,9 +109,8 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
     return ret;
 }
 
-/*static DROPS::RegisterScalarFunction regscaheat("Heat", Heat);
-static DROPS::RegisterScalarFunction regscainterf("Interface", Interface);
-static DROPS::RegisterScalarFunction regscainitf("InitFilm", InitFilm);
+/*
+static DROPS::RegisterScalarFunction regscaheat("Heat", Heat);
 static DROPS::RegisterScalarFunction regscaconstpos("NeuConstPos", NeuConst<0>);
 static DROPS::RegisterScalarFunction regscaconstneg("NeuConstNeg", NeuConst<1>);
 static DROPS::RegisterScalarFunction regscaexppos("NeuExpPos", NeuExp<0>);
@@ -110,8 +119,6 @@ static DROPS::RegisterScalarFunction regscapoly("NeuPoly", NeuPoly);
 static DROPS::RegisterVectorFunction regvecnus("Nusselt", Nusselt);*/
 //cast to boost function
 static DROPS::RegisterScalarFunction regscaheat("Heat", DROPS::instat_scalar_fun_ptr(Heat));
-static DROPS::RegisterScalarFunction regscainterf("Interface", DROPS::instat_scalar_fun_ptr(Interface));
-static DROPS::RegisterScalarFunction regscainitf("InitFilm", DROPS::instat_scalar_fun_ptr(InitFilm));
 static DROPS::RegisterScalarFunction regscaconstpos("NeuConstPos", DROPS::instat_scalar_fun_ptr(NeuConst<0>));
 static DROPS::RegisterScalarFunction regscaconstneg("NeuConstNeg", DROPS::instat_scalar_fun_ptr(NeuConst<1>));
 static DROPS::RegisterScalarFunction regscaexppos("NeuExpPos", DROPS::instat_scalar_fun_ptr(NeuExp<0>));
@@ -119,6 +126,12 @@ static DROPS::RegisterScalarFunction regscaexpneg("NeuExpNeg", DROPS::instat_sca
 static DROPS::RegisterScalarFunction regscapoly("NeuPoly", DROPS::instat_scalar_fun_ptr(NeuPoly));
 static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_fun_ptr(Nusselt));
 
+
+//======================================================================================================================
+//
+//               Registered functions in function container which are used in corresponding *Ex.json file
+//
+//======================================================================================================================
 
 /****************************************
  *  Example 1:                        \n*
@@ -128,7 +141,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
  *   - no reaction                    \n*
  *   - given solution (adapted r.h.s) \n*
  ****************************************/
- namespace PoissonExample1{
+ namespace statpoissonExample{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
@@ -147,6 +160,10 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     double Diffusion(const DROPS::Point3DCL&, double){
         return 1.;
     }
+    ///Neumann boundary condition at x=1
+    double Neumann(const DROPS::Point3DCL& p, double){
+        return -64.*p[0]*p[1]*p[2]*(1-p[1])*(1-p[2]);
+    }
     /// \brief Solution
     double Solution( const DROPS::Point3DCL& p, double){
         return 1 + 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
@@ -160,12 +177,14 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscaf("Example1_Source",       Source      );
     static DROPS::RegisterScalarFunction regscas("Example1_Solution",     Solution    );
     static DROPS::RegisterScalarFunction regscaa("Example1_Diffusion",    Diffusion   );
+    static DROPS::RegisterScalarFunction regscan("Example1_Neumann",      Neumann     );
     static DROPS::RegisterVectorFunction regscav("Example1_Flowfield",    Flowfield   );
     static DROPS::RegisterScalarFunction regscai("Example1_InitialValue", InitialValue);*/
     static DROPS::RegisterScalarFunction regscaq("Example1_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
     static DROPS::RegisterScalarFunction regscaf("Example1_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
     static DROPS::RegisterScalarFunction regscas("Example1_Solution",     DROPS::instat_scalar_fun_ptr(Solution)    );
     static DROPS::RegisterScalarFunction regscaa("Example1_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+    static DROPS::RegisterScalarFunction regscan("Example1_Neumann",      DROPS::instat_scalar_fun_ptr(Neumann)     );
     static DROPS::RegisterVectorFunction regscav("Example1_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
     static DROPS::RegisterScalarFunction regscai("Example1_InitialValue", DROPS::instat_scalar_fun_ptr(InitialValue));
 
@@ -180,7 +199,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
  *   - no reaction                    \n*
  *   - given solution (adapted r.h.s) \n*
  ****************************************/
- namespace PoissonExample2{
+ namespace instatpoissonExample{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
@@ -224,7 +243,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
  *   - no reaction                    \n*
  *   - source = 1                     \n*
  ****************************************/
- namespace PoissonExample3{
+ namespace convdiffExample{
 
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
@@ -268,7 +287,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
 
 }//end of namespace
 /****************************************
- *  Example for SUPG:                 \n*
+ *  Example 4:                        \n*
  *   - stationary setup               \n*
  *   - quasi-1D setup                 \n*
  *   - constant diffusion             \n*
@@ -276,9 +295,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
  *   - no reaction                    \n*
  *   - source = 1                     \n*
  ****************************************/
-
-
- namespace PoissonSUPG{
+ namespace statSUPGExample{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
@@ -315,6 +332,244 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterVectorFunction regscav("SUPG_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
 }//end of namespace
 
+/****************************************
+ *  Example 5:                        \n*
+ *   - instationary setup             \n*
+ *   - constant diffusion             \n*
+ *   - convection                     \n*
+ *   - no reaction                    \n*
+ ****************************************/
+ namespace instatSUPGExample{
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 0.01;
+    }
+    
+    /// \brief Convection: constant flow in x direction
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){ 
+    //(1, 0, 0)^T
+        DROPS::Point3DCL v(0.);
+        v[0] = 1.0;
+        return v; 
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL& p, double t){
+    // 1 - (1 + D)e^(-t-y)
+        double alpha;
+        alpha = Diffusion(p, t);                                   
+        double ret=0.;
+        ret = 1. - (1 + alpha) * exp(-t-p[1]);
+        return ret; 
+    }
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double t)
+    {
+        double alpha;
+        alpha = Diffusion(p, t);
+        return exp(-t-p[1]) + p[0] - (1 - exp(p[0]/alpha))/(1 - exp(1./alpha)); 
+    }
+    static DROPS::RegisterScalarFunction regscaq("instatSUPG_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaa("instatSUPG_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+    static DROPS::RegisterScalarFunction regscaf("instatSUPG_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscas("instatSUPG_Solution",     DROPS::instat_scalar_fun_ptr(Solution)    );
+    static DROPS::RegisterVectorFunction regscav("instatSUPG_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
+}//end of namespace
+/****************************************
+ *  Example 6:                        \n*
+ *   - instationary setup             \n*
+ *   - constant diffusion             \n*
+ *   - convection                     \n*
+ *   - no reaction                    \n*
+ ****************************************/
+ namespace AdjointExample{
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    /// \brief Convection: constant flow in x direction
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){
+        DROPS::Point3DCL v(0.);
+        v[0] = 1.;
+        return v;
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL& p, double t){
+        return -exp(-t)*exp(-p[0]);
+    }
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1.0;
+    }
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double t)
+    {
+        return exp(-t)*exp(-p[0]);
+    }
+    static DROPS::RegisterScalarFunction regscaq("Adjoint_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaf("Adjoint_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscas("Adjoint_Solution",     DROPS::instat_scalar_fun_ptr(Solution)    );
+    static DROPS::RegisterScalarFunction regscaa("Adjoint_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+    static DROPS::RegisterVectorFunction regscav("Adjoint_Flowfield",    DROPS::instat_vector_fun_ptr(Flowfield)   );
+}//end of namespace
+/****************************************
+ *  Example 7:                        \n*
+ *   - instationary setup             \n*
+ *   - constant diffusion             \n*
+ *   - convection                     \n*
+ *   - no reaction                    \n*
+ ****************************************/
+ namespace ALEExample1{
+    //refH, Mag, paraX and paraT are used to change the free surface functions
+    double refH   = 0.2;
+    double Mag    = 0.25;
+    double paraX  = 6. * PI;
+    double paraT  = 10. * PI;
+    //Free surface
+    double Interface( const DROPS::Point3DCL& p, double t)
+    {
+        double h= refH + refH * Mag * sin ( paraX * p[0]  + paraT * t );
+        return h;
+    }
+    //Transform the physical to coordinates to reference coordinates
+    DROPS::Point3DCL TransBack(const DROPS::Point3DCL &p, double t)
+    {
+        DROPS::Point3DCL ref(0.);
+        ref[0] = p[0];
+        ref[1] = refH * p[1]/Interface(p, t);
+        ref[2] = p[2];        
+        return ref;
+    }
+    //Gradx, Grady, Grad1 and Grad2 are used for source term
+    double Gradx( const DROPS::Point3DCL& ref, double t)   //a=h_x
+    {
+        return ref[1]* paraX * Mag * cos(paraX * ref[0]  + paraT * t);
+    }
+    double Grady( const DROPS::Point3DCL& ref, double t)   //b=h_y
+    {
+        return 1. + Mag * sin(paraX * ref[0]  + paraT * t);
+    } 
+    double Grad1( const DROPS::Point3DCL& ref, double t)   //\nabla_y(a/b)
+    {
+        double ay=paraX * Mag * cos(paraX * ref[0]  + paraT * t);
+        return ay/Grady(ref, t);
+    }
+    double Grad2( const DROPS::Point3DCL& ref, double t)    //\nabla_x(a/b)
+    {
+        double ax     = -ref[1]* paraX * paraX * Mag * sin(paraX * ref[0]  + paraT * t);
+        double bx     = paraX * Mag * cos(paraX * ref[0]  + paraT * t);
+        return (ax*Grady(ref, t) - Gradx(ref, t)*bx)/(Grady(ref,t)*Grady(ref, t));
+    }
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){ 
+        DROPS::Point3DCL ref = TransBack(p, t);
+        DROPS::Point3DCL v(0.);
+        v[0] = 1.0;
+        v[1] = ref[1] * Mag * paraT * cos(paraX * ref[0]  + paraT * t);
+        return v; 
+    }
+    DROPS::Point3DCL ALEFlowfield(const DROPS::Point3DCL&, double){ 
+        DROPS::Point3DCL v(0.);
+        v[0] = 1.;
+        v[1] = 0.;
+        return v; 
+    }
+
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL& p, double t)
+    {
+        DROPS::Point3DCL ref = TransBack(p, t);
+        return exp(t)*exp(ref[0] + ref[1] + ref[2]);
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL& p, double t){
+        static bool first = true;
+        //alpha to control diffusion parameter, you could change a small number to make problem convection-dominated
+        static double alpha;
+        if(first){
+        alpha = P.get<double>("PoissonCoeff.Diffusion");
+        first=false;                                    
+        }
+        DROPS::Point3DCL ref = TransBack(p, t);
+        double a= Gradx(ref,t);
+        double b= Grady(ref,t);
+        double c= Grad1(ref,t);
+        double d= Grad2(ref,t);
+        double sol= Solution(p, t);
+        double timederiv = sol;
+        double conv      = (1. - a/b)*sol;
+        double diff1     = -alpha*(1.-d - 2.*a/b + a/b*c + a*a/b/b)*sol;
+        double diff2     = -alpha/(b*b)*sol;
+        double diff3     = -alpha*sol;
+        return timederiv + conv + diff1 +diff2 +diff3; 
+    }
+    static DROPS::RegisterScalarFunction regscaq("TestALE_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)     );
+    static DROPS::RegisterScalarFunction regscaf("TestALE_Source",       DROPS::instat_scalar_fun_ptr(Source)       );
+    static DROPS::RegisterScalarFunction regscaint("TestALE_Interface",  DROPS::instat_scalar_fun_ptr(Interface)    );
+    static DROPS::RegisterScalarFunction regscas("TestALE_Solution",     DROPS::instat_scalar_fun_ptr(Solution)     );
+    static DROPS::RegisterVectorFunction regscav("TestOrigin_Velocity",  DROPS::instat_vector_fun_ptr(Flowfield)    );
+    static DROPS::RegisterVectorFunction regscaalev("TestALE_Velocity",  DROPS::instat_vector_fun_ptr(ALEFlowfield) );
+}//end of namespace
+
+ namespace ALE{
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+    double Interface( const DROPS::Point3DCL& p, double t)
+    {
+        double h;
+        h = 0.2 + 0.05 * sin ( p[0] * 0.1 * PI - 20. * PI * t );
+        return h;
+    }
+    DROPS::Point3DCL TransBack(const DROPS::Point3DCL &p, double t)
+    {
+        DROPS::Point3DCL ref(0.);
+        ref[0] = p[0];
+        ref[1] = 0.2 * p[1]/Interface(p, t);
+        ref[2] = p[2];        
+        return ref;
+    }
+    /// \brief Convection: constant flow in x direction
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){ 
+        DROPS::Point3DCL ref = TransBack(p, t);
+        DROPS::Point3DCL ret;
+        const double d= ref[1]/0.2,
+            U= 200.;  //U=gh^2/(2*nu)      
+        ret[0]= U*(2-d)*d;                       
+        ret[1]=0.;
+        ret[2]=0.;
+        return ret;
+    }
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL&, double){
+        return 0.0; 
+    }
+    double BInter(const DROPS::Point3DCL&, double){
+        return 0.01;
+    }
+    /// \brief Solution ====================================careful
+
+    static DROPS::RegisterScalarFunction regscaq("ALE_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
+    static DROPS::RegisterScalarFunction regscaf("ALE_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscaint("ALE_Interface",  DROPS::instat_scalar_fun_ptr(Interface)   );
+    static DROPS::RegisterVectorFunction regscav("ALE_Velocity",     DROPS::instat_vector_fun_ptr(Flowfield)   );
+    static DROPS::RegisterScalarFunction regscas("ALE_Inter",         DROPS::instat_scalar_fun_ptr(BInter)     );
+}//end of namespace
+
+
+//======================================================================================================================
+//
+//               Examples for incremental approach for IA1adjoint, IA1adjoint2, IA2sensitivity, IA2Grad
+//
+//======================================================================================================================
  namespace PoissonAdjoint{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
@@ -383,7 +638,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
 }//end of namespace
 
  namespace IA2Sensi{
-    /// \brief Reaction: no reaction
+    
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
     }
@@ -406,7 +661,8 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscaf("Sensi_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
     static DROPS::RegisterScalarFunction regscas("Sensi_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
     static DROPS::RegisterScalarFunction regscaa("Sensi_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
-}//end of namespace
+   }//end of namespace
+   
  namespace IA2Grad{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
@@ -430,19 +686,3 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscas("Grad_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
     static DROPS::RegisterScalarFunction regscaa("Grad_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
 }//end of namespace
-double Solution( const DROPS::Point3DCL& p, double=0.0){
-    return 1 + p[0] + (1-exp(p[0]))/exp(1.0);
-}
-
-double diffSolution( const DROPS::Point3DCL& p, double=0.0){
-    return 3.0/2.0 - (p[0]-1)*(p[0]-1)/2.0;
-}
-
-/*static DROPS::RegisterScalarFunction regscasol("OurSolution", Solution);
-static DROPS::RegisterScalarFunction regscadsol("OurDiffSolution", diffSolution);*/
-static DROPS::RegisterScalarFunction regscasol("OurSolution", DROPS::instat_scalar_fun_ptr(Solution));
-static DROPS::RegisterScalarFunction regscadsol("OurDiffSolution", DROPS::instat_scalar_fun_ptr(diffSolution));
-
-
-
-

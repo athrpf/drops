@@ -39,6 +39,7 @@ ipdropsAD: \
 
 poissonP1:\
     ../poisson/poissonCoeff.o \
+    ../poisson/ale.o \
     ../poisson/poissonP1.o ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
@@ -60,6 +61,7 @@ poissonP2:\
     ../poisson/poissonCoeff.o \    ../poisson/poissonP2.o \
     ../num/hypre.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
+
 matlab/ipdrops:\
     ../poisson/poissonCoeff.o \
     ../geom/boundary.o ../geom/builder.o \

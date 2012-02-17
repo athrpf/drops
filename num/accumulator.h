@@ -168,7 +168,7 @@ void AccumulatorTupleCL<VisitedT>::operator() (const ColorClassesCL& colors)
 #else
             int j;
 #endif
-#           pragma omp for
+#           pragma omp for schedule(dynamic)
             for (j= 0; j < cc.size(); ++j)
                 std::for_each( clones[t_id].begin(), clones[t_id].end(), std::bind2nd( std::mem_fun( &AccumulatorCL<VisitedT>::visit), *cc[j]));
         }
@@ -187,21 +187,21 @@ namespace AccumulatorImplNS {
 template <class AccuContainerT>
 struct do_accumulateCL
 {
-    static void accumulate (AccuContainerT& accus, const MultiGridCL& mg, int lastlvl)
+    static void accumulate (AccuContainerT& accus, const MultiGridCL& mg, int lastlvl, match_fun match, const BndCondCL& Bnd)
     {
         for (typename AccuContainerT::iterator it= accus.begin(), end= accus.end(); it != end; ++it)
             do_accumulateCL<typename AccuContainerT::value_type>::accumulate(
-                *it, mg, lastlvl++ - accus.size() + 1);
+                *it, mg, lastlvl++ - accus.size() + 1, match, Bnd);
     }
 };
 
 template <class VisitedT>
 struct do_accumulateCL<AccumulatorTupleCL<VisitedT> >
 {
-    static void accumulate (AccumulatorTupleCL<VisitedT>& accu, const MultiGridCL& mg, int lvl)
+    static void accumulate (AccumulatorTupleCL<VisitedT>& accu, const MultiGridCL& mg, int lvl, match_fun match, const BndCondCL& Bnd)
     {
         if (omp_get_max_threads() > 1)
-            accu( mg.GetColorClasses( lvl));
+            accu( mg.GetColorClasses( lvl, match, Bnd));
         else
             accu( mg.GetTriangTetraBegin( lvl), mg.GetTriangTetraEnd( lvl));
     }
@@ -214,13 +214,13 @@ struct do_accumulateCL<AccumulatorTupleCL<VisitedT> >
 /// If accus is a container of AccumulatorTupleCL-objects, lvl is interpreted as last (finest) level to be used.
 template <class AccumulatorTupleT>
   inline void
-  accumulate (AccumulatorTupleT& accus, const MultiGridCL& mg, int lvl= -1)
+  accumulate (AccumulatorTupleT& accus, const MultiGridCL& mg, int lvl, match_fun match, const BndCondCL& Bnd)
 {
-    AccumulatorImplNS::do_accumulateCL<AccumulatorTupleT>::accumulate( accus, mg, lvl);
+    AccumulatorImplNS::do_accumulateCL<AccumulatorTupleT>::accumulate( accus, mg, lvl, match, Bnd);
 }
 
 /// \brief An AccumulatorTupleCL for each level.
-/// A simpler data-structure like a std::vector would suffice, as we do not have to gurantee that the AccumulatorTupleCL not move in memory. Still, the following is consistent with all other multi-level-objects.
+/// A simpler data-structure like a std::vector would suffice, as we do not have to guarantee that the AccumulatorTupleCL not move in memory. Still, the following is consistent with all other multi-level-objects.
 typedef MLDataCL<TetraAccumulatorTupleCL> MLTetraAccumulatorTupleCL;
 
 } // end of namespace DROPS

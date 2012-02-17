@@ -2,8 +2,7 @@
     //=========================================================================
     //    DROPS parameter file for poissonP{1,2}
     //    simulation of poisson problem:
-    //      In this concrete example we are only interested in the stationary
-    //      solution, we have no convection, no reaction and a given solution.
+    //      The problem is quasi-1D.
     //=========================================================================
 
     //#######################################
@@ -11,14 +10,14 @@
     //#######################################
     "Poisson":
     {
-        "PcIter":           1,      //inactive (former: iterations of the preconditioner)
-        "PcTol":            0.1,    //inactive (former: tolerance of the preconditioning solve)
-        "Iter":             200,    //number of iterations of the iterativ solver
-        "Restart":          100,    //used for GMRES: a possible krylov-space uses only as
+        "PcIter":       1,       //inactive (former: iterations of the preconditioner)
+        "PcTol":        0.1,     //inactive (former: tolerance of the preconditioning solve)
+        "Iter":         5000,     //number of iterations of the iterativ solver
+        "Restart":      100,     //used for GMRES: a possible krylov-space uses only as
             // many vectors to construct the new krylov space
-        "RelativeErr":      0,      //use relative tolerances (otherwise absolute) 1 = true, 0 = false
-        "Tol":              1e-10,  //(relative/absolute) tolerance of iterative method
-        "Method":           103,    //Methods describes Solver (first digit) + Preconditioner (last two digits)
+        "RelativeErr":  0,       //use relative tolerances (otherwise absolute) 1 = true, 0 = false
+        "Tol":          1e-10,   //(relative/absolute) tolerance of iterative method
+        "Method":       303,     //Methods describes Solver (first digit) + Preconditioner (last two digits)
             // First digit:
             //           1XX : Multigrid
             //           2XX : Prec. CG
@@ -31,10 +30,10 @@
             //           X06 : SOR        + SSOR
             // BUT it exist only the following combinations:
             // 102,103,104,105,106,203,302,303
-        "SmoothingSteps":   1,      //for Multigrid: number of Smoothing steps;
-        "NumLvl":           -1,     //for Multigird: number of used levels (-1 = all)
-        "Relax":            1,      //Relaxation factor
-        "SolutionIsKnown":  1       //Is the solution known/can we measure an exact error? 1 = true, 0 = false
+        "SmoothingSteps":   1,   //for Multigrid: number of Smoothing steps;
+        "NumLvl":           -1,  //for Multigird: number of used levels (-1 = all)
+        "Relax":            1,   //Relaxation factor
+        "SolutionIsKnown":  1    //Is the solution known/can we measure an exact error? 1 = true, 0 = false
     },
 
     //#######################################
@@ -44,24 +43,25 @@
     // the coefficients are set with strings which correspond to
     // functions of a container. The given ones used here are
     // defined in poissonCoeff.cpp
-    // In this concrete example we are only interested in the stationary
-    // solution, we have no convection, no reaction and a given solution.
+    // In this concrete example we are only interested in a steady
+    // solution, we have convection, no reaction and a given solution.
+    // The problem is quasi-1D.
     //############################################
     "PoissonCoeff":
     {
-        "Diffusion":        "One",                              //Diffusion coefficient
+        "Diffusion":        "One",            //Diffusion coefficient
             // -> Here: a = 1
-        "Reaction":             "Example1_Reaction",        //Reaction term [q] with the name "Example1_Reaction"
+        "Reaction":         "Adjoint_Reaction",             //Reaction term [q] with the name              "Adjoint_Reaction"
             // -> Here: q = 0
-        "Solution":             "Example1_Solution",        //Solution of poisson problem [u] has the name "Example1_Solution"
-            // -> Here: u = 1 + 64 xyz *(1-x)*(1-y)*(1-z)
-        "Source":           "Example1_Source",              //Right hand side of PDE [f]
-            // -> Here: f = 128*(xy(1-x)(1-y)+xz(1-x)(1-z)+yz(1-y)(1-z))
-        "Flowfield":        "Example1_Flowfield",           //Convection velocity of PDE [b]
-            // -> Here: b = (0,0,0)
-        "InitialVal":       "Example1_InitialValue",         //Initial value of the pde [u(t=0)]
-            // -> Here: u(t=0) = 1
-        "Convection":     0        //Do we have convection? -> Here: no
+        "Solution":         "Adjoint_Solution",             //Solution of poisson problem [u] has the name "Adjoint_Solution"
+            // -> Here: u = exp(-t)exp(-x)
+        "Source":           "Adjoint_Source",               //Right hand side of PDE [f]
+            // -> Here: f = -exp(-t)exp(-x)
+        "Flowfield":        "Adjoint_Flowfield",            //Convection velocity of PDE [b]
+            // -> Here: b = (1,0,0) which is the velocity of direct problem without changing of the sign
+        "InitialVal":       "Adjoint_Solution",             // -> Here: u(t=0) = exp(-x)
+            //Initial value of the pde [u(t=0)]
+        "Convection":       1                                  //Do we have convection? -> Here: yes
     },
 
     //############################################
@@ -72,7 +72,7 @@
     {
         "RefineSteps":      2,
             //initial refinement: how often is the mesh refined
-            // -> Here: two times refinement
+            // -> Here: three times refinement
         "GeomType":         1,
             //specifies the used geometry:
             // 0=ReadMeshBuilder (from file)
@@ -94,8 +94,9 @@
             // with the order: b.dom. 1 has normal in neg. x direction
             // b.dom. 2 has normal in pos. x direction
             // b.dom. 3 has normal in neg. y direction, etc..
-            // -> Here: a cube which is divived by 4 in all directions.
-        "BoundaryType":         "2!2!2!2!2!2",
+            // -> Here: a cube.
+        //"BoundaryType":     "2!2!2!2!2!2",
+        "BoundaryType":     "2!21!21!21!21!21",
             //Boundary conditions for each boundary domain
             // are prescribes by a type and a function. Thus
             // each boundary domain gets an index.
@@ -103,11 +104,15 @@
             // The following indices are allowed:
             // Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21,
             // NatBC= 23
-            // -> Here: all boundaries are Dirichlet boundaries.
-        "BoundaryFncs":         "One!One!One!One!One!One"
+            // -> Here: all boundaries are natural boundaries except for the
+            // first part which is of Dirichlet type.
+        //"BoundaryFncs":     "Adjoint_Solution!Adjoint_Solution!Adjoint_Solution!Adjoint_Solution!Adjoint_Solution!Adjoint_Solution"
+        "BoundaryFncs":     "Adjoint_Solution!Zero!Zero!Zero!Zero!Zero"
+            // For each boundary domain take a string which describes
             // a function of a function container (s. PoissonCoeff-sect.)
-            // -> Here: all boundaries have Dirichlet value 1.
-            //For each boundary domain take a string which describes
+            // -> Here: all boundaries have zero natural boundaries
+            // except for the first part which has Dirichlet value 1.
+
     },
 
     //###################################################
@@ -115,10 +120,10 @@
     //################################################
     "Time":
     {
-        "StepSize":       1,       //time step size
-        "NumSteps":       0,       //number of timesteps. -> Here: 0, i.e. stationary setup
-        "Scheme":         1,       //time disc. method: 1= theta scheme, 2=fractional step
-        "Theta":          1        //For theta scheme: parameter theta
+        "StepSize":     0.1,   //time step size
+        "NumSteps":     2,   //number of timesteps. -> Here: =0, i.e. stationary setup
+        "Scheme":       1,   //time disc. method: 1= theta scheme, 2=fractional step
+        "Theta":        0.5    //For theta scheme: parameter theta
     },
 
     //#################################
@@ -147,10 +152,10 @@
     //#################################
     "VTK":
     {
-        "VTKOut":       1,              //Use VTK output?
-        "VTKDir":       "vtk",          //local directory for vtk files
-        "VTKName":      "poisson_ex1_", //name of vtk files (filename prefix)
-        "Binary":       0               //write out VTK files in binary format
+        "VTKOut":       0,                  //Use VTK output?
+        "VTKDir":       "vtk",              //local directory for vtk files
+        "VTKName":      "poisson_Adjoint_",     //name of vtk files (filename prefix)
+        "Binary":       0                   //write out VTK files in binary format
     }
 
 }

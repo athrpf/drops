@@ -323,7 +323,7 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(MatrixCL& N, const VelVec
     NonlConvSystemAccumulator_P2CL accu( Coeff_, MG_, BndData_, *vel, lset, RowIdx, N, cplN, t);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, MG_, RowIdx.TriangLevel());
+    accumulate( accus, MG_, RowIdx.TriangLevel(), RowIdx.GetMatchingFunction(), RowIdx.GetBndInfo());
     // time.Stop();
     // std::cout << "setup: " << time.GetTime() << std::endl;
 }
@@ -360,7 +360,7 @@ PermutationT InstatNavierStokes2PhaseP2P1CL::downwind_numbering (const LevelsetP
     DownwindAccu_P2CL accu( this->GetBndData().Vel, this->v, this->vel_idx.GetFinest(), C);
     TetraAccumulatorTupleCL accus;
     accus.push_back( &accu);
-    accumulate( accus, this->GetMG(), vel_idx.TriangLevel());
+    accumulate( accus, this->GetMG(), vel_idx.TriangLevel(), vel_idx.GetMatchingFunction(), vel_idx.GetBndInfo());
 
     const PermutationT& p= dw.downwind_numbering( C);
     permute_fe_basis( GetMG(), vel_idx.GetFinest(), p);

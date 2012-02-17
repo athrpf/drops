@@ -63,7 +63,7 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::SolveLsNs()
     // operators are computed for old level set
     MLTetraAccumulatorTupleCL accus( Stokes_.A.Data.size());
     accumulate( Stokes_.system1_accu( accus, &Stokes_.A, &Stokes_.M, old_b_, cplA_, cplM_, LvlSet_, Stokes_.v.t),
-                Stokes_.GetMG());
+                Stokes_.GetMG(), Stokes_.vel_idx.TriangLevel(), Stokes_.vel_idx.GetMatchingFunction(), Stokes_.vel_idx.GetBndInfo());
     Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
     Stokes_.SetupPrMass( &Stokes_.prM, LvlSet_);
 
@@ -157,7 +157,7 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::CommitStep()
         Stokes_.prM.Data.clear();
         MLTetraAccumulatorTupleCL accus( Stokes_.B.Data.size());
         accumulate( Stokes_.system2_accu( accus, &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.v.t),
-                    Stokes_.GetMG());
+                    Stokes_.GetMG(), Stokes_.vel_idx.TriangLevel(), Stokes_.vel_idx.GetMatchingFunction(), Stokes_.vel_idx.GetBndInfo());
     }
     else
         Stokes_.SetupRhs2( &Stokes_.c, LvlSet_, Stokes_.v.t);
@@ -223,7 +223,7 @@ void LinThetaScheme2PhaseCL<LsetSolverT>::Update()
     MLTetraAccumulatorTupleCL updates( Stokes_.A.Data.size());
     Stokes_.system2_accu( updates, &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.v.t);
     Stokes_.nonlinear_accu( updates, &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.v.t);
-    accumulate( updates, Stokes_.GetMG());
+    accumulate( updates, Stokes_.GetMG(), Stokes_.vel_idx.TriangLevel(), Stokes_.vel_idx.GetMatchingFunction(), Stokes_.vel_idx.GetBndInfo());
 
     time.Stop();
     duration=time.GetTime();

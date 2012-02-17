@@ -31,6 +31,7 @@
 #include "num/solver.h"
 #include "num/MGsolver.h"
 #include "poisson/integrTime.h"
+#include "poisson/ale.h"
 #include "num/poissonsolverfactory.h"
 
 // include problem class
@@ -254,7 +255,7 @@ namespace DROPS
 
     // the triangulation
     MultiGridCL& mg= Poisson.GetMG();
-
+    ALECL ALE(P, mg);
     // connection triangulation and vectors
     // -------------------------------------------------------------------------
     *(PyC->outfile) << line << "Connecting triangulation and matrices/vectors ...\n";
@@ -300,7 +301,11 @@ namespace DROPS
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
+    {
+      if(Poisson.ALE_)
+        ALE.InitGrid();
       Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG"));
+    }
     timer.Stop();
     *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -341,37 +346,39 @@ namespace DROPS
       }
       ThetaScheme->SetTimeStep(P.get<double>("Time.StepSize") );
       for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
-	  timer.Reset();
-	  *(PyC->outfile) << line << "Step: " << step << std::endl;
-	  ThetaScheme->DoStep( Poisson.x);
-	  //Setup solutions for python interface
-	  PyC->SetSol3D(Poisson.GetSolution(), Poisson.x.t);
+          timer.Reset();
+          *(PyC->outfile) << line << "Step: " << step << std::endl;
+          if(Poisson.ALE_)
+            ALE.MovGrid(Poisson.x.t);
+          ThetaScheme.DoStep( Poisson.x);
+          //Setup solutions for python interface
+          PyC->SetSol3D(Poisson.GetSolution(), Poisson.x.t);
 
-	  timer.Stop();
-	  *(PyC->outfile) << " o Solved system with:\n"
-		    << "   - time          " << timer.GetTime()    << " s\n"
-		    << "   - iterations    " << solver->GetIter()  << '\n'
-		    << "   - residuum      " << solver->GetResid() << '\n';
-	  if (isnan(solver->GetResid())) {
-	    std::stringstream ss;
-	    ss << "The residual of the solver is NAN!";
-	    throw(PyDropsErr(PyC, P, step-1, ss.str()));
-	  }
-	  if (isinf(solver->GetResid())) {
-	    std::stringstream ss;
-	    ss << "The residual of the solver is infinite!";
-	    throw(PyDropsErr(PyC, P, step-1, ss.str()));
-	  }
-	  if(solver->GetResid() > P.get<double>("Poisson.Tol")) {
-	    std::stringstream ss;
-	    ss << "After " << solver->GetIter() << " iterations, the residual " << solver->GetResid() << " is still greater than the tolerance " << P.get<double>("Poisson.Tol");
-	    throw (PyDropsErr(PyC, P, step-1, "The residual is greater than tolerence"));
-	  }
-	  if (P.get("Poisson.SolutionIsKnown", 0)) {
-	    *(PyC->outfile) << line << "Check result against known solution ...\n";
-	    exit(1);
-	    //Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
-	  }
+          timer.Stop();
+          *(PyC->outfile) << " o Solved system with:\n"
+                << "   - time          " << timer.GetTime()    << " s\n"
+                << "   - iterations    " << solver->GetIter()  << '\n'
+                << "   - residuum      " << solver->GetResid() << '\n';
+          if (isnan(solver->GetResid())) {
+            std::stringstream ss;
+            ss << "The residual of the solver is NAN!";
+            throw(PyDropsErr(PyC, P, step-1, ss.str()));
+          }
+          if (isinf(solver->GetResid())) {
+            std::stringstream ss;
+            ss << "The residual of the solver is infinite!";
+            throw(PyDropsErr(PyC, P, step-1, ss.str()));
+          }
+          if(solver->GetResid() > P.get<double>("Poisson.Tol")) {
+            std::stringstream ss;
+            ss << "After " << solver->GetIter() << " iterations, the residual " << solver->GetResid() << " is still greater than the tolerance " << P.get<double>("Poisson.Tol");
+            throw (PyDropsErr(PyC, P, step-1, "The residual is greater than tolerence"));
+          }
+          if (P.get("Poisson.SolutionIsKnown", 0)) {
+            *(PyC->outfile) << line << "Check result against known solution ...\n";
+            exit(1);
+            //Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
+          }
         }
       }
 
@@ -381,8 +388,11 @@ namespace DROPS
 } // end of namespace DROPS
 
 void SetMissingParameters(DROPS::ParamCL& P){
-  P.put_if_unset<int>("Stabilization.SUPG",0);
-  P.put_if_unset<std::string>("PoissonCoeff.IAProb", "IA1Direct");
+    P.put_if_unset<int>("Stabilization.SUPG",0);
+    P.put_if_unset<double>("Stabilization.Magnitude",1.0);
+    P.put_if_unset<int>("Stabilization.Grids",1);
+    P.put_if_unset<int>("ALE.wavy",0);
+    P.put_if_unset<std::string>("ALE.Interface","Zero");
 }
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, double* C_sol)
@@ -433,8 +443,14 @@ void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
   std::string adstr ("IA1Adjoint");
   std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+  DROPS::SUPGCL supg;
+  if(P.get<int>("Stabilization.SUPG"))
+  {
+    supg.init(P);
+    *(PyC->outfile)<< line << "The SUPG stabilization will be added ...\n"<<line;
+  }
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
-  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, adstr.compare(IAProbstr) == 0);
+  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, supg, P.get<int>("ALE.wavy"), adstr.compare(IAProbstr) == 0);
 
 #ifdef _PAR
   // Set parallel data structures
@@ -522,7 +538,13 @@ void CoefEstimation(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
   DROPS::BuildDomain( mg, P.get<std::string>("DomainCond.MeshFile"), P.get<int>("DomainCond.GeomType"), serfile, r);
   // Setup the problem
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
-  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata);
+  DROPS::SUPGCL supg;
+  if(P.get<int>("Stabilization.SUPG"))
+  {
+    supg.init(P);
+    *(PyC->outfile)<< line << "The SUPG stabilization will be added ...\n"<<line;
+  }
+  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, supg);
 #ifdef _PAR
   // Set parallel data structures
   DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
@@ -611,8 +633,14 @@ void CoefCorrection(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::Cons
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), bdata);
   std::string adstr ("IA1Adjoint");
   std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+  DROPS::SUPGCL supg;
+  if(P.get<int>("Stabilization.SUPG"))
+  {
+    supg.init(P);
+    *(PyC->outfile)<< line << "The SUPG stabilization will be added ...\n"<<line;
+  }
   //DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, PoissonCoeff, bdata, adstr.compare(IAProbstr) == 0);
-  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, adstr.compare(IAProbstr) == 0);
+  DROPS::PoissonP1CL< PythonConnectCL > prob( *mg, *PyC, bdata, supg, P.get<int>("ALE.wavy"), adstr.compare(IAProbstr) == 0);
 
 #ifdef _PAR
   // Set parallel data structures
