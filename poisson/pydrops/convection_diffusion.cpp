@@ -304,7 +304,7 @@ namespace DROPS
     {  
       if(Poisson.ALE_)
         ALE.InitGrid();
-      Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG")); 
+      Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t); 
     }
     timer.Stop();
     *(PyC->outfile) << " o time " << timer.GetTime() << " s" << std::endl;

@@ -134,7 +134,7 @@ namespace DROPS {
     Poisson.M.SetIdx( &Poisson.idx, &Poisson.idx);              // tell M about numbering
     Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);
 
-    Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0, 0 );
+    Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0);
   }
 
 }
@@ -166,7 +166,8 @@ void PyScalarProductConnector::setup_sp_matrices()
       DROPS::BuildBoundaryData( mg, bdata, boundarytype, boundaryfuncs); // here, bdata is allocated, and we own it!
 
       // Setup the problem
-      prob = PoissonProblemPtr(new PoissonProblem( *mg, coeff, *bdata));
+      DROPS::SUPGCL supg;
+      prob = PoissonProblemPtr(new PoissonProblem( *mg, coeff, *bdata, supg));
       ScalarProductSetup(*prob, P);
 
       delete bdata;
