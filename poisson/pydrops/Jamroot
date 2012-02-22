@@ -36,14 +36,14 @@ project : requirements <library>libboost_python ;
 
 lib allothers
     :
-    : <file>../../geom/boundary.o <file>../../geom/builder.o <file>../../out/ensightOut.o    <file>../../geom/simplex.o <file>../../geom/multigrid.o <file>../../num/unknowns.o <file>../../geom/topo.o     <file>../../poisson/poisson.o <file>../../misc/problem.o <file>../../misc/utils.o <file>../../out/output.o     <file>../../num/fe.o <file>../../num/discretize.o <file>../../num/interfacePatch.o <file>../../geom/geomselect.o    <file>../../misc/params.o     <file>../../out/vtkOut.o <file>../../misc/bndmap.o <file>../../geom/bndScalarFunctions.o    <file>../../geom/bndVelFunctions.o ;
+    : <file>../../geom/boundary.o <file>../../geom/builder.o <file>../../out/ensightOut.o    <file>../../geom/simplex.o <file>../../geom/multigrid.o <file>../../num/unknowns.o <file>../../geom/topo.o     <file>../../poisson/poisson.o <file>../../poisson/ale.o <file>../../misc/problem.o <file>../../misc/utils.o <file>../../out/output.o     <file>../../num/fe.o <file>../../num/discretize.o <file>../../num/interfacePatch.o <file>../../geom/geomselect.o    <file>../../misc/params.o     <file>../../out/vtkOut.o <file>../../misc/bndmap.o <file>../../geom/bndScalarFunctions.o    <file>../../geom/bndVelFunctions.o ;
 
 # Declare the three extension modules.  You can specify multiple
 # source files after the colon separated by spaces.
 python-extension drops
 		 : pyconvection.cpp
 		 :
-		  <file>../../geom/boundary.o <file>../../geom/builder.o <file>../../out/ensightOut.o    <file>../../geom/simplex.o <file>../../geom/multigrid.o <file>../../num/unknowns.o <file>../../geom/topo.o    <file>../../poisson/poisson.o <file>../../misc/problem.o <file>../../misc/utils.o <file>../../out/output.o     <file>../../num/fe.o <file>../../num/discretize.o <file>../../num/interfacePatch.o <file>../../geom/geomselect.o    <file>../../misc/params.o     <file>../../out/vtkOut.o <file>../../misc/bndmap.o <file>../../geom/bndScalarFunctions.o    <file>../../geom/bndVelFunctions.o
+		  <file>../../geom/boundary.o <file>../../geom/builder.o <file>../../out/ensightOut.o    <file>../../geom/simplex.o <file>../../geom/multigrid.o <file>../../num/unknowns.o <file>../../geom/topo.o    <file>../../poisson/poisson.o <file>../../poisson/ale.o <file>../../misc/problem.o <file>../../misc/utils.o <file>../../out/output.o     <file>../../num/fe.o <file>../../num/discretize.o <file>../../num/interfacePatch.o <file>../../geom/geomselect.o    <file>../../misc/params.o     <file>../../out/vtkOut.o <file>../../misc/bndmap.o <file>../../geom/bndScalarFunctions.o    <file>../../geom/bndVelFunctions.o
 			<include>../../  <include>/usr/lib64/python2.7/site-packages/numpy/core/include/
 	;
 

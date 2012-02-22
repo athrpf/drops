@@ -22,7 +22,7 @@ pydrops_deps:
 	cd geom; $(MAKE) topo.o multigrid.o boundary.o builder.o simplex.o geomselect.o bndScalarFunctions.o bndVelFunctions.o
 	cd num; $(MAKE) discretize.o unknowns.o interfacePatch.o fe.o
 	cd out; $(MAKE) output.o ensightOut.o vtkOut.o
-	cd poisson; $(MAKE) poisson.o
+	cd poisson; $(MAKE) poisson.o ale.o
 
 default: dep all
 
