@@ -91,12 +91,12 @@ class Interface {
 
 class ALEVel {
     private: 
-       DROPS::instat_scalar_vector_ptr vel_;
-       DROPS::instat_scalar_vector_ptr surf_;
+       DROPS::instat_vector_fun_ptr vel_;
+       DROPS::instat_scalar_fun_ptr surf_;
        ALEVel();    
     public:
     
-    ALEVel( DROPS::instat_scalar_vector_ptr vel, DROPS::instat_scalar_fun_ptr surf ): vel_(vel), surf_(surf){}
+    ALEVel( DROPS::instat_vector_fun_ptr vel, DROPS::instat_scalar_fun_ptr surf ): vel_(vel), surf_(surf){}
     DROPS::Point3DCL operator()( const DROPS::Point3DCL& p, double t)
     {
         double eps =1.0e-7;

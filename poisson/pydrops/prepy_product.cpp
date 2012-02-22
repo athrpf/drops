@@ -67,7 +67,7 @@ using namespace boost::python;
 class PyScalarProductCoeff {
 public:
   PyScalarProductCoeff(bool h1_)
-    : q(&Zero), alpha(h1_ ? &One : &Zero), f(&Zero), Sta_Coeff(&Zero), Vel(&ZeroVec), h1(h1_)
+    : q(&Zero), alpha(h1_ ? &One : &Zero), f(&Zero), Sta_Coeff(&Zero), Vel(&ZeroVec), ALEVelocity(&ZeroVec), h1(h1_)
   {}
 
   DROPS::instat_scalar_fun_ptr q;
@@ -75,6 +75,7 @@ public:
   DROPS::instat_scalar_fun_ptr f;
   DROPS::instat_scalar_fun_ptr Sta_Coeff;
   DROPS::instat_vector_fun_ptr Vel;
+  DROPS::instat_vector_fun_ptr ALEVelocity;
 private:
   PyScalarProductCoeff();
   bool h1;
