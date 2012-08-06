@@ -90,6 +90,11 @@ double Grad_Sol(const DROPS::Point3DCL& p, double){
         return exp(-p[0]);
 }
 
+double IA12Sensi_Sol(const DROPS::Point3DCL& p, double){
+        double pi= 3.1415926;
+        return -sin(2*pi*p[0]);
+}
+
 namespace DROPS
 {
 
@@ -161,7 +166,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
         }
     }
-    else{
+/*    else{
         MultiGridCL& MG= Poisson.GetMG();
         const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
 
@@ -239,7 +244,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
             Poisson.x.Data.resize( loc_x.Data.size());
             Poisson.x.Data = loc_x.Data;
         }
-    }
+    }*/
 }
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
@@ -301,7 +306,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     timer.Reset();
     if (P.get<int>("Time.NumSteps") != 0)
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t, P.get<int>("Stabilization.SUPG") );
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t);
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -349,14 +354,24 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     if(P.get<int>("Time.NumSteps")!=0)
     {
-        //CoeffCL::Show_Pec();
-        InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
-        ThetaScheme( Poisson, *solver, P.get<double>("Time.Theta") , P.get<int>("PoissonCoeff.Convection"), P.get<int>("Stabilization.SUPG"));
-        ThetaScheme.SetTimeStep(P.get<double>("Time.StepSize") );
+        std::string IA12Sensstr ("IA12Sensitivity");
+        std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
+        bool IA12SensProb = (IA12Sensstr.compare(IAProbstr) == 0);
+        typedef boost::shared_ptr<InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL> > ThetaPtr;
+        ThetaPtr ThetaScheme;
+        if(IA12SensProb)
+        {
+            ThetaScheme = ThetaPtr(new InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>( Poisson, *solver, P, IA12Sensi_Sol, Delta));
+        }
+        else
+        {
+            ThetaScheme = ThetaPtr(new InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>( Poisson, *solver, P));
+        }
+        ThetaScheme->SetTimeStep(P.get<double>("Time.StepSize") );
         for ( int step = 1; step <= P.get<int>("Time.NumSteps") ; ++step) {
             timer.Reset();
             std::cout << line << "Step: " << step << std::endl;
-            ThetaScheme.DoStep( Poisson.x);
+            ThetaScheme->DoStep( Poisson.x);
 
             timer.Stop();
             std::cout << " o Solved system with:\n"
@@ -385,8 +400,13 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
 /// \brief Set Default parameters here s.t. they are initialized.
 /// The result can be checked when Param-list is written to the output.
+
 void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<int>("Stabilization.SUPG",0);
+    P.put_if_unset<double>("Stabilization.Magnitude",1.0);
+    P.put_if_unset<int>("Stabilization.Grids",1);
+    P.put_if_unset<int>("ALE.wavy",0);
+    P.put_if_unset<std::string>("ALE.Interface","One");
 }
 
 int main (int argc, char** argv)
@@ -440,7 +460,8 @@ int main (int argc, char** argv)
         // Setup the problem
         std::string adstr ("IA1Adjoint");
         std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
-        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::ParamCL> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::ParamCL>(P), *bdata, adstr.compare(IAProbstr) == 0);
+        DROPS::SUPGCL supg;
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL> prob( *mg, DROPS::PoissonCoeffCL(P), *bdata, supg, adstr.compare(IAProbstr) == 0);
 
 #ifdef _PAR
         // Set parallel data structures

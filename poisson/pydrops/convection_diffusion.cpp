@@ -392,7 +392,7 @@ void SetMissingParameters(DROPS::ParamCL& P){
     P.put_if_unset<double>("Stabilization.Magnitude",1.0);
     P.put_if_unset<int>("Stabilization.Grids",1);
     P.put_if_unset<int>("ALE.wavy",0);
-    P.put_if_unset<std::string>("ALE.Interface","Zero");
+    P.put_if_unset<std::string>("ALE.Interface","One");
 }
 //mainly used to solve a direct, sensetivity or adjoint problem in IA1
 void convection_diffusion(std::ofstream& outfile, DROPS::ParamCL& P, PdeFunction::ConstPtr C0, PdeFunction::ConstPtr b_in, PdeFunction::ConstPtr b_interface, PdeFunction::ConstPtr source, PdeFunction::ConstPtr Dw, double* C_sol)
