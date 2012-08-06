@@ -212,9 +212,9 @@ void SourceAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
     {    
         instat_vector_fun_ptr vel;
         if(ALE_)
-        vel= Coeff_.ALEVelocity;
+            vel= Coeff_.ALEVelocity;
         else
-        vel= Coeff_.Vel;
+            vel= Coeff_.Vel;
         QuadCL<Point3DCL> u(sit,vel,t);
         for(int i=0; i<4; ++i)
             U_Grad[i]=dot( u, QuadCL<Point3DCL>( G[i]));
@@ -232,9 +232,9 @@ void SourceAccumulator_P1CL<Coeff,QuadCL>::update_rhsintegrals(const TetraCL& si
             if (supg_.GetSUPG()) {
                 instat_vector_fun_ptr vel;
                 if(ALE_)
-                vel= Coeff_.ALEVelocity;
+                    vel= Coeff_.ALEVelocity;
                 else
-                vel= Coeff_.Vel;
+                    vel= Coeff_.Vel;
                 QuadCL<double> f_SD( rhs*U_Grad[i] );    //SUPG for source term
                 b_->Data[UnknownIdx[i]]+= f_SD.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff_.alpha(GetBaryCenter(sit), t));
             }
@@ -308,9 +308,9 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
     {   
         instat_vector_fun_ptr vel;
         if(ALE_)
-        vel= Coeff_.ALEVelocity;
+            vel= Coeff_.ALEVelocity;
         else
-        vel= Coeff_.Vel;
+            vel= Coeff_.Vel;
         QuadCL<Point3DCL> u(sit,vel,t); 
         for(int i=0; i<4; ++i)
             U_Grad[i]=dot( u, QuadCL<Point3DCL>( G[i]));
@@ -327,9 +327,9 @@ void StiffnessAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
             {
                 instat_vector_fun_ptr vel;
                 if(ALE_)
-                vel= Coeff_.ALEVelocity;
+                    vel= Coeff_.ALEVelocity;
                 else
-                vel= Coeff_.Vel;
+                    vel= Coeff_.Vel;
                 QuadCL<double> res3( U_Grad[i] * U_Grad[j]);
                 //SUPG stabilization
                 coup[i][j]+= res3.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff_.alpha(GetBaryCenter(sit), t));
@@ -419,9 +419,9 @@ void MassAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
         {
             instat_vector_fun_ptr vel;
             if(ALE_)
-            vel= Coeff_.ALEVelocity;
+                vel= Coeff_.ALEVelocity;
             else
-            vel= Coeff_.Vel;
+                vel= Coeff_.Vel;
             QuadCL<double> StrM(U_Grad[i]*phiQuad[j]);
             coup[i][j]+=StrM.quad(absdet)*supg_.Sta_Coeff( vel(GetBaryCenter(sit), t), Coeff_.alpha(GetBaryCenter(sit), t));  //SUPG term
         }
@@ -492,9 +492,9 @@ void ConvectionAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
     }
     instat_vector_fun_ptr vel;
     if(ALE_)
-    vel= Coeff_.ALEVelocity;
+        vel= Coeff_.ALEVelocity;
     else
-    vel= Coeff_.Vel;
+        vel= Coeff_.Vel;
     QuadCL<Point3DCL> u(sit,vel,t);
     for(int j=0; j<4;++j)
     {
