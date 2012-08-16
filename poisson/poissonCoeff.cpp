@@ -349,29 +349,29 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     double Diffusion(const DROPS::Point3DCL&, double){
         return 0.01;
     }
-    
+
     /// \brief Convection: constant flow in x direction
-    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){ 
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL&, double){
     //(1, 0, 0)^T
         DROPS::Point3DCL v(0.);
         v[0] = 1.0;
-        return v; 
+        return v;
     }
     /// \brief Right-hand side
     double Source(const DROPS::Point3DCL& p, double t){
     // 1 - (1 + D)e^(-t-y)
         double alpha;
-        alpha = Diffusion(p, t);                                   
+        alpha = Diffusion(p, t);
         double ret=0.;
         ret = 1. - (1 + alpha) * exp(-t-p[1]);
-        return ret; 
+        return ret;
     }
     /// \brief Solution
     double Solution( const DROPS::Point3DCL& p, double t)
     {
         double alpha;
         alpha = Diffusion(p, t);
-        return exp(-t-p[1]) + p[0] - (1 - exp(p[0]/alpha))/(1 - exp(1./alpha)); 
+        return exp(-t-p[1]) + p[0] - (1 - exp(p[0]/alpha))/(1 - exp(1./alpha));
     }
     static DROPS::RegisterScalarFunction regscaq("instatSUPG_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
     static DROPS::RegisterScalarFunction regscaa("instatSUPG_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
@@ -441,7 +441,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
         DROPS::Point3DCL ref(0.);
         ref[0] = p[0];
         ref[1] = refH * p[1]/Interface(p, t);
-        ref[2] = p[2];        
+        ref[2] = p[2];
         return ref;
     }
     //Gradx, Grady, Grad1 and Grad2 are used for source term
@@ -452,7 +452,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     double Grady( const DROPS::Point3DCL& ref, double t)   //b=h_y
     {
         return 1. + Mag * sin(paraX * ref[0]  + paraT * t);
-    } 
+    }
     double Grad1( const DROPS::Point3DCL& ref, double t)   //\nabla_y(a/b)
     {
         double ay=paraX * Mag * cos(paraX * ref[0]  + paraT * t);
@@ -472,18 +472,18 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     double Diffusion(const DROPS::Point3DCL&, double){
         return 1.0;
     }
-    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){ 
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){
         DROPS::Point3DCL ref = TransBack(p, t);
         DROPS::Point3DCL v(0.);
         v[0] = 1.0;
         v[1] = ref[1] * Mag * paraT * cos(paraX * ref[0]  + paraT * t);
-        return v; 
+        return v;
     }
-    DROPS::Point3DCL ALEFlowfield(const DROPS::Point3DCL&, double){ 
+    DROPS::Point3DCL ALEFlowfield(const DROPS::Point3DCL&, double){
         DROPS::Point3DCL v(0.);
         v[0] = 1.;
         v[1] = 0.;
-        return v; 
+        return v;
     }
 
     /// \brief Solution
@@ -507,7 +507,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
         double diff1     = -alpha*(1.-d - 2.*a/b + a/b*c + a*a/b/b)*sol;
         double diff2     = -alpha/(b*b)*sol;
         double diff3     = -alpha*sol;
-        return timederiv + conv + diff1 +diff2 +diff3; 
+        return timederiv + conv + diff1 +diff2 +diff3;
     }
     static DROPS::RegisterScalarFunction regscaq("TestALE_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)     );
     static DROPS::RegisterScalarFunction regscaf("TestALE_Source",       DROPS::instat_scalar_fun_ptr(Source)       );
@@ -534,23 +534,23 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
         DROPS::Point3DCL ref(0.);
         ref[0] = p[0];
         ref[1] = 0.2 * p[1]/Interface(p, t);
-        ref[2] = p[2];        
+        ref[2] = p[2];
         return ref;
     }
     /// \brief Convection: constant flow in x direction
-    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){ 
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){
         DROPS::Point3DCL ref = TransBack(p, t);
         DROPS::Point3DCL ret;
         const double d= ref[1]/0.2,
-            U= 200.;  //U=gh^2/(2*nu)      
-        ret[0]= U*(2-d)*d;                       
+            U= 200.;  //U=gh^2/(2*nu)
+        ret[0]= U*(2-d)*d;
         ret[1]=0.;
         ret[2]=0.;
         return ret;
     }
     /// \brief Right-hand side
     double Source(const DROPS::Point3DCL&, double){
-        return 0.0; 
+        return 0.0;
     }
     double BInter(const DROPS::Point3DCL&, double){
         return 0.01;
@@ -638,7 +638,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
 }//end of namespace
 
  namespace IA2Sensi{
-    
+
     double Reaction(const DROPS::Point3DCL&, double){
         return 0.0;
     }
@@ -662,7 +662,7 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscas("Sensi_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
     static DROPS::RegisterScalarFunction regscaa("Sensi_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
    }//end of namespace
-   
+
  namespace IA2Grad{
     /// \brief Reaction: no reaction
     double Reaction(const DROPS::Point3DCL&, double){
@@ -685,4 +685,201 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscaf("Grad_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
     static DROPS::RegisterScalarFunction regscas("Grad_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
     static DROPS::RegisterScalarFunction regscaa("Grad_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
+}//end of namespace
+
+/****************************************
+ *  Balakotaiah:                        \n*
+ *   - instationary setup             \n*
+ *   - constant diffusion             \n*
+ *   - convection                     \n*
+ *   - no reaction                    \n*
+ ****************************************/
+ namespace Balakotaiah{
+/***********************************************************************************************************************************/
+//added
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <string.h>
+#include <sstream>
+#include <math.h>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_interp.h>
+#include <gsl/gsl_errno.h>
+
+int getn(std::string dfile)
+{
+    int n=0;
+    double tmp;
+    std::ifstream fd;
+    fd.open(dfile.c_str());
+    if(fd.fail())
+	std::cout << dfile << " not available" << std::endl;
+
+    while(!fd.eof()){
+        if(fd.good()){
+	   fd >> tmp;
+	   n++;
+	}
+    }
+
+    fd.close();
+    return n;
+}
+
+int countTimesteps(const int starttime, const int stoptime, const int timeinc)
+{
+    int tmp = 0;
+    for(int i=starttime; i<=stoptime; i+=timeinc)
+        tmp++;
+
+    return tmp;
+}
+
+void getData(double *d, std::string dfile, std::string time)
+{
+    std::ifstream fd;
+    std::string file;
+    file = dfile + time + ".dat";
+    fd.open(file.c_str());
+    int i=0;
+
+    while(!fd.eof()){
+        if(fd.good()){
+            fd >> d[i];
+            i++;
+        }
+    }
+
+    fd.close();
+}
+
+void uvh(double* res, int t, double x, double y)
+{
+    static bool     init=false;
+
+    static int      n;
+
+    static gsl_spline ** hspline,
+                      ** qspline;
+
+    static gsl_interp_accel * acc;
+
+    double          hres[2],
+                    qres[2];
+
+    const std::string hfile="Data/longh",
+                      qfile="Data/longq";
+
+    const int       starttime=161,
+                    stoptime=673,
+                    timeinc=1;
+
+    if(!init){
+        std::string file;
+        std::stringstream out;
+        out << starttime;
+        file=hfile+out.str()+".dat";
+        n=getn(file);
+
+        int tsteps = countTimesteps(starttime,stoptime,timeinc);
+	acc = gsl_interp_accel_alloc();
+        hspline = new gsl_spline*[tsteps];
+        qspline = new gsl_spline*[tsteps];
+
+        double * h,
+               * q,
+               * xa;
+
+        h = new double[n];
+        q = new double[n];
+        xa = new double[n];
+
+        for(int j=0; j<n; j++)
+            xa[j] = j+1.;
+	
+	std::cout << "Getting Data... ";
+        for(int i=0; i<tsteps; i++){
+            std::stringstream time;
+            time << starttime + i*timeinc;
+            getData(h, hfile, time.str());
+            hspline[i] = gsl_spline_alloc(gsl_interp_cspline, n);
+            gsl_spline_init(hspline[i], xa, h, n);
+            getData(q, qfile, time.str());
+            qspline[i] = gsl_spline_alloc(gsl_interp_cspline, n);
+            gsl_spline_init(qspline[i], xa, q, n);
+        }
+	std::cout << " done" << std::endl;
+
+
+        init=true;
+
+        delete[] h;
+        delete[] q;
+        delete[] xa;
+    }
+
+    hres[0] = gsl_spline_eval(hspline[(int)((t+0.1)/timeinc)], x, acc);
+    hres[1] = gsl_spline_eval_deriv(hspline[(int)((t+0.1)/timeinc)], x, acc);
+    qres[0] = gsl_spline_eval(qspline[(int)((t+0.1)/timeinc)], x, acc);
+    qres[1] = gsl_spline_eval_deriv(qspline[(int)((t+0.1)/timeinc)], x, acc);
+
+    res[0]=3*qres[0]/pow(hres[0],3)*(hres[0]*y-y*y/2);
+    res[1]=-(1.5*qres[0]/pow(hres[0],4)*hres[1]-0.5*qres[1]/pow(hres[0],3))*pow(y,3)
+            -(1.5*qres[1]/pow(hres[0],2)-3*qres[0]/pow(hres[0],3)*hres[1])*y*y;
+    res[2]=hres[0];
+}
+/*****************************************************************************************************************/
+
+    double Interface( const DROPS::Point3DCL& p, double t)
+    {
+        double res[3];
+        //std::cout << "t: " << t  << "x: " << p[0] << "y: " << p[1] << std::endl;
+        uvh(res,(int)(t+0.1),p[0],p[1]);
+        return res[2];
+    }
+
+    /// \brief Reaction: no reaction
+    double Reaction(const DROPS::Point3DCL&, double){
+        return 0.0;
+    }
+
+    /// \brief Diffusion
+    double Diffusion(const DROPS::Point3DCL&, double){
+        return 1e-9;
+    }
+
+    /// \brief Initial value
+    double InitialValue( const DROPS::Point3DCL& , double){
+        return 1e-5;
+    }
+
+    DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){
+        double res[3];
+//std::cout << "t: " << t << std::endl;
+	uvh(res,(int)(t+0.1),p[0],p[1]);
+        DROPS::Point3DCL v(0.);
+        v[0] = res[0];
+        v[1] = res[1];
+	v[2] = 0.;
+        return v;
+    }
+
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL&, double)
+    {
+        return 1e-3;
+    }
+
+    /// \brief Right-hand side
+    double Source(const DROPS::Point3DCL&, double){
+        return 0.;
+    }
+    static DROPS::RegisterScalarFunction regscaq("Balakotaiah_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)     );
+    static DROPS::RegisterScalarFunction regscaf("Balakotaiah_Source",       DROPS::instat_scalar_fun_ptr(Source)       );
+    static DROPS::RegisterScalarFunction regscaa("Balakotaiah_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)    );
+    static DROPS::RegisterScalarFunction regscaint("Balakotaiah_Interface",  DROPS::instat_scalar_fun_ptr(Interface)    );
+    static DROPS::RegisterScalarFunction regscas("Balakotaiah_Solution",     DROPS::instat_scalar_fun_ptr(Solution)     );
+    static DROPS::RegisterVectorFunction regscav("Balakotaiah_Velocity",     DROPS::instat_vector_fun_ptr(Flowfield)    );
+    static DROPS::RegisterScalarFunction regscai("Balakotaiah_InitialValue", DROPS::instat_scalar_fun_ptr(InitialValue) );
 }//end of namespace
