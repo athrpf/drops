@@ -16,6 +16,10 @@ CPP = $(wildcard *.cpp)
 
 OBJ = $(CPP:%.cpp=%.o)
 
+LIBS += -lgsl -lgslcblas -lm
+
+OPT = -O2
+
 # include common rules:
 include ../Make.common
 
@@ -48,7 +52,7 @@ poissonP1:\
     ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
     ../geom/bndVelFunctions.o\
     $(PAR_OBJ)
-	$(CXX) -o $@ $^ $(LFLAGS)
+	$(CXX) $(LIBS) $(OPT) -o $@ $^ $(LFLAGS)
 
 poissonP2:\
     ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
