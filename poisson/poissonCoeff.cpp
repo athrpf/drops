@@ -797,7 +797,7 @@ void uvh(double* res, int t, double x, double y)
 
         for(int j=0; j<n; j++)
             xa[j] = j+1.;
-	
+
 	std::cout << "Getting Data... ";
         for(int i=0; i<tsteps; i++){
             std::stringstream time;
@@ -824,9 +824,21 @@ void uvh(double* res, int t, double x, double y)
     qres[0] = gsl_spline_eval(qspline[(int)((t+0.1)/timeinc)], x, acc);
     qres[1] = gsl_spline_eval_deriv(qspline[(int)((t+0.1)/timeinc)], x, acc);
 
+    /*
     res[0]=3*qres[0]/pow(hres[0],3)*(hres[0]*y-y*y/2);
     res[1]=-(1.5*qres[0]/pow(hres[0],4)*hres[1]-0.5*qres[1]/pow(hres[0],3))*pow(y,3)
             -(1.5*qres[1]/pow(hres[0],2)-3*qres[0]/pow(hres[0],3)*hres[1])*y*y;
+    res[2]=hres[0];
+    */
+    double h1 = hres[0];
+    double h2 = h1*h1;
+    double h3 = h2*h1;
+    double h4 = h2*h2;
+    double y2 = y*y;
+    double y3 = y2*y;
+    res[0]=3*qres[0]/h3*(hres[0]*y-y2/2);
+    res[1]=-(1.5*qres[0]/h4*hres[1]-0.5*qres[1]/h3)*y3
+            -(1.5*qres[1]/h2-3*qres[0]/h3*hres[1])*y*y;
     res[2]=hres[0];
 }
 /*****************************************************************************************************************/
@@ -855,7 +867,7 @@ void uvh(double* res, int t, double x, double y)
     }
 
     DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){
-        double res[3];
+      double res[3];
 //std::cout << "t: " << t << std::endl;
 	uvh(res,(int)(t+0.1),p[0],p[1]);
         DROPS::Point3DCL v(0.);
