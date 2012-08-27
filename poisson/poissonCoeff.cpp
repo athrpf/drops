@@ -756,6 +756,8 @@ void getData(double *d, std::string dfile, std::string time)
 
 void uvh(double* res, int t, double x, double y)
 {
+  int id = omp_get_thread_num();
+  //std::cout << "This is thread " << id << std::endl;
     static bool     init=false;
 
     static int      n;
@@ -768,14 +770,15 @@ void uvh(double* res, int t, double x, double y)
     double          hres[2],
                     qres[2];
 
-    const std::string hfile="Data/longh",
-                      qfile="Data/longq";
+    const std::string hfile="SinusTestData/longh",
+                      qfile="SinusTestData/longq";
 
     const int       starttime=161,
-                    stoptime=673,
+                    stoptime=199,
                     timeinc=1;
 
     if(!init){
+      if (id==0) { // only the master thread does this
         std::string file;
         std::stringstream out;
         out << starttime;
@@ -796,7 +799,7 @@ void uvh(double* res, int t, double x, double y)
         xa = new double[n];
 
         for(int j=0; j<n; j++)
-            xa[j] = j+1.;
+            xa[j] = j;
 
 	std::cout << "Getting Data... ";
         for(int i=0; i<tsteps; i++){
@@ -819,10 +822,14 @@ void uvh(double* res, int t, double x, double y)
         delete[] xa;
     }
 
-    hres[0] = gsl_spline_eval(hspline[(int)((t+0.1)/timeinc)], x, acc);
-    hres[1] = gsl_spline_eval_deriv(hspline[(int)((t+0.1)/timeinc)], x, acc);
-    qres[0] = gsl_spline_eval(qspline[(int)((t+0.1)/timeinc)], x, acc);
-    qres[1] = gsl_spline_eval_deriv(qspline[(int)((t+0.1)/timeinc)], x, acc);
+#pragma omp barrier
+    }
+
+    int nt = (int)((t+0.1)/timeinc);
+    hres[0] = gsl_spline_eval(hspline[nt], x, acc);
+    hres[1] = gsl_spline_eval_deriv(hspline[nt], x, acc);
+    qres[0] = gsl_spline_eval(qspline[nt], x, acc);
+    qres[1] = gsl_spline_eval_deriv(qspline[nt], x, acc);
 
     /*
     res[0]=3*qres[0]/pow(hres[0],3)*(hres[0]*y-y*y/2);
@@ -838,7 +845,7 @@ void uvh(double* res, int t, double x, double y)
     double y3 = y2*y;
     res[0]=3*qres[0]/h3*(hres[0]*y-y2/2);
     res[1]=-(1.5*qres[0]/h4*hres[1]-0.5*qres[1]/h3)*y3
-            -(1.5*qres[1]/h2-3*qres[0]/h3*hres[1])*y*y;
+            -(1.5*qres[1]/h2-3*qres[0]/h3*hres[1])*y2;
     res[2]=hres[0];
 }
 /*****************************************************************************************************************/
@@ -858,7 +865,7 @@ void uvh(double* res, int t, double x, double y)
 
     /// \brief Diffusion
     double Diffusion(const DROPS::Point3DCL&, double){
-        return 1e-9;
+        return 1e-7;
     }
 
     /// \brief Initial value
