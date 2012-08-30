@@ -85,18 +85,15 @@ class SUPGCL
             mesh[idx_]= ' ';
         std::istringstream brick_info( mesh);
         brick_info >> lx_ >> ly_ >> lz_ >> nx_ >> ny_ >> nz_;
-        int Ref_=para.get<int>("DomainCond.RefineSteps");
-        magnitude_ =para.get<double>("Stabilization.Magnitude");
-        grids_      =para.get<double>("Stabilization.Grids");
+        int Ref_    = para.get<int>("DomainCond.RefineSteps");
+        magnitude_  = para.get<double>("Stabilization.Magnitude");
+        grids_      = para.get<double>("Stabilization.Grids");
 
         double dx_= lx_/(nx_*std::pow(2, Ref_));
         double dy_= ly_/(ny_*std::pow(2, Ref_));
         double dz_= lz_/(nz_*std::pow(2, Ref_));
         if(grids_==1)         //pick up the longest edge
         {
-            double dx_= lx_/(nx_*std::pow(2, Ref_));
-            double dy_= ly_/(ny_*std::pow(2, Ref_));
-            double dz_= lz_/(nz_*std::pow(2, Ref_));
             double m =0.;
             if(dx_>=dy_)
                 m = dx_;
@@ -125,10 +122,9 @@ class SUPGCL
 
     double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha)
     {//Stabilization coefficient
-        double Pec=0.;
         double h  =GetCharaLength(grids_);
 	double v_norm = Vel.norm();
-        Pec=v_norm*h/(2.*alpha);  //compute mesh Peclet number
+        double Pec=v_norm*h/(2.*alpha);  //compute mesh Peclet number
         if (Pec<=1)
             return 0.0;
         else
