@@ -69,7 +69,7 @@ class SUPGCL
   private:
     double magnitude_;
     int    grids_;      // decide how to compute characteristic length to approximate the longest length in flow direction
-    double longedge_;   // the longest edge for regular grids; 
+    double longedge_;   // the longest edge for regular grids;
     bool    SUPG_;
     public:
     SUPGCL()
@@ -95,9 +95,9 @@ class SUPGCL
         //pick up the longest edge
         if(grids_==1)
         {
-            double dx_= lx_/(nx_*std::pow(2, Ref_)); 
+            double dx_= lx_/(nx_*std::pow(2, Ref_));
             double dy_= ly_/(ny_*std::pow(2, Ref_));
-            double dz_= ly_/(nz_*std::pow(2, Ref_));
+            double dz_= lz_/(nz_*std::pow(2, Ref_));
             double m;
             if(dx_>=dy_)
                 m = dx_;
@@ -107,15 +107,15 @@ class SUPGCL
                 longedge_=m;
             else
                 longedge_=dz_;
-                
+
         }
         else
-        {   longedge_ = 0;} 
-        SUPG_ = para.get<int>("Stabilization.SUPG");   
+        {   longedge_ = 0;}
+        SUPG_ = para.get<int>("Stabilization.SUPG");
     }
-    
+
     bool GetSUPG(){return SUPG_;}
-    
+
     double GetCharaLength(int grids)
     {
         double h=0.;
@@ -123,18 +123,19 @@ class SUPGCL
             h=longedge_;
         else
             std::cout<<"WARNING: The geometry type has not been implemented!\n";
-        return h;    
+        return h;
     }
-        
-    double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha) 
+
+    double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha)
     {//Stabilization coefficient
         double Pec=0.;
         double h  =GetCharaLength(grids_);
-        Pec=Vel.norm()*h/(2.*alpha);  //compute mesh Peclet number  
+	double v_norm = Vel.norm();
+        Pec=v_norm*h/(2.*alpha);  //compute mesh Peclet number
         if (Pec<=1)
             return 0.0;
         else
-            return magnitude_*h/(2.*Vel.norm())*(1.-1./Pec);
+            return magnitude_*h/(2.*v_norm)*(1.-1./Pec);
     }
 };
 

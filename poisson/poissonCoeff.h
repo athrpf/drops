@@ -61,8 +61,8 @@ class PoissonCoeffCL
     //velocity
     static instat_vector_fun_ptr Vel;
     //Free interface function
-    static instat_scalar_fun_ptr interface;  
-    
+    static instat_scalar_fun_ptr interface;
+
     PoissonCoeffCL( ParamCL& P){
         C_=P;
         int nz_;
@@ -113,10 +113,10 @@ class PoissonCoeffCL
             Vel = vecmap["ZeroVel"];
         else
             Vel = vecmap[P.get<std::string>("PoissonCoeff.Flowfield")];
-            
+
         Ref_=P.get<int>("DomainCond.RefineSteps");
      }
- 
+
      //Only used for flat film case
      static double h_Value()
      {//mesh size in flow direction
@@ -127,19 +127,21 @@ class PoissonCoeffCL
      {//Stabilization coefficient
          double h  =h_Value();
          double Pec=0.;
-         Pec=Vel(p, t).norm()*h/(2.*alpha(p, t));  //compute mesh Peclet number
+	 double v_norm = Vel(p, t).norm();
+         Pec=v_norm*h/(2.*alpha(p, t));  //compute mesh Peclet number
          if (Pec<=1)
              return 0.0;
          else
-            return h/(2.*Vel(p, t).norm())*(1.-1./Pec);
+            return h/(2.*v_norm)*(1.-1./Pec);
      }
-     
+
     static Point3DCL ALEVelocity(const DROPS::Point3DCL& p, double t)
     {
         double eps =1.0e-7;
         DROPS::Point3DCL ret;
         ret  = Vel(p, t);
-        ret[1] -= p[1]/interface(p, t)*(interface(p, t+eps)-interface(p, t))/eps;  //y/h(p,t)*h_p'(t)
+	double interface1 = interface(p, t);
+        ret[1] -= p[1]/interface1*(interface(p, t+eps)-interface1)/eps;  //y/h(p,t)*h_p'(t)
         return ret;
     }
 };

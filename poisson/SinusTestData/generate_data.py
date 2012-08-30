@@ -13,12 +13,12 @@ q(x,t) = q0 - a0*k/omega*sin(k*x+omega*t)
 
 import numpy as np
 
-def genfunh(x, t, y0=1.0, a0=0.1, k=1.0, omega=1.0):
+def genfunh(x, t, y0=1.0, a0=0.5, k=0.1, omega=0.1):
     retvalh = y0 + a0*np.sin(k*x + omega*t)
     return retvalh
 
-def genfunq(x, t, q0=1.0, a0=0.1, k=1.0, omega=1.0):
-    retvalq = q0 + a0*k/omega*np.sin(k*x+omega*t)
+def genfunq(x, t, q0=1.0, a0=0.5, k=0.1, omega=0.1):
+    retvalq = q0 - a0*k/omega*np.sin(k*x+omega*t)
     return retvalq
 
 def generate(startn=161, stopn=200):
@@ -29,8 +29,8 @@ def generate(startn=161, stopn=200):
         hf = open('longh'+str(k) +'.dat', 'w')
         qf = open('longq'+str(k) +'.dat', 'w')
         for j in range(nx):
-            hf.write('{}'.format(genfunh(float(j), float(k))))
-            qf.write('{}'.format(genfunq(float(j), float(k))))
+            hf.write('{}'.format(genfunh(float(j), float(t0+tinc*(k-startn)))))
+            qf.write('{}'.format(genfunq(float(j), float(t0+tinc*(k-startn)))))
             if j is not nx-1:
                 hf.write('\n')
                 qf.write('\n')

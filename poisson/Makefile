@@ -18,7 +18,7 @@ OBJ = $(CPP:%.cpp=%.o)
 
 LIBS += -lgsl -lgslcblas -lm
 
-OPT = -O2
+OPT = -O0 -pg -g
 
 # include common rules:
 include ../Make.common
@@ -88,3 +88,6 @@ matlab/clean:
 
 pydrops/clean:
 	cd pydrops && $(MAKE) clean
+
+check-syntax:
+	gcc -o nul -S ${CHK_SOURCES}
