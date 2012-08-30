@@ -69,16 +69,12 @@ class SUPGCL
   private:
     double magnitude_;
     int    grids_;      // decide how to compute characteristic length to approximate the longest length in flow direction
-    double longedge_;   // the longest edge for regular grids;
+    double  h_;         // the characteristic length in flow direction;
     bool    SUPG_;
     public:
-    SUPGCL()
-    {magnitude_=0.;
-     grids_ = 1;
-     longedge_=0.;
-     SUPG_= false;}
-    SUPGCL(ParamCL para)
-    { init(para);}
+
+    SUPGCL(): magnitude_(0.), grids_ (1), h_(0.), SUPG_(false) {}
+    SUPGCL(ParamCL para) { init(para);}
     void init(ParamCL para)
     {
         double lx_, ly_, lz_;
@@ -92,25 +88,29 @@ class SUPGCL
         int Ref_=para.get<int>("DomainCond.RefineSteps");
         magnitude_ =para.get<double>("Stabilization.Magnitude");
         grids_      =para.get<double>("Stabilization.Grids");
-        //pick up the longest edge
-        if(grids_==1)
+
+        double dx_= lx_/(nx_*std::pow(2, Ref_));
+        double dy_= ly_/(ny_*std::pow(2, Ref_));
+        double dz_= lz_/(nz_*std::pow(2, Ref_));
+        if(grids_==1)         //pick up the longest edge
         {
             double dx_= lx_/(nx_*std::pow(2, Ref_));
             double dy_= ly_/(ny_*std::pow(2, Ref_));
             double dz_= lz_/(nz_*std::pow(2, Ref_));
-            double m;
+            double m =0.;
             if(dx_>=dy_)
                 m = dx_;
             else
                 m = dy_;
             if( m>=dz_)
-                longedge_=m;
+                h_=m;
             else
-                longedge_=dz_;
-
+                h_=dz_;
         }
+        else if(grids_==2)
+            h_= std::sqrt(dx_* dx_ + dy_* dy_ + dz_* dz_);
         else
-        {   longedge_ = 0;}
+            h_ = 0;
         SUPG_ = para.get<int>("Stabilization.SUPG");
     }
 
@@ -118,12 +118,9 @@ class SUPGCL
 
     double GetCharaLength(int grids)
     {
-        double h=0.;
-        if(grids==1)
-            h=longedge_;
-        else
+        if( (grids!=1)&&(grids!=2) )
             std::cout<<"WARNING: The geometry type has not been implemented!\n";
-        return h;
+        return h_;
     }
 
     double Sta_Coeff(const DROPS::Point3DCL& Vel, double alpha)

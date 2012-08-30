@@ -244,7 +244,6 @@ void SourceAccumulator_P1CL<Coeff,QuadCL>::update_rhsintegrals(const TetraCL& si
 	    if ( sit.IsBndSeg(FaceOfVert(i, f)) )
 	      b_->Data[UnknownIdx[i]]+= P1DiscCL::Quad2D(sit, FaceOfVert(i, f), BndData_->GetBndSeg(sit.GetBndIdx(FaceOfVert(i,f))).GetBndFun(), i );
       }
-
 }
 
 
@@ -486,9 +485,9 @@ void ConvectionAccumulator_P1CL<Coeff,QuadCL>::local_setup (const TetraCL& sit)
     }
     instat_vector_fun_ptr vel;
     if(ALE_)
-    vel= Coeff_.ALEVelocity;
+        vel= Coeff_.ALEVelocity;
     else
-    vel= Coeff_.Vel;
+        vel= Coeff_.Vel;
     QuadCL<Point3DCL> u(sit,vel,t);
     for(int j=0; j<4;++j)
     {

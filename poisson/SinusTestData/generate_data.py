@@ -13,12 +13,12 @@ q(x,t) = q0 - a0*k/omega*sin(k*x+omega*t)
 
 import numpy as np
 
-def genfunh(x, t, y0=1.0, a0=0.5, k=0.1, omega=0.1):
-    retvalh = y0 + a0*np.sin(k*x + omega*t)
+def genfunh(x, t, y0=1.0, a0=0.5, k=2*np.pi/100.0, omega=2*np.pi/30.0):
+    retvalh = y0 + a0*np.sin(k*x - omega*t)
     return retvalh
 
-def genfunq(x, t, q0=1.0, a0=0.5, k=0.1, omega=0.1):
-    retvalq = q0 - a0*k/omega*np.sin(k*x+omega*t)
+def genfunq(x, t, q0=2.0, a0=0.5, k=2*np.pi/100.0, omega=2*np.pi/30.0):
+    retvalq = q0 - a0*k/omega*np.sin(k*x - omega*t)
     return retvalq
 
 def generate(startn=161, stopn=200):

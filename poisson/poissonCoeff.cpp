@@ -866,7 +866,7 @@ void uvh(double* res, int t, double x, double y)
 
     /// \brief Diffusion
     double Diffusion(const DROPS::Point3DCL&, double){
-        return 1.e-3;
+        return 2.e-9;
     }
 
     /// \brief Initial value
@@ -888,7 +888,7 @@ void uvh(double* res, int t, double x, double y)
     /// \brief Solution
     double Solution( const DROPS::Point3DCL&, double)
     {
-        return 1e-3;
+        return 1e-4;
     }
 
     /// \brief Right-hand side
