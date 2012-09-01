@@ -763,19 +763,24 @@ void getData(double *d, std::string dfile, std::string time)
 
     static gsl_interp_accel * acc;
 
-    static const std::string hfile="SinusTestData/longh",
-                      qfile="SinusTestData/longq";
+    static std::string hfile,
+                      	     qfile;
 
-    static const int       starttime=161,
-                    stoptime=199,
-                    timeinc=1;
+    static int  starttime,
+                stoptime,
+                timeinc;
 
 void initialize()
 {
   int id = omp_get_thread_num();
   //std::cout << "This is thread " << id << std::endl;
   if (id==0) { // only the master thread does this
-  std::string file;
+  std::string file = P.get<std::string>("andreasOpt.DataDir");
+  hfile = file + "/longh";
+  qfile = file + "/longq";
+  starttime = P.get<int>("andreasOpt.starttime");
+  stoptime = P.get<int>("andreasOpt.stoptime");
+  timeinc = P.get<int>("Time.StepSize");
   std::stringstream out;
   out << starttime;
   file=hfile+out.str()+".dat";
@@ -866,7 +871,7 @@ void uvh(double* res, int t, double x, double y)
 
     /// \brief Diffusion
     double Diffusion(const DROPS::Point3DCL&, double){
-        return 2.e-9;
+        return 1.e-6;
     }
 
     /// \brief Initial value
@@ -886,9 +891,12 @@ void uvh(double* res, int t, double x, double y)
     }
 
     /// \brief Solution
-    double Solution( const DROPS::Point3DCL&, double)
+    double Solution( const DROPS::Point3DCL& p, double)
     {
-        return 1e-4;
+	if(p[0] < 15)
+	    return 1e-4/15*p[0];
+	else
+            return 1e-4;
     }
 
     /// \brief Right-hand side
