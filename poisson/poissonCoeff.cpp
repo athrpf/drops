@@ -982,7 +982,7 @@ namespace Jan {
         return ret;
     }
     
-    /// \brief Right-hand side
+   
     double Source(const DROPS::Point3DCL&, double){
         return 0.0; 
     }
@@ -999,15 +999,22 @@ namespace Jan {
         return 1.e-9; 
     }
     
+    /// \brief Solution
+    double Solution( const DROPS::Point3DCL&, double)
+    {
+        return 1e-4;
+    }
+    
     //double BInter(const DROPS::Point3DCL&, double){
       //  return 0.01;
     //}
     
-    static DROPS::RegisterScalarFunction regscaq("JanALE_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)    );
-    static DROPS::RegisterScalarFunction regscaa("JanALE_Diffusion",     DROPS::instat_scalar_fun_ptr(Diffusion)    );
-    static DROPS::RegisterScalarFunction regscaint("JanALE_Interface",  DROPS::instat_scalar_fun_ptr(Interface)   );
-    static DROPS::RegisterVectorFunction regscav("JanALE_Velocity",     DROPS::instat_vector_fun_ptr(Flowfield)   );
-    static DROPS::RegisterScalarFunction regscaf("JanALE_Source",       DROPS::instat_scalar_fun_ptr(Source)      );
+    static DROPS::RegisterScalarFunction regscaq("JanALE_Reaction",     DROPS::instat_scalar_fun_ptr(Reaction)     );
+    static DROPS::RegisterScalarFunction regscaa("JanALE_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)    );
+    static DROPS::RegisterScalarFunction regscaint("JanALE_Interface",  DROPS::instat_scalar_fun_ptr(Interface)    );
+    static DROPS::RegisterVectorFunction regscav("JanALE_Velocity",     DROPS::instat_vector_fun_ptr(Flowfield)    );
+    static DROPS::RegisterScalarFunction regscaf("JanALE_Source",       DROPS::instat_scalar_fun_ptr(Source)       );
     //static DROPS::RegisterScalarFunction regscas("JanALE_Inter",         DROPS::instat_scalar_fun_ptr(BInter)     );
-    static DROPS::RegisterScalarFunction regscai("JanALE_InitialVal",  DROPS::instat_scalar_fun_ptr(InitialValue)   );
+    static DROPS::RegisterScalarFunction regscas("JanALE_Solution",     DROPS::instat_scalar_fun_ptr(Solution)     );
+    static DROPS::RegisterScalarFunction regscai("JanALE_InitialVal",   DROPS::instat_scalar_fun_ptr(InitialValue) );
 }//end of namespace
