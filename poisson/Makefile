@@ -51,7 +51,7 @@ poissonP1:\
     ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
     ../geom/bndVelFunctions.o\
     $(PAR_OBJ)
-	$(CXX) $(CXXFLAGS) $(LIBS) -o $@ $^ $(LFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LFLAGS) $(LIBS)
 
 poissonP2:\
     ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
