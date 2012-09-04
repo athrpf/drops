@@ -1,6 +1,7 @@
 #include "../PERIODICADDEDphysicaldata.hpp"
 #include <fstream>
 #include <sstream>
+#include "createlevelLiang.hpp"
 static PhysicalData pd;
 
  double* createlevelLiang() {
@@ -12,7 +13,7 @@ static PhysicalData pd;
   levelLiang = new double[NumCoordsLiang];
 
 
-  std::string level_filename = "LevelSetLiangData.txt";
+  std::string level_filename = "./Tests/LevelSetLiangData.txt";
   std::ifstream levelfile;
   levelfile.open(level_filename.c_str(), std::fstream::in);
   double curr_level;
