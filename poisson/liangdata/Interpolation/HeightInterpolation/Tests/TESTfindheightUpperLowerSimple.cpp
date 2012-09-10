@@ -15,7 +15,7 @@ int main() {
   levelLiang = new double[NumCoordsLiang];
 
 
-  std::string velocity_filename = "LevelSetLiangData.txt";
+  std::string velocity_filename = "../../DataForPoissonCoeff/LevelSetLiangData.txt";
   std::ifstream ufile;
   ufile.open(velocity_filename.c_str(), std::fstream::in);
   double curr_level;

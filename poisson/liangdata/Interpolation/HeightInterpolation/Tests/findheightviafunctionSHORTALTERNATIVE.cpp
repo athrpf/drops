@@ -8,8 +8,10 @@ static PhysicalData pd;
 
 int main() {
 
-  //Create an array of Liang's level-set-values, which is converted to an array of discrete height-values by use of the 
-  //function "DiscreteLevelSetToDiscreteHeight":
+  //Create an array of Liang's level-set-values, which is converted to an 
+  //array of discrete height-values by use the  function 
+  //"DiscreteLevelSetToDiscreteHeight" (Mind READMEFIRST.txt located in the 
+  //same folder as createlevelLiang.cpp!):
   createlevelLiang();
   DiscreteLevelSetToDiscreteHeight(createlevelLiang());
     
