@@ -22,7 +22,7 @@ int main() {
   level = new double[NumCoords];
 
 
-  std::string velocity_filename = "VelocityWithLevelSetFinal.txt";
+  std::string velocity_filename = "../../DataForPoissonCoeff/VelocityWithLevelSetFinal.txt";
   
 
   std::ifstream ufile;
