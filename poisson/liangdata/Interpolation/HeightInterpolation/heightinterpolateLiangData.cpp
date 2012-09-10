@@ -1,9 +1,9 @@
-#include <cmath>
-#include <math.h>
-#include "../boxinterpLiangData.hpp"
-#include "../PERIODICADDEDphysicaldata.hpp"
-#include "heightinterpolateLiangData.hpp"
-static PhysicalData pd;
+//#include <cmath>
+//#include <math.h>
+//#include "../boxinterpLiangData.hpp"
+//#include "../PERIODICADDEDphysicaldata.hpp"
+//#include "heightinterpolateLiangData.hpp"
+//static PhysicalData pd;
 
 double HeightInterpolLiangData(double x, double t, double* h) { 
 

@@ -1,8 +1,8 @@
 // Jan Becker
 // 2012-06-19
 
-#include <math.h>
-#include "boxinterpLiangData.hpp"
+//#include <math.h>
+//#include "boxinterpLiangData.hpp"
 
 //Enumerate the squares (needed for the bilinear interpolation) in x- resp. in y-direction
 int boxnumber(double x, double delta, double offset)

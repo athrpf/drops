@@ -2,12 +2,25 @@
 #include <math.h>
 #include <fstream>
 #include <sstream>
-#include "poisson/liangdata/Interpolation/PERIODICADDEDphysicaldata.hpp"
-#include "poisson/liangdata/Interpolation/HeightInterpolation/createlevelLiang.hpp"
-#include "poisson/liangdata/Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.hpp"
-#include "poisson/liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.hpp"
-#include "poisson/liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.hpp"
-#include "poisson/poissonCoeff.h"
+
+#include "./liangdata/Interpolation/PERIODICADDEDphysicaldata.hpp"
+static PhysicalData pd;
+
+#include "./liangdata/Interpolation/boxinterpLiangData.cpp"
+
+// #include "./liangdata/Interpolation/HeightInterpolation/createlevelLiang.hpp"
+#include "./liangdata/Interpolation/HeightInterpolation/createlevelLiang.cpp"
+
+// #include "./liangdata/Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.hpp"
+#include "./liangdata/Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.cpp"
+
+// #include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.hpp"
+#include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.cpp"
+
+// #include "./liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.hpp"
+#include "./liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.cpp"
+
+#include "poissonCoeff.h"
 
 extern DROPS::ParamCL P;
 
@@ -22,8 +35,10 @@ namespace Jan {
     
     void setup()
     {
-       //Create an array of Liang's level-set-values, which is converted to an array of discrete height-values by use of the 
-       //function "DiscreteLevelSetToDiscreteHeight" (The latter is used in the function "Interface" below):
+       //Create an array of Liang's level-set-values, which is converted to 
+       //an array of discrete height-values by use of the 
+       //function "DiscreteLevelSetToDiscreteHeight" (The latter is used in 
+       //the function "Interface" below):
        createlevelLiang();
        DiscreteLevelSetToDiscreteHeight(createlevelLiang());
        // read data of the velocity-field (and the level-set)

@@ -1,8 +1,8 @@
-#include "../PERIODICADDEDphysicaldata.hpp"
-#include <fstream>
-#include <sstream>
-#include "createlevelLiang.hpp"
-static PhysicalData pd;
+//#include "../PERIODICADDEDphysicaldata.hpp"
+//#include <fstream>
+//#include <sstream>
+//#include "createlevelLiang.hpp"
+// static PhysicalData pd;
 
  double* createlevelLiang() {
 

@@ -1,10 +1,10 @@
-#include <cmath>
-#include <math.h>
-#include "functionjaninterpolateLiangData.hpp"
-#include "../boxinterpLiangData.hpp"
-#include "../PERIODICADDEDphysicaldata.hpp"
+//#include <cmath>
+//#include <math.h>
+//#include "functionjaninterpolateLiangData.hpp"
+//#include "../boxinterpLiangData.hpp"
+//#include "../PERIODICADDEDphysicaldata.hpp"
 
-static PhysicalData pd;
+//static PhysicalData pd;
 
 //Interpolate a given component of a velocity-field for suitable spacial- and temporal coordinates (x and t are arbitrary doubles, but y has to be chosen in [0,W] with W as defined below. The gridpoints do not have an offset.)
 double VelInterpolLiangData(double x, double y, double t, double* u){

@@ -1,10 +1,10 @@
-#include "../PERIODICADDEDphysicaldata.hpp"
-#include <cmath>
-#include <math.h>
-#include <fstream>
-#include <sstream>
-#include "DiscreteLevelSetToDiscreteHeight.hpp"
-static PhysicalData pd;
+#//include "../PERIODICADDEDphysicaldata.hpp"
+//#include <cmath>
+//#include <math.h>
+//#include <fstream>
+//#include <sstream>
+//#include "DiscreteLevelSetToDiscreteHeight.hpp"
+//static PhysicalData pd;
 
 
  
