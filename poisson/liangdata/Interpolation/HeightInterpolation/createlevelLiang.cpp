@@ -12,8 +12,9 @@ static PhysicalData pd;
   int NumCoordsLiang = (pd.NX-1)*pd.NY;
   levelLiang = new double[NumCoordsLiang];
 
-
-  std::string level_filename = "./Tests/LevelSetLiangData.txt";
+  //Please mind: The following relative path to the source-data "LevelSetLiangData.txt" referrs to the 
+  //directory where fullDNS.cpp is located.
+  std::string level_filename = "./liangdata/Interpolation/DataForPoissonCoeff/LevelSetLiangData.txt";
   std::ifstream levelfile;
   levelfile.open(level_filename.c_str(), std::fstream::in);
   double curr_level;
