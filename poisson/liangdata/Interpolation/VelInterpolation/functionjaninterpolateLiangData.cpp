@@ -1,8 +1,8 @@
 #include <cmath>
 #include <math.h>
 #include "functionjaninterpolateLiangData.hpp"
-#include "boxinterpLiangData.hpp"
-#include "physicaldata.hpp"
+#include "../boxinterpLiangData.hpp"
+#include "../PERIODICADDEDphysicaldata.hpp"
 
 static PhysicalData pd;
 
