@@ -26,7 +26,7 @@
     "RefineSteps":		0, 	 //initial refinement
     "GeomType":		    1, 	 //specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder, 2=CavityBuilder, 3=LBuilder, 4=BBuilder)
     "InitialFile":		"none", 	 //file prefix when reading data for initial condition
-    "MeshFile":		    "0.021109x0.004x0.2@101x40x3", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+    "MeshFile":		    "0.21109x1x0.2@100x10x3", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
     "BoundaryType":		"2!21!21!2!21!21", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
     "BoundaryFncs":		"JanALE_Source!Zero!Zero!JanALE_Solution!Zero!Zero"
   },
@@ -36,15 +36,20 @@
     "Diffusion":		"JanALE_Diffusion",
     "Reaction":		    "JanALE_Reaction",
     "Solution":		    "JanALE_Solution",
-    "Source":	 	    "JanALE_Source",
+    "Source":	 	    "JanALE_InitialVal",
     "Flowfield":		"JanALE_Velocity",
-    "InitialVal":		"JanALE_InitialValue",
+    "InitialVal":		"JanALE_InitialVal",
     "Convection":       1
+  },
+
+  "FullDNS":
+  {
+      "Dmol": 1e-7
   },
 
     "Stabilization":
     {
-        "SUPG":              1,
+        "SUPG":              0,
         "Magnitude":         1.0,
         "Grids":             1
     },
@@ -58,8 +63,8 @@
   // time stepping
   "Time":
   {
-    "StepSize":		1, 	      //time step size
-    "NumSteps":		512, 	      //number of timesteps
+    "StepSize":		0.01, 	      //time step size
+    "NumSteps":		10, 	      //number of timesteps
     "Theta":		1.0,
     "Scheme":		1  	          //1= theta scheme, 2=fractional step
   },
