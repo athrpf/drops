@@ -31,8 +31,8 @@ namespace Balakotaiah
 
     while(!fd.eof()){
       if(fd.good()){
-	fd >> tmp;
-	n++;
+  fd >> tmp;
+  n++;
       }
     }
 
@@ -59,8 +59,8 @@ namespace Balakotaiah
 
     while(!fd.eof()){
       if(fd.good()){
-	fd >> d[i];
-	i++;
+  fd >> d[i];
+  i++;
       }
     }
 
@@ -72,16 +72,16 @@ namespace Balakotaiah
   static int      n;
 
   static gsl_spline ** hspline,
-		   ** qspline;
+       ** qspline;
 
   static gsl_interp_accel * acc;
 
   static std::string hfile,
-		   qfile;
+       qfile;
 
   static int  starttime,
-		   stoptime,
-		   timeinc;
+       stoptime,
+       timeinc;
 
   void initialize()
   {
@@ -105,26 +105,26 @@ namespace Balakotaiah
       qspline = new gsl_spline*[tsteps];
 
       double * h,
-	* q,
-	* xa;
+  * q,
+  * xa;
 
       h = new double[n];
       q = new double[n];
       xa = new double[n];
 
       for(int j=0; j<n; j++)
-	xa[j] = j;
+  xa[j] = j;
 
       std::cout << "Getting Data... ";
       for(int i=0; i<tsteps; i++){
-	std::stringstream time;
-	time << starttime + i*timeinc;
-	getData(h, hfile, time.str());
-	hspline[i] = gsl_spline_alloc(gsl_interp_cspline, n);
-	gsl_spline_init(hspline[i], xa, h, n);
-	getData(q, qfile, time.str());
-	qspline[i] = gsl_spline_alloc(gsl_interp_cspline, n);
-	gsl_spline_init(qspline[i], xa, q, n);
+  std::stringstream time;
+  time << starttime + i*timeinc;
+  getData(h, hfile, time.str());
+  hspline[i] = gsl_spline_alloc(gsl_interp_cspline, n);
+  gsl_spline_init(hspline[i], xa, h, n);
+  getData(q, qfile, time.str());
+  qspline[i] = gsl_spline_alloc(gsl_interp_cspline, n);
+  gsl_spline_init(qspline[i], xa, q, n);
       }
       std::cout << " done" << std::endl;
 

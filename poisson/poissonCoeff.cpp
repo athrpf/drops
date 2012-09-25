@@ -89,7 +89,7 @@ DROPS::Point3DCL Nusselt(const DROPS::Point3DCL& p, double)
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy;
         Nu  = P.get<double>("PoissonCoeff.KinematicViscosity");
-	    g   = P.get<double>("PoissonCoeff.Gravity"); // this must not be fixed to 9.81 - maybe we use different scalings!!
+      g   = P.get<double>("PoissonCoeff.Gravity"); // this must not be fixed to 9.81 - maybe we use different scalings!!
         std::string adstr ("IA1Adjoint");
         std::string IAProbstr = P.get<std::string>("PoissonCoeff.IAProb");
         adjoint = (adstr.compare(IAProbstr) == 0);
@@ -686,3 +686,4 @@ static DROPS::RegisterVectorFunction regvecnus("Nusselt", DROPS::instat_vector_f
     static DROPS::RegisterScalarFunction regscas("Grad_Solution",     DROPS::instat_scalar_fun_ptr(Solution));
     static DROPS::RegisterScalarFunction regscaa("Grad_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)   );
 }//end of namespace
+
