@@ -36,7 +36,7 @@
     "Diffusion":		"JanALE_Diffusion",
     "Reaction":		    "JanALE_Reaction",
     "Solution":		    "JanALE_Solution",
-    "Source":	 	    "JanALE_InitialVal",
+    "Source":	 	    "JanALE_Source",
     "Flowfield":		"JanALE_Velocity",
     "InitialVal":		"JanALE_InitialVal",
     "Convection":       1
