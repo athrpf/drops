@@ -28,7 +28,7 @@
     "InitialFile":		"none", 	 //file prefix when reading data for initial condition
     "MeshFile":		    "0.04445x0.000635x0.0001905@700x10x3", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
     "BoundaryType":		"2!21!21!2!21!21", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
-    "BoundaryFncs":		"JanALE_Source!Zero!Zero!JanALE_Solution!Zero!Zero"
+    "BoundaryFncs":		"JanALE_InitialVal!Zero!Zero!JanALE_Solution!Zero!Zero"
   },
 
   "PoissonCoeff":
@@ -44,12 +44,12 @@
 
   "FullDNS":
   {
-      "Dmol": 1e-7
+      "Dmol": 2e-9
   },
 
     "Stabilization":
     {
-        "SUPG":              0,
+        "SUPG":              1,
         "Magnitude":         1.0,
         "Grids":             1
     },
@@ -63,8 +63,8 @@
   // time stepping
   "Time":
   {
-    "StepSize":		0.0001, 	      //time step size
-    "NumSteps":		1000, 	      //number of timesteps
+    "StepSize":		0.001, 	      //time step size
+    "NumSteps":		50, 	      //number of timesteps
     "Theta":		1.0,
     "Scheme":		1  	          //1= theta scheme, 2=fractional step
   },

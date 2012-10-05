@@ -12,7 +12,7 @@ struct PhysicalData {
   int NX;//#gridpoints x-direction
 
   PhysicalData() 
-      : c(21.109), deltaX(0.000209), deltaY(0.0001), NY(41), NX(102) 
+      : c(0.365), deltaX(0.000209), deltaY(0.0001), NY(41), NX(102) 
   {}
   
 };
