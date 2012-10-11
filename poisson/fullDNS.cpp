@@ -98,9 +98,19 @@ namespace Jan {
     double Source(const DROPS::Point3DCL&, double){
         return 0.0;
     }
-
+    
     double InitialValue(const DROPS::Point3DCL&, double){
-        return 1.e-5;
+        return P.get<double>("JanOptions.cInitial");
+    }
+
+    double SurfaceConcentration(const DROPS::Point3DCL& p, double){
+        double einlauf = P.get<double>("JanOptions.Einlauf");
+        double inlet_concentration = P.get<double>("JanOptions.cInlet");
+        double surface_concentration = P.get<double>("JanOptions.cSurface");
+        if (p[0]<einlauf) {
+            return p[0]*(surface_concentration-inlet_concentration)/einlauf;
+        }
+        return surface_concentration;
     }
 
     double Reaction(const DROPS::Point3DCL&, double){
@@ -125,7 +135,7 @@ namespace Jan {
     static DROPS::RegisterScalarFunction regscaa("JanALE_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)    );
     static DROPS::RegisterScalarFunction regscaint("JanALE_Interface",  DROPS::instat_scalar_fun_ptr(Interface)    );
     static DROPS::RegisterVectorFunction regscav("JanALE_Velocity",     DROPS::instat_vector_fun_ptr(Flowfield)    );
-    static DROPS::RegisterScalarFunction regscaf("JanALE_Source",       DROPS::instat_scalar_fun_ptr(Source)       );
+    static DROPS::RegisterScalarFunction regscaf("JanALE_Surface",       DROPS::instat_scalar_fun_ptr(SurfaceConcentration)       );
     //static DROPS::RegisterScalarFunction regscas("JanALE_Inter",         DROPS::instat_scalar_fun_ptr(BInter)     );
     static DROPS::RegisterScalarFunction regscas("JanALE_Solution",     DROPS::instat_scalar_fun_ptr(Solution)     );
     static DROPS::RegisterScalarFunction regscai("JanALE_InitialVal",   DROPS::instat_scalar_fun_ptr(InitialValue) );

@@ -28,18 +28,26 @@
     "InitialFile":		"none", 	 //file prefix when reading data for initial condition
     "MeshFile":		    "0.04445x0.000635x0.0001905@700x10x3", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
     "BoundaryType":		"2!21!21!2!21!21", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
-    "BoundaryFncs":		"JanALE_InitialVal!Zero!Zero!JanALE_Solution!Zero!Zero"
+    "BoundaryFncs":		"JanALE_InitialVal!Zero!Zero!JanALE_Surface!Zero!Zero"
   },
 
   "PoissonCoeff":
   {
     "Diffusion":		"JanALE_Diffusion",
-    "Reaction":		    "JanALE_Reaction",
-    "Solution":		    "JanALE_Solution",
-    "Source":	 	    "JanALE_Source",
+    "Reaction":		    "Zero",
+    "Solution":		    "Zero",
+    "Source":	 	    "Zero",
     "Flowfield":		"JanALE_Velocity",
     "InitialVal":		"JanALE_InitialVal",
     "Convection":       1
+  },
+  
+  "JanOptions":
+  {
+    "Einlauf": 0.1,
+    "cInitial": 1e-5,
+    "cSurface": 1e-3,
+    "cInlet": 1e-5
   },
 
   "FullDNS":
