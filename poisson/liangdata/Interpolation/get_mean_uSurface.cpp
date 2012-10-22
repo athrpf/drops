@@ -5,13 +5,13 @@
 
 
 int main() {
-  //double *x; //[4182]
-  //double *y; //[4182]
-  //double *z; //[4182]
-  double *u; //[4182]
-  //double *v; //[4182]
-  //double *w; //[4182]
-  double *level; //[4182]
+  //double *x; //[4141]
+  //double *y; //[4141]
+  //double *z; //[4141]
+  double *u; //[4141]
+  //double *v; //[4141]
+  //double *w; //[4141]
+  double *level; //[4141]
 
   // allocate
   int NumCoords = 4141;
