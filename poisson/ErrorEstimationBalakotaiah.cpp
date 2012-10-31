@@ -196,6 +196,12 @@ class HQUV{
 
 private:
 
+
+double Re;
+double We;
+double cotbeta;
+double delta_t;
+double y;
 double x;
 int nt;
 
@@ -213,8 +219,14 @@ double q_xxxx;
 
 public:
 
-HQUV(double X, int nT); //Konstruktor
-
+HQUV(double X, double Y, double R, double W, double Cotbeta, double Delta_t int nT); //Konstruktor
+double get_Re(void) { return Re;}
+double get_We(void) { return We;}
+double get_cotbeta(void) { return cotbeta;}
+double get_x(void) { return x;}
+double get_y(void) { return y;}
+double get_nt(void) { return nt;}
+double get_delta_t(void) { return delta_t;}
 double h0(void) {return h;}
 double h1(void) {return h_x;}
 double h2(void) {return h_xx;}
@@ -247,8 +259,8 @@ double V3_3(void);
 
 };
 ///////////////////////Konstruktor definieren:
-HQUV::HQUV(double X, int nT){
-    x=X; nt=nT;
+HQUV::HQUV(double X, double Y, double R, double W, double Cotbeta, double Delta_t int nT){
+    x=X; y=Y; Re=R; We=W; cotbeta=Cotbeta; delta_t= Delta_t; nt=nT; 
 
     h = gsl_spline_eval(hspline[nt], x, acc);
     h_x = gsl_spline_eval_deriv(hspline[nt], x, acc);
@@ -376,28 +388,44 @@ double pbulk_x(double U1_0, double U1_1,
     double h = 0.2*R*U1_0*V3_2*h0*h0*h0*h0*h0 + 0.2*R*U2_0*V2_2*h0*h0*h0*h0*h0;
     double i = 0.25*R*U1_0*V2_2*h0*h0*h0*h0 - V3_3*h0*h0*h0*h0 - (4./3.)*V2_3*h0*h0*h0;
     
-    return a + b + c + d + e + f + g +h +i;          
+    return a + b + c + d + e + f + g + h + i;          
+}
+
+double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
+              double U2_0, double U2_1, double U2_2, double U2_3, double dtU2_0
+              double V2_0, double V2_1, double V2_2, double V2_3, double dtV2_0, double dtV2_1,
+              double V3_0, double V3_1, double V3_2, double V2_3, double dtV3_0, double dtV3_1,
+              double h0, double h1, double h2, double h3, double y, double R, double W, double deltat){
+              
+     double a = R*(diff_t(U1_0, dtU1_0, deltat)*y + diff_t(U2_0, dtU2_0, deltat)*y*y);       
+     double b = R*(U1_0*y + U2_0*y*y)*(U1_1*y + U2_1*y*y) + R*(V2_0*y*y + V3_0*y*y*y)(U1_0 + 2*u2_0*y);        
+     double c = -12. -4.*(U1_2*y + U2_2*y*y) -8.*U2_0;
+     double d = pbulk_x(U1_0,U1_1,U2_0,U2_1,V2_0,V2_1,V2_2,V2_3,dtV2_0,dtV2_1,V3_0,V3_1,V3_2,V2_3,dtV3_0,dtV3_1,h0,h1,y,R,deltat);      
+     double e = psurf_x(h0, h1, h2, h3, U1_0, U1_1, U1_2, U2_0, U2_1, U2_2, V2_1, V2_2, V3_1,  V3_2, R, W);
+     return a + b + c + d + e;        
 }
                               
 int main() {
-const double Re;
-const double We;
-const double cotbeta;
-const double delta_t;
-const double y;
-const double x=5.;
+
+const double X=5.;
+const double Y=5.;
+const double R=5.;
+const double W=5.;
+const double Delta_t=5.;
+const double Cotbeta=5.;
 const int n1 = 30;
+double Error;
+const int n1;
+HQUV t(X, Y, R, W, Cotbeta, Delta_t, n1);
+HQUV t_dt(X, Y, R, W, Cotbeta, Delta_t, n1+1);
 
-const int n2 = n1 + 1;
-
-HQUV t(x,n1);
-HQUV t_dt(x,n2);
-
-
-
-
-
-
+Error = error(t.U1_0, t.U1_1, t.U1_2, t.U1_3, t_dt.U1_0,
+              t.U2_0, t.U2_1, t.U2_2, t.U2_3, t_dt.U2_0
+              t.V2_0, t.V2_1, t.V2_2, t.V2_3, t_dt.V2_0, t_dt.V2_1,
+              t.V3_0, t.V3_1, t.V3_2, t.V2_3, t_dt.V3_0, t_dt.V3_1,
+              t.h0, t.h1, t.h2, t.h3, t.y, t.Re, t.We, t.delta_t);
+              
+ std::cout << Error << std::endl;              
 
 return 0;
 }
