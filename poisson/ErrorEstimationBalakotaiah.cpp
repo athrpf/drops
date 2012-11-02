@@ -317,13 +317,16 @@ double psurf_x(double h0, double h1, double h2, double h3,
                double U2_0, double U2_1, double U2_2, 
                             double V2_1, double V2_2,
                             double V3_1, double V3_2, double R, double W){
-    double a = (((-8.)*h1)/(1+h1*h1))*(U1_1 + 2.*U2_1*h0 + 2.*U2_0*h1 + V2_2*h0*h0 + 2.*V2_1*h0*h1 + V3_2*h0*h0*h0 + 3.*V3_1*h0*h0*h1);
-    double b = (((-8.)*h2)/(1 + h1*h1))*(U1_0 + 2.*U2_0*h0 + V2_1*h0*h0 + V3_1*h0*h0*h0);
-    double c = ((16.*h1*h1*h2)/((1+h1*h1)*(1+h1*h1)))*(U1_0 + 2.*U2_0*h0 + V2_1*h0*h0 + V3_1*h0*h0*h0);
-    double d = ((-8.)*(1-h1*h1)/(1+h1*h1))*(U1_2*h0 + U1_1*h1 + U2_2*h0*h0 + 2.*U2_1*h0*h1);
-    double e = (16.*(h1*h2)/(1+h1*h1))*(U1_1*h0 + U2_1*h0*h0);
-    double f = (16.*((1-h1*h1)*h1*h2)/((1+h1*h1)*(1+h1*h1)))*(U1_1*h0 + U2_1*h0*h0);
-    double g = R*W*((3.*h2*h2*h1)/((1+h1*h1)*(1+h1*h1)*sqrt(1+h1*h1))  +   (h3)/((1+h1*h1)*sqrt(1+h1*h1)));
+                       
+    double H0_2 = h0*h0; double H1_2 = h1*h1; 
+    
+    double a = (((-8.)*h1)/(1+H1_2))*(U1_1 + 2.*U2_1*h0 + 2.*U2_0*h1 + V2_2*H0_2 + 2.*V2_1*h0*h1 + V3_2*H0_3 + 3.*V3_1*H0_2*h1);
+    double b = (((-8.)*h2)/(1 + H1_2))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
+    double c = ((16.*H1_2*h2)/((1+H1_2)*(1+H1_2)))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
+    double d = ((-8.)*(1-H1_2)/(1+H1_2))*(U1_2*h0 + U1_1*h1 + U2_2*H0_2 + 2.*U2_1*h0*h1);
+    double e = (16.*(h1*h2)/(1+H1_2))*(U1_1*h0 + U2_1*H0_2);
+    double f = (16.*((1-H1_2)*h1*h2)/((1+H1_2)*(1+H1_2)))*(U1_1*h0 + U2_1*H0_2);
+    double g = R*W*((3.*h2*h2*h1)/((1+H1_2)*(1+H1_2)*sqrt(1+H1_2))  +   (h3)/((1+H1_2)*sqrt(1+H1_2)));
     return a + b + c + d + e  + f + g;        
 }
 double diff_t(double A_t, double A_tplusdt, double dt){
@@ -334,20 +337,23 @@ double pbulk_x(double U1_0, double U1_1,
                double V2_0, double V2_1, double V2_2, double V2_3, double dtV2_0, double dtV2_1,
                double V3_0, double V3_1, double V3_2, double V3_3, double dtV3_0, double dtV3_1,
                double h0, double h1, double y, double R, double deltat, double cb){
+               
+    double H0_2 = h0*h0; double H0_3 = H0_2*h0, double H0_4 = H0_2*H0_2, double H0_5 = double H0_4*h0, double H0_6 = H0_3*H0_3;         
+               
     double a = y*8.*V2_1 + y*y*12.*V3_1 + y*y*y*(1./3.)*(4.*V2_3 - R*diff_t(V2_1,dtV2_1,deltat));
     double b = y*y*y*y*(V3_3 - 0.25*R*diff_t(V3_1,dtV3_1,deltat) - R*V2_0*V2_1 - 0.25*R*U1_0*V2_2 - 0.25*R*U1_1*V2_1);
     double c = (-0.2)*R*y*y*y*y*y*(5.*V2_0*V3_1 + 5.*V2_1*V3_0 + U1_1*V3_1 + U1_0*V3_2 + U2_1*V2_1 + U2_0*V2_2);
     double d = (-1./6.)*R*y*y*y*y*y*y*(U2_0*V3_2 + U2_1*V3_1 + 6.*V3_0*V3_1);
     double e = (1./3.)*R*diff_t(V2_1,dtV2_1,deltat) + (1./4.)*R*diff_t(V3_1,dtV3_1,deltat);              
-    double f = 5.*R*V2_0*V3_0*h0*h0*h0*h0*h1 - 4.*V2_2*h0*h0*h1 - 4.*V3_2*h0*h0*h0*h1 + (1./6.)*R*U2_0*V3_2*h0*h0*h0*h0*h0*h0;
-    double g = 0.2*R*U1_0*V3_2*h0*h0*h0*h0*h0 + 0.2*R*U2_0*V2_2*h0*h0*h0*h0*h0;
-    double h = 0.25*R*U1_0*V2_2*h0*h0*h0*h0 - V3_3*h0*h0*h0*h0 - (4./3.)*V2_3*h0*h0*h0;
-    double i = R*U2_0*V3_1*h0*h0*h0*h0*h0*h1 + R*U1_0*V3_1*h0*h0*h0*h0*h1 + R*U2_0*V2_1*h0*h0*h0*h0*h1 + R*U1_0*V2_1*h0*h0*h0*h1;
-    double j = 12.*cb*h1 - 12.*V3_1*h0*h0 - 8.*V2_1*h0 - 8.*V2_0*h1 + 2.*R*V2_0*V2_0*h0*h0*h0*h1;
-    double k = 3.*R*V3_0*V3_0*h0*h0*h0*h0*h0*h1 + 0.25*R*U1_1*V2_1*h0*h0*h0*h0 + 0.2*R*U2_1*V2_1*h0*h0*h0*h0*h0;
-    double l = 0.2*R*U1_1*V3_1*h0*h0*h0*h0*h0 + (1./6.)*R*U2_1*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V2_1*h0*h0*h0*h0;
-    double m = R*diff_t(V3_0, dtV3_0, deltat)*h0*h0*h0*h1 + R*diff_t(V2_0, dtV2_0, deltat)*h0*h0*h1;
-    double n = R*V3_0*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V3_1*h0*h0*h0*h0*h0 + R*V2_1*V3_0*h0*h0*h0*h0*h0 - 24.*V3_0*h0*h1;
+    double f = 5.*R*V2_0*V3_0*H0_4*h1 - 4.*V2_2*H0_2*h1 - 4.*V3_2*H0_3*h1 + (1./6.)*R*U2_0*V3_2*H0_6;
+    double g = 0.2*R*U1_0*V3_2*H0_5 + 0.2*R*U2_0*V2_2*H0_5;
+    double h = 0.25*R*U1_0*V2_2*H0_4 - V3_3*H0_4 - (4./3.)*V2_3*H0_3;
+    double i = R*U2_0*V3_1*H0_5*h1 + R*U1_0*V3_1*H0_4*h1 + R*U2_0*V2_1*H0_4*h1 + R*U1_0*V2_1*H0_3*h1;
+    double j = 12.*cb*h1 - 12.*V3_1*H0_2 - 8.*V2_1*h0 - 8.*V2_0*h1 + 2.*R*V2_0*V2_0*H0_3*h1;
+    double k = 3.*R*V3_0*V3_0*H0_5*h1 + 0.25*R*U1_1*V2_1*H0_4 + 0.2*R*U2_1*V2_1*H0_5;
+    double l = 0.2*R*U1_1*V3_1*H0_5 + (1./6.)*R*U2_1*V3_1*H0_6 + R*V2_0*V2_1*H0_4;
+    double m = R*diff_t(V3_0, dtV3_0, deltat)*H0_3*h1 + R*diff_t(V2_0, dtV2_0, deltat)*H0_2*h1;
+    double n = R*V3_0*V3_1*H0_6 + R*V2_0*V3_1*H0_5 + R*V2_1*V3_0*H0_5 - 24.*V3_0*h0*h1;
     return a + b + c + d + e + f + g + h + i + j + k + l + m + n;          
 }
 double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
