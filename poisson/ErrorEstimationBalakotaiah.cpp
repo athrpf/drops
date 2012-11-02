@@ -1,11 +1,3 @@
-/****************************************
- *  Balakotaiah:                        \n*
- *   - instationary setup             \n*
- *   - constant diffusion             \n*
- *   - convection                     \n*
- *   - no reaction                    \n*
- ****************************************/
-#include "poisson/poissonCoeff.h"
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
@@ -16,7 +8,6 @@
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_errno.h>
 
-extern DROPS::ParamCL P;
 
 namespace Balakotaiah
 {
@@ -169,53 +160,23 @@ namespace Balakotaiah
     res[1]=-(1.5*qres[0]/h4*hres[1]-0.5*qres[1]/h3)*y3
       -(1.5*qres[1]/h2-3*qres[0]/h3*hres[1])*y2;
   }
-  /*****************************************************************************************************************/
-
-  double Interface( const DROPS::Point3DCL& p, double t)
-  {
-    //std::cout << "t: " << t  << "x: " << p[0] << "y: " << p[1] << std::endl;
-    return get_h((int)(t+0.1), p[0]);
-  }
-
-  DROPS::Point3DCL Flowfield(const DROPS::Point3DCL& p, double t){
-    double res[2];
-    //std::cout << "t: " << t << std::endl;
-    uvh(res,(int)(t+0.1),p[0],p[1]);
-    DROPS::Point3DCL v(0.);
-    v[0] = res[0];
-    v[1] = res[1];
-    v[2] = 0.;
-    return v;
-  }
-
   
   
-}//end of namespace
+  }//end of namespace
+  
+  
+/*****************************************************************************************************************/
+
 
 class HQUV{
 
 private:
 
+double Re; double We; double cotbeta; double delta_t; double y; double x; int nt;
 
-double Re;
-double We;
-double cotbeta;
-double delta_t;
-double y;
-double x;
-int nt;
+double h; double h_x; double h_xx; double h_xxx; double h_xxxx;
 
-double h;
-double h_x;
-double h_xx;
-double h_xxx;
-double h_xxxx;
-
-double q;
-double q_x;
-double q_xx;
-double q_xxx;
-double q_xxxx;
+double q; double q_x; double q_xx; double q_xxx; double q_xxxx;
 
 public:
 
@@ -261,20 +222,18 @@ double V3_3(void);
 ///////////////////////Konstruktor definieren:
 HQUV::HQUV(double X, double Y, int nT, double Delta_t, double R, double W, double Cotbeta){
     x=X; y=Y; Re=R; We=W; cotbeta=Cotbeta; delta_t= Delta_t; nt=nT; 
+    double t = static_cast<double>(nt);
+    h = x*x*x*x*t;//gsl_spline_eval(hspline[nt], x, acc);
+    h_x = 4.*x*x*x*t;//gsl_spline_eval_deriv(hspline[nt], x, acc);
+    h_xx = 12.*x*x*t;
+    h_xxx = 24.*x*t;
+    h_xxxx = 24*t;
 
-    h = gsl_spline_eval(hspline[nt], x, acc);
-    h_x = gsl_spline_eval_deriv(hspline[nt], x, acc);
-    h_xx;
-    h_xxx;
-    h_xxxx;
-
-    q = gsl_spline_eval(qspline[nt], x, acc);
-    q_x = gsl_spline_eval_deriv(qspline[nt], x, acc);
-    q_xx;
-    q_xxx;
-    q_xxxx;
-
-
+    q = x*x*x*x*t;//gsl_spline_eval(qspline[nt], x, acc);
+    q_x = 4.*x*x*x*t;//gsl_spline_eval_deriv(qspline[nt], x, acc);
+    q_xx = 12.*x*x*t;
+    q_xxx = 24.*x*t;
+    q_xxxx = 24*t;
 }
 /////////////////////////////////////////////
 double HQUV::U1_0(void){
@@ -301,7 +260,7 @@ double HQUV::U2_2(void){
 }
 double HQUV::U1_3(void){
     double a = 3.*q_xxx/(h*h) - 18.*(q_xx*h_x)/(h*h*h) + 54.*(q_x*h_x*h_x)/(h*h*h*h);
-    double b = -18.*(q_x*h_xx)/(h*h*h) - 72.*(q*h_x*h_x*h_x)(h*h*h*h*h);
+    double b = -18.*(q_x*h_xx)/(h*h*h) - 72.*(q*h_x*h_x*h_x)/(h*h*h*h*h);
     double c = 54.*(q*h_x*h_xx)/(h*h*h*h) - 6.*(q*h_xxx)/(h*h*h); 
     return  a + b + c;
 }
@@ -333,7 +292,7 @@ double HQUV::V2_2(void){
 double HQUV::V3_2(void){
     double a = 0.5*(q_xxx)/(h*h*h) - 4.5*(q_xx*h_x)/(h*h*h*h) + 18.*(q_x*h_x*h_x)/(h*h*h*h*h);
     double b = -4.5*(q_x*h_xx)/(h*h*h*h) - 30.*(q*h_x*h_x*h_x)/(h*h*h*h*h*h);
-    double c = 18.*(q*h_x*h_xx)/(h*h*h*h*h) -1.5.*(q*h_xxx)/(h*h*h*h);
+    double c = 18.*(q*h_x*h_xx)/(h*h*h*h*h) -1.5*(q*h_xxx)/(h*h*h*h);
     return a + b + c;
 }
 double HQUV::V2_3(void){
@@ -365,45 +324,40 @@ double psurf_x(double h0, double h1, double h2, double h3,
     double e = (16.*(h1*h2)/(1+h1*h1))*(U1_1*h0 + U2_1*h0*h0);
     double f = (16.*((1-h1*h1)*h1*h2)/((1+h1*h1)*(1+h1*h1)))*(U1_1*h0 + U2_1*h0*h0);
     double g = R*W*((3.*h2*h2*h1)/((1+h1*h1)*(1+h1*h1)*sqrt(1+h1*h1))  +   (h3)/((1+h1*h1)*sqrt(1+h1*h1)));
-               
-    return a + b + c + d + e  + f + g;         
-               
+    return a + b + c + d + e  + f + g;        
 }
-
 double diff_t(double A_t, double A_tplusdt, double dt){
     return (A_tplusdt - A_t)/dt;
 }
-
 double pbulk_x(double U1_0, double U1_1, 
                double U2_0, double U2_1, 
                double V2_0, double V2_1, double V2_2, double V2_3, double dtV2_0, double dtV2_1,
-               double V3_0, double V3_1, double V3_2, double V2_3, double dtV3_0, double dtV3_1,
+               double V3_0, double V3_1, double V3_2, double V3_3, double dtV3_0, double dtV3_1,
                double h0, double h1, double y, double R, double deltat, double cb){
     double a = y*8.*V2_1 + y*y*12.*V3_1 + y*y*y*(1./3.)*(4.*V2_3 - R*diff_t(V2_1,dtV2_1,deltat));
     double b = y*y*y*y*(V3_3 - 0.25*R*diff_t(V3_1,dtV3_1,deltat) - R*V2_0*V2_1 - 0.25*R*U1_0*V2_2 - 0.25*R*U1_1*V2_1);
     double c = (-0.2)*R*y*y*y*y*y*(5.*V2_0*V3_1 + 5.*V2_1*V3_0 + U1_1*V3_1 + U1_0*V3_2 + U2_1*V2_1 + U2_0*V2_2);
-    double e = (-1./6.)*R*y*y*y*y*y*y*(U2_0*V3_2 + U2_1*V3_1 + 6.*V3_0*V3_1);
-    double f = (1./3.)*R*diff_t(V2_1,dtV2_1,deltat) + (1./4.)*R*diff_t(V3_1,dtV3_1,deltat);              
-    double g = 5.*R*V2_0*V3_0*h0*h0*h0*h0*h1 - 4.*V2_2*h0*h0*h1 - 4.*V3_2*h0*h0*h0*h1 + (1./6.)*R*U2_0*V3_2*h0*h0*h0*h0*h0*h0;
-    double h = 0.2*R*U1_0*V3_2*h0*h0*h0*h0*h0 + 0.2*R*U2_0*V2_2*h0*h0*h0*h0*h0;
-    double i = 0.25*R*U1_0*V2_2*h0*h0*h0*h0 - V3_3*h0*h0*h0*h0 - (4./3.)*V2_3*h0*h0*h0;
-    double j = R*U2_0*V3_1*h0*h0*h0*h0*h0*h1 + R*U1_0*V3_1*h0*h0*h0*h0*h1 + R*U2_0*V2_1*h0*h0*h0*h0*h1 + R*U1_0*V2_1*h0*h0*h0*h1;
-    double k = 12.*cb*h1 - 12.*V3_1*h0*h0 - 8.*V2_1*h0 - 8.*V2_0*h1 + 2.*R*V2_0*V2_0*h0*h0*h0*h1;
-    double l = 3.*R*V3_0*V3_0*h0*h0*h0*h0*h0*h1 + 0.25*R*U1_1*V2_1*h0*h0*h0*h0 + 0.2*R*U2_1*V2_1*h0*h0*h0*h0*h0;
-    double m = 0.2*R*U1_1*V3_1*h0*h0*h0*h0*h0 + (1./6.)*R*U2_1*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V2_1*h0*h0*h0*h0;
-    double n = R*(diff_t(V3_0, dtV3_0, deltat)*h0*h0*h0*h1 + R*(diff_t(V2_0, dtV2_0, deltat)*h0*h0*h1;
-    double o = R*V3_0*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V3_1*h0*h0*h0*h0*h0 + R*V2_1*V3_0*h0*h0*h0*h0*h0 - 24.*V3_0*h0*h1;
-    return a + b + c + d + e + f + g + h + i + j + k + l + m + n + o;          
+    double d = (-1./6.)*R*y*y*y*y*y*y*(U2_0*V3_2 + U2_1*V3_1 + 6.*V3_0*V3_1);
+    double e = (1./3.)*R*diff_t(V2_1,dtV2_1,deltat) + (1./4.)*R*diff_t(V3_1,dtV3_1,deltat);              
+    double f = 5.*R*V2_0*V3_0*h0*h0*h0*h0*h1 - 4.*V2_2*h0*h0*h1 - 4.*V3_2*h0*h0*h0*h1 + (1./6.)*R*U2_0*V3_2*h0*h0*h0*h0*h0*h0;
+    double g = 0.2*R*U1_0*V3_2*h0*h0*h0*h0*h0 + 0.2*R*U2_0*V2_2*h0*h0*h0*h0*h0;
+    double h = 0.25*R*U1_0*V2_2*h0*h0*h0*h0 - V3_3*h0*h0*h0*h0 - (4./3.)*V2_3*h0*h0*h0;
+    double i = R*U2_0*V3_1*h0*h0*h0*h0*h0*h1 + R*U1_0*V3_1*h0*h0*h0*h0*h1 + R*U2_0*V2_1*h0*h0*h0*h0*h1 + R*U1_0*V2_1*h0*h0*h0*h1;
+    double j = 12.*cb*h1 - 12.*V3_1*h0*h0 - 8.*V2_1*h0 - 8.*V2_0*h1 + 2.*R*V2_0*V2_0*h0*h0*h0*h1;
+    double k = 3.*R*V3_0*V3_0*h0*h0*h0*h0*h0*h1 + 0.25*R*U1_1*V2_1*h0*h0*h0*h0 + 0.2*R*U2_1*V2_1*h0*h0*h0*h0*h0;
+    double l = 0.2*R*U1_1*V3_1*h0*h0*h0*h0*h0 + (1./6.)*R*U2_1*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V2_1*h0*h0*h0*h0;
+    double m = R*diff_t(V3_0, dtV3_0, deltat)*h0*h0*h0*h1 + R*diff_t(V2_0, dtV2_0, deltat)*h0*h0*h1;
+    double n = R*V3_0*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V3_1*h0*h0*h0*h0*h0 + R*V2_1*V3_0*h0*h0*h0*h0*h0 - 24.*V3_0*h0*h1;
+    return a + b + c + d + e + f + g + h + i + j + k + l + m + n;          
 }
-
 double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
-              double U2_0, double U2_1, double U2_2, double U2_3, double dtU2_0
+              double U2_0, double U2_1, double U2_2, double U2_3, double dtU2_0,
               double V2_0, double V2_1, double V2_2, double V2_3, double dtV2_0, double dtV2_1,
-              double V3_0, double V3_1, double V3_2, double V2_3, double dtV3_0, double dtV3_1,
+              double V3_0, double V3_1, double V3_2, double V3_3, double dtV3_0, double dtV3_1,
               double h0, double h1, double h2, double h3, double y, double R, double W, double deltat, double cb){
               
      double a = R*(diff_t(U1_0, dtU1_0, deltat)*y + diff_t(U2_0, dtU2_0, deltat)*y*y);       
-     double b = R*(U1_0*y + U2_0*y*y)*(U1_1*y + U2_1*y*y) + R*(V2_0*y*y + V3_0*y*y*y)(U1_0 + 2*u2_0*y);        
+     double b = R*(U1_0*y + U2_0*y*y)*(U1_1*y + U2_1*y*y) + R*(V2_0*y*y + V3_0*y*y*y)*(U1_0 + 2*U2_0*y);        
      double c = -12. -4.*(U1_2*y + U2_2*y*y) -8.*U2_0;
      double d = pbulk_x(U1_0,U1_1,U2_0,U2_1,V2_0,V2_1,V2_2,V2_3,dtV2_0,dtV2_1,V3_0,V3_1,V3_2,V2_3,dtV3_0,dtV3_1,h0,h1,y,R,deltat, cb);      
      double e = psurf_x(h0, h1, h2, h3, U1_0, U1_1, U1_2, U2_0, U2_1, U2_2, V2_1, V2_2, V3_1,  V3_2, R, W);
@@ -420,17 +374,16 @@ const double Delta_t=5.;
 const double Cotbeta=5.;
 const int n1 = 30;
 double Error;
-const int n1;
 HQUV t(X, Y, n1, Delta_t, R, W, Cotbeta);
 HQUV t_dt(X, Y, n1+1, Delta_t, R, W, Cotbeta);
 
-Error = error(t.U1_0, t.U1_1, t.U1_2, t.U1_3, t_dt.U1_0,
-              t.U2_0, t.U2_1, t.U2_2, t.U2_3, t_dt.U2_0
-              t.V2_0, t.V2_1, t.V2_2, t.V2_3, t_dt.V2_0, t_dt.V2_1,
-              t.V3_0, t.V3_1, t.V3_2, t.V2_3, t_dt.V3_0, t_dt.V3_1,
-              t.h0, t.h1, t.h2, t.h3, t.y, t.Re, t.We, t.delta_t, t.cotbeta);
+Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
+              t.U2_0(), t.U2_1(), t.U2_2(), t.U2_3(), t_dt.U2_0(),
+              t.V2_0(), t.V2_1(), t.V2_2(), t.V2_3(), t_dt.V2_0(), t_dt.V2_1(),
+              t.V3_0(), t.V3_1(), t.V3_2(), t.V3_3(), t_dt.V3_0(), t_dt.V3_1(),
+              t.h0(), t.h1(), t.h2(), t.h3(), t.get_y(), t.get_Re(), t.get_We(), t.get_delta_t(), t.get_cotbeta());
               
- std::cout << Error << std::endl;              
+ std::cout << "Error in x-momentum-balance is: " << Error << std::endl;              
 
 return 0;
 }
