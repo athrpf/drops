@@ -219,7 +219,7 @@ double q_xxxx;
 
 public:
 
-HQUV(double X, double Y, double R, double W, double Cotbeta, double Delta_t int nT); //Konstruktor
+HQUV(double X, double Y, int nT, double Delta_t, double R, double W, double Cotbeta); //Konstruktor
 double get_Re(void) { return Re;}
 double get_We(void) { return We;}
 double get_cotbeta(void) { return cotbeta;}
@@ -259,7 +259,7 @@ double V3_3(void);
 
 };
 ///////////////////////Konstruktor definieren:
-HQUV::HQUV(double X, double Y, double R, double W, double Cotbeta, double Delta_t int nT){
+HQUV::HQUV(double X, double Y, int nT, double Delta_t, double R, double W, double Cotbeta){
     x=X; y=Y; Re=R; We=W; cotbeta=Cotbeta; delta_t= Delta_t; nt=nT; 
 
     h = gsl_spline_eval(hspline[nt], x, acc);
@@ -378,7 +378,7 @@ double pbulk_x(double U1_0, double U1_1,
                double U2_0, double U2_1, 
                double V2_0, double V2_1, double V2_2, double V2_3, double dtV2_0, double dtV2_1,
                double V3_0, double V3_1, double V3_2, double V2_3, double dtV3_0, double dtV3_1,
-               double h0, double h1, double y, double R, double deltat){
+               double h0, double h1, double y, double R, double deltat, double cb){
     double a = y*8.*V2_1 + y*y*12.*V3_1 + y*y*y*(1./3.)*(4.*V2_3 - R*diff_t(V2_1,dtV2_1,deltat));
     double b = y*y*y*y*(V3_3 - 0.25*R*diff_t(V3_1,dtV3_1,deltat) - R*V2_0*V2_1 - 0.25*R*U1_0*V2_2 - 0.25*R*U1_1*V2_1);
     double c = (-0.2)*R*y*y*y*y*y*(5.*V2_0*V3_1 + 5.*V2_1*V3_0 + U1_1*V3_1 + U1_0*V3_2 + U2_1*V2_1 + U2_0*V2_2);
@@ -387,20 +387,25 @@ double pbulk_x(double U1_0, double U1_1,
     double g = 5.*R*V2_0*V3_0*h0*h0*h0*h0*h1 - 4.*V2_2*h0*h0*h1 - 4.*V3_2*h0*h0*h0*h1 + (1./6.)*R*U2_0*V3_2*h0*h0*h0*h0*h0*h0;
     double h = 0.2*R*U1_0*V3_2*h0*h0*h0*h0*h0 + 0.2*R*U2_0*V2_2*h0*h0*h0*h0*h0;
     double i = 0.25*R*U1_0*V2_2*h0*h0*h0*h0 - V3_3*h0*h0*h0*h0 - (4./3.)*V2_3*h0*h0*h0;
-    
-    return a + b + c + d + e + f + g + h + i;          
+    double j = R*U2_0*V3_1*h0*h0*h0*h0*h0*h1 + R*U1_0*V3_1*h0*h0*h0*h0*h1 + R*U2_0*V2_1*h0*h0*h0*h0*h1 + R*U1_0*V2_1*h0*h0*h0*h1;
+    double k = 12.*cb*h1 - 12.*V3_1*h0*h0 - 8.*V2_1*h0 - 8.*V2_0*h1 + 2.*R*V2_0*V2_0*h0*h0*h0*h1;
+    double l = 3.*R*V3_0*V3_0*h0*h0*h0*h0*h0*h1 + 0.25*R*U1_1*V2_1*h0*h0*h0*h0 + 0.2*R*U2_1*V2_1*h0*h0*h0*h0*h0;
+    double m = 0.2*R*U1_1*V3_1*h0*h0*h0*h0*h0 + (1./6.)*R*U2_1*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V2_1*h0*h0*h0*h0;
+    double n = R*(diff_t(V3_0, dtV3_0, deltat)*h0*h0*h0*h1 + R*(diff_t(V2_0, dtV2_0, deltat)*h0*h0*h1;
+    double o = R*V3_0*V3_1*h0*h0*h0*h0*h0*h0 + R*V2_0*V3_1*h0*h0*h0*h0*h0 + R*V2_1*V3_0*h0*h0*h0*h0*h0 - 24.*V3_0*h0*h1;
+    return a + b + c + d + e + f + g + h + i + j + k + l + m + n + o;          
 }
 
 double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
               double U2_0, double U2_1, double U2_2, double U2_3, double dtU2_0
               double V2_0, double V2_1, double V2_2, double V2_3, double dtV2_0, double dtV2_1,
               double V3_0, double V3_1, double V3_2, double V2_3, double dtV3_0, double dtV3_1,
-              double h0, double h1, double h2, double h3, double y, double R, double W, double deltat){
+              double h0, double h1, double h2, double h3, double y, double R, double W, double deltat, double cb){
               
      double a = R*(diff_t(U1_0, dtU1_0, deltat)*y + diff_t(U2_0, dtU2_0, deltat)*y*y);       
      double b = R*(U1_0*y + U2_0*y*y)*(U1_1*y + U2_1*y*y) + R*(V2_0*y*y + V3_0*y*y*y)(U1_0 + 2*u2_0*y);        
      double c = -12. -4.*(U1_2*y + U2_2*y*y) -8.*U2_0;
-     double d = pbulk_x(U1_0,U1_1,U2_0,U2_1,V2_0,V2_1,V2_2,V2_3,dtV2_0,dtV2_1,V3_0,V3_1,V3_2,V2_3,dtV3_0,dtV3_1,h0,h1,y,R,deltat);      
+     double d = pbulk_x(U1_0,U1_1,U2_0,U2_1,V2_0,V2_1,V2_2,V2_3,dtV2_0,dtV2_1,V3_0,V3_1,V3_2,V2_3,dtV3_0,dtV3_1,h0,h1,y,R,deltat, cb);      
      double e = psurf_x(h0, h1, h2, h3, U1_0, U1_1, U1_2, U2_0, U2_1, U2_2, V2_1, V2_2, V3_1,  V3_2, R, W);
      return a + b + c + d + e;        
 }
@@ -416,14 +421,14 @@ const double Cotbeta=5.;
 const int n1 = 30;
 double Error;
 const int n1;
-HQUV t(X, Y, R, W, Cotbeta, Delta_t, n1);
-HQUV t_dt(X, Y, R, W, Cotbeta, Delta_t, n1+1);
+HQUV t(X, Y, n1, Delta_t, R, W, Cotbeta);
+HQUV t_dt(X, Y, n1+1, Delta_t, R, W, Cotbeta);
 
 Error = error(t.U1_0, t.U1_1, t.U1_2, t.U1_3, t_dt.U1_0,
               t.U2_0, t.U2_1, t.U2_2, t.U2_3, t_dt.U2_0
               t.V2_0, t.V2_1, t.V2_2, t.V2_3, t_dt.V2_0, t_dt.V2_1,
               t.V3_0, t.V3_1, t.V3_2, t.V2_3, t_dt.V3_0, t_dt.V3_1,
-              t.h0, t.h1, t.h2, t.h3, t.y, t.Re, t.We, t.delta_t);
+              t.h0, t.h1, t.h2, t.h3, t.y, t.Re, t.We, t.delta_t, t.cotbeta);
               
  std::cout << Error << std::endl;              
 
