@@ -200,24 +200,11 @@ double q2(void) {return q_xx;}
 double q3(void) {return q_xxx;}
 double q4(void) {return q_xxxx;}
 
-double U1_0(void);
-double U2_0(void);
-double U1_1(void);
-double U2_1(void);
-double U1_2(void);
-double U2_2(void);
-double U1_3(void);
-double U2_3(void);
+double U1_0(void); double U1_1(void); double U1_2(void); double U1_3(void);
+double U2_0(void); double U2_1(void); double U2_2(void); double U2_3(void);
 
-double V2_0(void);
-double V3_0(void);
-double V2_1(void);
-double V3_1(void);
-double V2_2(void);
-double V3_2(void);
-double V2_3(void);
-double V3_3(void);
-
+double V2_0(void); double V2_1(void); double V2_2(void); double V2_3(void);
+double V3_0(void); double V3_1(void); double V3_2(void); double V3_3(void);
 };
 ///////////////////////Konstruktor definieren:
 HQUV::HQUV(double X, int nT){
