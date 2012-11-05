@@ -172,7 +172,7 @@ class HQUV{
 
 private:
 
-double Re; double We; double cotbeta; double delta_t; double y; double x; int nt;
+double Re; double We; double cotbeta; double x; int nt; double delta_t;
 
 double h; double h_x; double h_xx; double h_xxx; double h_xxxx;
 
@@ -180,14 +180,14 @@ double q; double q_x; double q_xx; double q_xxx; double q_xxxx;
 
 public:
 
-HQUV(double X, double Y, int nT, double Delta_t, double R, double W, double Cotbeta); //Konstruktor
+HQUV(double X, int nT); //Konstruktor
 double get_Re(void) { return Re;}
 double get_We(void) { return We;}
 double get_cotbeta(void) { return cotbeta;}
 double get_x(void) { return x;}
-double get_y(void) { return y;}
 double get_nt(void) { return nt;}
 double get_delta_t(void) { return delta_t;}
+
 double h0(void) {return h;}
 double h1(void) {return h_x;}
 double h2(void) {return h_xx;}
@@ -220,22 +220,27 @@ double V3_3(void);
 
 };
 ///////////////////////Konstruktor definieren:
-HQUV::HQUV(double X, double Y, int nT, double Delta_t, double R, double W, double Cotbeta){
-    x=X; y=Y; Re=R; We=W; cotbeta=Cotbeta; delta_t= Delta_t; nt=nT; 
+HQUV::HQUV(double X, int nT){
+    Re=1.; We=1.; cotbeta=0.; x=X; nt=nT; delta_t=Balakotaiah::timeinc;
     
     if(!Balakotaiah::init)
     Balakotaiah::initialize();
     
+    double dx = 0.000001;
+    double x_dx = x+dx;
+    double h_xx_at_x_dx = gsl_spline_eval_deriv2(Balakotaiah::hspline[nt], x_dx, Balakotaiah::acc);
+    double q_xx_at_x_dx = gsl_spline_eval_deriv2(Balakotaiah::qspline[nt], x_dx, Balakotaiah::acc);
+    
     h = gsl_spline_eval(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
     h_x = gsl_spline_eval_deriv(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
     h_xx = gsl_spline_eval_deriv2(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
-    h_xxx = gsl_spline_eval_deriv3(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
+    h_xxx = (h_xx_at_x_dx-h_xx)/dx;
     h_xxxx = 0.;
 
     q = gsl_spline_eval(Balakotaiah::qspline[nt], x, Balakotaiah::acc);
     q_x = gsl_spline_eval_deriv(Balakotaiah::qspline[nt], x, Balakotaiah::acc);
     q_xx = gsl_spline_eval_deriv2(Balakotaiah::qspline[nt], x, Balakotaiah::acc);
-    q_xxx = gsl_spline_eval_deriv3(Balakotaiah::qspline[nt], x, Balakotaiah::acc); 
+    q_xxx = (q_xx_at_x_dx-q_xx)/dx;
     q_xxxx = 0.;
 }
 /////////////////////////////////////////////
@@ -375,22 +380,22 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
                               
 int main() {
 
+
 const double X=5.;
-const double Y=5.;
-const double R=5.;
-const double W=5.;
-const double Delta_t=5.;
-const double Cotbeta=5.;
-const int n1 = 30;
+const double y=5.;
+int n1;
+
 double Error;
-HQUV t(X, Y, n1, Delta_t, R, W, Cotbeta);
-HQUV t_dt(X, Y, n1+1, Delta_t, R, W, Cotbeta);
+
+
+HQUV t(X, n1);
+HQUV t_dt(X, n1+1);
 
 Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
               t.U2_0(), t.U2_1(), t.U2_2(), t.U2_3(), t_dt.U2_0(),
               t.V2_0(), t.V2_1(), t.V2_2(), t.V2_3(), t_dt.V2_0(), t_dt.V2_1(),
               t.V3_0(), t.V3_1(), t.V3_2(), t.V3_3(), t_dt.V3_0(), t_dt.V3_1(),
-              t.h0(), t.h1(), t.h2(), t.h3(), t.get_y(), t.get_Re(), t.get_We(), t.get_delta_t(), t.get_cotbeta());
+              t.h0(), t.h1(), t.h2(), t.h3(), y, t.get_Re(), t.get_We(), t.get_delta_t(), t.get_cotbeta());
               
  std::cout << "Error in x-momentum-balance is: " << Error << std::endl;              
 
