@@ -222,18 +222,21 @@ double V3_3(void);
 ///////////////////////Konstruktor definieren:
 HQUV::HQUV(double X, double Y, int nT, double Delta_t, double R, double W, double Cotbeta){
     x=X; y=Y; Re=R; We=W; cotbeta=Cotbeta; delta_t= Delta_t; nt=nT; 
-    double t = static_cast<double>(nt);
-    h = x*x*x*x*t;//gsl_spline_eval(hspline[nt], x, acc);
-    h_x = 4.*x*x*x*t;//gsl_spline_eval_deriv(hspline[nt], x, acc);
-    h_xx = 12.*x*x*t;
-    h_xxx = 24.*x*t;
-    h_xxxx = 24*t;
+    
+    if(!Balakotaiah::init)
+    Balakotaiah::initialize();
+    
+    h = gsl_spline_eval(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
+    h_x = gsl_spline_eval_deriv(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
+    h_xx = gsl_spline_eval_deriv2(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
+    h_xxx = gsl_spline_eval_deriv3(Balakotaiah::hspline[nt], x, Balakotaiah::acc);
+    h_xxxx = 0.;
 
-    q = x*x*x*x*t;//gsl_spline_eval(qspline[nt], x, acc);
-    q_x = 4.*x*x*x*t;//gsl_spline_eval_deriv(qspline[nt], x, acc);
-    q_xx = 12.*x*x*t;
-    q_xxx = 24.*x*t;
-    q_xxxx = 24*t;
+    q = gsl_spline_eval(Balakotaiah::qspline[nt], x, Balakotaiah::acc);
+    q_x = gsl_spline_eval_deriv(Balakotaiah::qspline[nt], x, Balakotaiah::acc);
+    q_xx = gsl_spline_eval_deriv2(Balakotaiah::qspline[nt], x, Balakotaiah::acc);
+    q_xxx = gsl_spline_eval_deriv3(Balakotaiah::qspline[nt], x, Balakotaiah::acc); 
+    q_xxxx = 0.;
 }
 /////////////////////////////////////////////
 double HQUV::U1_0(void){
@@ -318,7 +321,7 @@ double psurf_x(double h0, double h1, double h2, double h3,
                             double V2_1, double V2_2,
                             double V3_1, double V3_2, double R, double W){
                        
-    double H0_2 = h0*h0; double H1_2 = h1*h1; 
+    double H0_2 = h0*h0; double H0_3 = H0_2*h0; double H1_2 = h1*h1; 
     
     double a = (((-8.)*h1)/(1+H1_2))*(U1_1 + 2.*U2_1*h0 + 2.*U2_0*h1 + V2_2*H0_2 + 2.*V2_1*h0*h1 + V3_2*H0_3 + 3.*V3_1*H0_2*h1);
     double b = (((-8.)*h2)/(1 + H1_2))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
@@ -338,7 +341,7 @@ double pbulk_x(double U1_0, double U1_1,
                double V3_0, double V3_1, double V3_2, double V3_3, double dtV3_0, double dtV3_1,
                double h0, double h1, double y, double R, double deltat, double cb){
                
-    double H0_2 = h0*h0; double H0_3 = H0_2*h0, double H0_4 = H0_2*H0_2, double H0_5 = double H0_4*h0, double H0_6 = H0_3*H0_3;         
+    double H0_2 = h0*h0; double H0_3 = H0_2*h0; double H0_4 = H0_2*H0_2; double H0_5 = H0_4*h0; double H0_6 = H0_3*H0_3;         
                
     double a = y*8.*V2_1 + y*y*12.*V3_1 + y*y*y*(1./3.)*(4.*V2_3 - R*diff_t(V2_1,dtV2_1,deltat));
     double b = y*y*y*y*(V3_3 - 0.25*R*diff_t(V3_1,dtV3_1,deltat) - R*V2_0*V2_1 - 0.25*R*U1_0*V2_2 - 0.25*R*U1_1*V2_1);
