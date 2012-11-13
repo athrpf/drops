@@ -360,7 +360,7 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
      double a = R*(diff_t(U1_0, dtU1_0, deltat)*y + diff_t(U2_0, dtU2_0, deltat)*y*y);       
      double b = R*(U1_0*y + U2_0*y*y)*(U1_1*y + U2_1*y*y) + R*(V2_0*y*y + V3_0*y*y*y)*(U1_0 + 2*U2_0*y);        
      double c = -12. -4.*(U1_2*y + U2_2*y*y) -8.*U2_0;
-     double d = pbulk_x(U1_0,U1_1,U2_0,U2_1,V2_0,V2_1,V2_2,V2_3,dtV2_0,dtV2_1,V3_0,V3_1,V3_2,V2_3,dtV3_0,dtV3_1,h0,h1,y,R,deltat, cb);      
+     double d = pbulk_x(U1_0,U1_1,U2_0,U2_1,V2_0,V2_1,V2_2,V2_3,dtV2_0,dtV2_1,V3_0,V3_1,V3_2,V3_3,dtV3_0,dtV3_1,h0,h1,y,R,deltat, cb);      
      double e = psurf_x(h0, h1, h2, h3, U1_0, U1_1, U1_2, U2_0, U2_1, U2_2, V2_1, V2_2, V3_1,  V3_2, R, W);
      return a + b + c + d + e;        
 }
