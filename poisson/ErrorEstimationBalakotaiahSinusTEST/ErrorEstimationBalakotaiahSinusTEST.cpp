@@ -148,13 +148,13 @@ double psurf_x(double h0, double h1, double h2, double h3,
                        
     double H0_2 = h0*h0; double H0_3 = H0_2*h0; double H1_2 = h1*h1; 
     
-    double a = (((-8.)*h1)/(1+H1_2))*(U1_1 + 2.*U2_1*h0 + 2.*U2_0*h1 + V2_2*H0_2 + 2.*V2_1*h0*h1 + V3_2*H0_3 + 3.*V3_1*H0_2*h1);
-    double b = (((-8.)*h2)/(1 + H1_2))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
-    double c = ((16.*H1_2*h2)/((1+H1_2)*(1+H1_2)))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
-    double d = ((-8.)*(1-H1_2)/(1+H1_2))*(U1_2*h0 + U1_1*h1 + U2_2*H0_2 + 2.*U2_1*h0*h1);
-    double e = (16.*(h1*h2)/(1+H1_2))*(U1_1*h0 + U2_1*H0_2);
-    double f = (16.*((1-H1_2)*h1*h2)/((1+H1_2)*(1+H1_2)))*(U1_1*h0 + U2_1*H0_2);
-    double g = R*W*((3.*h2*h2*h1)/((1+H1_2)*(1+H1_2)*sqrt(1+H1_2))  +   (h3)/((1+H1_2)*sqrt(1+H1_2)));
+    double a = (((-8.)*h1)/(1.+H1_2))*(U1_1 + 2.*U2_1*h0 + 2.*U2_0*h1 + V2_2*H0_2 + 2.*V2_1*h0*h1 + V3_2*H0_3 + 3.*V3_1*H0_2*h1);
+    double b = (((-8.)*h2)/(1. + H1_2))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
+    double c = ((16.*H1_2*h2)/((1.+H1_2)*(1.+H1_2)))*(U1_0 + 2.*U2_0*h0 + V2_1*H0_2 + V3_1*H0_3);
+    double d = ((-8.)*(1-H1_2)/(1.+H1_2))*(U1_2*h0 + U1_1*h1 + U2_2*H0_2 + 2.*U2_1*h0*h1);
+    double e = (16.*(h1*h2)/(1.+H1_2))*(U1_1*h0 + U2_1*H0_2);
+    double f = (16.*((1.-H1_2)*h1*h2)/((1.+H1_2)*(1.+H1_2)))*(U1_1*h0 + U2_1*H0_2);
+    double g = R*W*((3.*h2*h2*h1)/((1.+H1_2)*(1.+H1_2)*sqrt(1.+H1_2))  -   h3/((1.+H1_2)*sqrt(1.+H1_2)));
     return a + b + c + d + e  + f + g;        
 }
 double diff_t(double A_t, double A_tplusdt, double dt){
@@ -202,9 +202,9 @@ int main() {
 
 
 const double X=0.8; 
-const double y=10.;
-double t1=300.;
-double t2=300.+1.e-10; //=t1+delta_t
+const double y=0.001;
+double t1=100.;
+double t2=100.+1.e-10; //=t1+delta_t
 
 double Error;
 
