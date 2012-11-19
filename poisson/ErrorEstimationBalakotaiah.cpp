@@ -321,7 +321,7 @@ double psurf_x(double h0, double h1, double h2, double h3,
     double d = ((-8.)*(1-H1_2)/(1+H1_2))*(U1_2*h0 + U1_1*h1 + U2_2*H0_2 + 2.*U2_1*h0*h1);
     double e = (16.*(h1*h2)/(1+H1_2))*(U1_1*h0 + U2_1*H0_2);
     double f = (16.*((1-H1_2)*h1*h2)/((1+H1_2)*(1+H1_2)))*(U1_1*h0 + U2_1*H0_2);
-    double g = R*W*((3.*h2*h2*h1)/((1+H1_2)*(1+H1_2)*sqrt(1+H1_2))  +   (h3)/((1+H1_2)*sqrt(1+H1_2)));
+    double g = R*W*((3.*h2*h2*h1)/((1+H1_2)*(1+H1_2)*sqrt(1+H1_2))  -   (h3)/((1+H1_2)*sqrt(1+H1_2)));
     return a + b + c + d + e  + f + g;        
 }
 double diff_t(double A_t, double A_tplusdt, double dt){
