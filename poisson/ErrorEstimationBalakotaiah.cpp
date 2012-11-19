@@ -339,7 +339,7 @@ double pbulk_x(double U1_0, double U1_1,
     double b = y*y*y*y*(V3_3 - 0.25*R*diff_t(V3_1,dtV3_1,deltat) - R*V2_0*V2_1 - 0.25*R*U1_0*V2_2 - 0.25*R*U1_1*V2_1);
     double c = (-0.2)*R*y*y*y*y*y*(5.*V2_0*V3_1 + 5.*V2_1*V3_0 + U1_1*V3_1 + U1_0*V3_2 + U2_1*V2_1 + U2_0*V2_2);
     double d = (-1./6.)*R*y*y*y*y*y*y*(U2_0*V3_2 + U2_1*V3_1 + 6.*V3_0*V3_1);
-    double e = (1./3.)*R*diff_t(V2_1,dtV2_1,deltat) + (1./4.)*R*diff_t(V3_1,dtV3_1,deltat);              
+    double e = (1./3.)*R*diff_t(V2_1,dtV2_1,deltat)*H0_3 + (1./4.)*R*diff_t(V3_1,dtV3_1,deltat)*H0_4;             
     double f = 5.*R*V2_0*V3_0*H0_4*h1 - 4.*V2_2*H0_2*h1 - 4.*V3_2*H0_3*h1 + (1./6.)*R*U2_0*V3_2*H0_6;
     double g = 0.2*R*U1_0*V3_2*H0_5 + 0.2*R*U2_0*V2_2*H0_5;
     double h = 0.25*R*U1_0*V2_2*H0_4 - V3_3*H0_4 - (4./3.)*V2_3*H0_3;
