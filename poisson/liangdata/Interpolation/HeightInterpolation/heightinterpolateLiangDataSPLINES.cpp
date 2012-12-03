@@ -8,7 +8,8 @@
 //#include <gsl/gsl_interp.h>
 //#include <gsl/gsl_errno.h>
 
-double HeightInterpolLiangData(double x, double t) { 
+double HeightInterpolLiangData(double x, double t, gsl_interp_accel * acc, gsl_spline * heightspline) { 
+  
 
   double L;//lenght of reference-domain
   L=(pd.NX-1)*pd.deltaX;//lenght of reference domain
