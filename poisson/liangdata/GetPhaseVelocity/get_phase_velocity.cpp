@@ -114,6 +114,8 @@ int main() {
     double h_x;
     double epsilon=10.e-2;
     double c;
+    double fehlerfaktor;
+    double relfehlerfaktor;
     
     
     std::ofstream cfile;
@@ -128,13 +130,18 @@ int main() {
         u = RefVelU(x_0, h); 
         v = RefVelV(x_0, h);
         if (h_x<epsilon && h_x>-epsilon){
-            std::cout << "Absolute-value of the derivative is quite small!" << std::endl;
-            cfile << "Absolute-value of the derivative is quite small!" << std::endl;
+            c = u - v/h_x; 
+            fehlerfaktor=sqrt(1. + 1./(h_x*h_x) + (v*v)/(h_x*h_x*h_x*h_x));
+            relfehlerfaktor=fehlerfaktor/c;
+            std::cout << "Absolute-value of the derivative is quite small! c = " << c <<" Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << std::endl;
+            cfile << "Absolute-value of the derivative is quite small! c = " << c <<" Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << std::endl;
         }
         else { 
             c = u - v/h_x;
-            std::cout << "Calculated value for phase-velocity is " << c << std::endl;
-            cfile << "Calculated value for phase-velocity is " << c << std::endl;
+            fehlerfaktor=sqrt(1. + 1./(h_x*h_x) + (v*v)/(h_x*h_x*h_x*h_x));
+            relfehlerfaktor=fehlerfaktor/c;
+            std::cout << "Calculated value for phase-velocity is " << c << " Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << std::endl;
+            cfile << "Calculated value for phase-velocity is " << c << " Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << std::endl;
             
         }
     }
