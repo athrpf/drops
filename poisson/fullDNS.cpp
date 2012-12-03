@@ -2,6 +2,9 @@
 #include <math.h>
 #include <fstream>
 #include <sstream>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_interp.h>
+#include <gsl/gsl_errno.h>
 
 #include "./liangdata/Interpolation/PERIODICADDEDphysicaldata.hpp"
 static PhysicalData pd;
@@ -15,7 +18,7 @@ static PhysicalData pd;
 #include "./liangdata/Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.cpp"
 
 // #include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.hpp"
-#include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.cpp"
+//#include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.cpp"
 
 // #include "./liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.hpp"
 #include "./liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.cpp"
@@ -37,39 +40,53 @@ namespace Jan {
 
     void setup()
     {
-       //Create an array of Liang's level-set-values, which is converted to
-       //an array of discrete height-values by use of the
-       //function "DiscreteLevelSetToDiscreteHeight" (The latter is used in
-       //the function "Interface" below):
+      //Create an array of Liang's level-set-values, which is converted to
+      //an array of discrete height-values by use of the
+      //function "DiscreteLevelSetToDiscreteHeight":
       double* level_tmp = createlevelLiang();
       level = DiscreteLevelSetToDiscreteHeight(level_tmp);
-       // read data of the velocity-field (and the level-set)
-       int NumCoords = pd.NX*pd.NY;
-       u = new double[NumCoords];
-       v = new double[NumCoords];
-       w = new double[NumCoords];
-       std::string velocity_filename = "./liangdata/Interpolation/DataForPoissonCoeff/VelocityWithLevelSetFinal.txt";
-       std::ifstream ufile;
-       ufile.open(velocity_filename.c_str(), std::fstream::in);
-       double curr_u, curr_v, curr_w, curr_level;
-       for (int k=0; k<NumCoords; k++)
-       {
+      //Create array of discrete reference-points on x-axis that are, in addition to the array "level" needed to 
+      //create a spline for the reference-heigt-profile: 
+      double * xd = new double[pd.X];
+      for(int i=0; i<pd.NX; i++)
+      {
+            xd[i]=i*pd.deltaX;
+      }
+      //Create spline:
+      static gsl_spline ** heightspline;
+      static gsl_interp_accel * acc;
+      acc = gsl interp_accel_alloc();
+      heightspline = new gsl_spline;
+      heightspline = gsl_splie_alloc(gsl_interp_cspline, pd.NX);
+      gsl_spline_init(heightspline, xd, level, pd.NX);
+      
+      // read data of the velocity-field (and the level-set)
+      int NumCoords = pd.NX*pd.NY;
+      u = new double[NumCoords];
+      v = new double[NumCoords];
+      w = new double[NumCoords];
+      std::string velocity_filename = "./liangdata/Interpolation/DataForPoissonCoeff/VelocityWithLevelSetFinal.txt";
+      std::ifstream ufile;
+      ufile.open(velocity_filename.c_str(), std::fstream::in);
+      double curr_u, curr_v, curr_w, curr_level;
+      for (int k=0; k<NumCoords; k++)
+      {
          ufile >> curr_u >> curr_v >> curr_w >> curr_level;
          u[k] = curr_u;
          v[k] = curr_v;
          w[k] = curr_w;
-       }
+      }
        first_call = false;
     }
-
+#include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangDataSPLINES.cpp"
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     double Interface( const DROPS::Point3DCL& p, double t){
       if (first_call)
         setup();
 
-        //Linear interpolation of the previosly (see "setup" above) generated discrete height-profile:
-        double retval = HeightInterpolLiangData(p[0],t, level);
+        //Cubic interpolation of the height-profile via the previously created splines of the reference-height-profile:
+        double retval = HeightInterpolLiangData(p[0],t);
         return retval;
     }
 
