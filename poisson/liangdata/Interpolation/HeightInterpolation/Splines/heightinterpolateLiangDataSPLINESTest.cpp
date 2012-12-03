@@ -27,7 +27,6 @@ int main() {
       static gsl_interp_accel * acc;
       static gsl_spline * heightspline;
       acc = gsl_interp_accel_alloc();
-      heightspline = new gsl_spline;
       heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
       gsl_spline_init(heightspline, xd, level, pd.NX);
 
