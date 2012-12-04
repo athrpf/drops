@@ -29,15 +29,16 @@ extern DROPS::ParamCL P;
 
 namespace Jan {
 
-    static PhysicalData pd;
+
     static bool first_call = true;
     static double* u;
     static double* v;
     static double* w;
     static double* level;
 
-  static double Dmol;
-
+    static double Dmol;
+    static gsl_spline * heightspline;
+    static gsl_interp_accel * acc;
     void setup()
     {
       //Create an array of Liang's level-set-values, which is converted to
@@ -47,17 +48,14 @@ namespace Jan {
       level = DiscreteLevelSetToDiscreteHeight(level_tmp);
       //Create array of discrete reference-points on x-axis that are, in addition to the array "level" needed to 
       //create a spline for the reference-heigt-profile: 
-      double * xd = new double[pd.X];
+      double * xd = new double[pd.NX];
       for(int i=0; i<pd.NX; i++)
       {
-            xd[i]=i*pd.deltaX;
+            xd[i]=static_cast<double>(i)*pd.deltaX;
       }
       //Create spline:
-      static gsl_spline ** heightspline;
-      static gsl_interp_accel * acc;
-      acc = gsl interp_accel_alloc();
-      heightspline = new gsl_spline;
-      heightspline = gsl_splie_alloc(gsl_interp_cspline, pd.NX);
+      acc = gsl_interp_accel_alloc();
+      heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
       gsl_spline_init(heightspline, xd, level, pd.NX);
       
       // read data of the velocity-field (and the level-set)
@@ -86,7 +84,7 @@ namespace Jan {
         setup();
 
         //Cubic interpolation of the height-profile via the previously created splines of the reference-height-profile:
-        double retval = HeightInterpolLiangData(p[0],t);
+        double retval = HeightInterpolLiangData(p[0],t, acc, heightspline);
         return retval;
     }
 
