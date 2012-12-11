@@ -59,12 +59,14 @@ int main() {
       gsl_spline_init(heightspline, xd, level, pd.NX);
 
 
-double t=0.;
-double height;
-for(int i=0; i<pd.NX; i++){
-height = HeightInterpolLiangData(xd[i], t, acc, heightspline);
-std::cout << height << std::endl;
-}
+      double t=0.;
+      double height;
+      std::cout << "This test is passed sucessfully, if the output for 'diff' is always zero!" << std::endl;
+        for(int i=0; i<pd.NX; i++){
+        height = HeightInterpolLiangData(xd[i], t, acc, heightspline);
+        std::cout << height << "   diff = " << height - level[i]  << std::endl;
+        }
+      std::cout << "This test was passed sucessfully, if the output for 'diff' was always zero!" << std::endl;
 
 return 0;
 }
