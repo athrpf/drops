@@ -3,6 +3,9 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_interp.h>
+#include <gsl/gsl_errno.h>
 #include "../Interpolation/PERIODICADDEDphysicaldata.hpp"
 static PhysicalData pd;
 #include "../Interpolation/boxinterpLiangData.cpp"
@@ -22,33 +25,38 @@ return levelLiang;
 }
 //#include "../Interpolation/HeightInterpolation/createlevelLiang.cpp"
 #include "../Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.cpp"
-#include "../Interpolation/HeightInterpolation/heightinterpolateLiangData.cpp"
+#include "../Interpolation/HeightInterpolation/heightinterpolateLiangDataSPLINES.cpp"
 #include "../Interpolation/VelInterpolation/functionjaninterpolateLiangData.cpp"
 
-
-
-
-    
     static bool first_call = true;
     static double* u;
     static double* v;
     static double* w;
-    static double* level;
-
+    static gsl_interp_accel * acc;
+    static gsl_spline * heightspline;
+    
     void setup(void);
     double RefInterface( double x);
     double RefVelU( double x, double y);
     double RefVelV( double x, double y);
     double diff_x(double a_x, double a_x_plus_dx, double dx);
-
+    
     void setup()
     {
        //Create an array of Liang's level-set-values, which is converted to
        //an array of discrete height-values by use of the
-       //function "DiscreteLevelSetToDiscreteHeight" (The latter is used in
-       //the function "RefInterface" below):
-      double* level_tmp = createlevelLiang();
-      level = DiscreteLevelSetToDiscreteHeight(level_tmp);
+       //function "DiscreteLevelSetToDiscreteHeight" (The discrete height-values are used to create splines):
+       double* level_tmp = createlevelLiang();
+       double* level = DiscreteLevelSetToDiscreteHeight(level_tmp);
+       //reference-points in x-direction (needed to create splines):
+       double * xd = new double[pd.NX];
+       for(int i=0; i<pd.NX; i++){
+            xd[i]=static_cast <double>(i)*pd.deltaX;
+       }
+       //Create spline:
+       acc = gsl_interp_accel_alloc();
+       heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
+       gsl_spline_init(heightspline, xd, level, pd.NX);
        // read data of the velocity-field (and the level-set)
        int NumCoords = pd.NX*pd.NY;
        u = new double[NumCoords];
@@ -72,7 +80,7 @@ return levelLiang;
       if (first_call)
         setup();
 
-        double retval = HeightInterpolLiangData(x,0, level);
+        double retval = HeightInterpolLiangData(x,0, acc, heightspline);
         return retval;
     }
 
@@ -120,7 +128,7 @@ int main() {
     
     
     std::ofstream cfile;
-    cfile.open("phasevelocity.txt"); 
+    cfile.open("phasevelocitySLPINES.txt"); 
   
     for(int i=0; i<refpoints-1; i++){
     
@@ -133,8 +141,8 @@ int main() {
         v_w = RefVelV(x_0, 0.);
         if (h_x<epsilon && h_x>-epsilon){
             c = u + (v_w - v)/h_x; 
-            fehlerfaktor=sqrt(1. + 1./(h_x*h_x) + (v*v)/(h_x*h_x*h_x*h_x));
-            relfehlerfaktor=fehlerfaktor/c;
+            //fehlerfaktor=sqrt(1. + 1./(h_x*h_x) + (v*v)/(h_x*h_x*h_x*h_x));
+            //relfehlerfaktor=fehlerfaktor/c;
             std::cout << "Absolute-value of the derivative is quite small! c = " << c <<//" Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << 
             std::endl;
             cfile << "Absolute-value of the derivative is quite small! c = " << c <<//" Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << 
@@ -144,9 +152,9 @@ int main() {
             c = u + (v_w - v)/h_x;
             fehlerfaktor=sqrt(1. + 1./(h_x*h_x) + (v*v)/(h_x*h_x*h_x*h_x));
             relfehlerfaktor=fehlerfaktor/c;
-            std::cout << "Calculated value for phase-velocity is " << c << //" Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << 
+            std::cout << "Calculated value for phase-velocity is " << c <<// " Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << 
             std::endl;
-            cfile << "Calculated value for phase-velocity is " << c << //" Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << 
+            cfile << "Calculated value for phase-velocity is " << c <<// " Fehlerfaktor = "<< fehlerfaktor << " RelFehlerfaktor = "<< relfehlerfaktor << 
             std::endl;
             
         }
