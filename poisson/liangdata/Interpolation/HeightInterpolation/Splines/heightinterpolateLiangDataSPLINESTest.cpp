@@ -58,10 +58,13 @@ int main() {
       heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
       gsl_spline_init(heightspline, xd, level, pd.NX);
 
-double x=6.5*pd.NX;
+
 double t=0.;
-double height = HeightInterpolLiangData(x, t, acc, heightspline);
+double height;
+for(int i=0; i<pd.NX; i++){
+height = HeightInterpolLiangData(xd[i], t, acc, heightspline);
 std::cout << height << std::endl;
+}
 
 return 0;
 }
