@@ -9,9 +9,37 @@
 #include "../../PERIODICADDEDphysicaldata.hpp"
 static PhysicalData pd;
 #include "../../boxinterpLiangData.cpp"
-#include "../createlevelLiang.cpp"
+//#include "../createlevelLiang.cpp"
 #include "../DiscreteLevelSetToDiscreteHeight.cpp"
 #include "../heightinterpolateLiangDataSPLINES.cpp"
+
+
+double* createlevelLiang() {
+
+  double* levelLiang; //[4141]
+
+  // allocate
+  int NumCoordsLiang = (pd.NX-1)*pd.NY;
+  levelLiang = new double[NumCoordsLiang];
+
+  //Please mind: The following relative path to the source-data "LevelSetLiangData.txt" referrs to the 
+  //directory where fullDNS.cpp is located.
+  std::string level_filename = "../../DataForPoissonCoeff/LevelSetLiangData.txt";
+  std::ifstream levelfile;
+  levelfile.open(level_filename.c_str(), std::fstream::in);
+  double curr_level;
+  for (int k=0; k<NumCoordsLiang; k++) {
+    levelfile >> curr_level;
+    levelLiang[k] = curr_level;
+  }
+  
+
+  
+
+return levelLiang;
+
+
+}
 
 int main() {
 
@@ -30,7 +58,7 @@ int main() {
       heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
       gsl_spline_init(heightspline, xd, level, pd.NX);
 
-double x=5.5*pd.NX;
+double x=6.5*pd.NX;
 double t=0.;
 double height = HeightInterpolLiangData(x, t, acc, heightspline);
 std::cout << height << std::endl;
