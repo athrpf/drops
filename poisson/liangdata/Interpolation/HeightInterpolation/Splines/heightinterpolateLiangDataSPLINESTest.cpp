@@ -13,7 +13,8 @@ static PhysicalData pd;
 #include "../DiscreteLevelSetToDiscreteHeight.cpp"
 #include "../heightinterpolateLiangDataSPLINES.cpp"
 
-
+//The following function was at first copied from "../createlevelLiang.cpp" and then the 
+//path to LevelSetLiangData.txt was updated.
 double* createlevelLiang() {
 
   double* levelLiang; //[4141]
