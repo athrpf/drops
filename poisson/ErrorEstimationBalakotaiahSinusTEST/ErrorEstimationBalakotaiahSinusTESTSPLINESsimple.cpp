@@ -1,12 +1,14 @@
 #include <iostream>
-//#include <fstream>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <sstream>
+#include <fstream>
+#include <stdlib.h>
+#include <string.h>
+#include <sstream>
 #include <math.h>
-//#include <gsl/gsl_spline.h>
-//#include <gsl/gsl_interp.h>
-//#include <gsl/gsl_errno.h>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_interp.h>
+#include <gsl/gsl_errno.h>
+#include "../liangdata/Interpolation/boxinterpLiangData.cpp"
+
 
 class HQUV{
 
@@ -48,20 +50,61 @@ double V3_0(void); double V3_1(void); double V3_2(void); double V3_3(void);
 };
 ///////////////////////Konstruktor definieren:
 HQUV::HQUV(double X, double T){
+    
     Re=1.; We=1.; cotbeta=0.; x=X; t=T; delta_t=1.e-5;
     
+    int tsteps=10000; int xsteps=1000; double incx_spline=0.000209; 
     
-    h = sin(x+t)+2.;
-    h_x = cos(x+t);
-    h_xx = (-1.)*sin(x+t);
-    h_xxx = (-1.)*cos(x+t);
-    h_xxxx = sin(x+t);
+    gsl_spline ** hspline, ** qspline; gsl_interp_accel * acc;
+    
+    hspline = new gsl_spline*[tsteps];
+    qspline = new gsl_spline*[tsteps];
+    acc = gsl_interp_accel_alloc();
+    
+    double * xd = new double[xsteps];
+    for(int i=0; i<xsteps; i++){
+            xd[i]=static_cast <double>(i)*incx_spline;
+    }
+    
+    double * h_raw = new double[xsteps];
+    double * q_raw = new double[xsteps];
+    
+    double x_temp; double t_temp;
+    for(int i=0; i<tsteps; i++){
+        t_temp = static_cast<double>(i)*delta_t;
+        for(int k=0; k<xsteps; k++){
+            x_temp = static_cast<double>(k)*incx_spline;
+            h_raw[k] = sin(x_temp+t_temp) + 2.;
+            q_raw[k] = (-1.)*sin(x_temp+t_temp) + 2.;
+        }
+        hspline[i] = gsl_spline_alloc(gsl_interp_cspline, xsteps);
+        gsl_spline_init(hspline[i], xd, h_raw, xsteps);
+        
+        qspline[i] = gsl_spline_alloc(gsl_interp_cspline, xsteps);
+        gsl_spline_init(qspline[i], xd, q_raw, xsteps);
+     }
+      
+     delete[] h_raw;
+     delete[] q_raw;
+     delete[] xd;
+  
+    int nt = boxnumber(t, delta_t, 0.);
+    double dx = incx_spline/6.;
+    double h_xx_dx = gsl_spline_eval_deriv2(hspline[nt], x + dx, acc);
+    double q_xx_dx = gsl_spline_eval_deriv2(qspline[nt], x + dx, acc);
+    
+    h = gsl_spline_eval(hspline[nt], x, acc);
+    h_x = gsl_spline_eval_deriv(hspline[nt], x, acc);
+    h_xx = gsl_spline_eval_deriv2(hspline[nt], x, acc);
+    h_xxx = (h_xx_dx - h_xx)/dx; //gsl_spline_eval_deriv3(hspline[nt], x, acc);
+    h_xxxx = 0.;
 
-    q = (-1.)*sin(x+t)+2.;
-    q_x = (-1.)*cos(x+t);
-    q_xx = sin(x+t);
-    q_xxx = cos(x+t);
-    q_xxxx = (-1.)*sin(x+t);
+    q = gsl_spline_eval(qspline[nt], x, acc);
+    q_x = gsl_spline_eval_deriv(qspline[nt], x, acc);
+    q_xx = gsl_spline_eval_deriv2(qspline[nt], x, acc);
+    q_xxx = (q_xx_dx - q_xx)/dx;//gsl_spline_eval_deriv3(qspline[nt], x, acc);
+    q_xxxx = 0.;    
+    
 }
 /////////////////////////////////////////////
 double HQUV::U1_0(void){
@@ -201,10 +244,11 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
 int main() {
 
 
+
 const double X=0.005; 
 const double y=0.005;
 double t1=1.e-3;
-double t2=t1+1.1e-5;  
+double t2=t1+1.1e-5; 
 
 double Error;
 
