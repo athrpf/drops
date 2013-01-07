@@ -9,7 +9,7 @@
 #include <gsl/gsl_errno.h>
 #include<boost/lexical_cast.hpp>
 #include "../liangdata/Interpolation/boxinterpLiangData.cpp"
-
+#include "./CreateRawDataFilesForSplines.cpp"
 
 
 class HQUV{
@@ -57,10 +57,10 @@ HQUV::HQUV(double X, double T){
     
     int tsteps=10000; int xsteps=1000; double incx_spline=0.000209; 
     
-    gsl_spline ** hspline, ** qspline; gsl_interp_accel * acc;
+    gsl_spline * hspline, * qspline; gsl_interp_accel * acc;
     
-    hspline = new gsl_spline*[tsteps];
-    qspline = new gsl_spline*[tsteps];
+    hspline = new gsl_spline;
+    qspline = new gsl_spline;
     acc = gsl_interp_accel_alloc();
     
     double * xd = new double[xsteps];
@@ -72,31 +72,15 @@ HQUV::HQUV(double X, double T){
     double * q_raw = new double[xsteps];
      
     //Raw-data-file-output:
-    double x_temp; double t_temp;
-    for(int i=0; i<tsteps; i++){
-       std::string number = boost::lexical_cast<std::string>(i);
-       std::string h_filename = "h" + number + ".txt";
-       std::string q_filename = "q" + number + ".txt";
-       std::ofstream hfile;
-       std::ofstream qfile;
-       hfile.open(h_filename.c_str());
-       qfile.open(q_filename.c_str());
-       t_temp = static_cast<double>(i)*delta_t;
-       for(int k=0; k<xsteps; k++){
-           x_temp = static_cast<double>(k)*incx_spline;
-           hfile << sin(x_temp+t_temp) + 2. << std::endl;
-           qfile << (-1.)*sin(x_temp+t_temp) + 2. << std::endl;
-       }
-       hfile.close();
-       qfile.close();
-   }
-   
+    CreateRawData(tsteps, delta_t, xsteps, incx_spline);
     //Raw-data-file-input, create splines:
+    
+    int nt = boxnumber(t, delta_t, 0.);
     double curr_h; double curr_q;
-    for(int i=0; i<tsteps; i++){
-       std::string number = boost::lexical_cast<std::string>(i);
-       std::string h_filename = "h" + number + ".txt";
-       std::string q_filename = "q" + number + ".txt";
+    //for(int i=0; i<tsteps; i++){
+       std::string number = boost::lexical_cast<std::string>(nt);
+       std::string h_filename = "./hrawdata/h" + number + ".txt";
+       std::string q_filename = "./qrawdata/q" + number + ".txt";
        std::ifstream hfile;
        std::ifstream qfile;
        hfile.open(h_filename.c_str(), std::fstream::in);
@@ -114,33 +98,33 @@ HQUV::HQUV(double X, double T){
        hfile.close();
        qfile.close();
        
-       hspline[i] = gsl_spline_alloc(gsl_interp_cspline, xsteps);
-       gsl_spline_init(hspline[i], xd, h_raw, xsteps);
+       hspline = gsl_spline_alloc(gsl_interp_cspline, xsteps);
+       gsl_spline_init(hspline, xd, h_raw, xsteps);
         
-       qspline[i] = gsl_spline_alloc(gsl_interp_cspline, xsteps);
-       gsl_spline_init(qspline[i], xd, q_raw, xsteps);
+       qspline = gsl_spline_alloc(gsl_interp_cspline, xsteps);
+       gsl_spline_init(qspline, xd, q_raw, xsteps);
        
-   }
+   //}
           
     delete[] h_raw;
     delete[] q_raw;
     delete[] xd;
   
-    int nt = boxnumber(t, delta_t, 0.);
+    //int nt = boxnumber(t, delta_t, 0.);
     double dx = incx_spline/6.;
-    double h_xx_dx = gsl_spline_eval_deriv2(hspline[nt], x + dx, acc);
-    double q_xx_dx = gsl_spline_eval_deriv2(qspline[nt], x + dx, acc);
+    double h_xx_dx = gsl_spline_eval_deriv2(hspline, x + dx, acc);
+    double q_xx_dx = gsl_spline_eval_deriv2(qspline, x + dx, acc);
     
-    h = gsl_spline_eval(hspline[nt], x, acc);
-    h_x = gsl_spline_eval_deriv(hspline[nt], x, acc);
-    h_xx = gsl_spline_eval_deriv2(hspline[nt], x, acc);
-    h_xxx = (h_xx_dx - h_xx)/dx; //gsl_spline_eval_deriv3(hspline[nt], x, acc);
+    h = gsl_spline_eval(hspline, x, acc);
+    h_x = gsl_spline_eval_deriv(hspline, x, acc);
+    h_xx = gsl_spline_eval_deriv2(hspline, x, acc);
+    h_xxx = (h_xx_dx - h_xx)/dx; //gsl_spline_eval_deriv3(hspline, x, acc);
     h_xxxx = 0.;
 
-    q = gsl_spline_eval(qspline[nt], x, acc);
-    q_x = gsl_spline_eval_deriv(qspline[nt], x, acc);
-    q_xx = gsl_spline_eval_deriv2(qspline[nt], x, acc);
-    q_xxx = (q_xx_dx - q_xx)/dx;//gsl_spline_eval_deriv3(qspline[nt], x, acc);
+    q = gsl_spline_eval(qspline, x, acc);
+    q_x = gsl_spline_eval_deriv(qspline, x, acc);
+    q_xx = gsl_spline_eval_deriv2(qspline, x, acc);
+    q_xxx = (q_xx_dx - q_xx)/dx;//gsl_spline_eval_deriv3(qspline, x, acc);
     q_xxxx = 0.;    
     
 }
