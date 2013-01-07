@@ -245,8 +245,8 @@ int main() {
 
 
 
-const double X=0.005; 
-const double y=0.005;
+const double X=0.000025; 
+const double y=0.000025;
 double t1=1.e-3;
 double t2=t1+1.1e-5; 
 
@@ -255,6 +255,17 @@ double Error;
 
 HQUV t(X, t1);
 HQUV t_dt(X, t2);
+
+ std::cout << t.h0() << std::endl;
+ std::cout << t.h1() << std::endl;
+ std::cout << t.h2() << std::endl;
+ std::cout << t.h3() << std::endl;
+ std::cout << t.h4() << std::endl;
+ std::cout << t.q0() << std::endl;
+ std::cout << t.q1() << std::endl;
+ std::cout << t.q2() << std::endl;
+ std::cout << t.q3() << std::endl;
+ std::cout << t.q4() << std::endl;
 
 Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
               t.U2_0(), t.U2_1(), t.U2_2(), t.U2_3(), t_dt.U2_0(),
