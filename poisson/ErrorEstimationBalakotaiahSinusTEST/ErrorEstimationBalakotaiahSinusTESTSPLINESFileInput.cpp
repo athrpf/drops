@@ -11,6 +11,7 @@
 #include "../liangdata/Interpolation/boxinterpLiangData.cpp"
 #include "./CreateRawDataFilesForSplines.cpp"
 
+bool firstcall=true;
 
 class HQUV{
 
@@ -72,7 +73,10 @@ HQUV::HQUV(double X, double T){
     double * q_raw = new double[xsteps];
      
     //Raw-data-file-output:
+    if(firstcall=true){
     CreateRawData(tsteps, delta_t, xsteps, incx_spline);
+    firstcall=false;
+    }
     //Raw-data-file-input, create splines:
     
     int nt = boxnumber(t, delta_t, 0.);
