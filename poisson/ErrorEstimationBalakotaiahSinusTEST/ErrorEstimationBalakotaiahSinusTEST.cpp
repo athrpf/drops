@@ -1,5 +1,5 @@
 #include <iostream>
-//#include <fstream>
+#include <fstream>
 //#include <stdlib.h>
 //#include <string.h>
 //#include <sstream>
@@ -201,35 +201,51 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
 int main() {
 
 
-const double X=0.000025; 
-const double y=0.000025;
-double t1=1.e-3;
-double t2=t1+1.1e-5;  
+double newincx=0.01;
+double X; 
+const double y=0.005;
+double t1=4.e-3;
+double t2=t1+1.1e-5; 
 
 double Error;
+       
+std::string error_filename = "error.txt";
+std::ofstream errorfile;
+errorfile.precision(16);
+errorfile.open(error_filename.c_str());
 
+for(int k=0; k<20; k++){  
 
-HQUV t(X, t1);
-HQUV t_dt(X, t2);
+    X=newincx*static_cast<double>(k);
 
- std::cout << t.h0() << std::endl;
- std::cout << t.h1() << std::endl;
- std::cout << t.h2() << std::endl;
- std::cout << t.h3() << std::endl;
- std::cout << t.h4() << std::endl;
- std::cout << t.q0() << std::endl;
- std::cout << t.q1() << std::endl;
- std::cout << t.q2() << std::endl;
- std::cout << t.q3() << std::endl;
- std::cout << t.q4() << std::endl;
+    HQUV t(X, t1);
+    HQUV t_dt(X, t2);
 
-Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
-              t.U2_0(), t.U2_1(), t.U2_2(), t.U2_3(), t_dt.U2_0(),
-              t.V2_0(), t.V2_1(), t.V2_2(), t.V2_3(), t_dt.V2_0(), t_dt.V2_1(),
-              t.V3_0(), t.V3_1(), t.V3_2(), t.V3_3(), t_dt.V3_0(), t_dt.V3_1(),
-              t.h0(), t.h1(), t.h2(), t.h3(), y, t.get_Re(), t.get_We(), t.get_delta_t(), t.get_cotbeta());
+ //std::cout << t.h0() << std::endl;
+ //std::cout << t.h1() << std::endl;
+ //std::cout << t.h2() << std::endl;
+ //std::cout << t.h3() << std::endl;
+ //std::cout << t.h4() << std::endl;
+ //std::cout << t.q0() << std::endl;
+ //std::cout << t.q1() << std::endl;
+ //std::cout << t.q2() << std::endl;
+ //std::cout << t.q3() << std::endl;
+ //std::cout << t.q4() << std::endl;
+
+    Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
+                  t.U2_0(), t.U2_1(), t.U2_2(), t.U2_3(), t_dt.U2_0(),
+                  t.V2_0(), t.V2_1(), t.V2_2(), t.V2_3(), t_dt.V2_0(), t_dt.V2_1(),
+                  t.V3_0(), t.V3_1(), t.V3_2(), t.V3_3(), t_dt.V3_0(), t_dt.V3_1(),
+                  t.h0(), t.h1(), t.h2(), t.h3(), y, t.get_Re(), t.get_We(), t.get_delta_t(), t.get_cotbeta());
               
- std::cout << "Error in x-momentum-balance is: " << Error << std::endl;              
+            
+              
+    std::cout << "For k= " << k << "the error in x-momentum-balance is: " << Error << std::endl; 
+    errorfile << Error << std::endl;
+    
+}        
+
+errorfile.close();      
 
 return 0;
 }

@@ -240,14 +240,14 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
      double e = psurf_x(h0, h1, h2, h3, U1_0, U1_1, U1_2, U2_0, U2_1, U2_2, V2_1, V2_2, V3_1,  V3_2, R, W);
      return a + b + c + d + e;        
 }
-                              
+
 int main() {
 
 
 
-const double X=0.000025; 
-const double y=0.000025;
-double t1=1.e-3;
+const double X=0.008; 
+const double y=0.005;
+double t1=4.e-3;
 double t2=t1+1.1e-5; 
 
 double Error;
@@ -277,3 +277,5 @@ Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
 
 return 0;
 }
+                              
+
