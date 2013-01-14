@@ -33,8 +33,6 @@
        hfile.open(h_filename.c_str());
        qfile.open(q_filename.c_str());
        t_temp = static_cast<double>(i)*delta_t;
-       //cout.precision(12);
-       //cout.setf(ios::fixed);
        for(int k=0; k<xsteps; k++){
            x_temp = static_cast<double>(k)*incx_spline;
            hfile <<  sin(x_temp+t_temp) + 2. << std::endl;
