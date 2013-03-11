@@ -50,8 +50,9 @@ poissonP1:\
     ../misc/params.o \
     ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
     ../geom/bndVelFunctions.o\
-    $(PAR_OBJ)  $(CXX) $(CXXFLAGS)  -o $@ $^ $(LFLAGS) $(LIBS)
-
+    $(PAR_OBJ)
+	$(CXX) -o $@ $^ $(LFLAGS) $(LIBS)
+    
 poissonP2:\
     ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
@@ -82,4 +83,4 @@ matlab/clean:   cd matlab && $(MAKE) clean
 
 pydrops/clean:  cd pydrops && $(MAKE) clean
 
-check-syntax:   gcc -o nul -S ${CHK_SOURCES}
+check-syntax:       gcc -o nul -S ${CHK_SOURCES}
