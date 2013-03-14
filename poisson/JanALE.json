@@ -72,7 +72,7 @@
   "Time":
   {
     "StepSize":		0.001, 	      //time step size
-    "NumSteps":		2500, 	      //number of timesteps
+    "NumSteps":		2350, 	      //number of timesteps
     "Theta":		1.0,
     "Scheme":		1  	          //1= theta scheme, 2=fractional step
   },
