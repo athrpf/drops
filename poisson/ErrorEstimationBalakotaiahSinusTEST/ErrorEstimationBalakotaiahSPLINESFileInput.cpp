@@ -16,9 +16,11 @@ class HQUV{
 
 private:
 
-double Re; double We; double cotbeta; double x; double t; //double delta_t; 
+double Re; double We; double cotbeta; double x; double t; 
 
-double inct_spline; double incx_spline;
+double inct_spline; double incx_spline; int xsteps;//time-increment splines, spacial 
+        //increment of splines, #data-points in x-direction (depends on the size of the 
+        //files in the raw-data-folders ./hrawdata and ./qrawdata)
 
 double h; double h_x; double h_xx; double h_xxx; double h_xxxx;
 
@@ -26,16 +28,17 @@ double q; double q_x; double q_xx; double q_xxx; double q_xxxx;
 
 public:
 
-HQUV(double X, double T); //Konstruktor
+HQUV(double X, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA); //Konstruktor
 double get_Re(void) { return Re;}
 double get_We(void) { return We;}
 double get_cotbeta(void) { return cotbeta;}
 double get_x(void) { return x;}
-double get_t(void) { return t;}
-//double get_delta_t(void) { return delta_t;}
+double get_t(void) { return t;} 
+
 
 double get_inct_spline(void) { return inct_spline;}
 double get_incx_spline(void) { return incx_spline;}
+int get_xsteps(void) { return xsteps;}
 
 double h0(void) {return h;}
 double h1(void) {return h_x;}
@@ -56,11 +59,13 @@ double V2_0(void); double V2_1(void); double V2_2(void); double V2_3(void);
 double V3_0(void); double V3_1(void); double V3_2(void); double V3_3(void);
 };
 ///////////////////////Konstruktor definieren:
-HQUV::HQUV(double X, double T){
+HQUV::HQUV(double X, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA){
     
-    Re=1.; We=1.; cotbeta=0.; x=X; t=T; inct_spline=0.00001;incx_spline=0.000209; //delta_t=1.e-5; 
+    x=X; t=T;  
     
-    int tsteps=10000; int xsteps=1000; double incx_spline=0.000209; 
+    xsteps=XSTEPS; incx_spline=INCX; inct_spline=INCT; 
+    
+    Re=RE; We=WE; cotbeta=COTBETA;
     
     gsl_spline * hspline, * qspline; gsl_interp_accel * acc;
     
