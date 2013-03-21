@@ -285,53 +285,45 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
      return a + b + c + d + e;        
 }
                               
-int main() {
 
+double ErrorBalakotaiahHQSplines(double X, double Y, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA){
 
-double newincx=0.01;
-double X; 
-double dt=1.e-5;
-const double y=0.005;
-double t1=4.e-3;
-double t2=t1+dt; 
-
-double Error;
-       
-std::string error_filename = "errorspline.txt";
-std::ofstream errorfile;
-errorfile.precision(16);
-errorfile.open(error_filename.c_str());
-
-for(int k=0; k<20; k++){  
-
-    X=newincx*static_cast<double>(k);
-
-    HQUV t(X, t1);
-    HQUV t_dt(X, t2);
-
- //std::cout << t.h0() << std::endl;
- //std::cout << t.h1() << std::endl;
- //std::cout << t.h2() << std::endl;
- //std::cout << t.h3() << std::endl;
- //std::cout << t.h4() << std::endl;
- //std::cout << t.q0() << std::endl;
- //std::cout << t.q1() << std::endl;
- //std::cout << t.q2() << std::endl;
- //std::cout << t.q3() << std::endl;
- //std::cout << t.q4() << std::endl;
-
-    Error = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
+    double dt=1.e-5; //time-increment for temopral differentiation. Do not 
+    //HQUV::HQUV(double X, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA)
+    HQUV t(X, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
+    HQUV t_dt(X, T + dt, XSTEPS, INCX, INCT, RE, WE, COTBETA);
+    double retval; 
+   
+    retval = error(t.U1_0(), t.U1_1(), t.U1_2(), t.U1_3(), t_dt.U1_0(),
                   t.U2_0(), t.U2_1(), t.U2_2(), t.U2_3(), t_dt.U2_0(),
                   t.V2_0(), t.V2_1(), t.V2_2(), t.V2_3(), t_dt.V2_0(), t_dt.V2_1(),
                   t.V3_0(), t.V3_1(), t.V3_2(), t.V3_3(), t_dt.V3_0(), t_dt.V3_1(),
-                  t.h0(), t.h1(), t.h2(), t.h3(), y, t.get_Re(), t.get_We(),dt, t.get_cotbeta());
-              
-            
-              
-    std::cout << "For k= " << k << "the error in x-momentum-balance is: " << Error << std::endl; 
-    errorfile << Error << std::endl;
+                  t.h0(), t.h1(), t.h2(), t.h3(), Y, RE, WE,dt, COTBETA);
+                  
+    return retval;
+
+}
+
+
+int main() {   
+
+   
+    double errorBala;
+    std::string error_filename = "errorspline.txt";
+    std::ofstream errorfile;
+    errorfile.precision(16);
+    errorfile.open(error_filename.c_str());
+
+    for(int k=0; k<20; k++){  
+
+        X=newincx*static_cast<double>(k);
+        
+        errorBala=ErrorBalakotaiahHQSplines(X, Y, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
+
+        std::cout << "For k= " << k << "the error in x-momentum-balance is: " << errorBala << std::endl; 
+        errorfile << errorBala << std::endl;
     
-}        
+    }        
 
 errorfile.close();      
 
