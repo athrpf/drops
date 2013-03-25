@@ -326,20 +326,20 @@ int main() {
     
     int XSTEPS = 1000;
     double INCX=0.000209;
-    double INCT=1.e-3;
+    double INCT=1.e-5;
     double RE=1.; 
     double WE=1.; 
     double COTBETA=0.;
     
-    double newincx=0.05;
-    double newincy=0.8;
-    double newinct=0.01;
+    double newincx=0.001;
+    double newincy=0.2;
+    double newinct=0.001;
     
     int kmax=2;
-    int lmax=floor(XSTEPS*INCX/newincx);
+    int lmax=static_cast<int>(floor((XSTEPS-1.)*INCX/newincx));
     int mmax;
     
-    for(int k=0; k<=kmax; k++){
+    for(int k=1; k<=kmax; k++){
     
     
         std::string number = boost::lexical_cast<std::string>(k);
@@ -359,15 +359,15 @@ int main() {
         
         T=newinct*static_cast<double>(k);
         
-        for(int l=0; l<=lmax; l++){
+        for(int l=1; l<=lmax; l++){
         
             X=newincx*static_cast<double>(l);
             //Eigentlich redundant zum Aufruf der Klasse innerhalb ErrorBalakotaiahHQSplines weiter unten....:
             HQUV xt(X, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
             
-            mmax=floor(xt.h0()/newincy);
+            mmax=static_cast<int>(floor(xt.h0()/newincy));
 
-            for(int m=0; m<=mmax; m++){  
+            for(int m=1; m<=mmax; m++){  
 
                 Y=newincy*static_cast<double>(m);
         
