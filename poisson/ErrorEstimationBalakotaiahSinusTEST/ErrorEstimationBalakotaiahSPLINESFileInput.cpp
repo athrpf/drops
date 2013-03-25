@@ -288,7 +288,7 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
 
 double ErrorBalakotaiahHQSplines(double X, double Y, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA){
 
-    double dt=1.e-5; //time-increment for temopral differentiation. Do not mix it up with the time-increment of the raw data.
+    double dt=1.e-5; //time-increment for temporal differentiation. Do not mix it up with the time-increment of the raw data.
     //HQUV::HQUV(double X, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA)
     HQUV t(X, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
     HQUV t_dt(X, T + dt, XSTEPS, INCX, INCT, RE, WE, COTBETA);
@@ -300,43 +300,96 @@ double ErrorBalakotaiahHQSplines(double X, double Y, double T, int XSTEPS, doubl
                   t.V3_0(), t.V3_1(), t.V3_2(), t.V3_3(), t_dt.V3_0(), t_dt.V3_1(),
                   t.h0(), t.h1(), t.h2(), t.h3(), Y, RE, WE,dt, COTBETA);
                   
+    t.~HQUV();
+    t_dt.~HQUV();
+                  
     return retval;
 
 }
+
 
 
 int main() {   
 
    
     double errorBala;
-    std::string error_filename = "errorBalaspline.txt";
-    std::ofstream errorfile;
-    errorfile.precision(16);
-    errorfile.open(error_filename.c_str());
     
-    double newincx=0.01;
+    //std::string error_filename = "errorBalaspline.txt";
+    //std::ofstream errorfile;
+    //errorfile.precision(16);
+    //errorfile.open(error_filename.c_str());
+    
+  
     double X;
-    const double Y = 0.005;
-    double T=4.e-3;
+    double Y;
+    double T;
+    
     int XSTEPS = 1000;
     double INCX=0.000209;
     double INCT=1.e-5;
     double RE=1.; 
     double WE=1.; 
     double COTBETA=0.;
-
-    for(int k=0; k<20; k++){  
-
-        X=newincx*static_cast<double>(k);
+    
+    double newincx=0.01;
+    double newincy=0.01;
+    double newinct=0.001;
+    
+    int kmax=10;
+    int lmax=floor(XSTEPS*INCX/newincx);
+    int mmax;
+    
+    for(int k=0; k<=kmax; k++){
+    
+    
+        std::string number = boost::lexical_cast<std::string>(k);
+        std::string x_filename = "./ErrorBalaSpline/" + number + "x.txt";
+        std::string y_filename = "./ErrorBalaSpline/" + number + "y.txt";
+        std::string e_filename = "./ErrorBalaSpline/" + number + "e.txt";
+        std::ofstream xfile;
+        std::ofstream yfile;
+        std::ofstream efile;
+        xfile.precision(16);
+        yfile.precision(16);
+        efile.precision(16);
         
-        errorBala=ErrorBalakotaiahHQSplines(X, Y, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
+        xfile.open(x_filename.c_str());
+        yfile.open(y_filename.c_str());
+        efile.open(e_filename.c_str());
+        
+        T=newinct*static_cast<double>(k);
+        
+        for(int l=0; l<=lmax; k++){
+        
+            X=newincx*static_cast<double>(l);
+            //Eigentlich redundant zum Aufruf der Klasse innerhalb ErrorBalakotaiahHQSplines weiter unten....:
+            HQUV xt(X, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
+            
+            mmax=floor(xt.h0/newincy);
 
-        std::cout << "For k= " << k << "the error in x-momentum-balance is: " << errorBala << std::endl; 
-        errorfile << errorBala << std::endl;
+            for(int m=0; m<=mmax; k++){  
+
+                Y=newincy*static_cast<double>(m);
+        
+                errorBala=ErrorBalakotaiahHQSplines(X, Y, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
+                
+                xfile << X << std::endl;
+                yfile << Y << std::endl;
+                efile << errorBala << std::endl;
+                
+            }
+            
+            //DESTRUKTOR!!!!
+            xt.~HQUV();
+
+        }
+    
+        xfile.close();
+        yfile.close();
+        efile.close(); 
     
     }        
 
-errorfile.close();      
-
 return 0;
+
 }
