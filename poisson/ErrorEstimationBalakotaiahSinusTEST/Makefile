@@ -1,6 +1,6 @@
 CXX_FLAGS=-g -O0
 LIBS += -lgsl -lgslcblas -lm
-all: errorsplines errorOutputInput errorsplinesFileInput error fileout errorBalaTEST
+all: errorsplines errorOutputInput errorsplinesFileInput error fileout errorBalaTEST errorBala
 	
 errorsplines: ErrorEstimationBalakotaiahSinusTESTSPLINESsimple.cpp 
 	g++ ${CXX_FLAGS} -o errorsplines ErrorEstimationBalakotaiahSinusTESTSPLINESsimple.cpp -lgsl -lgslcblas -lm
@@ -21,3 +21,6 @@ fileout: enumerated_file_output_test.cpp
 	
 errorBalaTEST: ErrorEstimationBalakotaiahSPLINESFileInputTEST.cpp 
 	g++ ${CXX_FLAGS} -o errorBalaTEST ErrorEstimationBalakotaiahSPLINESFileInputTEST.cpp -lgsl -lgslcblas -lm
+	
+errorBala: ErrorEstimationBalakotaiahSPLINESFileInput.cpp 
+	g++ ${CXX_FLAGS} -o errorBala ErrorEstimationBalakotaiahSPLINESFileInput.cpp -lgsl -lgslcblas -lm
