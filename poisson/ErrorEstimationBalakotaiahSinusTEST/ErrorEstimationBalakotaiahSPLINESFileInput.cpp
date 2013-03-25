@@ -326,7 +326,7 @@ int main() {
     
     int XSTEPS = 1000;
     double INCX=0.000209;
-    double INCT=1.e-5;
+    double INCT=1.e-3;
     double RE=1.; 
     double WE=1.; 
     double COTBETA=0.;
@@ -336,7 +336,7 @@ int main() {
     double newinct=0.001;
     
     int kmax=2;
-    int lmax=static_cast<int>(floor((XSTEPS-1.)*INCX/newincx));
+    int lmax=static_cast<int>(floor((static_cast<double>(XSTEPS)-1.)*INCX/newincx));
     int mmax;
     
     for(int k=1; k<=kmax; k++){
