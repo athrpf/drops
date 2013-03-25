@@ -104,16 +104,12 @@ HQUV::HQUV(double X, double T){
     double * h_raw = new double[xsteps];
     double * q_raw = new double[xsteps];
      
-    //Raw-data-file-output:
-    if(firstcall=true){
-    CreateRawData(tsteps, delta_t, xsteps, incx_spline);
-    firstcall=false;
-    }
+    
     //Raw-data-file-input, create splines:
     
     int nt = boxnumber(t, delta_t, 0.);
     double curr_h; double curr_q;
-    //for(int i=0; i<tsteps; i++){
+    
        std::string number = boost::lexical_cast<std::string>(nt);
        std::string h_filename = "./hrawdata/h" + number + ".txt";
        std::string q_filename = "./qrawdata/q" + number + ".txt";
@@ -140,13 +136,9 @@ HQUV::HQUV(double X, double T){
        qspline = gsl_spline_alloc(gsl_interp_cspline, xsteps);
        gsl_spline_init(qspline, xd, q_raw, xsteps);
        
-   //}
-          
     delete[] h_raw;
     delete[] q_raw;
     delete[] xd;
-  
-    //int nt = boxnumber(t, delta_t, 0.);
    
     double dx = incx_spline/(6.);
     
@@ -303,6 +295,12 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
 int main() {
 
 
+//As in constructor:
+//int tsteps=10000; int xsteps=1000; double incx_spline=0.000209; 
+//delta_t=1.e-5;(private...)
+//CreateRawData(tsteps, delta_t, xsteps, incx_spline);
+CreateRawData(10000, 1.e-5, 1000, 0.000209);//Raw-data-file-output
+  
 double newincx=0.01;
 double X; 
 const double y=0.005;
@@ -311,7 +309,7 @@ double t2=t1+1.1e-5;
 
 double Error;
        
-std::string error_filename = "errorspline.txt";
+std::string error_filename = "errorsplineFAST.txt";
 std::ofstream errorfile;
 errorfile.precision(16);
 errorfile.open(error_filename.c_str());
