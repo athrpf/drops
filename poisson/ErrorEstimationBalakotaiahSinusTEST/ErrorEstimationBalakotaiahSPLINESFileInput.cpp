@@ -326,16 +326,16 @@ int main() {
     
     int XSTEPS = 1000;
     double INCX=0.000209;
-    double INCT=1.e-5;
+    double INCT=1.e-3;
     double RE=1.; 
     double WE=1.; 
     double COTBETA=0.;
     
-    double newincx=0.01;
-    double newincy=0.01;
-    double newinct=0.001;
+    double newincx=0.05;
+    double newincy=0.8;
+    double newinct=0.01;
     
-    int kmax=10;
+    int kmax=2;
     int lmax=floor(XSTEPS*INCX/newincx);
     int mmax;
     
@@ -359,15 +359,15 @@ int main() {
         
         T=newinct*static_cast<double>(k);
         
-        for(int l=0; l<=lmax; k++){
+        for(int l=0; l<=lmax; l++){
         
             X=newincx*static_cast<double>(l);
             //Eigentlich redundant zum Aufruf der Klasse innerhalb ErrorBalakotaiahHQSplines weiter unten....:
             HQUV xt(X, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
             
-            mmax=floor(xt.h0/newincy);
+            mmax=floor(xt.h0()/newincy);
 
-            for(int m=0; m<=mmax; k++){  
+            for(int m=0; m<=mmax; m++){  
 
                 Y=newincy*static_cast<double>(m);
         
