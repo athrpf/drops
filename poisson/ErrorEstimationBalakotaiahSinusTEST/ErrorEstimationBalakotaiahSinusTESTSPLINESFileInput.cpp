@@ -43,7 +43,6 @@
   }
      
   
-bool firstcall=true;
 
 class HQUV{
 
