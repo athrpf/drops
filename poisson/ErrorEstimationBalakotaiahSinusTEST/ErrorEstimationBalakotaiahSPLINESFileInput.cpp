@@ -288,7 +288,7 @@ double error(double U1_0, double U1_1, double U1_2, double U1_3, double dtU1_0,
 
 double ErrorBalakotaiahHQSplines(double X, double Y, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA){
 
-    double dt=1.e-5; //time-increment for temopral differentiation. Do not 
+    double dt=1.e-5; //time-increment for temopral differentiation. Do not mix it up with the time-increment of the raw data.
     //HQUV::HQUV(double X, double T, int XSTEPS, double INCX, double INCT, double RE, double WE, double COTBETA)
     HQUV t(X, T, XSTEPS, INCX, INCT, RE, WE, COTBETA);
     HQUV t_dt(X, T + dt, XSTEPS, INCX, INCT, RE, WE, COTBETA);
@@ -309,10 +309,21 @@ int main() {
 
    
     double errorBala;
-    std::string error_filename = "errorspline.txt";
+    std::string error_filename = "errorBalaspline.txt";
     std::ofstream errorfile;
     errorfile.precision(16);
     errorfile.open(error_filename.c_str());
+    
+    double newincx=0.01;
+    double X;
+    const double Y = 0.005;
+    double T=4.e-3;
+    int XSTEPS = 1000;
+    double INCX=0.000209;
+    double INCT=1.e-5;
+    double RE=1.; 
+    double WE=1.; 
+    double COTBETA=0.;
 
     for(int k=0; k<20; k++){  
 
