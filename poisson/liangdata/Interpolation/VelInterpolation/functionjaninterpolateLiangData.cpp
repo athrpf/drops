@@ -10,8 +10,6 @@
 double VelInterpolLiangData(double x, double y, double t, double* u){
 
   double L;//lenght of reference-domain
-  //double W;//height of reference-domain
-  //W=(pd.NY-1)*pd.deltaY;//height of reference domain
   L=(pd.NX-1)*pd.deltaX;//lenght of reference domain
 
   double p1=phase(x,t,pd.c);//phase
