@@ -42,7 +42,7 @@ namespace Jan {
     void setup()
     {
       level = new double[pd.NX];
-      std::string height_filename = "./liangdata/Interpolation/DataForPoissonCoeff/Bala/height.dat";
+      std::string height_filename = "./liangdata/Interpolation/DataForPoissonCoeff/Bala/bala_height.dat";
       std::ifstream heightfile;
       heightfile.open(height_filename.c_str(), std::fstream::in);
       double curr_h;
@@ -65,7 +65,7 @@ namespace Jan {
       int NumCoords = pd.NX*pd.NY;
       u = new double[NumCoords];
       v = new double[NumCoords];
-      std::string velocity_filename = "./liangdata/Interpolation/DataForPoissonCoeff/Bala/velocity.dat";
+      std::string velocity_filename = "./liangdata/Interpolation/DataForPoissonCoeff/Bala/bala_velocity.dat";
       std::ifstream ufile;
       ufile.open(velocity_filename.c_str(), std::fstream::in);
       double curr_u, curr_v;

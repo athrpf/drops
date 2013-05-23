@@ -1,0 +1,122 @@
+{
+  //#################################
+  //=============================================================
+  //    DROPS parameter file for ipfilm.cpp
+  //    simulation of poisson problem
+  //=============================================================
+  //poisson solver
+  "Poisson":
+  {
+    "PcIter":		    1,
+    "PcTol":		    0.1,
+    "Iter":		        1000,
+    "Restart":		    50, 	 //only valid when using GMRES
+    "RelativeErr":      1, 	 //only valid when using GMRES,1 = true, 0 = false
+    "Tol":		        1e-8,
+    "Method":		    303,
+    "SmoothingSteps":   1,
+    "NumLvl":		    -1,
+    "Relax":		    1,
+    "SolutionIsKnown":	0 	 //1 = true, 0 = false
+  },
+
+  // domain, bnd/ini conditions
+  "DomainCond":
+  {
+    "RefineSteps":		0, 	 //initial refinement
+    "GeomType":		    1, 	 //specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder, 2=CavityBuilder, 3=LBuilder, 4=BBuilder)
+    "InitialFile":		"none", 	 //file prefix when reading data for initial condition
+    "MeshFile":		    "0.0418x0.000209x0.000627@2000x10x3", 	 //mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+    "BoundaryType":		"2!21!21!2!21!21", 	 //Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99
+    "BoundaryFncs":		"JanALE_InitialVal!Zero!Zero!JanALE_Surface!Zero!Zero"
+  },
+
+  "PoissonCoeff":
+  {
+    "Diffusion":		"JanALE_Diffusion",
+    "Reaction":		    "Zero",
+    "Solution":		    "Zero",
+    "Source":	 	    "Zero",
+    "Flowfield":		"JanALE_Velocity",
+    "InitialVal":		"JanALE_InitialVal",
+    "Convection":       1
+  },
+  
+  "JanOptions":
+  {
+    "Einlauf": 0.1,
+    "cInitial": 1e-5,
+    "cSurface": 1e-3,
+    "cInlet": 1e-5
+  },
+
+  "FullDNS":
+  {
+      "Dmol": 2e-9
+  },
+
+    "Stabilization":
+    {
+        "SUPG":              1,
+        "Magnitude":         1.0,
+        "Grids":             1
+    },
+
+  "ALE":
+  {
+          "wavy":		1,                          //true =1; false =0;
+     "Interface":		"JanALE_Interface"
+  },
+
+  // time stepping
+  "Time":
+  {
+    "StepSize":		0.01, 	      //time step size
+    "NumSteps":		235, 	      //number of timesteps
+    "Theta":		1.0,
+    "Scheme":		1  	          //1= theta scheme, 2=fractional step
+  },
+
+  // experimental conditions
+  "Exp":
+  {
+    "Heat":		5960,
+    "Rho":		998,
+    "Mu":		1.00412,
+    "Cp":		1500,
+    "Lambda":	0.26
+  },
+
+  // Ensight settings
+  "Ensight":
+  {
+    "EnsightOut":		0, 	             //Ensight output
+    "EnsCase":		    "FilmTemp", 	 //name of Ensight Case
+    "EnsDir":		    "ensight", 	     //local directory for Ensight files
+    "GeomName":		    "test", 	     //name for the geometry
+    "MasterOut":		1, 	             //only master writes out ensight files
+    "Binary":		    1 	             //write out ensight files in binary format
+  },
+
+  // Error estimator
+  "Err":
+  {
+    "RelReduction":		0.1,
+    "MinRatio":		      0,
+    "Threshold":		0.6,
+    "Meas":		      0.875,
+    "DoMark":		      0, 	 //1 = true, 0 = false
+    "DoErrorEstimate":	  0, 	 //1 = true, 0 = false
+    "NumRef":		      6
+  },
+
+  //VTK output
+  "VTK":
+  {
+    "VTKOut":		1, 	 //VTK output
+    "VTKDir":		"vtkBala", 	 //local directory for vtk files
+    "VTKName":		"JanALEBala", 	 //name of vtk files
+    "Binary":		0 	 //write out VTK files in binary format
+  }
+
+}
