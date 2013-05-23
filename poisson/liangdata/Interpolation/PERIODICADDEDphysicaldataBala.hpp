@@ -12,7 +12,7 @@ struct PhysicalDataBala {
   int NX;//#gridpoints x-direction
 
   PhysicalDataBala() 
-      : c(0.385), deltaX(0.000110849885544), deltaY(2.10314439544e-06), NY(100), NX(301) 
+      : c(0.08), deltaX(0.000110849885544), deltaY(2.10314439544e-06), NY(100), NX(301) 
   {}
   
 };
