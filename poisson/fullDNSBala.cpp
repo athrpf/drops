@@ -6,9 +6,9 @@
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_errno.h>
 
-#include "./liangdata/Interpolation/PERIODICADDEDphysicaldata.hpp"
-static PhysicalDataBala pd;
 
+#include "./liangdata/Interpolation/PERIODICADDEDphysicaldata.hpp"
+static PhysicalData pd;
 #include "./liangdata/Interpolation/boxinterpLiangData.cpp"
 
 // #include "./liangdata/Interpolation/HeightInterpolation/createlevelLiang.hpp"
@@ -29,7 +29,6 @@ extern DROPS::ParamCL P;
 
 namespace Jan {
 
-
     static bool first_call = true;
     static double* u;
     static double* v;
@@ -41,6 +40,11 @@ namespace Jan {
     
     void setup()
     {
+      pd.NX = P.get<int>("PhysicalData.nx");
+      pd.NY = P.get<int>("PhysicalData.ny");
+      pd.deltaX = P.get<double>("PhysicalData.dx");
+      pd.deltaY = P.get<double>("PhysicalData.dy");
+      pd.c = P.get<double>("PhysicalData.PhaseVelocity");
       level = new double[pd.NX];
       std::string height_filename = "./liangdata/Interpolation/DataForPoissonCoeff/Bala/bala_height.dat";
       std::ifstream heightfile;
@@ -54,7 +58,7 @@ namespace Jan {
       double * xd = new double[pd.NX];
       for(int i=0; i<pd.NX; i++)
       {
-            xd[i]=static_cast<double>(i)*pd.deltaX;
+            xd[i] = i*pd.deltaX;
       }
       //Create spline:
       acc = gsl_interp_accel_alloc();
@@ -75,7 +79,7 @@ namespace Jan {
          u[k] = curr_u;
          v[k] = curr_v;
       }
-       first_call = false;
+      first_call = false;
     }
 #include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangDataSPLINES.cpp"
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,18 +88,9 @@ namespace Jan {
       if (first_call)
         setup();
 
-        //Cubic interpolation of the height-profile via the previously created splines of the reference-height-profile:
-        double retval = HeightInterpolLiangData(p[0],t, acc, heightspline);
-        return retval;
-    }
-
-    DROPS::Point3DCL TransBack(const DROPS::Point3DCL &p, double t){
-
-        DROPS::Point3DCL ref(0.);
-        ref[0] = p[0];
-        ref[1] = 0.2 * p[1]/Interface(p, t);
-        ref[2] = p[2];
-        return ref;
+      //Cubic interpolation of the height-profile via the previously created splines of the reference-height-profile:
+      double retval = HeightInterpolLiangData(p[0],t, acc, heightspline);
+      return retval;
     }
 
     //Periodic flowfield translates with a constant phase-velocity in x-direction
@@ -106,7 +101,7 @@ namespace Jan {
         DROPS::Point3DCL ret;
         ret[0]=VelInterpolLiangData(p[0],p[1],t, u);
         ret[1]=VelInterpolLiangData(p[0],p[1],t, v);
-        ret[2]=0. //VelInterpolLiangData(p[0],p[1],t, w);
+        ret[2]=0.; //VelInterpolLiangData(p[0],p[1],t, w);
         return ret;
     }
 

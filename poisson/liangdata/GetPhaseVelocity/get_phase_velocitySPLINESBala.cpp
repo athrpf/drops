@@ -15,7 +15,7 @@ static PhysicalDataBala pd;
     static bool first_call = true;
     static double* u;
     static double* v;
-    static double* level;
+    static double* h;
     static gsl_interp_accel * acc;
     static gsl_spline * heightspline;
     
@@ -27,25 +27,23 @@ static PhysicalDataBala pd;
     
     void setup()
     {
-      level = new double[pd.NX];
+      h = new double[pd.NX];
       std::string height_filename = "../Interpolation/DataForPoissonCoeff/Bala/bala_height.dat";
       std::ifstream heightfile;
       heightfile.open(height_filename.c_str(), std::fstream::in);
       double curr_h;
-      for (int k=0; k<pd.NX; k++)
-      {
+      for (int k=0; k<pd.NX; k++) {
          heightfile >> curr_h;
-         level[k] = curr_h;
+         h[k] = curr_h;
       }
-      double * xd = new double[pd.NX];
-      for(int i=0; i<pd.NX; i++)
-      {
-            xd[i]=static_cast<double>(i)*pd.deltaX;
+      std::vector<double> xd(pd.NX);
+      for(int i=0; i<pd.NX; i++) {
+         xd[i]=i*pd.deltaX;
       }
       //Create spline:
       acc = gsl_interp_accel_alloc();
       heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
-      gsl_spline_init(heightspline, xd, level, pd.NX);
+      gsl_spline_init(heightspline, &xd[0], h, pd.NX);
       
       // read data of the velocity-field:
       int NumCoords = pd.NX*pd.NY;
@@ -55,21 +53,20 @@ static PhysicalDataBala pd;
       std::ifstream ufile;
       ufile.open(velocity_filename.c_str(), std::fstream::in);
       double curr_u, curr_v;
-      for (int k=0; k<NumCoords; k++)
-      {
+      for (int k=0; k<NumCoords; k++) {
          ufile >> curr_u >> curr_v;
          u[k] = curr_u;
          v[k] = curr_v;
       }
-       first_call = false;
+      first_call = false;
     }
 
     double RefInterface( double x){
       if (first_call)
         setup();
 
-        double retval = HeightInterpolLiangData(x,0, acc, heightspline);
-        return retval;
+      double retval = HeightInterpolLiangData(x,0, acc, heightspline);
+      return retval;
     }
 
     double RefVelU( double x, double y){

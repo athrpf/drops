@@ -41,7 +41,7 @@ ipdropsAD: \
 poissonP1:\
     ../poisson/poissonCoeff.o \
     ../poisson/balakotaiah.o \
-    ../poisson/fullDNS.o \
+    ../poisson/fullDNSBala.o \
     ../poisson/ale.o \
     ../poisson/poissonP1.o ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \

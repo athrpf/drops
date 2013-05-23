@@ -117,6 +117,14 @@
     "VTKDir":		"vtkBala", 	 //local directory for vtk files
     "VTKName":		"JanALEBala", 	 //name of vtk files
     "Binary":		0 	 //write out VTK files in binary format
-  }
+  },
 
+  "PhysicalData":
+  {
+    "nx": 301,
+    "ny": 100,
+    "dx": 0.001,
+    "dy": 0.0001,
+    "PhaseVelocity": 0.01
+  }
 }
