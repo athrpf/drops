@@ -3,7 +3,7 @@
 #include "periodicdata.hpp"
 #include "heightinterpolate.hpp"
 
-double get_equivalent_phase(double x, double t, const Periodicdata& pd)
+double get_equivalent_phase(double x, double t, const PeriodicData& pd)
 {
   double L = (pd.NX-1)*pd.deltaX; // lenght of reference domain
   double p1 = phase(x,t,pd.c); // Phase
@@ -13,7 +13,7 @@ double get_equivalent_phase(double x, double t, const Periodicdata& pd)
 
 double phaseinterpolate(double x, double t, double* h, const PeriodicData& pd)
 {
-  p2 = get_equivalent_phase(x, t, pd);
+  double p2 = get_equivalent_phase(x, t, pd);
   int nX = boxnumber(p2,pd.deltaX,0); // Find the relevant boxnumber for p2
   if(nX==pd.NX) nX=(nX-1); // we sit directly on the last grid point - step back
   double x0 = (nX-1)*pd.deltaX;
@@ -22,6 +22,6 @@ double phaseinterpolate(double x, double t, double* h, const PeriodicData& pd)
 
 double phaseinterpolate(double x, double t, gsl_interp_accel * acc, gsl_spline * heightspline, const PeriodicData& pd)
 {
-  p2 = get_equivalent_phase(x, t, pd);
+  double p2 = get_equivalent_phase(x, t, pd);
   return gsl_spline_eval(heightspline, p2, acc);
 }
