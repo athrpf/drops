@@ -7,21 +7,14 @@
 #include <gsl/gsl_errno.h>
 
 
-#include "./liangdata/Interpolation/PERIODICADDEDphysicaldata.hpp"
-static PhysicalData pd;
-#include "./liangdata/Interpolation/boxinterpLiangData.cpp"
+#include "interpolation/periodicdata.hpp"
+PeriodicData pd;
+#include "interpolation/boxinterp.hpp"
 
-// #include "./liangdata/Interpolation/HeightInterpolation/createlevelLiang.hpp"
-#include "./liangdata/Interpolation/HeightInterpolation/createlevelLiang.cpp"
-
-// #include "./liangdata/Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.hpp"
-#include "./liangdata/Interpolation/HeightInterpolation/DiscreteLevelSetToDiscreteHeight.cpp"
-
-// #include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.hpp"
-//#include "./liangdata/Interpolation/HeightInterpolation/heightinterpolateLiangData.cpp"
-
-// #include "./liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.hpp"
-#include "./liangdata/Interpolation/VelInterpolation/functionjaninterpolateLiangData.cpp"
+#include "interpolation/createlevelset.hpp"
+#include "interpolation/levelsettoheight.hpp"
+#include "interpolation/heightinterpolate.hpp"
+#include "interpolation/velocityinterpolation.hpp"
 
 #include "poissonCoeff.h"
 
@@ -37,7 +30,7 @@ namespace Jan {
     static double Dmol;
     static gsl_spline * heightspline;
     static gsl_interp_accel * acc;
-    
+
     void setup()
     {
       pd.NX = P.get<int>("PhysicalData.nx");
@@ -64,7 +57,7 @@ namespace Jan {
       acc = gsl_interp_accel_alloc();
       heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
       gsl_spline_init(heightspline, xd, level, pd.NX);
-      
+
       // read data of the velocity-field:
       int NumCoords = pd.NX*pd.NY;
       u = new double[NumCoords];
@@ -109,7 +102,7 @@ namespace Jan {
     double Source(const DROPS::Point3DCL&, double){
         return 0.0;
     }
-    
+
     double InitialValue(const DROPS::Point3DCL&, double){
         return P.get<double>("JanOptions.cInitial");
     }
@@ -151,4 +144,3 @@ namespace Jan {
     static DROPS::RegisterScalarFunction regscas("JanALE_Solution",     DROPS::instat_scalar_fun_ptr(Solution)     );
     static DROPS::RegisterScalarFunction regscai("JanALE_InitialVal",   DROPS::instat_scalar_fun_ptr(InitialValue) );
 }//end of namespace
-

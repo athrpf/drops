@@ -46,4 +46,3 @@ include ${DROPS_ROOT}/drops.conf
 
 # include global dependencies
 -include ${DROPS_ROOT}/$(DEPFILE)
-

@@ -1,8 +1,8 @@
-//#include "../PERIODICADDEDphysicaldata.hpp"
-//#include <fstream>
-//#include <sstream>
-//#include "createlevelLiang.hpp"
-// static PhysicalData pd;
+#include "periodicdata.hpp"
+#include <fstream>
+#include <sstream>
+#include "createlevelset.hpp"
+extern PeriodicData pd;
 
  double* createlevelLiang() {
 
@@ -12,7 +12,7 @@
   int NumCoordsLiang = (pd.NX-1)*pd.NY;
   levelLiang = new double[NumCoordsLiang];
 
-  //Please mind: The following relative path to the source-data "LevelSetLiangData.txt" referrs to the 
+  //Please mind: The following relative path to the source-data "LevelSetLiangData.txt" referrs to the
   //directory where fullDNS.cpp is located.
   std::string level_filename = "./liangdata/Interpolation/DataForPoissonCoeff/LevelSetLiangData.txt";
   std::ifstream levelfile;
@@ -22,19 +22,11 @@
     levelfile >> curr_level;
     levelLiang[k] = curr_level;
   }
-  
 
-  
+
+
 
 return levelLiang;
 
 
 }
-
-
-
-
- 
- 
- 
- 

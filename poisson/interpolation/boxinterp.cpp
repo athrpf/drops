@@ -1,8 +1,8 @@
 // Jan Becker
 // 2012-06-19
 
-//#include <math.h>
-//#include "boxinterpLiangData.hpp"
+#include <math.h>
+#include "boxinterp.hpp"
 
 //Enumerate the squares (needed for the bilinear interpolation) in x- resp. in y-direction
 int boxnumber(double x, double delta, double offset)
@@ -16,9 +16,9 @@ int boxnumber(double x, double delta, double offset)
   //Calculate a phase-value within [0,L], that is equivalent to the original one.
     double phaseModuloWavelenghtLiangData(double phi, double L)
   {
-     
+
     double pL=phi - floor(phi/L + 1.e-14)*L;
-   if(phi > - 1.e-15 && phi <  1.e-15) return 0; 
+   if(phi > - 1.e-15 && phi <  1.e-15) return 0;
    else if(pL > - 1.e-15 && pL  < 1.e-15 ) return L;
    else return pL;
   }
@@ -41,5 +41,3 @@ double BilinearInterpol(double UQ11, double UQ21, double UQ12, double UQ22, doub
 
   return UXY;
 }
-
-
