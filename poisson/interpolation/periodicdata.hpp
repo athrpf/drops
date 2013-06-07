@@ -14,8 +14,8 @@ struct PeriodicData {
   double c; //phase-velocity
   double deltaX;//increment x-direction
   double deltaY;//increment y-direction
-  int NY;//#gridpoints y-direction
-  int NX;//#gridpoints x-direction
+  int NY;//#gridpoints y-direction = Nintervals + 1
+  int NX;//#gridpoints x-direction = Nintervals + 1
 
   PeriodicData()
       : c(0.385), deltaX(0.000209), deltaY(0.0001), NY(41), NX(102)

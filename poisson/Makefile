@@ -8,7 +8,7 @@ DROPS_ROOT = ..
 
 DIR = poisson
 
-EXEC = poissonP2 poissonP1
+EXEC = balapoissonP1
 
 DELETE = $(EXEC)
 
@@ -50,18 +50,18 @@ balapoissonP1: ../poisson/interpolation/boxinterp.o\
 	../poisson/interpolation/heightinterpolate.o\
 	../poisson/interpolation/levelsettoheight.o\
 	../poisson/interpolation/velocityinterpolation.o\
-    ../poisson/poissonCoeff.o \
-    ../poisson/balakotaiah.o \
-    ../poisson/fullDNSBala.o \
-    ../poisson/ale.o \
-    ../poisson/poissonP1.o ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
-    ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
-    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
-    ../misc/params.o \
-    ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
-    ../geom/bndVelFunctions.o\
-    $(PAR_OBJ)
+	../poisson/poissonCoeff.o \
+	../poisson/balakotaiah.o \
+	../poisson/fullDNSBala.o \
+	../poisson/ale.o \
+	../poisson/poissonP1.o ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
+	../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+	../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
+	../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
+	../misc/params.o \
+	../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
+	../geom/bndVelFunctions.o\
+	$(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS) $(LIBS)
 
 DNSpoissonP1:\
