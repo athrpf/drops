@@ -1,23 +1,17 @@
 #include <cmath>
-#include <math.h>
 #include <fstream>
 #include <sstream>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_errno.h>
 
-
 #include "interpolation/boxinterp.hpp"
 #include "interpolation/periodicdata.hpp"
-PeriodicData pd;
-
-#include "interpolation/createlevelset.hpp"
-#include "interpolation/levelsettoheight.hpp"
 #include "interpolation/heightinterpolate.hpp"
-
 #include "poissonCoeff.h"
 
 extern DROPS::ParamCL P;
+PeriodicData pd;
 
 namespace PeriodicALE {
 
