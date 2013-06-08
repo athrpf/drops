@@ -4,7 +4,7 @@
 #include "createlevelset.hpp"
 extern PeriodicData pd;
 
- double* createlevelLiang() {
+double* createlevelLiang() {
 
   double* levelLiang; //[4141]
 
@@ -22,11 +22,5 @@ extern PeriodicData pd;
     levelfile >> curr_level;
     levelLiang[k] = curr_level;
   }
-
-
-
-
-return levelLiang;
-
-
+  return levelLiang;
 }

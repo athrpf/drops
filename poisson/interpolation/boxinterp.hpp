@@ -1,4 +1,4 @@
-// Jan Becker
+// Jan Becker, AVT.PT, RWTH Aachen University
 // 2012-06-19
 
 #pragma once

@@ -42,6 +42,17 @@
 	"Convection":       1
     },
 
+    "PeriodicData":
+    {
+	"nx": 101,
+	"ny": 21,
+	"dx": 0.001,
+	"dy": 0.001,
+	"PhaseVelocity": 0.3,
+	"HeightFileName": "Data/balaheight.dat",
+	"VelocityFileName": "Data/velocity.dat"
+    }
+
     "BoundaryConcentration":
     {
 	"Einlauf": 0.1,
