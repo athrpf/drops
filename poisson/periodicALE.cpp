@@ -7,7 +7,7 @@
 
 #include "interpolation/boxinterp.hpp"
 #include "interpolation/periodicdata.hpp"
-#include "interpolation/heightinterpolate.hpp"
+#include "interpolation/phaseinterpolate.hpp"
 #include "poissonCoeff.h"
 
 extern DROPS::ParamCL P;

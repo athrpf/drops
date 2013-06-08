@@ -1,7 +1,7 @@
 #include <cmath>
 #include "boxinterp.hpp"
 #include "periodicdata.hpp"
-#include "heightinterpolate.hpp"
+#include "phaseinterpolate.hpp"
 
 double get_equivalent_phase(double x, double t, const PeriodicData& pd)
 {
