@@ -18,7 +18,6 @@ namespace PeriodicALE {
   static bool first_call = true;
   static double* u;
   static double* v;
-  static double* level;
 
   static double Dmol;
   static gsl_spline * heightspline;
@@ -31,22 +30,34 @@ namespace PeriodicALE {
     pd.deltaX = P.get<double>("PeriodicData.dx");
     pd.deltaY = P.get<double>("PeriodicData.dy");
     pd.c = P.get<double>("PeriodicData.PhaseVelocity");
-    std::string height_filename = P.get<std::string>("PeriodicData.HeighFileName"); // ./liangdata/Interpolation/DataForPoissonCoeff/Bala/bala_height.dat";
-    std::string velocity_filename = P.get<std::string>("PeriodicData.VelocityFileName"); // "./liangdata/Interpolation/DataForPoissonCoeff/Bala/bala_velocity.dat";
+    std::string height_filename = P.get<std::string>("PeriodicData.HeightFileName");
+    std::string velocity_filename = P.get<std::string>("PeriodicData.VelocityFileName");
 
-    level = new double[pd.NX];
+    int max_hfile_size = 10012;
+    double* height = new double[max_hfile_size];
+    double * xd = new double[max_hfile_size];
     std::ifstream heightfile;
     heightfile.open(height_filename.c_str(), std::fstream::in);
-    for (int k=0; k<pd.NX; k++)
-      heightfile >> level[k];
+    if (!heightfile.good()) {
+      std::cerr << "could not find height profile file " << height_filename << ", exiting.\n";
+      exit(1);
+    }
+    double tmp;
+    int nxh = 0;
+    while (heightfile >> tmp && nxh < max_hfile_size) {
+      xd[nxh] = tmp;
+      heightfile >> height[nxh];
+      nxh++;
+    }
+    if (nxh == max_hfile_size) {
+      std::cerr << "I didn't expect the height representation to have more than " << max_hfile_size << " points... Exiting.\n";
+      exit(1);
+    }
 
     // Create spline:
-    double * xd = new double[pd.NX];
-    for(int i=0; i<pd.NX; i++)
-      xd[i] = i*pd.deltaX;
     acc = gsl_interp_accel_alloc();
-    heightspline = gsl_spline_alloc(gsl_interp_cspline, pd.NX);
-    gsl_spline_init(heightspline, xd, level, pd.NX);
+    heightspline = gsl_spline_alloc(gsl_interp_cspline, nxh);
+    gsl_spline_init(heightspline, xd, height, nxh);
 
     // read data of the velocity-field:
     int NumCoords = pd.NX*pd.NY;
