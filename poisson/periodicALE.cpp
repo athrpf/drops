@@ -110,7 +110,7 @@ namespace PeriodicALE {
 
   double Diffusion(const DROPS::Point3DCL&, double)
   {
-    return P.get<double>("FullDNS.Dmol");
+    return P.get<double>("Exp.Dmol");
   }
 
   static DROPS::RegisterScalarFunction regscaa("PeriodicALE_Diffusion",    DROPS::instat_scalar_fun_ptr(Diffusion)    );
