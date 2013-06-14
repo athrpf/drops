@@ -41,15 +41,13 @@ ipdropsAD: \
 interpolate: ../poisson/interpolation/boxinterp.o\
 	../poisson/interpolation/createlevelset.o\
 	../poisson/interpolation/phaseinterpolate.o\
-	../poisson/interpolation/levelsettoheight.o\
-	../poisson/interpolation/velocityinterpolation.o
+	../poisson/interpolation/levelsettoheight.o
 
 
 balapoissonP1: ../poisson/interpolation/boxinterp.o\
 	../poisson/interpolation/createlevelset.o\
 	../poisson/interpolation/phaseinterpolate.o\
 	../poisson/interpolation/levelsettoheight.o\
-	../poisson/interpolation/velocityinterpolation.o\
 	../poisson/poissonCoeff.o \
 	../poisson/balakotaiah.o \
 	../poisson/periodicALE.o \
