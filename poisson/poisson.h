@@ -42,6 +42,7 @@ namespace DROPS
 
 typedef BndSegDataCL<> PoissonBndSegDataCL;
 typedef BndDataCL<> PoissonBndDataCL;
+typedef BndDataCL<Point3DCL>   BndVelCL;
 
 double Py_product(MultiGridCL& mg, MLIdxDescCL& Idx, MLMatDescCL& A, MLMatDescCL& M,
 		   instat_scalar_fun_ptr f1, instat_scalar_fun_ptr f2, double t, bool H1);
@@ -151,28 +152,38 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     typedef P1EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
+    typedef P1EvalCL<SVectorCL<3>, const BndVelCL, VecDescCL>       DiscVelCL;
+    typedef P1EvalCL<SVectorCL<3>, const BndVelCL, const VecDescCL> const_DiscVelCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     bool       ALE_;           //ALE method
     MLIdxDescCL idx;
+    MLIdxDescCL vel_idx;       //for velocity
     VecDescCL   x;
     VecDescCL   b;
     VecDescCL   vU;
+    VecDescCL   velocity;
     MLMatDescCL A;
     MLMatDescCL M;
     MLMatDescCL U;
+    BndVelCL bnd_;
 
 
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE=false, bool adj=false)
-        : base_( mgb, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
+        : base_( mgb, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE), vel_idx( vecP1_FE), bnd_(6) {}
 
     PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, SUPGCL& supg, bool ALE=false, bool adj=false)
-        : base_( mg, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE) {}
+        : base_( mg, coeff, bdata), adjoint_( adj), supg_(supg), ALE_(ALE), idx( P1_FE), vel_idx( vecP1_FE), bnd_(6) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, MG_, BndData_, match); }
+    void CreateVelNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
+        {
+          idx->CreateNumbering( level, MG_, bnd_, match);
+        }
     void DeleteNumbering( MLIdxDescCL* idx)
-        { idx->DeleteNumbering( MG_); }
+        { idx->DeleteNumbering( MG_);
+        }
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
@@ -195,6 +206,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     /// \brief Set initial value
     void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
+    void SetupVel( VecDescCL&, instat_vector_fun_ptr, double t0= 0.) const;
+
 
     /// \brief check computed solution etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double t=0.) const;
@@ -211,6 +224,10 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL(&x, &GetBndData(), &GetMG()); }
+    DiscVelCL GetVelocity()
+        { return DiscVelCL(&velocity, &bnd_, &GetMG()); }
+    const_DiscVelCL GetVelocity() const
+        { return const_DiscVelCL(&velocity, &bnd_, &GetMG()); }
 };
 
 template <class Coeff>
