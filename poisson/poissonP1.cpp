@@ -78,7 +78,7 @@ DROPS::ParamCL P;   //Parameter class, read in json file in main function
 
 namespace DROPS
 {
-    
+
 template<class CoeffCL, class SolverT>
 void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& P)
 {
@@ -100,7 +100,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         Poisson.SetupSystem( Poisson.A, Poisson.b, P.get<int>("Stabilization.SUPG"));
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
-        
+
         //If we need to add convection
         if(P.get<int>("PoissonCoeff.Convection"))
         {
@@ -116,7 +116,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
         timer.Stop();
-        
+
 #ifndef _PAR
         double realresid = norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
 #else
@@ -127,7 +127,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamCL& 
                   << "   - iterations    " << solver.GetIter()  << '\n'
                   << "   - residuum      " << solver.GetResid() << '\n'
                   << "   - real residuum " << realresid         << std::endl;
-                  
+
         if (P.get<int>("Poisson.SolutionIsKnown")) {
             std::cout << line << "Check result against known solution ...\n";
             timer.Reset();
@@ -237,12 +237,15 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     timer.Reset();
 
     Poisson.idx.SetFE( P1_FE);                                  // set quadratic finite elements
+    Poisson.vel_idx.SetFE( vecP1_FE);
     //see class for explanation: template didnt work
     if ( PoissonSolverFactoryHelperCL().MGUsed(P))
         Poisson.SetNumLvl ( mg.GetNumLevel());
-    Poisson.CreateNumbering( mg.GetLastLevel(), &Poisson.idx);  // number vertices and edges
+    Poisson.CreateNumbering( mg.GetLastLevel(), &Poisson.idx);      // number vertices and edges;
+    Poisson.CreateVelNumbering( mg.GetLastLevel(), &Poisson.vel_idx);      // number vertices and edges;
     Poisson.b.SetIdx( &Poisson.idx);                            // tell b about numbering
     Poisson.x.SetIdx( &Poisson.idx);                            // tell x about numbering
+    Poisson.velocity.SetIdx( &Poisson.vel_idx);                            // tell x about numbering
     Poisson.A.SetIdx( &Poisson.idx, &Poisson.idx);              // tell A about numbering
     Poisson.M.SetIdx( &Poisson.idx, &Poisson.idx);              // tell M about numbering
     Poisson.U.SetIdx( &Poisson.idx, &Poisson.idx);              // tell U about numbering
@@ -276,7 +279,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     if ( factory.GetProlongation() != 0)
         SetupP1ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
-        
+
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -290,6 +293,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
             ALE.InitGrid();
         Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.x.t);
         Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
+        Poisson.SetupVel(Poisson.velocity, CoeffCL::Vel, 0.0);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
     }
@@ -305,9 +309,9 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     if (P.get<int>("Ensight.EnsightOut",0)){
         // Initialize Ensight6 output
         const std::string filename= P.get<std::string>("Ensight.EnsDir") + "/" + P.get<std::string>("Ensight.EnsCase");
-        ensight = new Ensight6OutCL(P.get<std::string>("Ensight.EnsCase")+".case", P.get<int>("Time.NumSteps")+1, 
+        ensight = new Ensight6OutCL(P.get<std::string>("Ensight.EnsCase")+".case", P.get<int>("Time.NumSteps")+1,
                                     P.get<int>("Ensight.Binary"), P.get<int>("Ensight.MasterOut"));
-        ensight->Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), 
+        ensight->Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(),
                                                 P.get<std::string>("Ensight.GeomName"), filename + ".geo"));
         ensight->Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
         ensight->Write();
@@ -315,10 +319,11 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     //VTK format
     VTKOutCL * vtkwriter = NULL;
     if (P.get<int>("VTK.VTKOut",0)){
-        vtkwriter = new VTKOutCL(mg, "DROPS data", 
-                                 P.get<int>("Time.NumSteps")+1, 
-                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"), 
+        vtkwriter = new VTKOutCL(mg, "DROPS data",
+                                 P.get<int>("Time.NumSteps")+1,
+                                 P.get<std::string>("VTK.VTKDir"), P.get<std::string>("VTK.VTKName"),
                                  P.get<int>("VTK.Binary"), true );
+        vtkwriter->Register( make_VTKVector( Poisson.GetVelocity(), "Velocity"));
         vtkwriter->Register( make_VTKScalar( Poisson.GetSolution(), "ConcenT"));
         vtkwriter->Write( Poisson.x.t);
     }
@@ -343,6 +348,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
                       << "   - iterations    " << solver->GetIter()  << '\n'
                       << "   - residuum      " << solver->GetResid() << '\n';
 
+
+        Poisson.SetupVel( Poisson.velocity, CoeffCL::Vel, Poisson.x.t);
             if (P.get("Poisson.SolutionIsKnown", 0)) {
                 std::cout << " o Check result against known solution ...\n";
                 timer.Reset();
@@ -353,17 +360,17 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
             if (ensight && step%P.get<int>("Ensight.EnsightOut", 0)==0){
                 std::cout << " o Ensight output ...\n";
-                timer.Reset();                
+                timer.Reset();
                 ensight->Write( Poisson.x.t);
                 timer.Stop();
-                std::cout << " o -time " << timer.GetTime() << " s" << std::endl;                
+                std::cout << " o -time " << timer.GetTime() << " s" << std::endl;
             }
             if (vtkwriter && step%P.get<int>("VTK.VTKOut", 0)==0){
                 std::cout << " o VTK output ...\n";
-                timer.Reset();                  
+                timer.Reset();
                 vtkwriter->Write( Poisson.x.t);
                 timer.Stop();
-                std::cout << " o -time " << timer.GetTime() << " s" << std::endl; 
+                std::cout << " o -time " << timer.GetTime() << " s" << std::endl;
             }
         }
     }
@@ -439,7 +446,7 @@ int main (int argc, char** argv)
         if(P.get<int>("Stabilization.SUPG"))
         {
             supg.init(P);
-            std::cout << line << "The SUPG stabilization will be added ...\n"<<line;           
+            std::cout << line << "The SUPG stabilization will be added ...\n"<<line;
         }
         // Setup the problem
         DROPS::PoissonCoeffCL tmp = DROPS::PoissonCoeffCL( P);

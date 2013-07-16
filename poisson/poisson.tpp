@@ -39,23 +39,23 @@ namespace DROPS
 
 
 /// \brief This function is called by different setup routines in poissonP1 class
-/// Depending on corresponding pointers are NULL or not, this function will decide 
+/// Depending on corresponding pointers are NULL or not, this function will decide
 /// which part of system should be assembled in accumulation way
 //========================================================================================================
 // Explations of part of arguments of SetupPartialSysterm_P1 function
-// MatrixCL* Amat       Stiffness matrix  
+// MatrixCL* Amat       Stiffness matrix
 // MatrixCL* Mmat       mass matrix
 // MatrixCL* Umat       convection matrix
 // VecDescCL* cplA      boundary coupling term corresponding to Amat
 // VecDescCL* cplM      boundary coupling term corresponding to Mmat
 // VecDescCL* cplU      boundary coupling term corresponding to Umat
 // VecDescCL* f         Source functions
-// SUPGCL& supg         SUPG stabilization 
-// bool adjoint         Adjoint problem flag        
+// SUPGCL& supg         SUPG stabilization
+// bool adjoint         Adjoint problem flag
 //========================================================================================================
 template<class Coeff>
-void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& PoiCoeff, MatrixCL* Amat, MatrixCL* Mmat, 
-                          MatrixCL* Umat, VecDescCL* cplA, VecDescCL* cplM, VecDescCL* cplU, VecDescCL* f, 
+void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& PoiCoeff, MatrixCL* Amat, MatrixCL* Mmat,
+                          MatrixCL* Umat, VecDescCL* cplA, VecDescCL* cplM, VecDescCL* cplU, VecDescCL* f,
                           const BndDataCL<> * BndData_,
                           IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, SUPGCL& supg, bool ALE, bool adjoint)
 {
@@ -66,7 +66,7 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& PoiCoeff, Matrix
     MassAccumulator_P1CL<Coeff,Quad2CL> * accum = 0;
     ConvectionAccumulator_P1CL<Coeff,Quad3CL> * accuc = 0;
     SourceAccumulator_P1CL<Coeff,Quad2CL> * accuf = 0;
-    
+
     //register accumulator
     if (Amat !=0 || cplA !=0){
         accua = new StiffnessAccumulator_P1CL<Coeff,Quad2CL> (MG, PoiCoeff, BndData_,Amat,cplA,RowIdx,ColIdx,supg, ALE, t);
@@ -84,9 +84,9 @@ void SetupPartialSystem_P1( const MultiGridCL& MG, const Coeff& PoiCoeff, Matrix
         accuf = new SourceAccumulator_P1CL<Coeff,Quad2CL> (MG, PoiCoeff, BndData_,f,RowIdx,supg, ALE, t);
         accus.push_back( accuf);
     }
-    
+
     //run accumulation
-    accumulate( accus, MG, RowIdx.TriangLevel(),RowIdx.GetMatchingFunction(), RowIdx.GetBndInfo());  
+    accumulate( accus, MG, RowIdx.TriangLevel(),RowIdx.GetMatchingFunction(), RowIdx.GetBndInfo());
     if (accua != 0) delete accua;
     if (accum != 0) delete accum;
     if (accuc != 0) delete accuc;
@@ -118,7 +118,7 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<
     //}
     //Quad5CL<> phiq5[4]={ phi[0], phi[1], phi[2], phi[3]};
     Quad2CL<> quad_a;
-    double tmp;   //used to store stabilization parameter
+    double tmp = 1.0;   //used to store stabilization parameter
         for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
              sit != send; ++sit)
         {
@@ -197,7 +197,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b, bool SUPG,
     for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA)
         SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol, SUPG, GradProb);
 }
-        
+
 //template<class Coeff>
 //void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
 ///Go throught every level to Setup system in P1
@@ -224,14 +224,14 @@ void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
-///Go throught every multigrid level to setup convection 
+///Go throught every multigrid level to setup convection
 {
     MLMatrixCL::iterator  itU    = matU.Data.begin();
     MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matU.ColIdx->begin();
     for ( size_t lvl=0; lvl < matU.Data.size(); ++lvl, ++itRow, ++itCol, ++itU)
         SetupPartialSystem_P1(MG_,Coeff_,0, 0,&*itU,0,0,(lvl == matU.Data.size()-1) ? &vU : 0,0,&BndData_,*itRow, *itCol,t,supg_, ALE_, adjoint_);
-        
+
 }
 
 template<class Coeff>
@@ -269,6 +269,25 @@ void PoissonP1CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, doubl
     }
 
 }
+
+template <class Coeff>
+void PoissonP1CL<Coeff>::SetupVel( VecDescCL& vec, instat_vector_fun_ptr func, double t) const
+///Setup initial condition for instationary problem
+{
+    VectorCL& lsgvel= vec.Data;
+    Uint lvl= vec.GetLevel(),
+         idx= vec.RowIdx->GetIdx();
+
+
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send= const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
+         sit != send; ++sit)
+    {
+        if (sit->Unknowns.Exist(idx))
+            DoFHelperCL<Point3DCL, VectorCL>::set( lsgvel, sit->Unknowns(idx),
+                func(sit->GetCoord(), t));
+    }
+}
+
 
 //Source term for sensitivity problem
 template <class Coeff>
