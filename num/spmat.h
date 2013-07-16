@@ -48,6 +48,10 @@
 # include "parallel/parallel.h"
 #endif
 
+/// For mmap in the memory-management of SparseMatBaseCL.
+#ifndef DROPS_WIN
+#  include <sys/mman.h>
+#endif
 
 namespace DROPS
 {
@@ -76,6 +80,18 @@ class VectorBaseCL: public std::valarray<T>
     VectorBaseCL (const T* tp, size_t s): base_type( tp, s) {}
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
+
+    void swap( VectorBaseCL<T>& v) {
+#if GCC_VERSION > 40406
+        std::swap(*this, v);
+#else
+        VectorBaseCL tmp (v);
+        v.resize(this->size());
+        v = *this;
+        this->resize(tmp.size());
+        *this = tmp;
+#endif
+    }
 
     const T* raw() const { return Addr( *this); }
     T*       raw()       { return &(*this)[0]; }
@@ -205,16 +221,27 @@ inline VectorBaseCL<T>& add_to_global_vector (VectorBaseCL<T>& v, const Point3DC
     return v;
 }
 
-/// \brief Use Kahan's algorithm to sum up elements 
-/** This algorithm accumulates the error made by the floting point 
-    arithmetics and addes this error to the sum.
+/// \brief Use Kahan's algorithm to sum up elements
+/** This algorithm accumulates the error made by the floating point
+    arithmetics and adds this error to the sum.
+    Compiler attributes/pragmas ensure the correct order of summation/multiplication.
     \param first iterator to the first element
     \param end   iterator behind the last element
-    \param init  initiali value of the sum
+    \param init  initial value of the sum
     \return init + sum_{i=first}^end *i
 */
+
+#if _MSC_VER > 1400
+# pragma float_control(push)
+# pragma float_control(precise, on)
+#endif
+
 template <typename T, typename Iterator>
-inline T KahanSumm( Iterator first, const Iterator& end, const T init=(T)0)
+inline T
+#if GCC_VERSION > 40305 && !__INTEL_COMPILER
+    __attribute__((optimize("no-associative-math")))
+#endif
+KahanSumm( Iterator first, const Iterator& end, const T init=(T)0)
 {
     T sum= init, c=T(0), t, y;
     while(first!=end){
@@ -228,7 +255,11 @@ inline T KahanSumm( Iterator first, const Iterator& end, const T init=(T)0)
 
 /// \brief Use Kahan's algorithm to perform an inner product
 template <typename T, typename Iterator>
-inline T KahanInnerProd( Iterator first1, const Iterator& end1, Iterator first2, const T init=(T)0)
+inline T
+#if GCC_VERSION > 40305 && !__INTEL_COMPILER
+    __attribute__((optimize("no-associative-math")))
+#endif
+KahanInnerProd( Iterator first1, const Iterator& end1, Iterator first2, const T init=(T)0)
 {
     T sum= init, c=T(0), t, y;
     while(first1!=end1){
@@ -239,21 +270,47 @@ inline T KahanInnerProd( Iterator first1, const Iterator& end1, Iterator first2,
     }
     return sum;
 }
-
-/// \brief Use Kahan's algorithm to perform an inner product on given indices
-template <typename T, typename Cont, typename Iterator>
-inline T KahanInnerProd( const Cont& a, const Cont&b, Iterator firstIdx, const Iterator& endIdx, const T init=(T)0)
+template <class ValueT, template<class> class VecT>
+inline ValueT
+#if GCC_VERSION > 40305 && !__INTEL_COMPILER
+    __attribute__((optimize("no-associative-math")))
+#endif
+KahanInnerProd( const VecT<ValueT>& first, const VecT<ValueT>& second, const ValueT init=(ValueT)0)
 {
-    T sum= init, c=T(0), t, y;
-    while(firstIdx!=endIdx){
-        y  = a[*firstIdx]*b[*firstIdx] - c;
-        ++firstIdx;
+    Assert(first.size() == second.size(), "KahanInnerProd: sizes don't match", DebugNumericC);
+    ValueT sum= init, c=ValueT(0), t, y;
+    for (size_t i = 0; i<first.size(); ++i) {
+        y  = first[i]*second[i] - c;
         t  = sum + y;
         c  = (t-sum)-y;
         sum= t;
     }
     return sum;
 }
+
+/// \brief Use Kahan's algorithm to perform an inner product on given indices
+template <typename T, typename Cont, typename Iterator>
+inline T
+#if GCC_VERSION > 40305 && !__INTEL_COMPILER
+    __attribute__((optimize("no-associative-math")))
+#endif
+KahanInnerProd( const Cont& a, const Cont&b, const Iterator& firstIdx, const Iterator& endIdx, const T init=(T)0, const size_t offset=0)
+{
+    Iterator first=firstIdx;
+    T sum= init, c=T(0), t, y;
+    while(first!=endIdx){
+        y  = a[*first+offset]*b[*first+offset] - c;
+        ++first;
+        t  = sum + y;
+        c  = (t-sum)-y;
+        sum= t;
+    }
+    return sum;
+}
+
+#if _MSC_VER > 1400
+# pragma float_control(pop)
+#endif
 
 /// \brief Performs the std::partial_sum in parallel
 /// Can be used with any number of threads in a surrounding parallel region.
@@ -265,8 +322,13 @@ void inplace_parallel_partial_sum (iterator begin, iterator end,
     if (begin == end)
         return;
 
+#ifdef _OPENMP
     const Uint num_threads= omp_get_num_threads();
     const Uint tid= omp_get_thread_num();
+#else
+    const Uint num_threads= 1;
+    const Uint tid= 0;
+#endif
 
     // Compute the part of [begin, end) to be considered in the current thread.
     const size_t chunk_size= (end - begin)/num_threads;
@@ -290,7 +352,7 @@ void inplace_parallel_partial_sum (iterator begin, iterator end,
         std::partial_sum( t_sum, t_sum + num_threads, t_sum);
 
     // Add offset to the first summand for each thread and compute the final partial sums.
-    if (tid > 0)
+    if (tid > 0 && t_end - t_begin > 0) // The 2nd part of the condition is needed, if there are more threads than elements in [begin, end).
         *t_begin+= t_sum[tid - 1];
     std::partial_sum( t_begin, t_end, t_begin);
 }
@@ -480,8 +542,10 @@ public:
         {
             Comment("SparseMatBuilderCL: Creating NEW matrix" << std::endl, DebugNumericC);
             _coupl= new couplT[_rows/BlockTraitT::num_rows];
-            for (size_t i=0; i< _rows/BlockTraitT::num_rows; ++i) 
+#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+            for (size_t i=0; i< _rows/BlockTraitT::num_rows; ++i)
                 _coupl[i].rehash(100);
+#endif
         }
     }
 
@@ -489,8 +553,9 @@ public:
 
     block_type& operator() (size_t i, size_t j)
     {
-        Assert( i < _rows/BlockTraitT::num_rows && j <_cols/BlockTraitT::num_cols,
-            "SparseMatBuilderCL (): index out of bounds", DebugNumericC);
+///Todo: Assert anpassen
+  //      Assert( i < _rows/BlockTraitT::num_rows && j <_cols/BlockTraitT::num_cols,
+  //          "SparseMatBuilderCL (): index out of bounds", DebugNumericC);
 
         if (!_reuse)
             return _coupl[i/BlockTraitT::num_rows][j/BlockTraitT::num_cols];
@@ -521,7 +586,12 @@ void SparseMatBuilderCL<T, BlockT>::Build()
     int i;
 #endif
 
+#ifdef _OPENMP
     size_t* t_sum= new size_t[omp_get_max_threads()];
+#else
+    size_t* t_sum= new size_t[1];
+#endif
+
 #   pragma omp parallel
     {
 #       pragma omp for
@@ -556,10 +626,14 @@ void SparseMatBuilderCL<T, BlockT>::Build()
 
 ///\brief  SparseMatBaseCL: compressed row storage sparse matrix
 /// Use SparseMatBuilderCL for setting up.
+///
+/// If the size of _colind plus _val exceeds mmap_threshold, they are allocated as a single chunk with mmap. The memory management of these 2 arrays is encapsulated in the private num_nonzeros(nnz).
 template <typename T>
 class SparseMatBaseCL
 {
 private:
+    enum { mmap_threshold= 1ul << 22 }; ///< 4MiB.
+
     size_t _rows; ///< number of rows
     size_t _cols; ///< number of columns
     size_t nnz_;  ///< number of non-zeros
@@ -573,6 +647,8 @@ private:
     void num_rows (size_t rows);    ///< Set _rows and resize _rowbeg
     void num_cols (size_t cols);    ///< Set _cols
     void num_nonzeros (size_t nnz); ///< Set nnz_ and resize _colind and _val
+
+    size_t sizeof_colind_and_val() const{ return nnz_*(sizeof( T) + sizeof( size_t)); }
 
 public:
     typedef T value_type;
@@ -666,25 +742,70 @@ template <typename T>
   void
   SparseMatBaseCL<T>::num_nonzeros (size_t nnz)
 {
-    nnz_= nnz;
+    if (nnz == nnz_)
+        return;
+
+    // deallocate old mem
+#ifdef DROPS_WIN
     delete[] _val;
     delete[] _colind;
+#else
+    const size_t nbold= sizeof_colind_and_val();
+    if (nbold < mmap_threshold) {
+        delete[] _val;
+        delete[] _colind;
+    }
+    else {
+        // std::cerr << "SparseMatBaseCL::num_nonzeros: Unmapping " << nbold << " bytes at " << _val << ".\n";
+        // _val is the front of the allocated storage
+        if (munmap( (void*) _val, nbold) < 0)
+            throw DROPSErrCL( "SparseMatBaseCL::num_nonzeros: munmap failed.\n");
+    }
+#endif
+
+    _val= 0;
+    _colind= 0;
+
+    nnz_= nnz;
+    if (nnz_ == 0)
+        return;
+
+    // allocate new mem
+#ifdef DROPS_WIN
     _val= new T[nnz];
     _colind= new size_t[nnz];
+#else
+    const size_t nb= sizeof_colind_and_val();
+    if (nb < mmap_threshold) {
+        _val= new T[nnz];
+        _colind= new size_t[nnz];
+    }
+    else {
+        void* tmp= mmap( /*addr*/ 0, nb, PROT_READ | PROT_WRITE,
+                         MAP_ANONYMOUS | MAP_PRIVATE, /*fd*/ -1, /*offset*/ 0);
+        if (tmp == MAP_FAILED)
+            throw DROPSErrCL( "SparseMatBaseCL::num_nonzeros: mmap failed.\n");
+
+        _val= static_cast<T*>( tmp);
+        _colind= reinterpret_cast<size_t*>( _val + nnz_);
+        // std::cerr << "SparseMatBaseCL::num_nonzeros: Mapped " << nb << " bytes at " << _val << ".\n";
+    }
+#endif
 }
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL ()
-    : _rows(0), _cols(0), nnz_( 0), version_(1), _rowbeg( new size_t[1]), _colind(0), _val(0)
+    : _rows(0), _cols(0), nnz_( 0), version_(1), _rowbeg( new size_t[1]), _colind( 0), _val( 0)
 {
     _rowbeg[0]= 0;
 }
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL (const SparseMatBaseCL& m)
-    : _rows( m._rows), _cols( m._cols), nnz_( m.nnz_), version_( m.version_),
-      _rowbeg( new size_t[m._rows+1]), _colind( new size_t[m.num_nonzeros()]), _val(new T[m.num_nonzeros()])
+    : _rows( m._rows), _cols( m._cols), nnz_( 0), version_( m.version_),
+      _rowbeg( new size_t[m._rows+1]), _colind( 0), _val( 0)
 {
+    num_nonzeros( m.num_nonzeros());
     std::copy( m.raw_row(), m.raw_row() + m.num_rows() + 1, raw_row());
     std::copy( m.raw_col(), m.raw_col() + m.num_nonzeros(), raw_col());
     std::copy( m.raw_val(), m.raw_val() + m.num_nonzeros(), raw_val());
@@ -694,26 +815,29 @@ template <typename T>
   SparseMatBaseCL<T>::~SparseMatBaseCL ()
 {
     delete[] _rowbeg;
-    delete[] _colind;
-    delete[] _val;
+    try {
+        num_nonzeros( 0);
+    } catch (const DROPSErrCL& e) {
+        std::cerr << "SparseMatBaseCL::~SparseMatBaseCL: num_nonzeros failed:\n";
+        e.handle();
+    }
 }
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL (size_t rows, size_t cols, size_t nnz)
-    : _rows( rows), _cols( cols), nnz_( nnz), version_( 1),
-      _rowbeg( new size_t[rows+1]), _colind( new size_t[nnz]), _val( new T[nnz])
+    : _rows( rows), _cols( cols), nnz_( 0), version_( 1),
+      _rowbeg( new size_t[rows+1]), _colind( 0), _val( 0)
 {
-    // std::memset( _rowbeg, 0, (_rows + 1)*sizeof( size_t));
-    // std::memset( _colind, 0, nnz_*sizeof( size_t));
-    // std::memset( _val,    0, nnz_*sizeof( T));
+    num_nonzeros( nnz);
 }
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL (size_t rows, size_t cols, size_t nnz,
     const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
-    : _rows(rows), _cols(cols), nnz_(nnz), version_( 1),
-      _rowbeg( new size_t[rows+1]), _colind( new size_t[nnz]), _val( new T[nnz])
+    : _rows(rows), _cols(cols), nnz_( 0), version_( 1),
+      _rowbeg( new size_t[rows+1]), _colind( 0), _val( 0)
 {
+    num_nonzeros( nnz);
     std::copy( rowbeg, rowbeg + num_rows() + 1, raw_row());
     std::copy( colindbeg, colindbeg + num_nonzeros(), raw_col());
     std::copy( valbeg,    valbeg    + num_nonzeros(), raw_val());
@@ -721,9 +845,10 @@ template <typename T>
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL(const std::valarray<T>& v)
-      : _rows( v.size()), _cols( v.size()), nnz_( v.size()), version_( 1),
-        _rowbeg( new size_t[v.size() + 1]), _colind( new size_t[v.size()]), _val( new T[v.size()])
+      : _rows( v.size()), _cols( v.size()), nnz_( 0), version_( 1),
+        _rowbeg( new size_t[v.size() + 1]), _colind( 0), _val( 0)
 {
+    num_nonzeros( v.size());
     for (size_t i= 0; i < _rows; ++i)
         _rowbeg[i]= _colind[i]= i;
     _rowbeg[_rows]= _rows;
@@ -1143,7 +1268,11 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     num_rows( A.num_rows());
     num_cols( A.num_cols());
     _rowbeg[0]= 0;
+#ifdef _OPENMP
     size_t* t_sum= new size_t[omp_get_max_threads()];
+#else
+    size_t* t_sum= new size_t[1];
+#endif
 
 #   pragma omp parallel
     {
@@ -1176,7 +1305,7 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
             _rowbeg[row + 1]= i + (rAend - rA) + (rBend - rB);
         }
 
-        inplace_parallel_partial_sum( _rowbeg, _rowbeg + num_rows() + 1, t_sum); 
+        inplace_parallel_partial_sum( _rowbeg, _rowbeg + num_rows() + 1, t_sum);
 #       pragma omp barrier
 #       pragma omp master
             num_nonzeros( row_beg( num_rows()));
@@ -1500,10 +1629,6 @@ class MLSparseMatBaseCL : public MLDataCL<SparseMatBaseCL<T> >
   public:
     MLSparseMatBaseCL (size_t lvl= 1)
     {
-#ifdef _PAR
-        if (lvl>1)
-            throw DROPSErrCL("MLSparseMatBaseCL::MLSparseMatBaseCL: No multilevel matrices in the parallel version, yet, sorry");
-#endif
         this->resize(lvl);
     }
     size_t Version      () const { return this->GetFinest().Version();}
